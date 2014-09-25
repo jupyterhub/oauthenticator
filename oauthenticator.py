@@ -15,7 +15,7 @@ from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.handlers import BaseHandler
-from jupyterhub.auth import Authenticator
+from jupyterhub.auth import Authenticator, LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
 from IPython.utils.traitlets import Unicode
@@ -128,3 +128,6 @@ class GitHubOAuthenticator(Authenticator):
         raise gen.Return(username)
 
 
+class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
+    """A version that mixes in local system user creation"""
+    pass
