@@ -2,13 +2,13 @@
 
 c = get_config()
 
-c.JupyterHubApp.log_level = 10
-c.JupyterHubApp.authenticator_class = 'oauthenticator.LocalGitHubOAuthenticator'
+c.JupyterHub.log_level = 10
+c.JupyterHub.authenticator_class = 'oauthenticator.LocalGitHubOAuthenticator'
 
 c.LocalGitHubOAuthenticator.create_system_users = True
 
 c.Authenticator.whitelist = whitelist = set()
-c.JupyterHubApp.admin_users = admin = set()
+c.JupyterHub.admin_users = admin = set()
 
 import os
 import sys
@@ -36,6 +36,6 @@ ssl = join(root, 'ssl')
 keyfile = join(ssl, 'ssl.key')
 certfile = join(ssl, 'ssl.cert')
 if os.path.exists(keyfile):
-    c.JupyterHubApp.ssl_key = keyfile
+    c.JupyterHub.ssl_key = keyfile
 if os.path.exists(certfile):
-    c.JupyterHubApp.ssl_cert = certfile
+    c.JupyterHub.ssl_cert = certfile

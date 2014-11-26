@@ -35,7 +35,7 @@ Where `[your-host]` is where your server will be running. Such as
 
 Then, add the following to your `jupyterhub_config.py` file:
 
-    c.JupyterHubApp.authenticator_class = 'oauthenticator.GitHubOAuthenticator'
+    c.JupyterHub.authenticator_class = 'oauthenticator.GitHubOAuthenticator'
 
 (you can also use `LocalGitHubOAuthenticator` to handle both local and GitHub
 auth).
