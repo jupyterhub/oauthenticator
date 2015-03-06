@@ -1,8 +1,6 @@
 ## Contributing
 
 We mainly follow [IPython Contributing Guide](https://github.com/ipython/ipython/blob/master/CONTRIBUTING.md).
-Here is a copy of it, but keep in mind it can be out of sync.
-
 
 ## Opening an Issue
 
@@ -17,12 +15,12 @@ When opening a new Issue, please take the following steps:
 
         python -c "import IPython; print(IPython.sys_info())"
 
-   And include any relevant package versions, depending on the issue,
-   such as matplotlib, numpy, Qt, Qt bindings (PyQt/PySide), tornado, web browser, etc.
+    Please also include the version of JupyterHub and of OAuthenticator.
+
 
 ## Pull Requests
 
-Some guidelines on contributing to IPython:
+Some guidelines on contributing to Jupyter/OAuthenticator:
 
 * All work is submitted via Pull Requests.
 * Pull Requests can be submitted as soon as there is code worth discussing.
@@ -34,18 +32,8 @@ Some guidelines on contributing to IPython:
 * Pull Requests should be tested, if feasible:
     - bugfixes should include regression tests
     - new behavior should at least get minimal exercise
-* New features and backwards-incompatible changes should be documented by adding
-  a new file to the [pr](docs/source/whatsnew/pr) directory, see [the README.md
-  there](docs/source/whatsnew/pr/README.md) for details.
 * Don't make 'cleanup' pull requests just to change code style.
   We don't follow any style guide strictly, and we consider formatting changes
   unnecessary noise.
   If you're making functional changes, you can clean up the specific pieces of
   code you're working on.
-
-[Travis](http://travis-ci.org/#!/ipython/ipython) does a pretty good job testing IPython and Pull Requests,
-but it may make sense to manually perform tests (possibly with our `test_pr` script),
-particularly for PRs that affect `IPython.parallel` or Windows.
-
-For more detailed information, see our [GitHub Workflow](https://github.com/ipython/ipython/wiki/Dev:-GitHub-workflow).
-
