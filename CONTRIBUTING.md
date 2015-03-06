@@ -15,7 +15,7 @@ When opening a new Issue, please take the following steps:
 
         python -c "import IPython; print(IPython.sys_info())"
 
-    Please also include the version of JupyterHub and of OAuthenticator.
+   Please also include the version of JupyterHub and of OAuthenticator.
 
 
 ## Pull Requests
