@@ -62,6 +62,7 @@ class GitHubOAuthHandler(BaseHandler):
 
 class GitHubOAuthenticator(Authenticator):
     
+    login_service = "GitHub"
     oauth_callback_url = Unicode('', config=True)
     github_client_id = Unicode(os.environ.get('GITHUB_CLIENT_ID', ''),
         config=True)
