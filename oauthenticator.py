@@ -27,7 +27,7 @@ class GitHubMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
 
 
-class BitBucketMixin(OAuth2Mixin):
+class BitbucketMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
     _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
 
@@ -58,7 +58,7 @@ class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
     pass
 
 
-class BitBucketLoginHandler(OAuthLoginHandler, BitBucketMixin):
+class BitbucketLoginHandler(OAuthLoginHandler, BitbucketMixin):
     pass
 
 
@@ -76,7 +76,7 @@ class GitHubOAuthHandler(BaseHandler):
             raise web.HTTPError(403)
 
 
-class BitBucketOAuthHandler(GitHubOAuthHandler):
+class BitbucketOAuthHandler(GitHubOAuthHandler):
     pass
 
 
@@ -149,9 +149,9 @@ class GitHubOAuthenticator(Authenticator):
         raise gen.Return(username)
 
 
-class BitBucketOAuthenticator(Authenticator):
+class BitbucketOAuthenticator(Authenticator):
 
-    login_service = "BitBucket"
+    login_service = "Bitbucket"
     oauth_callback_url = Unicode(os.environ.get('OAUTH_CALLBACK_URL', ''),
                                  config=True)
     client_id = Unicode(os.environ.get('BITBUCKET_CLIENT_ID', ''),
@@ -164,8 +164,8 @@ class BitBucketOAuthenticator(Authenticator):
 
     def get_handlers(self, app):
         return [
-            (r'/oauth_login', BitBucketLoginHandler),
-            (r'/oauth_callback', BitBucketOAuthHandler),
+            (r'/oauth_login', BitbucketLoginHandler),
+            (r'/oauth_callback', BitbucketOAuthHandler),
         ]
 
     @gen.coroutine
@@ -227,8 +227,8 @@ class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
     pass
 
 
-class LocalBitBucketOAuthenticator(LocalAuthenticator,
-                                   BitBucketOAuthenticator):
+class LocalBitbucketOAuthenticator(LocalAuthenticator,
+                                   BitbucketOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
