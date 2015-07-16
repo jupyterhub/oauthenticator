@@ -223,17 +223,15 @@ class BitbucketOAuthenticator(Authenticator):
         if self.team and username:
             # We verify the team membership by calling that endpoint.
             # Re-use the headers, change the request.
-            next_page = url_concat("https://api.bitbucket.org/2.0/teams",
-                                  {'role':'member'})
-            member = None
+            next_page = "https://api.bitbucket.org/2.0/teams/{}/members".format(self.team)
+            member = False
             while next_page:
                 req = HTTPRequest(next_page, method="GET", headers=headers)
                 resp = yield http_client.fetch(req)
                 resp_json = json.loads(resp.body.decode('utf8', 'replace'))
                 next_page = resp_json.get('next', None)
-                if any(t['username'] == self.team for t in
-                       resp_json['values'].values()):
-                    member = True
+                member = member or \
+                    username in [entry["username"] for entry in resp_json["values"]]
             if not member:
                 username = None
         raise gen.Return(username)
