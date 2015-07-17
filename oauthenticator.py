@@ -19,7 +19,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator, LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode
+from traitlets import Unicode, Set
 
 
 class GitHubMixin(OAuth2Mixin):
@@ -158,6 +158,10 @@ class BitbucketOAuthenticator(Authenticator):
                         config=True)
     client_secret = Unicode(os.environ.get('BITBUCKET_CLIENT_SECRET', ''),
                             config=True)
+    team_whitelist = Set(
+        config=True,
+        help="Automatically whitelist members of selected teams",
+    )
 
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
@@ -216,9 +220,39 @@ class BitbucketOAuthenticator(Authenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["username"]
-        if self.whitelist and username not in self.whitelist:
+        whitelisted = yield self.check_whitelist(username, headers)
+        if not whitelisted:
             username = None
-        raise gen.Return(username)
+        return username
+
+    def check_whitelist(self, username, headers):
+        if self.team_whitelist:
+            return self._check_group_whitelist(username, headers)
+        else:
+            return self._check_user_whitelist(username)
+
+    @gen.coroutine
+    def _check_user_whitelist(self, user):
+        return (not self.whitelist) or (user in self.whitelist)
+
+    @gen.coroutine
+    def _check_group_whitelist(self, username, headers):
+        http_client = AsyncHTTPClient()
+
+        # We verify the team membership by calling teams endpoint.
+        # Re-use the headers, change the request.
+        next_page = url_concat("https://api.bitbucket.org/2.0/teams",
+                               {'role': 'member'})
+        user_teams = set()
+        while next_page:
+            req = HTTPRequest(next_page, method="GET", headers=headers)
+            resp = yield http_client.fetch(req)
+            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+            next_page = resp_json.get('next', None)
+
+            user_teams |= \
+                set([entry["username"] for entry in resp_json["values"]])
+        return len(self.team_whitelist & user_teams) > 0
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
