@@ -223,15 +223,17 @@ class BitbucketOAuthenticator(Authenticator):
         whitelisted = yield self.check_whitelist(username, headers)
         if not whitelisted:
             username = None
-        raise gen.Return(username)
+        return username
 
-    @gen.coroutine
     def check_whitelist(self, username, headers):
         if self.team_whitelist:
-            valid_user = yield self._check_group_whitelist(username, headers)
+            return self._check_group_whitelist(username, headers)
         else:
-            valid_user = yield super().check_whitelist(username)
-        raise gen.Return(valid_user)
+            return self._check_user_whitelist(username)
+
+    @gen.coroutine
+    def _check_user_whitelist(self, user):
+        return (not self.whitelist) or (user in self.whitelist)
 
     @gen.coroutine
     def _check_group_whitelist(self, username, headers):
@@ -250,7 +252,7 @@ class BitbucketOAuthenticator(Authenticator):
 
             user_teams |= \
                 set([entry["username"] for entry in resp_json["values"]])
-        raise gen.Return(len(self.team_whitelist & user_teams) > 0)
+        return len(self.team_whitelist & user_teams) > 0
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
