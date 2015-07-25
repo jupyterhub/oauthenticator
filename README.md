@@ -47,5 +47,5 @@ on GitHub). For example, if these values are in the environment variables
 should add the following to your `jupyterhub_config.py`:
 
     c.GitHubOAuthenticator.oauth_callback_url = os.environ['OAUTH_CALLBACK_URL']
-    c.GitHubOAuthenticator.github_client_id = os.environ['GITHUB_CLIENT_ID']
-    c.GitHubOAuthenticator.github_client_secret = os.environ['GITHUB_CLIENT_SECRET']
+    c.GitHubOAuthenticator.client_id = os.environ['GITHUB_CLIENT_ID']
+    c.GitHubOAuthenticator.client_secret = os.environ['GITHUB_CLIENT_SECRET']
