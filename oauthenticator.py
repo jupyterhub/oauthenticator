@@ -21,10 +21,16 @@ from jupyterhub.utils import url_path_join
 
 from traitlets import Unicode, Set
 
+# Support github.com and github enterprise installations
+GITHUB_HOST = os.environ.get('GITHUB_HOST', 'github.com')
+if GITHUB_HOST == 'github.com':
+    GITHUB_API = 'api.github.com/user'
+else:
+    GITHUB_API = '%s/api/v3/user' % GITHUB_HOST
 
 class GitHubMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
-    _OAUTH_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
+    _OAUTH_AUTHORIZE_URL = "https://%s/login/oauth/authorize" % GITHUB_HOST
+    _OAUTH_ACCESS_TOKEN_URL = "https://%s/login/oauth/access_token" % GITHUB_HOST
 
 
 class BitbucketMixin(OAuth2Mixin):
@@ -117,7 +123,7 @@ class GitHubOAuthenticator(Authenticator):
             code=code
         )
         
-        url = url_concat("https://github.com/login/oauth/access_token",
+        url = url_concat("https://%s/login/oauth/access_token" % GITHUB_HOST,
                          params)
         
         req = HTTPRequest(url,
@@ -136,7 +142,7 @@ class GitHubOAuthenticator(Authenticator):
                  "User-Agent": "JupyterHub",
                  "Authorization": "token {}".format(access_token)
         }
-        req = HTTPRequest("https://api.github.com/user",
+        req = HTTPRequest("https://%s" % GITHUB_API,
                           method="GET",
                           headers=headers
                           )
