@@ -22,7 +22,7 @@ from jupyterhub.utils import url_path_join
 from traitlets import Unicode, Set
 
 # Support github.com and github enterprise installations
-GITHUB_HOST = os.environ.get('GITHUB_HOST', 'github.com')
+GITHUB_HOST = os.environ.get('GITHUB_HOST') or 'github.com'
 if GITHUB_HOST == 'github.com':
     GITHUB_API = 'api.github.com/user'
 else:
