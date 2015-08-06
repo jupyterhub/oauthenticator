@@ -1,6 +1,6 @@
 # OAuthenticator
 
-GitHub OAuth + JuptyerHub Authenticator = OAuthenticator
+GitHub OAuth + JupyterHub Authenticator = OAuthenticator
 
 ## Examples
 
