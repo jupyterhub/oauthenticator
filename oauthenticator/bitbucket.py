@@ -1,12 +1,9 @@
 """
-Custom Authenticator to use GitHub OAuth with JupyterHub
-
-Most of the code c/o Kyle Kelley (@rgbkrk)
+Custom Authenticator to use Bitbucket OAuth with JupyterHub
 """
 
 
 import json
-import os
 import urllib
 
 from tornado.auth import OAuth2Mixin
@@ -15,12 +12,11 @@ from tornado import gen, web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from jupyterhub.auth import Authenticator, LocalAuthenticator
-from jupyterhub.utils import url_path_join
+from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Set
+from traitlets import Set
 
-from .github import OAuthLoginHandler, GitHubOAuthHandler
+from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 class BitbucketMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
@@ -31,31 +27,17 @@ class BitbucketLoginHandler(OAuthLoginHandler, BitbucketMixin):
     pass
 
 
-BitbucketOAuthHandler = GitHubOAuthHandler
-
-
-class BitbucketOAuthenticator(Authenticator):
+class BitbucketOAuthenticator(OAuthenticator):
 
     login_service = "Bitbucket"
-    oauth_callback_url = Unicode(os.environ.get('OAUTH_CALLBACK_URL', ''),
-                                 config=True)
-    client_id = Unicode(os.environ.get('BITBUCKET_CLIENT_ID', ''),
-                        config=True)
-    client_secret = Unicode(os.environ.get('BITBUCKET_CLIENT_SECRET', ''),
-                            config=True)
+    client_id_env = 'BITBUCKET_CLIENT_ID'
+    client_secret_env = 'BITBUCKET_CLIENT_SECRET'
+    login_handler = BitbucketLoginHandler
+
     team_whitelist = Set(
         config=True,
         help="Automatically whitelist members of selected teams",
     )
-
-    def login_url(self, base_url):
-        return url_path_join(base_url, 'oauth_login')
-
-    def get_handlers(self, app):
-        return [
-            (r'/oauth_login', BitbucketLoginHandler),
-            (r'/oauth_callback', BitbucketOAuthHandler),
-        ]
 
     @gen.coroutine
     def authenticate(self, handler):

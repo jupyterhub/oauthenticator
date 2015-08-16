@@ -14,11 +14,11 @@ from tornado import gen, web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from jupyterhub.handlers import BaseHandler
-from jupyterhub.auth import Authenticator, LocalAuthenticator
-from jupyterhub.utils import url_path_join
+from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode
+
+from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support github.com and github enterprise installations
 GITHUB_HOST = os.environ.get('GITHUB_HOST') or 'github.com'
@@ -32,50 +32,13 @@ class GitHubMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "https://%s/login/oauth/access_token" % GITHUB_HOST
 
 
-class OAuthLoginHandler(BaseHandler):
-
-    def get(self):
-        guess_uri = '{proto}://{host}{path}'.format(
-            proto=self.request.protocol,
-            host=self.request.host,
-            path=url_path_join(
-                self.hub.server.base_url,
-                'oauth_callback'
-            )
-        )
-        
-        redirect_uri = self.authenticator.oauth_callback_url or guess_uri
-        self.log.info('oauth redirect: %r', redirect_uri)
-        
-        self.authorize_redirect(
-            redirect_uri=redirect_uri,
-            client_id=self.authenticator.client_id,
-            scope=[],
-            response_type='code')
-
-
 class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
     pass
 
 
-class GitHubOAuthHandler(BaseHandler):
-    @gen.coroutine
-    def get(self):
-        # TODO: Check if state argument needs to be checked
-        username = yield self.authenticator.authenticate(self)
-        if username:
-            user = self.user_from_username(username)
-            self.set_login_cookie(user)
-            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
-        else:
-            # todo: custom error page?
-            raise web.HTTPError(403)
-
-
-class GitHubOAuthenticator(Authenticator):
+class GitHubOAuthenticator(OAuthenticator):
     
     login_service = "GitHub"
-    oauth_callback_url = Unicode('', config=True)
     
     # deprecated names
     github_client_id = Unicode(config=True, help="DEPRECATED")
@@ -87,19 +50,9 @@ class GitHubOAuthenticator(Authenticator):
         self.log.warn("github_client_secret is deprecated, use client_secret")
         self.client_secret = new
     
-    client_id = Unicode(os.environ.get('GITHUB_CLIENT_ID', ''),
-                        config=True)
-    client_secret = Unicode(os.environ.get('GITHUB_CLIENT_SECRET', ''),
-                            config=True)
-
-    def login_url(self, base_url):
-        return url_path_join(base_url, 'oauth_login')
-    
-    def get_handlers(self, app):
-        return [
-            (r'/oauth_login', GitHubLoginHandler),
-            (r'/oauth_callback', GitHubOAuthHandler),
-        ]
+    client_id_env = 'GITHUB_CLIENT_ID'
+    client_secret_env = 'GITHUB_CLIENT_SECRET'
+    login_handler = GitHubLoginHandler
     
     @gen.coroutine
     def authenticate(self, handler):
@@ -149,7 +102,7 @@ class GitHubOAuthenticator(Authenticator):
         username = resp_json["login"]
         if self.whitelist and username not in self.whitelist:
             username = None
-        raise gen.Return(username)
+        return username
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
