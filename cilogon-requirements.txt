@@ -3,3 +3,4 @@
 PyOpenSSL
 oauthlib
 cryptography
+pyjwt

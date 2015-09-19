@@ -24,7 +24,9 @@ Caveats:
 
 """
 
+import errno
 import os
+import pwd
 from urllib.parse import parse_qs
 
 try:
@@ -41,6 +43,9 @@ from tornado import gen
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.httputil import url_concat
 
+from traitlets.config import Configurable
+
+from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.handlers.base import BaseHandler
 from jupyterhub.utils import url_path_join as ujoin
 
@@ -98,6 +103,28 @@ class CILogonOAuthenticator(OAuthenticator):
                 if not line.isspace() and '----' not in line:
                     lines.append(line)
         return ''.join(lines)
+    
+    user_cert_dir = Unicode(config=True,
+        help="""Directory in which to store user credentials.
+        This directory will be made user-private.
+        If not specified, user credentials will not be stored.
+        """
+    )
+    def _user_cert_dir_changed(self, name, old, new):
+        # ensure dir exists
+        if not new:
+            return
+        try:
+            os.mkdir(new)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        # make it private
+        os.chmod(new, 0o700)
+        # double-check that it's private
+        mode = os.stat(new).st_mode
+        if mode & 0o077:
+            raise IOError("Bad permissions on user cert dir %r: %o" % (new, mode))
 
     oauth_client = Instance(OAuthClient)
     def _oauth_client_default(self):
@@ -149,7 +176,6 @@ class CILogonOAuthenticator(OAuthenticator):
         # FIXME: handle failure
         reply = resp.body.decode('utf8', 'replace')
         _, cert_txt = reply.split('\n', 1)
-        
         cert = load_certificate(FILETYPE_PEM, cert_txt)
         username = None
         for i in range(cert.get_extension_count()):
@@ -160,7 +186,32 @@ class CILogonOAuthenticator(OAuthenticator):
                 username = data[4:].decode('utf8').lower()
                 # workaround notebook bug not handling @
                 username = username.replace('@', '.')
-                return username
+                break
+        if username is None:
+            raise ValueError("Failed to get username from cert: %s", cert_txt)
+        
+        return username, cert_txt
+    
+    def _user_cert_path(self, username):
+        return os.path.join(self.user_cert_dir, username + '.crt')
+    
+    def save_user_cert(self, username, cert):
+        """Save the certificate for a given user in self.user_cert_dir"""
+        if not self.user_cert_dir:
+            return
+        cert_path = self._user_cert_path(username)
+        self.log.info("Saving cert for %s in %s", username, cert_path)
+        with open(cert_path, 'w') as f:
+            f.write(cert)
+    
+    def user_cert(self, username):
+        """Get the certificate for a user by name"""
+        if not self.user_cert_dir:
+            # not storing certs
+            return
+        # FIXME: handle cert file missing?
+        with open(self._user_cert_path(username)) as f:
+            return f.read()
     
     @gen.coroutine
     def authenticate(self, handler):
@@ -169,10 +220,70 @@ class CILogonOAuthenticator(OAuthenticator):
             handler.get_argument('oauth_token'),
             handler.get_argument('oauth_verifier'),
         )
-        username = yield self.username_from_token(token)
+        username, cert = yield self.username_from_token(token)
         if not username:
             return
         if not self.check_whitelist(username):
             self.log.warn("Rejecting user not in whitelist: %s", username)
             return
+        self.save_user_cert(username, cert)
         return username
+
+
+class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
+    """A version that mixes in local system user creation"""
+    pass
+
+
+class CILogonSpawnerMixin(Configurable):
+    """Spawner Mixin for staging the CILogon cert file"""
+    
+    cert_file_path = Unicode("cilogon.crt", config=True,
+        help="The path (relative to home) where the CILogon cert should be placed.")
+    
+    def get_user_info(self):
+        """Get the user's home dir, uid, gid, for resolving relative cert_file_path.
+        
+        Returns a dict with 'home', 'uid', 'gid' keys.
+        
+        By default, populated from pwd.getpwname(self.user.name).
+        """
+        pw_struct = pwd.getpwnam(self.user.name)
+        return {
+            'home': pw_struct.pw_dir,
+            'uid': pw_struct.pw_uid,
+            'gid': pw_struct.pw_gid,
+        }
+    
+    _cert = None
+    @property
+    def cert(self):
+        if self._cert is None:
+            self._cert = self.authenticator.user_cert(self.user.name)
+        return self._cert
+    
+    def stage_cert_file(self):
+        """Stage the CILogon user cert for the spawner.
+        
+        Override for Spawners not on the local filesystem.
+        """
+        if not self.cert:
+            self.log.info("No cert found for %s", self.user.name)
+        
+        uinfo = self.get_user_info()
+        dst = os.path.join(uinfo['home'], self.cert_file_path)
+        self.log.info("Staging cert for %s: %s", self.user.name, dst)
+        
+        with open(dst, 'w') as f:
+            fd = f.fileno()
+            os.fchmod(fd, 0o600) # make private before writing content
+            f.write(self.cert)
+            # set user as owner
+            os.fchown(fd, uinfo['uid'], uinfo['gid'])
+    
+    @gen.coroutine
+    def start(self):
+        result = yield gen.maybe_future(super().start())
+        self.stage_cert_file()
+        return result
+
