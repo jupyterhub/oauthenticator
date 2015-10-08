@@ -61,7 +61,7 @@ class CILogonHandler(BaseHandler):
     def get(self):
         token = yield self.authenticator.get_oauth_token()
         self.redirect(url_concat(self.authenticator.authorization_url,
-            {'oauth_token': token}))
+            {'oauth_token': token, 'cilogon_skin': self.authenticator.cilogon_skin}))
 
 
 class CILogonOAuthenticator(OAuthenticator):
@@ -76,6 +76,7 @@ class CILogonOAuthenticator(OAuthenticator):
     login_service = "CILogon"
     
     authorization_url = "https://cilogon.org/delegate"
+    cilogon_skin = "xsede"
     oauth_url = "https://cilogon.org/oauth"
     
     login_handler = CILogonHandler
