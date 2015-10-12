@@ -284,7 +284,32 @@ class CILogonSpawnerMixin(Configurable):
     
     @gen.coroutine
     def start(self):
+        yield gen.maybe_future(self.stage_cert_file())
         result = yield gen.maybe_future(super().start())
-        self.stage_cert_file()
+        return result
+    
+    def unstage_cert_file(self):
+        """Unstage user cert
+        
+        called after stopping
+        """
+        uinfo = self.get_user_info()
+        dst = os.path.join(uinfo['home'], self.cert_file_path)
+        if not os.path.exists(dst):
+            self.log.debug("No cert for %s: %s", self.user.name, dst)
+            return
+        self.log.info("Unstaging cert for %s: %s", self.user.name, dst)
+        try:
+            os.remove(dst)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                pass
+            self.log.error("Failed to unstage cert for %s (%s): %s",
+                self.user.name, dst, e)
+        
+    @gen.coroutine
+    def stop(self):
+        result = yield gen.maybe_future(super().stop())
+        yield gen.maybe_future(self.unstage_cert_file())
         return result
 
