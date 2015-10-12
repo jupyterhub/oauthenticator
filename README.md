@@ -16,11 +16,11 @@ container.
 
 First, install dependencies:
 
-    pip install -r requirements.txt
+    pip3 install -r requirements.txt
 
 Then, install the package:
 
-    python setup.py install
+    python3 setup.py install
 
 ## Setup
 
