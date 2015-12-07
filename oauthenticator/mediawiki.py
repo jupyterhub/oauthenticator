@@ -58,7 +58,11 @@ class MWLoginHandler(BaseHandler):
 
         redirect, request_token = yield self.executor.submit(handshaker.initiate)
 
-        self.set_secure_cookie('mw_oauth_request_token', jsonify(request_token))
+        self.set_secure_cookie(
+            'mw_oauth_request_token',
+            jsonify(request_token),
+            expires_days=1,
+            path=self.base_url)
         self.log.info('oauth redirect: %r', redirect)
 
         self.redirect(redirect)
@@ -84,6 +88,7 @@ class MWOAuthHandler(BaseHandler):
             self.authenticator.mw_index_url, consumer_token
         )
         request_token = dejsonify(self.get_secure_cookie('mw_oauth_request_token'))
+        self.clear_cookie('mw_oauth_request_token')
         access_token = yield self.executor.submit(
             handshaker.complete, request_token, self.request.query
         )
