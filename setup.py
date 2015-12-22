@@ -58,6 +58,9 @@ setup_args = dict(
     ],
 )
 
+if 'bdist_wheel' in sys.argv:
+    import setuptools
+
 # setuptools requirements
 if 'setuptools' in sys.modules:
     setup_args['install_requires'] = install_requires = []
