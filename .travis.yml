@@ -1,0 +1,10 @@
+language: python
+sudo: false
+python:
+  - "3.4"
+  - "3.5"
+install:
+  - "pip install -r requirements.txt"
+  - python setup.py install
+script:
+  - python -c 'import oauthenticator'
