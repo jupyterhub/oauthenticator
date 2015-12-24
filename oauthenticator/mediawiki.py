@@ -24,7 +24,7 @@ from oauthenticator import OAuthenticator
 
 # Name of cookie used to pass auth token between the oauth
 # login and authentication phase
-AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v1'
+AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v2'
 
 # Helpers to jsonify/de-jsonify request_token
 # It is a named tuple with bytestrings, json.dumps balks
