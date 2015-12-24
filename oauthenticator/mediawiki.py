@@ -62,7 +62,8 @@ class MWLoginHandler(BaseHandler):
             'mw_oauth_request_token',
             jsonify(request_token),
             expires_days=1,
-            path=self.base_url)
+            path=url_path_join(self.base_url, 'hub', 'oauth_callback'),
+            httponly=True)
         self.log.info('oauth redirect: %r', redirect)
 
         self.redirect(redirect)
