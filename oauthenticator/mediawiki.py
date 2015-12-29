@@ -22,6 +22,10 @@ from traitlets import Unicode
 from oauthenticator import OAuthenticator
 
 
+# Name of cookie used to pass auth token between the oauth
+# login and authentication phase
+AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v2'
+
 # Helpers to jsonify/de-jsonify request_token
 # It is a named tuple with bytestrings, json.dumps balks
 def jsonify(request_token):
@@ -59,10 +63,11 @@ class MWLoginHandler(BaseHandler):
         redirect, request_token = yield self.executor.submit(handshaker.initiate)
 
         self.set_secure_cookie(
-            'mw_oauth_request_token',
+            AUTH_REQUEST_COOKIE_NAME,
             jsonify(request_token),
             expires_days=1,
-            path=self.base_url)
+            path=url_path_join(self.base_url, 'hub', 'oauth_callback'),
+            httponly=True)
         self.log.info('oauth redirect: %r', redirect)
 
         self.redirect(redirect)
@@ -87,8 +92,8 @@ class MWOAuthHandler(BaseHandler):
         handshaker = Handshaker(
             self.authenticator.mw_index_url, consumer_token
         )
-        request_token = dejsonify(self.get_secure_cookie('mw_oauth_request_token'))
-        self.clear_cookie('mw_oauth_request_token')
+        request_token = dejsonify(self.get_secure_cookie(AUTH_REQUEST_COOKIE_NAME))
+        self.clear_cookie(AUTH_REQUEST_COOKIE_NAME)
         access_token = yield self.executor.submit(
             handshaker.complete, request_token, self.request.query
         )
