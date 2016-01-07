@@ -16,7 +16,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode
+from traitlets import Unicode, Dict
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -53,6 +53,13 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
     login_handler = GitHubLoginHandler
+    
+    github_to_nix_usernames_map = Dict(config=True, 
+        help="""Optional dict to remap github usernames to nix usernames.
+        
+        User github usernames for keys and existing nix usernames as values.
+        cf https://github.com/jupyter/oauthenticator/issues/28 
+        """)
     
     @gen.coroutine
     def authenticate(self, handler):
@@ -99,10 +106,16 @@ class GitHubOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
         
-        username = resp_json["login"]
-        if self.whitelist and username not in self.whitelist:
-            username = None
-        return username
+        github_username = resp_json["login"]
+        #remap gihub username to system username
+        if self.github_to_nix_usernames_map and github_username in self.github_to_nix_usernames_map.keys():
+            nix_username = self.github_to_nix_usernames_map[github_username]
+        else:
+            nix_username = github_username
+        #check system username against whitelist
+        if self.whitelist and nix_username not in self.whitelist:
+            nix_username = None
+        return nix_username
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
