@@ -21,6 +21,7 @@ class OAuthLoginHandler(BaseHandler):
     
     Typically subclasses will need
     """
+    scope = []
 
     def get(self):
         guess_uri = '{proto}://{host}{path}'.format(
@@ -38,7 +39,7 @@ class OAuthLoginHandler(BaseHandler):
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
-            scope=[],
+            scope=self.scope,
             response_type='code')
 
 
