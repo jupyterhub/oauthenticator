@@ -1,6 +1,6 @@
 # OAuthenticator
 
-Example of running [JupyterHub](https://github.com/jupyter/jupyterhub)
+Example of running [JupyterHub](https://github.com/jupyterhub/jupyterhub)
 with [GitHub OAuth](https://developer.github.com/v3/oauth/) for authentication.
 
 ## setup
@@ -25,7 +25,7 @@ river
 
 Build the container with:
 
-    docker build -t jupyter/oauthenticator .
+    docker build -t jupyterhub-oauth .
 
 ### ssl
 
@@ -37,6 +37,6 @@ ssl/ssl.cert.
 Add your oauth client id, client secret, and callback URL to the `env file`.
 Once you have built the container, you can run it with:
 
-    docker run -it -p 8000:8000 --env-file=env jupyter/oauthenticator
+    docker run -it -p 8000:8000 --env-file=env jupyterhub-oauth
 
 Which will run the Jupyter server.

@@ -58,7 +58,7 @@ class GitHubOAuthenticator(OAuthenticator):
                         help="""Optional dict to remap github usernames to nix usernames.
         
         User github usernames for keys and existing nix usernames as values.
-        cf https://github.com/jupyter/oauthenticator/issues/28 
+        cf https://github.com/jupyterhub/oauthenticator/issues/28
         """)
     
     @gen.coroutine

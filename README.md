@@ -8,7 +8,7 @@ For an example docker image using OAuthenticator, see the [example](example)
 directory.
 
 There is [another
-example](https://github.com/jupyter/dockerspawner/tree/master/examples/oauth)
+example](https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth)
 for using GitHub OAuth to spawn each user's server in a separate docker
 container.
 
@@ -20,7 +20,7 @@ Install with pip:
 
 Or clone the repo and do a dev install:
 
-    git clone https://github.com/jupyter/oauthenticator.git
+    git clone https://github.com/jupyterhub/oauthenticator.git
     cd oauthenticator
     pip3 install -e .
 
