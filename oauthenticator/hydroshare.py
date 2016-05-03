@@ -47,7 +47,6 @@ class HydroShareOAuthenticator(OAuthenticator):
         if not code:
             raise web.HTTPError(400, "oauth callback made without a token")
 
-        # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
 
         # POST request parameters for HydroShare  
@@ -94,11 +93,13 @@ class HydroShareOAuthenticator(OAuthenticator):
         
         # remap hydroshare username to system username
         nix_username = self.username_map.get(hs_username, hs_username)
-
+        
         #check system username against whitelist
-        if self.whitelist and nix_username not in self.whitelist:
-            self.log.error('Username not in whitelist: %s' % nix_username)
-            nix_username = None
+        use_whitelist = os.environ('HYDROSHARE_USE_WHITELIST') or True
+        if use_whitelist:
+            if self.whitelist and nix_username not in self.whitelist:
+                self.log.error('Username not in whitelist: %s' % nix_username)
+                nix_username = None
         return nix_username
 
 
