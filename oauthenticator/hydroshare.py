@@ -95,7 +95,7 @@ class HydroShareOAuthenticator(OAuthenticator):
         nix_username = self.username_map.get(hs_username, hs_username)
         
         #check system username against whitelist
-        use_whitelist = os.environ('HYDROSHARE_USE_WHITELIST') or True
+        use_whitelist = int(os.getenv('HYDROSHARE_USE_WHITELIST', '1'))
         if use_whitelist:
             if self.whitelist and nix_username not in self.whitelist:
                 self.log.error('Username not in whitelist: %s' % nix_username)
