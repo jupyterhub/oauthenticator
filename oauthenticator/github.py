@@ -54,15 +54,8 @@ class GitHubOAuthenticator(OAuthenticator):
     client_secret_env = 'GITHUB_CLIENT_SECRET'
     login_handler = GitHubLoginHandler
     
-    username_map = Dict(config=True, default_value={},
-                        help="""Optional dict to remap github usernames to nix usernames.
-        
-        User github usernames for keys and existing nix usernames as values.
-        cf https://github.com/jupyterhub/oauthenticator/issues/28
-        """)
-    
     @gen.coroutine
-    def authenticate(self, handler):
+    def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
         if not code:
             raise web.HTTPError(400, "oauth callback made without a token")
@@ -105,15 +98,8 @@ class GitHubOAuthenticator(OAuthenticator):
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        
-        github_username = resp_json["login"]
-        #remap gihub username to system username
-        nix_username = self.username_map.get(github_username, github_username)
 
-        #check system username against whitelist
-        if self.whitelist and nix_username not in self.whitelist:
-            nix_username = None
-        return nix_username
+        return resp_json["login"]
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):

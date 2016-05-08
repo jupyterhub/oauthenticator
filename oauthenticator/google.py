@@ -53,7 +53,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
-        username = yield self.authenticator.authenticate(self)
+        username = yield self.authenticator.get_authenticated_username(self, None)
         self.log.info('google: username: "%s"', username)
         if username:
             user = self.user_from_username(username)
@@ -80,7 +80,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     )
 
     @gen.coroutine
-    def authenticate(self, handler):
+    def authenticate(self, handler, data=None):
         code = handler.get_argument('code', False)
         if not code:
             raise HTTPError(400, "oauth callback made without a token") 
@@ -117,10 +117,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             else:
                 username = username.split('@')[0]
 
-            if self.whitelist and username not in self.whitelist:
-                raise HTTPError(403, "User is not authorized")
-
-        raise gen.Return(username)
+        return username
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
     """A version that mixes in local system user creation"""
