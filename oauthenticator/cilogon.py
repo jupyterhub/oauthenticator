@@ -215,7 +215,7 @@ class CILogonOAuthenticator(OAuthenticator):
             return f.read()
     
     @gen.coroutine
-    def authenticate(self, handler):
+    def authenticate(self, handler, data=None):
         """Called on the OAuth callback"""
         token = yield self.get_user_token(
             handler.get_argument('oauth_token'),
@@ -223,9 +223,6 @@ class CILogonOAuthenticator(OAuthenticator):
         )
         username, cert = yield self.username_from_token(token)
         if not username:
-            return
-        if not self.check_whitelist(username):
-            self.log.warn("Rejecting user not in whitelist: %s", username)
             return
         self.save_user_cert(username, cert)
         return username

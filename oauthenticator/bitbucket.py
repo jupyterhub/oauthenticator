@@ -40,7 +40,7 @@ class BitbucketOAuthenticator(OAuthenticator):
     )
 
     @gen.coroutine
-    def authenticate(self, handler):
+    def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
         if not code:
             raise web.HTTPError(400, "oauth callback made without a token")
@@ -86,11 +86,7 @@ class BitbucketOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        username = resp_json["username"]
-        whitelisted = yield self.check_whitelist(username, headers)
-        if not whitelisted:
-            username = None
-        return username
+        return resp_json["username"]
 
     def check_whitelist(self, username, headers):
         if self.team_whitelist:
