@@ -24,9 +24,30 @@ class HydroShareMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = 'https://www.hydroshare.org/o/token'
 
 
-class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
-    pass
+class HydroShareLoginHandler(OAuthLoginHandler):
+    scope = []
+    url = ''
 
+    def get(self):
+        url = self.request.host
+        self.log.info('login url recieved: ' + url
+        guess_uri = '{proto}://{host}{path}'.format(
+            proto=self.request.protocol,
+            host=self.request.host,
+            path=url_path_join(
+                self.hub.server.base_url,
+                'oauth_callback'
+            )
+        )
+        
+        redirect_uri = self.authenticator.oauth_callback_url or guess_uri
+        self.log.info('oauth redirect: %r', redirect_uri)
+        
+        self.authorize_redirect(
+            redirect_uri=redirect_uri,
+            client_id=self.authenticator.client_id,
+            scope=self.scope,
+            response_type='code')
 
 class HydroShareOAuthenticator(OAuthenticator):
 
@@ -103,7 +124,17 @@ class HydroShareOAuthenticator(OAuthenticator):
         return nix_username
 
 
-class LocalHydroShareOAuthenticator(LocalAuthenticator, HydroShareOAuthenticator):
+class HydroShareCallbackHandler(OAuthCallbackHandler):
+    
+    """Basic handler for OAuth callback. Calls authenticator to verify username."""
+    @gen.coroutine
+    def get(self):
+        self.log.info('Inside HydroShareCallbackHandler')
+        username = yield self.authenticator.get_authenticated_user(self, None)
 
-    """A version that mixes in local system user creation"""
-    pass
+        if username:
+            user = self.user_from_username(username)
+            self.set_login_cookie(user)
+            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+        else:
+            raise web.HTTPError(403)
