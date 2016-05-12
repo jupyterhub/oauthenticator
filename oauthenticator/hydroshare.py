@@ -13,24 +13,27 @@ from tornado import gen, web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from jupyterhub.auth import LocalAuthenticator
+from jupyterhub.handlers import BaseHandler
+from jupyterhub.auth import LocalAuthenticator, Authenticator
+from jupyterhub.utils import url_path_join
 
 from traitlets import Unicode, Dict
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthLoginHandler, OAuthenticator, OAuthCallbackHandler
 
 class HydroShareMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = 'https://www.hydroshare.org/o/authorize'
     _OAUTH_ACCESS_TOKEN_URL = 'https://www.hydroshare.org/o/token'
 
 
-class HydroShareLoginHandler(OAuthLoginHandler):
-    scope = []
-    url = ''
+class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
 
     def get(self):
-        url = self.request.host
-        self.log.info('login url recieved: ' + url
+        for k,v in self.settings.items():
+            if 'cookie' not in k:
+                print('%s: %s' % (k,v))
+        url = self.request.uri
+        self.log.info('login url recieved: ' + url)
         guess_uri = '{proto}://{host}{path}'.format(
             proto=self.request.protocol,
             host=self.request.host,
@@ -49,6 +52,21 @@ class HydroShareLoginHandler(OAuthLoginHandler):
             scope=self.scope,
             response_type='code')
 
+class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
+#    """Basic handler for OAuth callback. Calls authenticator to verify username."""
+    @gen.coroutine
+    def get(self):
+        self.log.info('Inside HydroShareCallbackHandler')
+        username = yield self.authenticator.get_authenticated_user(self, None)
+
+        if username:
+            self.log.info('base url: ' +self.request.uri)
+            user = self.user_from_username(username)
+            self.set_login_cookie(user)
+            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+        else:
+            raise web.HTTPError(403)
+
 class HydroShareOAuthenticator(OAuthenticator):
 
     login_service = "HydroShare"
@@ -56,13 +74,15 @@ class HydroShareOAuthenticator(OAuthenticator):
     client_id_env = 'HYDROSHARE_CLIENT_ID'
     client_secret_env = 'HYDROSHARE_CLIENT_SECRET'
     login_handler = HydroShareLoginHandler
+    callback_handler = HydroShareCallbackHandler
 
     username_map = Dict(config=True, default_value={},
                         help="""Optional dict to remap github usernames to nix usernames.
         """)
 
     @gen.coroutine
-    def authenticate(self, handler):
+    def authenticate(self, handler, data):
+        print('request uri: ' + handler.request.uri)
         code = handler.get_argument("code", False)
         self.log.info('code: ' + code)
         if not code:
@@ -124,17 +144,4 @@ class HydroShareOAuthenticator(OAuthenticator):
         return nix_username
 
 
-class HydroShareCallbackHandler(OAuthCallbackHandler):
-    
-    """Basic handler for OAuth callback. Calls authenticator to verify username."""
-    @gen.coroutine
-    def get(self):
-        self.log.info('Inside HydroShareCallbackHandler')
-        username = yield self.authenticator.get_authenticated_user(self, None)
 
-        if username:
-            user = self.user_from_username(username)
-            self.set_login_cookie(user)
-            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
-        else:
-            raise web.HTTPError(403)
