@@ -82,12 +82,16 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
             self.log.info('base url: ' +self.request.uri)
             user = self.user_from_username(username)
             self.set_login_cookie(user)
+            print('CALLBACKHANDLER REDIRECTING TO: '+next_url) 
 
             # redirect the user to the next uri, or the server homepage
-            if next_url is not None:
+            isvalid = 'oauth_login' not in next_url
+            if next_url is not None and isvalid:
                 self.redirect(next_url)
             else:
-                self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+                u = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
+                self.redirect(u)
+#                self.redirect(url_path_join(self.hub.server.base_url, 'home'))
         else:
             raise web.HTTPError(403)
 
