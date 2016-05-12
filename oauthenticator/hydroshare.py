@@ -21,6 +21,11 @@ from traitlets import Unicode, Dict
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator, OAuthCallbackHandler
 
+from urllib.parse import unquote
+
+# hold on the the next_url for redirecting after authentication
+next_url = None
+
 class HydroShareMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = 'https://www.hydroshare.org/o/authorize'
     _OAUTH_ACCESS_TOKEN_URL = 'https://www.hydroshare.org/o/token'
@@ -29,11 +34,9 @@ class HydroShareMixin(OAuth2Mixin):
 class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
 
     def get(self):
-        for k,v in self.settings.items():
-            if 'cookie' not in k:
-                print('%s: %s' % (k,v))
-        url = self.request.uri
-        self.log.info('login url recieved: ' + url)
+        # store the uri that was recieved
+        self.url = self.request.uri
+        print('LOGIN URL RECIEVED: ' + self.url)
         guess_uri = '{proto}://{host}{path}'.format(
             proto=self.request.protocol,
             host=self.request.host,
@@ -50,7 +53,23 @@ class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=self.scope,
-            response_type='code')
+            response_type='code',
+            callback=self.setNextUrl)
+
+    def setNextUrl(self):
+        # clean the next uri and generate an absolute path
+        clean_url = unquote(self.url.split('=')[-1]) 
+        redirect_url = '{proto}://{host}{path}'.format(
+            proto=self.request.protocol,
+            host=self.request.host,
+            path=clean_url
+        )
+
+        self.log.info('NEXT URL: ' + redirect_url)
+
+        # save this url path so that it can be accessed in the CallbackHandler
+        global next_url
+        next_url = redirect_url
 
 class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
 #    """Basic handler for OAuth callback. Calls authenticator to verify username."""
@@ -63,7 +82,12 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
             self.log.info('base url: ' +self.request.uri)
             user = self.user_from_username(username)
             self.set_login_cookie(user)
-            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+
+            # redirect the user to the next uri, or the server homepage
+            if next_url is not None:
+                self.redirect(next_url)
+            else:
+                self.redirect(url_path_join(self.hub.server.base_url, 'home'))
         else:
             raise web.HTTPError(403)
 
