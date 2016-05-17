@@ -22,10 +22,58 @@ from traitlets import Unicode, Dict
 from .oauth2 import OAuthLoginHandler, OAuthenticator, OAuthCallbackHandler
 
 from urllib.parse import unquote
+from pwd import getpwnam
+import grp
+import shutil
 
 # hold on the the next_url for redirecting after authentication
 next_url = None
 
+
+def build_userspace(username):
+
+    # make all usernames lowercase
+    husername = username.lower()
+    
+    # get the jupyter username
+    user = getpwnam('castro')  # todo: change to jupyter user
+    group = grp.getgrnam('users')
+    uid = user.pw_uid
+    gid = group.gr_gid
+
+    # check to see if user exists
+    basepath = os.path.abspath(os.path.join('/home/castro/userspace', '%s'%husername))  # todo userspace path should be set as environment variable
+    path = os.path.abspath(os.path.join(basepath, 'notebooks'))
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    file_paths = []
+    ipynb_dir = '../jupyter-rest-endpoint/notebooks'
+    for root, dirs, files in os.walk(ipynb_dir):
+        for file in files:
+            file_paths.append(os.path.join(os.path.abspath(root), file))
+    relpaths = [os.path.relpath(p, ipynb_dir) for p in file_paths]
+    for i in range(0, len(file_paths)):
+        src = file_paths[i]
+        dst = os.path.join(path, relpaths[i])
+        dirpath = os.path.dirname(dst)
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
+        print('copying: %s -> %s' %(src,dst))
+        shutil.copyfile(src, dst)
+
+    # change file ownership so that it can be accessed inside docker container
+    print('Modifying permissions for %s' % basepath)
+    os.chown(basepath, uid, gid)
+    for root, dirs, files in os.walk(basepath):
+        for d in dirs:
+            print('Modifying permissions for %s' % os.path.join(root,d))
+            os.chown(os.path.join(root, d), uid, gid)
+        for f in files:
+            print('Modifying permissions for %s' % os.path.join(root,f))
+            os.chown(os.path.join(root, f), uid, gid)
+        
+    
 class HydroShareMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = 'https://www.hydroshare.org/o/authorize'
     _OAUTH_ACCESS_TOKEN_URL = 'https://www.hydroshare.org/o/token'
@@ -79,6 +127,10 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
         username = yield self.authenticator.get_authenticated_user(self, None)
 
         if username:
+
+            # build userspace
+            build_userspace(username)
+
             self.log.info('base url: ' +self.request.uri)
             user = self.user_from_username(username)
             self.set_login_cookie(user)
