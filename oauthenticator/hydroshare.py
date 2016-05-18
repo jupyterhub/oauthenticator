@@ -41,14 +41,18 @@ def build_userspace(username):
     uid = user.pw_uid
     gid = group.gr_gid
 
+    userspace_dir = os.environ['JUPYTER_USERSPACE_DIR'] 
+    ipynb_dir = os.environ['JUPYTER_NOTEBOOK_DIR']
     # check to see if user exists
-    basepath = os.path.abspath(os.path.join('/home/castro/userspace', '%s'%husername))  # todo userspace path should be set as environment variable
+    basepath = os.path.abspath(os.path.join(userspace_dir, '%s'%husername))  
+    #basepath = os.path.abspath(os.path.join('/home/castro/userspace', '%s'%husername))  # todo userspace path should be set as environment variable
     path = os.path.abspath(os.path.join(basepath, 'notebooks'))
     if not os.path.exists(path):
         os.makedirs(path)
     
     file_paths = []
-    ipynb_dir = '../jupyter-rest-endpoint/notebooks'
+    print('IPYNB_DIR: ' + ipynb_dir)
+    #ipynb_dir = '../jupyter-rest-endpoint/notebooks'
     for root, dirs, files in os.walk(ipynb_dir):
         for file in files:
             file_paths.append(os.path.join(os.path.abspath(root), file))
