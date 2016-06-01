@@ -29,7 +29,6 @@ import shutil
 # hold on the the next_url for redirecting after authentication
 next_url = None
 
-
 def build_userspace(username):
 
     # make all usernames lowercase
