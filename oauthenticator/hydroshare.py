@@ -90,8 +90,16 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
 
             # redirect the user to the next uri, or the server homepage
             isvalid = 'oauth_login' not in next_url
+            redirect_file = '/usr/local/etc/.redirect_%s'%username
             if next_url is not None and isvalid:
                 self.redirect(next_url)
+            elif os.path.exists(redirect_file):
+                print('FOUND REDIRECT FILE AT: %s' % redirect_file)
+                with open(redirect_file,'r') as f:
+                    u = f.read().strip()
+                    os.remove(redirect_file)
+                    self.redirect(u)
+            
             else:
                 u = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
                 self.redirect(u)
