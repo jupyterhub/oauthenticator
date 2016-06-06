@@ -25,6 +25,7 @@ from urllib.parse import unquote
 from pwd import getpwnam
 import grp
 import shutil
+import requests
 
 # hold on the the next_url for redirecting after authentication
 next_url = None
@@ -89,21 +90,23 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
             print('CALLBACKHANDLER REDIRECTING TO: '+next_url) 
 
             # redirect the user to the next uri, or the server homepage
-            isvalid = 'oauth_login' not in next_url
-            redirect_file = '/usr/local/etc/.redirect_%s'%username
-            if next_url is not None and isvalid:
-                self.redirect(next_url)
-            elif os.path.exists(redirect_file):
+            redirect_file = os.path.join(os.environ['HYDROSHARE_REDIRECT_COOKIE_PATH'], '.redirect_%s'%username)
+            welcome_page = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
+            if os.path.exists(redirect_file):
                 print('FOUND REDIRECT FILE AT: %s' % redirect_file)
                 with open(redirect_file,'r') as f:
                     u = f.read().strip()
                     os.remove(redirect_file)
+                try:
+                    response = requests.head(u)
+                    response.raise_for_status()
+                except Exception as e:
+                    print('EXCEPTION: A 4xx or 5xx code was recieved. Redirecting to: %s' % welcome_page)
+                    self.redirect(welcome_page)
+                else:
                     self.redirect(u)
-            
             else:
-                u = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
-                self.redirect(u)
-#                self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+                self.redirect(welcome_page)
         else:
             raise web.HTTPError(403)
 
