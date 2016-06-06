@@ -97,14 +97,7 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
                 with open(redirect_file,'r') as f:
                     u = f.read().strip()
                     os.remove(redirect_file)
-                try:
-                    response = requests.head(u)
-                    response.raise_for_status()
-                except Exception as e:
-                    print('EXCEPTION: A 4xx or 5xx code was recieved. Redirecting to: %s' % welcome_page)
-                    self.redirect(welcome_page)
-                else:
-                    self.redirect(u)
+                self.redirect(u)
             else:
                 self.redirect(welcome_page)
         else:
