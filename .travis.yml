@@ -4,7 +4,7 @@ python:
   - "3.4"
   - "3.5"
 install:
-  - "pip install -r requirements.txt"
-  - python setup.py install
+  - pip install -r requirements.txt flake8 .
 script:
   - python -c 'import oauthenticator'
+  - flake8 oauthenticator
