@@ -1,6 +1,7 @@
+# include github, bitbucket, google here for backward-compatibility
+# don't add new oauthenticators here.
 from .oauth2 import *
 from .github import *
-from .gitlab import *
 from .bitbucket import *
 from .google import *
 
