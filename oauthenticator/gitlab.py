@@ -18,8 +18,6 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict
-
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support gitlab.com and gitlab community edition installations
