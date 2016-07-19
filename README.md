@@ -52,7 +52,41 @@ should add the following to your `jupyterhub_config.py`:
     c.GitHubOAuthenticator.oauth_callback_url = os.environ['OAUTH_CALLBACK_URL']
     c.GitHubOAuthenticator.client_id = os.environ['GITHUB_CLIENT_ID']
     c.GitHubOAuthenticator.client_secret = os.environ['GITHUB_CLIENT_SECRET']
-```  
+```
+
+You can use your own Github Enterprise instance by setting the `GITHUB_HOST` environment
+flag.
+## Gitlab Setup
+
+First, you'll need to create a [Gitlab OAuth
+application](http://docs.gitlab.com/ce/integration/oauth_provider.html). Make sure the
+callback URL is:
+
+    http[s]://[your-host]/hub/oauth_callback
+
+Where `[your-host]` is where your server will be running. Such as
+`example.com:8000`.
+
+Then, add the following to your `jupyterhub_config.py` file:
+
+    c.JupyterHub.authenticator_class = 'oauthenticator.gitlab.GitlabOAuthenticator'
+
+(you can also use `LocalGitlabOAuthenticator` to handle both local and Gitlab
+auth).
+
+You will additionally need to specify the OAuth callback URL, the client ID, and
+the client secret (you should have gotten these when you created your OAuth app
+on Gitlab). For example, if these values are in the environment variables
+`$OAUTH_CALLBACK_URL`, `$GITLAB_CLIENT_ID` and `$GITLAB_CLIENT_SECRET`, you
+should add the following to your `jupyterhub_config.py`:
+```
+    c.GitlabOAuthenticator.oauth_callback_url = os.environ['OAUTH_CALLBACK_URL']
+    c.GitlabOAuthenticator.client_id = os.environ['GITLAB_CLIENT_ID']
+    c.GitlabOAuthenticator.client_secret = os.environ['GITLAB_CLIENT_SECRET']
+```
+
+You can use your own Gitlab CE/EE instance by setting the `GITLAB_HOST` environment
+flag.
 ## Google Setup
 
 Visit https://console.developers.google.com to set up an OAuth client ID and secret. See [Google's documentation](https://developers.google.com/identity/protocols/OAuth2) on how to create OAUth 2.0 client credentials. The `Authorized JavaScript origins` should be set to to your hub's public address while `Authorized redirect URIs` should be set to the same but followed by `/hub/oauth_callback`.
