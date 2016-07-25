@@ -1,7 +1,7 @@
 """
-Custom Authenticator to use Gitlab OAuth with JupyterHub
+Custom Authenticator to use GitLab OAuth with JupyterHub
 
-Modified for Gitlab by Laszlo Dobos (@dobos)
+Modified for GitLab by Laszlo Dobos (@dobos)
 based on the GitHub plugin by Kyle Kelley (@rgbkrk) 
 """
 
@@ -24,22 +24,22 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 GITLAB_HOST = os.environ.get('GITLAB_HOST') or 'https://gitlab.com'
 GITLAB_API = '%s/api/v3/user' % GITLAB_HOST
 
-class GitlabMixin(OAuth2Mixin):
+class GitLabMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_HOST
     _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_HOST
 
 
-class GitlabLoginHandler(OAuthLoginHandler, GitlabMixin):
+class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
     pass
 
 
-class GitlabOAuthenticator(OAuthenticator):
+class GitLabOAuthenticator(OAuthenticator):
     
-    login_service = "Gitlab"
+    login_service = "GitLab"
         
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
-    login_handler = GitlabLoginHandler
+    login_handler = GitLabLoginHandler
     
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -49,11 +49,11 @@ class GitlabOAuthenticator(OAuthenticator):
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
         
-        # Exchange the OAuth code for a Gitlab Access Token
+        # Exchange the OAuth code for a GitLab Access Token
         #
         # See: https://github.com/gitlabhq/gitlabhq/blob/master/doc/api/oauth2.md
         
-        # Gitlab specifies a POST request yet requires URL parameters
+        # GitLab specifies a POST request yet requires URL parameters
         params = dict(
             client_id=self.client_id,
             client_secret=self.client_secret,
@@ -92,7 +92,7 @@ class GitlabOAuthenticator(OAuthenticator):
         return resp_json["username"]
 
 
-class LocalGitlabOAuthenticator(LocalAuthenticator, GitlabOAuthenticator):
+class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
