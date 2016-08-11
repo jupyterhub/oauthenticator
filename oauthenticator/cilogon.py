@@ -11,7 +11,7 @@ Setup:
 
 2. generate certificate request (interactive)
 
-       openssl req -new -key oauth-privkey.pem -out oauth-cert.csr
+       openssl req -new -key oauth-privkey.pem -out oauth-certreq.csr
 
 3. register with CILogon: https://cilogon.org/oauth/register
 4. save your client_id from the request.
