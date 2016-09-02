@@ -8,6 +8,12 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.5
+
+### [0.5.0] - 2016-09-02
+
+- Add GitLabOAuthenticator
+
 ## 0.4
 
 ### [0.4.1] - 2016-05-18
@@ -35,7 +41,8 @@ command line for details.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.4.1...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.5.0...HEAD
+[0.5.0]:https://github.com/jupyterhub/oauthenticator/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/jupyterhub/oauthenticator/compare/0.4.0...0.4.1
 [0.4.0]:https://github.com/jupyterhub/oauthenticator/compare/0.3.0...0.4.0
 [0.3]: https://github.com/jupyterhub/oauthenticator/compare/0.2.0...0.3.0
