@@ -41,7 +41,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
     headers = {"Accept": "application/json",
                "User-Agent": "JupyterHub",
-               "Authorization": "Bearer {}".format(access_token)
+               "Authorization": "Bearer {}"
                }
 
     @gen.coroutine
@@ -78,6 +78,8 @@ class BitbucketOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         access_token = resp_json['access_token']
+
+        self.headers["Authorization"] = self.headers["Authorization"].format(access_token)
 
         # Determine who the logged in user is
         req = HTTPRequest("https://api.bitbucket.org/2.0/user",
