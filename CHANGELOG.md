@@ -10,6 +10,10 @@ command line for details.
 
 ## 0.5
 
+### [0.5.1] - 2016-10-05
+
+- Fixes in BitbucketOAuthenticator.check_whitelist
+
 ### [0.5.0] - 2016-09-02
 
 - Add GitLabOAuthenticator
@@ -41,7 +45,8 @@ command line for details.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.5.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.5.1...HEAD
+[0.5.1]:https://github.com/jupyterhub/oauthenticator/compare/0.5.0...0.5.1
 [0.5.0]:https://github.com/jupyterhub/oauthenticator/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/jupyterhub/oauthenticator/compare/0.4.0...0.4.1
 [0.4.0]:https://github.com/jupyterhub/oauthenticator/compare/0.3.0...0.4.0
