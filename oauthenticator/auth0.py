@@ -11,18 +11,14 @@ The following environment variables may be used for configuration:
     OAUTH_CALLBACK_URI - Your callback handler URI
 
 Additionally, if you are concerned about your secrets being exposed by
-an env dump(I know I am!) you can create a function that returns them in 
-a dict and attach them to the config object for Auth0OAuthenticator.
+an env dump(I know I am!) you can set the client_secret, client_id and
+oauth_callback_url directly on the config for Auth0OAuthenticator.
 
 One instance of this could be adding the following to your jupyterhub_config.py :
 
-  def oauth_variable_config():
-    return {
-      'OAUTH_CLIENT_ID':'YOUR_CLIENT_ID',
-      'OAUTH_CLIENT_SECRET':'YOUR_CLIENT_SECRET',
-      'OAUTH_CALLBACK_URI':'YOUR_CALLBACK_URI'
-    }
-  c.Auth0OAuthenticator.oauth_variable_config = oauth_variable_config
+  c.Auth0OAuthenticator.client_id = 'YOUR_CLIENT_ID'
+  c.Auth0OAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
+  c.Auth0OAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
 
 If you are using the environment variable config, all you should need to
 do is define them in the environment then add the following line to 
@@ -36,17 +32,12 @@ jupyterhub_config.py :
 import json
 import os
 
-import logging
-
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
-from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
-
-from traitlets import Unicode, Any, default
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -58,42 +49,9 @@ class Auth0Mixin(OAuth2Mixin):
 
 
 class Auth0LoginHandler(OAuthLoginHandler, Auth0Mixin):
-    def get(self):
-        redirect_uri = self.authenticator.oauth_callback_url
-        self.authorize_redirect(
-            redirect_uri=redirect_uri,
-            client_id=self.authenticator.oauth_client_id,
-            scope=self.scope,
-            response_type='code')
+    pass
 
 class Auth0OAuthenticator(OAuthenticator):
-
-    oauth_variable_config = Any(
-        help="""Any callable that returns a dictionary of oauth variables by the following names:
-        OAUTH_CLIENT_ID
-        OAUTH_CLIENT_SECRET
-        OAUTH_CALLBACK_URI
-        """
-    ).tag(config=True)
-
-    def oauth_environment_variable_config(self):
-        return {
-            'OAUTH_CLIENT_ID' : os.getenv('OAUTH_CLIENT_ID',''),
-            'OAUTH_CLIENT_SECRET' : os.getenv('OAUTH_CLIENT_SECRET',''),
-            'OAUTH_CALLBACK_URI' : os.getenv('OAUTH_CALLBACK_URI','')
-        }
-
-    @default('oauth_variable_config')
-    def _get_default_oauth_variable_config(self):
-        return self.oauth_environment_variable_config
-
-    def __init__(self, *args, **kwargs):
-        super(Auth0OAuthenticator, self).__init__(*args, **kwargs)
-        oauth_config = self.oauth_variable_config()
-        self.oauth_client_id = oauth_config['OAUTH_CLIENT_ID']
-        self.oauth_client_secret = oauth_config['OAUTH_CLIENT_SECRET']
-        self.oauth_callback_uri = oauth_config['OAUTH_CALLBACK_URI']
-        self.oauth_callback_url = self.oauth_callback_uri
 
     login_service = "Auth0"
     
@@ -109,10 +67,10 @@ class Auth0OAuthenticator(OAuthenticator):
 
         params = {
             'grant_type': 'authorization_code',
-            'client_id': self.oauth_client_id,
-            'client_secret': self.oauth_client_secret,
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
             'code':code,
-            'redirect_uri': self.oauth_callback_uri
+            'redirect_uri': self.oauth_callback_url
         }
         url = "https://%s.auth0.com/oauth/token" % AUTH0_SUBDOMAIN
 
