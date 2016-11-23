@@ -18,6 +18,13 @@ from traitlets import Set
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
+
+def _api_headers(access_token):
+    return {"Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "Bearer {}".format(access_token)
+           }
+
 class BitbucketMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
     _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
@@ -39,10 +46,6 @@ class BitbucketOAuthenticator(OAuthenticator):
         help="Automatically whitelist members of selected teams",
     )
 
-    headers = {"Accept": "application/json",
-               "User-Agent": "JupyterHub",
-               "Authorization": "Bearer {}"
-               }
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -79,36 +82,31 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         access_token = resp_json['access_token']
 
-        self.headers["Authorization"] = self.headers["Authorization"].format(access_token)
 
         # Determine who the logged in user is
         req = HTTPRequest("https://api.bitbucket.org/2.0/user",
                           method="GET",
-                          headers=self.headers
+                          headers=_api_headers(access_token)
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return resp_json["username"]
+        username = resp_json["username"]
 
-    def check_whitelist(self, username, headers=None):
-        headers = headers if headers else self.headers
+        # Check if user is a member of any whitelisted teams.
+        # This check is performed here, as the check requires `access_token`.
         if self.team_whitelist:
-            return self._check_group_whitelist(username, headers)
-        else:
-            return self._check_user_whitelist(username)
+            user_in_team = yield self._check_team_whitelist(username, access_token)
+            return username if user_in_team else None
+        else:  # no team whitelisting
+            return username
 
     @gen.coroutine
-    def _check_user_whitelist(self, user):
-        return (not self.whitelist) or (user in self.whitelist)
-
-    @gen.coroutine
-    def _check_group_whitelist(self, username, headers=None):
+    def _check_team_whitelist(self, username, access_token):
         http_client = AsyncHTTPClient()
 
+        headers = _api_headers(access_token)
         # We verify the team membership by calling teams endpoint.
-        # Re-use the headers, change the request.
-        headers = headers if headers else self.headers
         next_page = url_concat("https://api.bitbucket.org/2.0/teams",
                                {'role': 'member'})
         user_teams = set()
