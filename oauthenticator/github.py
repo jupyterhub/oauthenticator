@@ -7,6 +7,7 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 
 import json
 import os
+import re
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -16,7 +17,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode
+from traitlets import Unicode, Set
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -26,6 +27,30 @@ if GITHUB_HOST == 'github.com':
     GITHUB_API = 'api.github.com/user'
 else:
     GITHUB_API = '%s/api/v3/user' % GITHUB_HOST
+
+
+def _api_headers(access_token):
+    return {"Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "token {}".format(access_token)
+           }
+
+
+def _get_next_page(response):
+    # Github uses Link headers for pagination.
+    # See https://developer.github.com/v3/#pagination
+    link_header = response.headers.get('Link')
+    if not link_header:
+        return
+    # parse the Link header; is this regex general enough?
+    link_regex = r',? *< *(.*?) *> *; *rel="(.*?)"'
+    for link_url, link_type in re.findall(link_regex, link_header):
+        if link_type == 'next':
+            return link_url
+    # if no "next" page, this is the last one
+    return None
+
+
 
 class GitHubMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://%s/login/oauth/authorize" % GITHUB_HOST
@@ -53,6 +78,12 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
     login_handler = GitHubLoginHandler
+
+    github_organization_whitelist = Set(
+        config=True,
+        help="Automatically whitelist members of selected organizations",
+    )
+
     
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -88,18 +119,40 @@ class GitHubOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
         
         # Determine who the logged in user is
-        headers={"Accept": "application/json",
-                 "User-Agent": "JupyterHub",
-                 "Authorization": "token {}".format(access_token)
-        }
         req = HTTPRequest("https://%s" % GITHUB_API,
                           method="GET",
-                          headers=headers
+                          headers=_api_headers(access_token)
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return resp_json["login"]
+        username =  resp_json["login"]
+
+        # Check if user is a member of any whitelisted organizations.
+        # This check is performed here, as it requires `access_token`.
+        if self.github_organization_whitelist:
+            user_in_org = yield self._check_organization_whitelist(username, access_token)
+            return username if user_in_org else None
+        else:  # no organization whitelisting
+            return username
+
+
+    @gen.coroutine
+    def _check_organization_whitelist(self, username, access_token):
+        http_client = AsyncHTTPClient()
+        headers = _api_headers(access_token)
+        # Get all the user's organizations
+        next_page = "https://%s/orgs" % GITHUB_API
+        user_orgs = set()
+        while next_page:
+            req = HTTPRequest(next_page, method="GET", headers=headers)
+            resp = yield http_client.fetch(req)
+            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+            next_page = _get_next_page(resp)
+            user_orgs |= set(entry["login"] for entry in resp_json)
+        # check if any of the organizations are in the whitelist
+        return len(self.github_organization_whitelist & user_orgs) > 0
+
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
