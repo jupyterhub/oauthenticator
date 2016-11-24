@@ -46,6 +46,13 @@ class BitbucketOAuthenticator(OAuthenticator):
         help="Automatically whitelist members of selected teams",
     )
 
+    bitbucket_team_whitelist = team_whitelist
+
+
+    headers = {"Accept": "application/json",
+               "User-Agent": "JupyterHub",
+               "Authorization": "Bearer {}"
+               }
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -95,7 +102,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         # Check if user is a member of any whitelisted teams.
         # This check is performed here, as the check requires `access_token`.
-        if self.team_whitelist:
+        if self.bitbucket_team_whitelist:
             user_in_team = yield self._check_team_whitelist(username, access_token)
             return username if user_in_team else None
         else:  # no team whitelisting
@@ -118,7 +125,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
             user_teams |= \
                 set([entry["username"] for entry in resp_json["values"]])
-        return len(self.team_whitelist & user_teams) > 0
+        return len(self.bitbucket_team_whitelist & user_teams) > 0
 
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator,
