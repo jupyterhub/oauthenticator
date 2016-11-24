@@ -18,11 +18,36 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
+from traitlets import Set
+
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support gitlab.com and gitlab community edition installations
 GITLAB_HOST = os.environ.get('GITLAB_HOST') or 'https://gitlab.com'
-GITLAB_API = '%s/api/v3/user' % GITLAB_HOST
+GITLAB_API = '%s/api/v3' % GITLAB_HOST
+
+
+def _api_headers(access_token):
+    return {"Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "token {}".format(access_token)
+           }
+
+
+def _get_next_page(response):
+    # Gitlab uses Link headers for pagination.
+    # See https://docs.gitlab.com/ee/api/README.html#pagination-link-header
+    link_header = response.headers.get('Link')
+    if not link_header:
+        return
+    # parse the Link header; is this regex general enough?
+    link_regex = r',? *< *(.*?) *> *; *rel="(.*?)"'
+    for link_url, link_type in re.findall(link_regex, link_header):
+        if link_type == 'next':
+            return link_url
+    # if no "next" page, this is the last one
+    return None
+
 
 class GitLabMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_HOST
@@ -40,6 +65,12 @@ class GitLabOAuthenticator(OAuthenticator):
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
     login_handler = GitLabLoginHandler
+
+    gitlab_group_whitelist = Set(
+        config=True,
+        help="Automatically whitelist members of selected groups",
+    )
+
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -81,18 +112,57 @@ class GitLabOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
 
         # Determine who the logged in user is
-        headers={"Accept": "application/json",
-                 "User-Agent": "JupyterHub",
-        }
-        req = HTTPRequest("%s?access_token=%s" % (GITLAB_API, access_token),
+        req = HTTPRequest("%s/user" % GITLAB_API,
                           method="GET",
                           validate_cert=validate_server_cert,
-                          headers=headers
+                          headers=_api_headers(access_token)
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return resp_json["username"]
+        username = resp_json["username"]
+        user_id = resp_json["id"]
+        is_admin = resp_json["is_admin"]
+
+        # Check if user is a member of any whitelisted organizations.
+        # This check is performed here, as it requires `access_token`.
+        if self.gitlab_group_whitelist:
+            user_in_group = yield self._check_group_whitelist(
+                username, user_id, is_admin, access_token)
+            return username if user_in_group else None
+        else:  # no organization whitelisting
+            return username
+
+
+    @gen.coroutine
+    def _check_group_whitelist(self, username, user_id, is_admin, access_token):
+        http_client = AsyncHTTPClient()
+        headers = _api_headers(access_token)
+        if is_admin:
+            # For admins, /groups returns *all* groups. As a workaround
+            # we check if we are a member of each group in the whitelist
+            for group in self.gitlab_group_whitelist:
+                group_id = _get_group_id(group, headers)
+                 url = "%s/groups/%d/members/%d" % (GITLAB_API, group_id, user_id)
+                req = HTTPRequest(url, method="GET", headers=headers)
+                resp = yield http_client.fetch(req)
+                if resp.code == 200:
+                    return True  # user _is_ in group
+        else:
+            # For regular users we get all the groups to which they have access
+            # and check if any of these are in the whitelisted groups
+            next_page = url_concat("%s/groups" % GITLAB_API,
+                                   dict(all_available=True))
+            user_groups = set()
+            while next_page:
+                req = HTTPRequest(next_page, method="GET", headers=headers)
+                resp = yield http_client.fetch(req)
+                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+                next_page = _get_next_page(resp)
+                user_groups |= set(entry["path"] for entry in resp_json)
+            # check if any of the organizations are in the whitelist
+            return len(self.gitlab_group_whitelist & user_orgs) > 0
+
 
 
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
