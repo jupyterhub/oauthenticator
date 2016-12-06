@@ -51,7 +51,7 @@ from jupyterhub.utils import url_path_join as ujoin
 
 from traitlets import Unicode, Instance
 
-from .oauth2 import OAuthenticator
+from .base import OAuthenticator
 
 
 class CILogonHandler(BaseHandler):

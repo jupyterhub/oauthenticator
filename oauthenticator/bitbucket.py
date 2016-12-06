@@ -16,7 +16,7 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Set
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .base import OAuthLoginHandler, OAuthenticator
 
 
 def _api_headers(access_token):
@@ -26,8 +26,8 @@ def _api_headers(access_token):
            }
 
 class BitbucketMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
-    _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
+    _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/base/authorize"
+    _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/base/access_token"
 
 
 class BitbucketLoginHandler(OAuthLoginHandler, BitbucketMixin):
@@ -64,7 +64,7 @@ class BitbucketOAuthenticator(OAuthenticator):
         )
 
         url = url_concat(
-            "https://bitbucket.org/site/oauth2/access_token", params)
+            "https://bitbucket.org/site/base/access_token", params)
         self.log.info(url)
 
         bb_header = {"Content-Type":

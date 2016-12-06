@@ -18,7 +18,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .base import OAuthLoginHandler, OAuthenticator
 
 # Support gitlab.com and gitlab community edition installations
 GITLAB_HOST = os.environ.get('GITLAB_HOST') or 'https://gitlab.com'
@@ -51,7 +51,7 @@ class GitLabOAuthenticator(OAuthenticator):
         
         # Exchange the OAuth code for a GitLab Access Token
         #
-        # See: https://github.com/gitlabhq/gitlabhq/blob/master/doc/api/oauth2.md
+        # See: https://github.com/gitlabhq/gitlabhq/blob/master/doc/api/base.md
         
         # GitLab specifies a POST request yet requires URL parameters
         params = dict(
