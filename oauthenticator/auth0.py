@@ -39,7 +39,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from .base import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 AUTH0_SUBDOMAIN = os.getenv('AUTH0_SUBDOMAIN')
 

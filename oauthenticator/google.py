@@ -16,7 +16,7 @@ from traitlets           import Unicode
 from jupyterhub.auth     import LocalAuthenticator
 from jupyterhub.utils    import url_path_join
 
-from .base import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
+from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's

@@ -18,7 +18,7 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode
 
-from .base import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support github.com and github enterprise installations
 GITHUB_HOST = os.environ.get('GITHUB_HOST') or 'github.com'

@@ -1,135 +1,111 @@
 """
-Custom Authenticator to use generic OAuth2 with JupyterHub
+Base classes for Custom Authenticator to use GitHub OAuth with JupyterHub
+
+Most of the code c/o Kyle Kelley (@rgbkrk)
 """
 
 
-import json
 import os
-import base64
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from jupyterhub.handlers import BaseHandler
+from jupyterhub.auth import Authenticator
+from jupyterhub.utils import url_path_join
 
-from jupyterhub.auth import LocalAuthenticator
-
-from traitlets import Unicode, Dict
-
-from .base import OAuthLoginHandler, OAuthenticator, guess_callback_uri
+from traitlets import Unicode
 
 
-class OAuth2EnvMixin(OAuth2Mixin):
-    _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
-    _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
-
-
-class OAuth2LoginHandler(OAuthLoginHandler, OAuth2EnvMixin):
-    pass
-
-
-class OAuth2OAuthenticator(OAuthenticator):
-
-    login_service = "OAuth2"
-
-    client_id_env = 'OAUTH2_CLIENT_ID'
-    client_secret_env = 'OAUTH2_CLIENT_SECRET'
-    login_handler = OAuth2LoginHandler
-
-    userdata_url = Unicode(
-        os.environ.get('OAUTH2_USERDATA_URL', ''),
-        config=True,
-        help="Userdata url to get user data login information"
-    )
-    username_key = Unicode(
-        os.environ.get('OAUTH2_USERNAME_KEY', 'username'),
-        config=True,
-        help="Userdata username key from returned json for USERDATA_URL"
-    )
-    userdata_params = Dict(
-        os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
-        help="Userdata params to get user data login information"
-    ).tag(config=True)
-
-    userdata_method = Unicode(
-        os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
-        config=True,
-        help="Userdata method to get user data login information"
+def guess_callback_uri(protocol, host, hub_server_url):
+    return '{proto}://{host}{path}'.format(
+        proto=protocol,
+        host=host,
+        path=url_path_join(
+            hub_server_url,
+            'oauth_callback'
+        )
     )
 
-    token_url = Unicode(
-        os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
+
+class OAuthLoginHandler(BaseHandler):
+    """Base class for OAuth login handler
+
+    Typically subclasses will need
+    """
+    scope = []
+
+    def get(self):
+        guess_uri = guess_callback_uri(
+            self.request.protocol,
+            self.request.host,
+            self.hub.server.base_url
+        )
+
+        redirect_uri = self.authenticator.oauth_callback_url or guess_uri
+        self.log.info('oauth redirect: %r', redirect_uri)
+        self.authorize_redirect(
+            redirect_uri=redirect_uri,
+            client_id=self.authenticator.client_id,
+            scope=self.scope,
+            response_type='code')
+
+
+class OAuthCallbackHandler(BaseHandler):
+    """Basic handler for OAuth callback. Calls authenticator to verify username."""
+    @gen.coroutine
+    def get(self):
+        # TODO: Check if state argument needs to be checked
+        username = yield self.authenticator.get_authenticated_user(self, None)
+
+        if username:
+            user = self.user_from_username(username)
+            self.set_login_cookie(user)
+            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+        else:
+            # todo: custom error page?
+            raise web.HTTPError(403)
+
+
+class OAuthenticator(Authenticator):
+    """Base class for OAuthenticators
+
+    Subclasses must override:
+
+    login_service (string identifying the service provider)
+    login_handler (likely a subclass of OAuthLoginHandler)
+    authenticate (method takes one arg - the request handler handling the oauth callback)
+    """
+
+    login_service = 'override in subclass'
+    oauth_callback_url = Unicode(
+        os.getenv('OAUTH_CALLBACK_URL', ''),
         config=True,
-        help="Userdata method to get user data login information"
+        help="""Callback URL to use.
+        Typically `https://{host}/hub/oauth_callback`"""
     )
+
+    client_id_env = 'OAUTH_CLIENT_ID'
+    client_id = Unicode(config=True)
+    def _client_id_default(self):
+        return os.getenv(self.client_id_env, '')
+
+    client_secret_env = 'OAUTH_CLIENT_SECRET'
+    client_secret = Unicode(config=True)
+    def _client_secret_default(self):
+        return os.getenv(self.client_secret_env, '')
+
+    def login_url(self, base_url):
+        return url_path_join(base_url, 'oauth_login')
+
+    login_handler = "Specify login handler class in subclass"
+    callback_handler = OAuthCallbackHandler
+
+    def get_handlers(self, app):
+        return [
+            (r'/oauth_login', self.login_handler),
+            (r'/oauth_callback', self.callback_handler),
+        ]
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        code = handler.get_argument("code", False)
-        if not code:
-            raise web.HTTPError(400, "oauth callback made without a token")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
-
-        guess_uri = guess_callback_uri(
-            handler.request.protocol,
-            handler.request.host,
-            handler.hub.server.base_url
-        )
-        params = dict(
-            redirect_uri=self.oauth_callback_url or guess_uri,
-            code=code,
-            grant_type='authorization_code'
-        )
-
-        url = url_concat(self.token_url, params)
-
-        b64key = base64.b64encode(
-            bytes(
-                "{}:{}".format(self.client_id, self.client_secret),
-                "utf8"
-            )
-        )
-
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "Basic {}".format(b64key.decode("utf8"))
-        }
-        req = HTTPRequest(url,
-                          method="POST",
-                          headers=headers,
-                          body=''  # Body is required for a POST...
-                          )
-                          
-        resp = yield http_client.fetch(req)
-
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-
-        access_token = resp_json['access_token']
-        token_type = resp_json['token_type']
-
-        # Determine who the logged in user is
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "{} {}".format(token_type, access_token)
-        }
-        url = url_concat(self.userdata_url, self.userdata_params)
-
-        req = HTTPRequest(url,
-                          method=self.userdata_method,
-                          headers=headers,
-                          )
-        resp = yield http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-
-        if resp_json.get(self.username_key):
-            return resp_json[self.username_key]
-
-
-class LocalOAuth2OAuthenticator(LocalAuthenticator, OAuth2OAuthenticator):
-
-    """A version that mixes in local system user creation"""
-    pass
+        raise NotImplementedError()
