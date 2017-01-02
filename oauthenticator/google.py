@@ -83,7 +83,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code', False)
         if not code:
-            raise HTTPError(400, "oauth callback made without a token") 
+            raise HTTPError(400, "oauth callback made without a token")
         if not self.oauth_callback_url:
             raise HTTPError(500, "No callback URL")
         user = yield handler.get_authenticated_user(

@@ -16,26 +16,33 @@ from jupyterhub.utils import url_path_join
 from traitlets import Unicode
 
 
+def guess_callback_uri(protocol, host, hub_server_url):
+    return '{proto}://{host}{path}'.format(
+        proto=protocol,
+        host=host,
+        path=url_path_join(
+            hub_server_url,
+            'oauth_callback'
+        )
+    )
+
+
 class OAuthLoginHandler(BaseHandler):
     """Base class for OAuth login handler
-    
+
     Typically subclasses will need
     """
     scope = []
 
     def get(self):
-        guess_uri = '{proto}://{host}{path}'.format(
-            proto=self.request.protocol,
-            host=self.request.host,
-            path=url_path_join(
-                self.hub.server.base_url,
-                'oauth_callback'
-            )
+        guess_uri = guess_callback_uri(
+            self.request.protocol,
+            self.request.host,
+            self.hub.server.base_url
         )
-        
+
         redirect_uri = self.authenticator.oauth_callback_url or guess_uri
         self.log.info('oauth redirect: %r', redirect_uri)
-        
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
@@ -61,14 +68,14 @@ class OAuthCallbackHandler(BaseHandler):
 
 class OAuthenticator(Authenticator):
     """Base class for OAuthenticators
-    
+
     Subclasses must override:
-    
+
     login_service (string identifying the service provider)
     login_handler (likely a subclass of OAuthLoginHandler)
     authenticate (method takes one arg - the request handler handling the oauth callback)
     """
-    
+
     login_service = 'override in subclass'
     oauth_callback_url = Unicode(
         os.getenv('OAUTH_CALLBACK_URL', ''),
@@ -76,29 +83,29 @@ class OAuthenticator(Authenticator):
         help="""Callback URL to use.
         Typically `https://{host}/hub/oauth_callback`"""
     )
-    
+
     client_id_env = 'OAUTH_CLIENT_ID'
     client_id = Unicode(config=True)
     def _client_id_default(self):
         return os.getenv(self.client_id_env, '')
-    
+
     client_secret_env = 'OAUTH_CLIENT_SECRET'
     client_secret = Unicode(config=True)
     def _client_secret_default(self):
         return os.getenv(self.client_secret_env, '')
-    
+
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
-    
+
     login_handler = "Specify login handler class in subclass"
     callback_handler = OAuthCallbackHandler
-    
+
     def get_handlers(self, app):
         return [
             (r'/oauth_login', self.login_handler),
             (r'/oauth_callback', self.callback_handler),
         ]
-    
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         raise NotImplementedError()

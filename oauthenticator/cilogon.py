@@ -56,7 +56,7 @@ from .oauth2 import OAuthenticator
 
 class CILogonHandler(BaseHandler):
     """OAuth handler for redirecting to CILogon delegator"""
-    
+
     @gen.coroutine
     def get(self):
         token = yield self.authenticator.get_oauth_token()
@@ -66,35 +66,35 @@ class CILogonHandler(BaseHandler):
 
 class CILogonOAuthenticator(OAuthenticator):
     """CILogon OAuthenticator
-    
+
     required env:
-    
+
     CILOGON_CLIENT_ID - the client ID for CILogon OAuth
     CILOGON_RSA_KEY_PATH - path to file containing rsa private key
     CILOGON_CSR_PATH - path to file certificate request (.csr)
     """
     login_service = "CILogon"
-    
+
     authorization_url = "https://cilogon.org/delegate"
     cilogon_skin = "xsede"
     oauth_url = "https://cilogon.org/oauth"
-    
+
     login_handler = CILogonHandler
     client_id_env = 'CILOGON_CLIENT_ID'
-    
+
     rsa_key_path = Unicode(config=True)
     def _rsa_key_path_default(self):
         return os.getenv('CILOGON_RSA_KEY_PATH') or 'oauth-privkey.pem'
-    
+
     rsa_key = Unicode()
     def _rsa_key_default(self):
         with open(self.rsa_key_path) as f:
             return f.read()
-    
+
     certreq_path = Unicode(config=True)
     def _certreq_path_default(self):
         return os.getenv('CILOGON_CSR_PATH') or 'oauth-certreq.csr'
-    
+
     certreq = Unicode()
     def _certreq_default(self):
         # read certreq. CILogon API can't handle standard BEGIN/END lines, so strip them
@@ -104,7 +104,7 @@ class CILogonOAuthenticator(OAuthenticator):
                 if not line.isspace() and '----' not in line:
                     lines.append(line)
         return ''.join(lines)
-    
+
     user_cert_dir = Unicode(config=True,
         help="""Directory in which to store user credentials.
         This directory will be made user-private.
@@ -135,9 +135,9 @@ class CILogonOAuthenticator(OAuthenticator):
             signature_method=SIGNATURE_RSA,
             signature_type=SIGNATURE_TYPE_QUERY,
         )
-    
+
     client = Instance(AsyncHTTPClient, args=())
-    
+
     @gen.coroutine
     def get_oauth_token(self):
         """Get the temporary OAuth token"""
@@ -152,7 +152,7 @@ class CILogonOAuthenticator(OAuthenticator):
         reply = resp.body.decode('utf8', 'replace')
         credentials = parse_qs(reply)
         return credentials['oauth_token'][0]
-    
+
     @gen.coroutine
     def get_user_token(self, token, verifier):
         """Get a user token from an oauth callback parameters"""
@@ -165,7 +165,7 @@ class CILogonOAuthenticator(OAuthenticator):
         # FIXME: handle failure
         reply = resp.body.decode('utf8', 'replace')
         return parse_qs(reply)['oauth_token'][0]
-    
+
     @gen.coroutine
     def username_from_token(self, token):
         """Turn a user token into a username"""
@@ -190,12 +190,12 @@ class CILogonOAuthenticator(OAuthenticator):
                 break
         if username is None:
             raise ValueError("Failed to get username from cert: %s", cert_txt)
-        
+
         return username, cert_txt
-    
+
     def _user_cert_path(self, username):
         return os.path.join(self.user_cert_dir, username + '.crt')
-    
+
     def save_user_cert(self, username, cert):
         """Save the certificate for a given user in self.user_cert_dir"""
         if not self.user_cert_dir:
@@ -204,7 +204,7 @@ class CILogonOAuthenticator(OAuthenticator):
         self.log.info("Saving cert for %s in %s", username, cert_path)
         with open(cert_path, 'w') as f:
             f.write(cert)
-    
+
     def user_cert(self, username):
         """Get the certificate for a user by name"""
         if not self.user_cert_dir:
@@ -213,7 +213,7 @@ class CILogonOAuthenticator(OAuthenticator):
         # FIXME: handle cert file missing?
         with open(self._user_cert_path(username)) as f:
             return f.read()
-    
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         """Called on the OAuth callback"""
@@ -235,15 +235,15 @@ class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
 
 class CILogonSpawnerMixin(Configurable):
     """Spawner Mixin for staging the CILogon cert file"""
-    
+
     cert_file_path = Unicode("cilogon.crt", config=True,
         help="The path (relative to home) where the CILogon cert should be placed.")
-    
+
     def get_user_info(self):
         """Get the user's home dir, uid, gid, for resolving relative cert_file_path.
-        
+
         Returns a dict with 'home', 'uid', 'gid' keys.
-        
+
         By default, populated from pwd.getpwname(self.user.name).
         """
         pw_struct = pwd.getpwnam(self.user.name)
@@ -252,42 +252,42 @@ class CILogonSpawnerMixin(Configurable):
             'uid': pw_struct.pw_uid,
             'gid': pw_struct.pw_gid,
         }
-    
+
     _cert = None
     @property
     def cert(self):
         if self._cert is None:
             self._cert = self.authenticator.user_cert(self.user.name)
         return self._cert
-    
+
     def stage_cert_file(self):
         """Stage the CILogon user cert for the spawner.
-        
+
         Override for Spawners not on the local filesystem.
         """
         if not self.cert:
             self.log.info("No cert found for %s", self.user.name)
-        
+
         uinfo = self.get_user_info()
         dst = os.path.join(uinfo['home'], self.cert_file_path)
         self.log.info("Staging cert for %s: %s", self.user.name, dst)
-        
+
         with open(dst, 'w') as f:
             fd = f.fileno()
             os.fchmod(fd, 0o600) # make private before writing content
             f.write(self.cert)
             # set user as owner
             os.fchown(fd, uinfo['uid'], uinfo['gid'])
-    
+
     @gen.coroutine
     def start(self):
         yield gen.maybe_future(self.stage_cert_file())
         result = yield gen.maybe_future(super().start())
         return result
-    
+
     def unstage_cert_file(self):
         """Unstage user cert
-        
+
         called after stopping
         """
         uinfo = self.get_user_info()
@@ -303,10 +303,9 @@ class CILogonSpawnerMixin(Configurable):
                 pass
             self.log.error("Failed to unstage cert for %s (%s): %s",
                 self.user.name, dst, e)
-        
+
     @gen.coroutine
     def stop(self):
         result = yield gen.maybe_future(super().stop())
         yield gen.maybe_future(self.unstage_cert_file())
         return result
-

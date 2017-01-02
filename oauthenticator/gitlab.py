@@ -2,7 +2,7 @@
 Custom Authenticator to use GitLab OAuth with JupyterHub
 
 Modified for GitLab by Laszlo Dobos (@dobos)
-based on the GitHub plugin by Kyle Kelley (@rgbkrk) 
+based on the GitHub plugin by Kyle Kelley (@rgbkrk)
 """
 
 
@@ -34,13 +34,13 @@ class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
 
 
 class GitLabOAuthenticator(OAuthenticator):
-    
+
     login_service = "GitLab"
-        
+
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
     login_handler = GitLabLoginHandler
-    
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
@@ -48,11 +48,11 @@ class GitLabOAuthenticator(OAuthenticator):
             raise web.HTTPError(400, "oauth callback made without a token")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
-        
+
         # Exchange the OAuth code for a GitLab Access Token
         #
         # See: https://github.com/gitlabhq/gitlabhq/blob/master/doc/api/oauth2.md
-        
+
         # GitLab specifies a POST request yet requires URL parameters
         params = dict(
             client_id=self.client_id,
@@ -61,23 +61,23 @@ class GitLabOAuthenticator(OAuthenticator):
             grant_type="authorization_code",
             redirect_uri=self.oauth_callback_url
         )
-        
+
         url = url_concat("%s/oauth/token" % GITLAB_HOST,
                          params)
-        
+
         print(url, file=sys.stderr)
-        
+
         req = HTTPRequest(url,
                           method="POST",
                           headers={"Accept": "application/json"},
                           body='' # Body is required for a POST...
                           )
-        
+
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        
+
         access_token = resp_json['access_token']
-        
+
         # Determine who the logged in user is
         headers={"Accept": "application/json",
                  "User-Agent": "JupyterHub",
@@ -96,4 +96,3 @@ class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
-
