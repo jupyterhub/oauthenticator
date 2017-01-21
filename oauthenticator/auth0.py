@@ -8,7 +8,7 @@ The following environment variables may be used for configuration:
     AUTH0_SUBDOMAIN - The subdomain for your Auth0 account
     OAUTH_CLIENT_ID - Your client id
     OAUTH_CLIENT_SECRET - Your client secret
-    OAUTH_CALLBACK_URI - Your callback handler URI
+    OAUTH_CALLBACK_URL - Your callback handler URL
 
 Additionally, if you are concerned about your secrets being exposed by
 an env dump(I know I am!) you can set the client_secret, client_id and
