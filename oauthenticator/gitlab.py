@@ -34,13 +34,14 @@ class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
 
 
 class GitLabOAuthenticator(OAuthenticator):
-    
+
     login_service = "GitLab"
-        
+
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
+    validate_server_cert_env = 'VALIDATE_SERVER_CERT'
     login_handler = GitLabLoginHandler
-    
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
@@ -61,29 +62,33 @@ class GitLabOAuthenticator(OAuthenticator):
             grant_type="authorization_code",
             redirect_uri=self.oauth_callback_url
         )
-        
+
+        validate_server_cert = self.validate_server_cert
+
         url = url_concat("%s/oauth/token" % GITLAB_HOST,
                          params)
-        
+
         print(url, file=sys.stderr)
-        
+
         req = HTTPRequest(url,
                           method="POST",
                           headers={"Accept": "application/json"},
+                          validate_cert=validate_server_cert,
                           body='' # Body is required for a POST...
                           )
-        
+
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        
+
         access_token = resp_json['access_token']
-        
+
         # Determine who the logged in user is
         headers={"Accept": "application/json",
                  "User-Agent": "JupyterHub",
         }
         req = HTTPRequest("%s?access_token=%s" % (GITLAB_API, access_token),
                           method="GET",
+                          validate_cert=validate_server_cert,
                           headers=headers
                           )
         resp = yield http_client.fetch(req)

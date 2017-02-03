@@ -13,12 +13,12 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode
+from traitlets import Unicode, Bool
 
 
 class OAuthLoginHandler(BaseHandler):
     """Base class for OAuth login handler
-    
+
     Typically subclasses will need
     """
     scope = []
@@ -76,29 +76,34 @@ class OAuthenticator(Authenticator):
         help="""Callback URL to use.
         Typically `https://{host}/hub/oauth_callback`"""
     )
-    
+
     client_id_env = 'OAUTH_CLIENT_ID'
     client_id = Unicode(config=True)
     def _client_id_default(self):
         return os.getenv(self.client_id_env, '')
-    
+
     client_secret_env = 'OAUTH_CLIENT_SECRET'
     client_secret = Unicode(config=True)
     def _client_secret_default(self):
         return os.getenv(self.client_secret_env, '')
-    
+
+    validate_server_cert_env = 'VALIDATE_SERVER_CERT'
+    validate_server_cert = Bool(config=True)
+    def _validate_server_cert_default(self):
+        return os.getenv(self.validate_server_cert_env, True)
+
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
-    
+
     login_handler = "Specify login handler class in subclass"
     callback_handler = OAuthCallbackHandler
-    
+
     def get_handlers(self, app):
         return [
             (r'/oauth_login', self.login_handler),
             (r'/oauth_callback', self.callback_handler),
         ]
-    
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         raise NotImplementedError()
