@@ -39,7 +39,6 @@ class GitLabOAuthenticator(OAuthenticator):
 
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
-    validate_server_cert_env = 'VALIDATE_SERVER_CERT'
     login_handler = GitLabLoginHandler
 
     @gen.coroutine

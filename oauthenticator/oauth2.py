@@ -94,10 +94,14 @@ class OAuthenticator(Authenticator):
     def _client_secret_default(self):
         return os.getenv(self.client_secret_env, '')
 
-    validate_server_cert_env = 'VALIDATE_SERVER_CERT'
+    validate_server_cert_env = 'OAUTH_TLS_VERIFY'
     validate_server_cert = Bool(config=True)
     def _validate_server_cert_default(self):
-        return os.getenv(self.validate_server_cert_env, True)
+        env_value = os.getenv(self.validate_server_cert_env, '')
+        if env_value == '0':
+            return False
+        else:
+            return True
 
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
