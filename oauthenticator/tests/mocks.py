@@ -7,6 +7,9 @@ from unittest.mock import Mock
 from urllib.parse import urlparse, parse_qs
 import uuid
 
+import pytest
+
+from tornado import gen
 from tornado.httpclient import HTTPResponse
 from tornado.log import app_log
 from tornado.simple_httpclient import SimpleAsyncHTTPClient
@@ -68,7 +71,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
                     break
 
         if response is None:
-            response = HTTPResponse(request=request, code=404)
+            response = HTTPResponse(request=request, code=404, reason=request.url)
         elif isinstance(response, int):
             response = HTTPResponse(request=request, code=response)
         elif isinstance(response, bytes):
@@ -88,7 +91,10 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         response_callback(response)
 
 
-def setup_oauth_mock(client, host, access_token_path, user_path, token_type='Bearer'):
+def setup_oauth_mock(client, host, access_token_path, user_path,
+        token_type='Bearer',
+        token_request_style='post',
+    ):
     """setup the mock client for OAuth
     
     generates and registers two handlers common to OAuthenticators:
@@ -101,7 +107,7 @@ def setup_oauth_mock(client, host, access_token_path, user_path, token_type='Bea
     
     client.handler_for_user(user)
     
-    where 
+    where user is the user-model to be returned by the user request.
     
     Args:
     
@@ -121,12 +127,29 @@ def setup_oauth_mock(client, host, access_token_path, user_path, token_type='Bea
         Replies with JSON model for the token.
         """
         assert request.method == 'POST'
-        query = parse_qs(urlparse(request.url).query)
-        if 'code' not in query:
-            return HTTPResponse(request=request, code=400)
-        code = query['code'][0]
+        if token_request_style == 'json':
+            body = request.body.decode('utf8')
+            try:
+                body = json.loads(body)
+            except ValueError:
+                return HTTPResponse(request=request, code=400,
+                    reason="Body not JSON: %r" % body,
+                )
+            else:
+                code = body['code']
+        else:
+            query = parse_qs(urlparse(request.url).query)
+            if 'code' not in query:
+                app_log.warning()
+                return HTTPResponse(request=request, code=400,
+                    reason="No code in access token request: %s" % query,
+                )
+            code = query['code'][0]
         if code not in oauth_codes:
-            return HTTPResponse(request=request, code=403)
+            app_log.warning()
+            return HTTPResponse(request=request, code=403,
+                reason="No such code: %s" % code,
+            )
 
         # consume code, allocate token
         token = uuid.uuid4().hex
@@ -141,10 +164,14 @@ def setup_oauth_mock(client, host, access_token_path, user_path, token_type='Bea
         assert request.method == 'GET'
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return HTTPResponse(request=request, code=403)
+            return HTTPResponse(request=request, code=403,
+                reason='Missing Authorization header',
+            )
         token = auth_header.split(None, 1)[1]
         if token not in access_tokens:
-            return HTTPResponse(request=request, code=403)
+            return HTTPResponse(request=request, code=403,
+                reason='No such access token: %r' % token,
+            )
         return access_tokens.get(token)
 
     if isinstance(host, str):
@@ -153,8 +180,8 @@ def setup_oauth_mock(client, host, access_token_path, user_path, token_type='Bea
         hosts = host
     for host in hosts:
         client.add_host(host, [
-            ('/login/oauth/access_token', access_token),
-            ('/user', get_user),
+            (access_token_path, access_token),
+            (user_path, get_user),
         ])
     
     def handler_for_user(user):
@@ -170,3 +197,14 @@ def setup_oauth_mock(client, host, access_token_path, user_path, token_type='Bea
         return handler
 
     client.handler_for_user = handler_for_user
+
+
+@gen.coroutine
+def no_code_test(authenticator):
+    """Run a test to exercise no code in the request"""
+    handler = Mock(spec=web.RequestHandler)
+    handler.get_argument = Mock(return_value=None)
+    with pytest.raises(web.HTTPError) as exc:
+        name = yield authenticator.authenticate(handler)
+    assert exc.value.status_code == 400
+    

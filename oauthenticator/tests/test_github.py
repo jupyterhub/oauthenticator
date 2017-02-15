@@ -5,7 +5,7 @@ from tornado import web
 
 from ..github import GitHubOAuthenticator
 
-from .mocks import setup_oauth_mock
+from .mocks import setup_oauth_mock, no_code_test
 
 
 def user_model(username):
@@ -34,10 +34,5 @@ def test_github(github_client):
 
 
 @mark.gen_test
-def test_github_no_code(github_client):
-    authenticator = GitHubOAuthenticator()
-    handler = Mock(spec=web.RequestHandler)
-    handler.get_argument = Mock(return_value=None)
-    with raises(web.HTTPError) as exc:
-        name = yield authenticator.authenticate(handler)
-    assert exc.value.status_code == 400
+def test_no_code(github_client):
+    yield no_code_test(GitHubOAuthenticator())
