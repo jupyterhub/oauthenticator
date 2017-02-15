@@ -17,7 +17,7 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode, Dict
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator, guess_callback_uri
+from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
 class GenericEnvMixin(OAuth2Mixin):
@@ -70,13 +70,8 @@ class GenericOAuthenticator(OAuthenticator):
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
 
-        guess_uri = guess_callback_uri(
-            handler.request.protocol,
-            handler.request.host,
-            handler.hub.server.base_url
-        )
         params = dict(
-            redirect_uri=self.oauth_callback_url or guess_uri,
+            redirect_uri=self.get_callback_url(handler),
             code=code,
             grant_type='authorization_code'
         )

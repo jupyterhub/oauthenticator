@@ -142,7 +142,7 @@ class CILogonOAuthenticator(OAuthenticator):
     def get_oauth_token(self):
         """Get the temporary OAuth token"""
         uri = url_concat(ujoin(self.oauth_url, "initiate"), {
-            'oauth_callback': self.oauth_callback_url,
+            'oauth_callback': self.get_callback_url(handler),
             'certreq': self.certreq,
         })
         uri, _, _ = self.oauth_client.sign(uri)

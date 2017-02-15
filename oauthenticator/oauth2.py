@@ -35,13 +35,7 @@ class OAuthLoginHandler(BaseHandler):
     scope = []
 
     def get(self):
-        guess_uri = guess_callback_uri(
-            self.request.protocol,
-            self.request.host,
-            self.hub.server.base_url
-        )
-
-        redirect_uri = self.authenticator.oauth_callback_url or guess_uri
+        redirect_uri = self.authenticator.get_callback_url(self)
         self.log.info('oauth redirect: %r', redirect_uri)
         self.authorize_redirect(
             redirect_uri=redirect_uri,
@@ -108,6 +102,22 @@ class OAuthenticator(Authenticator):
 
     login_handler = "Specify login handler class in subclass"
     callback_handler = OAuthCallbackHandler
+    
+    def get_callback_url(self, handler=None):
+        """Get my OAuth redirect URL
+        
+        Either from config or guess based on the current request.
+        """
+        if self.oauth_callback_url:
+            return self.oauth_callback_url
+        elif handler:
+            return guess_callback_uri(
+                handler.request.protocol,
+                handler.request.host,
+                handler.hub.server.base_url
+            )
+        else:
+            raise ValueError("Specify callback oauth_callback_url or give me a handler to guess with")
 
     def get_handlers(self, app):
         return [
