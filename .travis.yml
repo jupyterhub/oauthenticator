@@ -14,6 +14,9 @@ script:
     else
       py.test --cov oauthenticator oauthenticator
     fi
+after_success:
+  - codecov
+
 matrix:
   include:
     python: "3.5"
