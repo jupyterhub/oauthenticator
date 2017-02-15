@@ -62,6 +62,9 @@ class GitLabOAuthenticator(OAuthenticator):
             redirect_uri=self.oauth_callback_url
         )
 
+
+        validate_server_cert = self.validate_server_cert
+
         url = url_concat("%s/oauth/token" % GITLAB_HOST,
                          params)
 
@@ -70,6 +73,7 @@ class GitLabOAuthenticator(OAuthenticator):
         req = HTTPRequest(url,
                           method="POST",
                           headers={"Accept": "application/json"},
+                          validate_cert=validate_server_cert,
                           body='' # Body is required for a POST...
                           )
 
@@ -84,6 +88,7 @@ class GitLabOAuthenticator(OAuthenticator):
         }
         req = HTTPRequest("%s?access_token=%s" % (GITLAB_API, access_token),
                           method="GET",
+                          validate_cert=validate_server_cert,
                           headers=headers
                           )
         resp = yield http_client.fetch(req)

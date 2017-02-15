@@ -13,7 +13,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode
+from traitlets import Unicode, Bool
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -93,6 +93,15 @@ class OAuthenticator(Authenticator):
     client_secret = Unicode(config=True)
     def _client_secret_default(self):
         return os.getenv(self.client_secret_env, '')
+
+    validate_server_cert_env = 'OAUTH_TLS_VERIFY'
+    validate_server_cert = Bool(config=True)
+    def _validate_server_cert_default(self):
+        env_value = os.getenv(self.validate_server_cert_env, '')
+        if env_value == '0':
+            return False
+        else:
+            return True
 
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
