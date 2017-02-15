@@ -8,7 +8,7 @@ python:
   - "3.4"
 install:
   - pip install --upgrade pip
-  - pip install -r test-requirements.txt .
+  - pip install --upgrade --pre -r test-requirements.txt .
   - pip freeze
 script:
   - |
