@@ -1,7 +1,4 @@
-from unittest.mock import Mock
-
-from pytest import fixture, mark, raises
-from tornado import web
+from pytest import fixture, mark
 
 from ..github import GitHubOAuthenticator
 
