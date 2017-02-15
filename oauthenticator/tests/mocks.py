@@ -139,11 +139,15 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
             else:
                 code = body['code']
         else:
-            query = parse_qs(urlparse(request.url).query)
+            query = urlparse(request.url).query
+            if not query:
+                query = request.body.decode('utf8')
+            query = parse_qs(query)
             if 'code' not in query:
-                app_log.warning()
                 return HTTPResponse(request=request, code=400,
-                    reason="No code in access token request: %s" % query,
+                    reason="No code in access token request: url=%s, body=%s" % (
+                        request.url, request.body,
+                    )
                 )
             code = query['code'][0]
         if code not in oauth_codes:
