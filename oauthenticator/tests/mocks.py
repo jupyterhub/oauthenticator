@@ -117,8 +117,8 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         token_type (str): the token_type field for the provider
     """
 
-    oauth_codes = {}
-    access_tokens = {}
+    client.oauth_codes = oauth_codes = {}
+    client.access_tokens = access_tokens = {}
 
     def access_token(request):
         """Handler for access token endpoint
