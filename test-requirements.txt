@@ -1,5 +1,4 @@
 -r ./requirements.txt
--r ./cilogon-requirements.txt
 codecov
 flake8
 pytest >= 2.8

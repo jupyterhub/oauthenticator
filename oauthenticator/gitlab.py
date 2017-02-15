@@ -68,8 +68,6 @@ class GitLabOAuthenticator(OAuthenticator):
         url = url_concat("%s/oauth/token" % GITLAB_HOST,
                          params)
 
-        print(url, file=sys.stderr)
-
         req = HTTPRequest(url,
                           method="POST",
                           headers={"Accept": "application/json"},

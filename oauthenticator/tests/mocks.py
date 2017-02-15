@@ -11,6 +11,7 @@ import pytest
 
 from tornado import gen
 from tornado.httpclient import HTTPResponse
+from tornado.httputil import HTTPServerRequest
 from tornado.log import app_log
 from tornado.simple_httpclient import SimpleAsyncHTTPClient
 from tornado import web
@@ -163,11 +164,16 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
     def get_user(request):
         assert request.method == 'GET'
         auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return HTTPResponse(request=request, code=403,
-                reason='Missing Authorization header',
-            )
-        token = auth_header.split(None, 1)[1]
+        if auth_header:
+            token = auth_header.split(None, 1)[1]
+        else:
+            query = parse_qs(urlparse(request.url).query)
+            if 'access_token' in query:
+                token = query['access_token'][0]
+            else:
+                return HTTPResponse(request=request, code=403,
+                    reason='Missing Authorization header',
+                )
         if token not in access_tokens:
             return HTTPResponse(request=request, code=403,
                 reason='No such access token: %r' % token,
@@ -194,6 +200,11 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         oauth_codes[code] = user
         handler = Mock(spec=web.RequestHandler)
         handler.get_argument = Mock(return_value=code)
+        handler.request = HTTPServerRequest(
+            method='GET',
+            uri='https://hub.example.com?code=%s' % code
+        )
+        handler.hub = Mock(server=Mock(base_url='/hub/'))
         return handler
 
     client.handler_for_user = handler_for_user
