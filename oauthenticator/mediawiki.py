@@ -67,42 +67,6 @@ class MWLoginHandler(BaseHandler):
         self.redirect(redirect)
 
 
-class MWOAuthHandler(BaseHandler):
-
-    @gen.coroutine
-    def get(self):
-        consumer_token = ConsumerToken(
-            self.authenticator.client_id,
-            self.authenticator.client_secret
-        )
-
-        handshaker = Handshaker(
-            self.authenticator.mw_index_url, consumer_token
-        )
-        request_token = dejsonify(self.get_secure_cookie(AUTH_REQUEST_COOKIE_NAME))
-        self.clear_cookie(AUTH_REQUEST_COOKIE_NAME)
-        access_token = yield self.authenticator.executor.submit(
-            handshaker.complete, request_token, self.request.query
-        )
-
-        identity = handshaker.identify(access_token)
-        if identity and 'username' in identity:
-            # FIXME: Figure out total set of chars that can be present
-            # in MW's usernames, and set of chars valid in jupyterhub
-            # usernames, and do a proper mapping
-            username = identity['username'].replace(' ', '_')
-            user = self.find_user(username)
-            if user is None:
-                user = orm.User(name=username, id=identity['sub'])
-                self.db.add(user)
-                self.db.commit()
-            self.set_login_cookie(user)
-            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
-        else:
-            # todo: custom error page?
-            raise web.HTTPError(403)
-
-
 class MWOAuthenticator(OAuthenticator):
     login_service = 'MediaWiki'
     login_handler = MWLoginHandler
@@ -124,9 +88,30 @@ class MWOAuthenticator(OAuthenticator):
     executor = Any()
     def _executor_default(self):
         return ThreadPoolExecutor(self.executor_threads)
+    
+    @gen.coroutine
+    def authenticate(self, handler):
+        code = handler.get_argument('code', False)
+        if not code:
+            raise web.HTTPError(400, "oauth callback made without a token")
 
-    def get_handlers(self, app):
-        return [
-            (r'/oauth_login', MWLoginHandler),
-            (r'/oauth_callback', MWOAuthHandler),
-        ]
+        consumer_token = ConsumerToken(
+            self.client_id,
+            self.client_secret
+        )
+
+        handshaker = Handshaker(
+            self.mw_index_url, consumer_token
+        )
+        request_token = dejsonify(handler.get_secure_cookie(AUTH_REQUEST_COOKIE_NAME))
+        handler.clear_cookie(AUTH_REQUEST_COOKIE_NAME)
+        access_token = yield self.executor.submit(
+            handshaker.complete, request_token, handler.request.query
+        )
+
+        identity = yield self.executor.submit(handshaker.identify, access_token)
+        if identity and 'username' in identity:
+            return identity['username']
+        else:
+            self.log.error("No username found in %s", identity)
+
