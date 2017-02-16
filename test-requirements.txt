@@ -1,6 +1,9 @@
 -r ./requirements.txt
 codecov
 flake8
+jwt
+mwoauth
 pytest >= 2.8
 pytest-cov
 pytest-tornado
+requests-mock
