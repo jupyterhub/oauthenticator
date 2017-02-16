@@ -1,7 +1,9 @@
 """
-Custom Authenticator to use GitHub OAuth with JupyterHub
+Custom Authenticator to use MediaWiki OAuth with JupyterHub
 
 Most of the code c/o Yuvi Panda (@yuvipanda)
+
+Requires `mwoauth` package.
 """
 
 import os
@@ -17,7 +19,7 @@ from jupyterhub import orm
 from mwoauth import ConsumerToken, Handshaker
 from mwoauth.tokens import RequestToken
 
-from traitlets import Unicode
+from traitlets import Any, Integer, Unicode
 
 from oauthenticator import OAuthenticator
 
@@ -39,15 +41,7 @@ def dejsonify(js):
     key, secret = json.loads(js.decode('utf-8'))
     return RequestToken(key.encode('utf-8'), secret.encode('utf-8'))
 
-
 class MWLoginHandler(BaseHandler):
-    @property
-    def executor(self):
-        if hasattr(self, '_executor'):
-            return self._executor
-        else:
-            self._executor = ThreadPoolExecutor(max_workers=12)
-            return self._executor
 
     @gen.coroutine
     def get(self):
@@ -60,7 +54,7 @@ class MWLoginHandler(BaseHandler):
             self.authenticator.mw_index_url, consumer_token
         )
 
-        redirect, request_token = yield self.executor.submit(handshaker.initiate)
+        redirect, request_token = yield self.authenticator.executor.submit(handshaker.initiate)
 
         self.set_secure_cookie(
             AUTH_REQUEST_COOKIE_NAME,
@@ -74,13 +68,6 @@ class MWLoginHandler(BaseHandler):
 
 
 class MWOAuthHandler(BaseHandler):
-    @property
-    def executor(self):
-        if hasattr(self, '_executor'):
-            return self._executor
-        else:
-            self._executor = ThreadPoolExecutor(max_workers=12)
-            return self._executor
 
     @gen.coroutine
     def get(self):
@@ -94,7 +81,7 @@ class MWOAuthHandler(BaseHandler):
         )
         request_token = dejsonify(self.get_secure_cookie(AUTH_REQUEST_COOKIE_NAME))
         self.clear_cookie(AUTH_REQUEST_COOKIE_NAME)
-        access_token = yield self.executor.submit(
+        access_token = yield self.authenticator.executor.submit(
             handshaker.complete, request_token, self.request.query
         )
 
@@ -125,6 +112,18 @@ class MWOAuthenticator(OAuthenticator):
         config=True,
         help='Full path to index.php of the MW instance to use to log in'
     )
+    
+    executor_threads = Integer(12,
+        help="""Number of executor threads.
+        
+        MediaWiki OAuth requests happen in this thread,
+        so it is mostly waiting for network replies.
+        """,
+        config=True,
+    )
+    executor = Any()
+    def _executor_default(self):
+        return ThreadPoolExecutor(self.executor_threads)
 
     def get_handlers(self, app):
         return [
