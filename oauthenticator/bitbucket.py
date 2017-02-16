@@ -60,7 +60,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             grant_type="authorization_code",
             code=code,
-            redirect_uri=self.oauth_callback_url
+            redirect_uri=self.get_callback_url(handler),
         )
 
         url = url_concat(

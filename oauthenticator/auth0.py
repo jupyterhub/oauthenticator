@@ -70,7 +70,7 @@ class Auth0OAuthenticator(OAuthenticator):
             'client_id': self.client_id,
             'client_secret': self.client_secret,
             'code':code,
-            'redirect_uri': self.oauth_callback_url
+            'redirect_uri': self.get_callback_url(handler)
         }
         url = "https://%s.auth0.com/oauth/token" % AUTH0_SUBDOMAIN
 

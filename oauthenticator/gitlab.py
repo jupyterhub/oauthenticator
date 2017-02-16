@@ -59,7 +59,7 @@ class GitLabOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             code=code,
             grant_type="authorization_code",
-            redirect_uri=self.oauth_callback_url
+            redirect_uri=self.get_callback_url(handler),
         )
 
 
@@ -67,8 +67,6 @@ class GitLabOAuthenticator(OAuthenticator):
 
         url = url_concat("%s/oauth/token" % GITLAB_HOST,
                          params)
-
-        print(url, file=sys.stderr)
 
         req = HTTPRequest(url,
                           method="POST",

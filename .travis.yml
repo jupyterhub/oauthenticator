@@ -1,10 +1,26 @@
 language: python
 sudo: false
+cache: pip
 python:
-  - "3.4"
+  - "nightly"
+  - "3.6"
   - "3.5"
+  - "3.4"
 install:
-  - pip install -r requirements.txt flake8 .
+  - pip install --upgrade pip
+  - pip install --upgrade --pre -r test-requirements.txt .
+  - pip freeze
 script:
-  - python -c 'import oauthenticator'
-  - flake8 oauthenticator
+  - |
+    if [[ "$TEST_LINT" = 1 ]]; then
+      flake8 oauthenticator
+    else
+      py.test --cov oauthenticator oauthenticator
+    fi
+after_success:
+  - codecov
+
+matrix:
+  include:
+    python: "3.5"
+    env: TEST_LINT=1

@@ -59,7 +59,7 @@ class CILogonHandler(BaseHandler):
 
     @gen.coroutine
     def get(self):
-        token = yield self.authenticator.get_oauth_token()
+        token = yield self.authenticator.get_oauth_token(self)
         self.redirect(url_concat(self.authenticator.authorization_url,
             {'oauth_token': token, 'cilogon_skin': self.authenticator.cilogon_skin}))
 
@@ -139,10 +139,10 @@ class CILogonOAuthenticator(OAuthenticator):
     client = Instance(AsyncHTTPClient, args=())
 
     @gen.coroutine
-    def get_oauth_token(self):
+    def get_oauth_token(self, handler):
         """Get the temporary OAuth token"""
         uri = url_concat(ujoin(self.oauth_url, "initiate"), {
-            'oauth_callback': self.oauth_callback_url,
+            'oauth_callback': self.get_callback_url(handler),
             'certreq': self.certreq,
         })
         uri, _, _ = self.oauth_client.sign(uri)
