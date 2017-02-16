@@ -97,7 +97,7 @@ class MWOAuthenticator(OAuthenticator):
 
         consumer_token = ConsumerToken(
             self.client_id,
-            self.client_secret
+            self.client_secret,
         )
 
         handshaker = Handshaker(
@@ -111,7 +111,9 @@ class MWOAuthenticator(OAuthenticator):
 
         identity = yield self.executor.submit(handshaker.identify, access_token)
         if identity and 'username' in identity:
-            return identity['username']
+            # this shouldn't be necessary anymore,
+            # but keep for backward-compatibility
+            return identity['username'].replace(' ', '_')
         else:
             self.log.error("No username found in %s", identity)
 
