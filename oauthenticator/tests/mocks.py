@@ -2,6 +2,7 @@
 
 from io import BytesIO
 import json
+import os
 import re
 from unittest.mock import Mock
 from urllib.parse import urlparse, parse_qs
@@ -213,6 +214,32 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
 
     client.handler_for_user = handler_for_user
 
+
+def mock_handler(Handler, uri='https://hub.example.com', method='GET', **settings):
+    """Instantiate a Handler in a mock application"""
+    application = web.Application(
+        hub=Mock(
+            server=Mock(
+                base_url='/hub/'
+            ),
+        ),
+        cookie_secret=os.urandom(32),
+        db=Mock(
+            rollback=Mock(return_value=None)
+        ),
+        **settings
+    )
+    request = HTTPServerRequest(
+        method=method,
+        uri=uri,
+        connection=Mock(),
+    )
+    handler = Handler(
+        application=application,
+        request=request,
+    )
+    handler._transforms = []
+    return handler
 
 @gen.coroutine
 def no_code_test(authenticator):

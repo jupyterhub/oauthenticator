@@ -7,9 +7,9 @@ from pytest import fixture, mark
 from tornado import web
 import requests_mock
 
-from ..mediawiki import MWOAuthenticator
+from ..mediawiki import MWOAuthenticator, AUTH_REQUEST_COOKIE_NAME
 
-from .mocks import no_code_test
+from .mocks import no_code_test, mock_handler
 import jwt
 
 MW_URL = 'https://meta.wikimedia.org/w/index.php'
@@ -29,6 +29,9 @@ def mediawiki():
                     }, 'client_secret')
 
     with requests_mock.Mocker() as mock:
+        mock.post('/w/index.php?title=Special%3AOAuth%2Finitiate',
+            text='oauth_token=key&oauth_token_secret=secret',
+        )
         mock.post('/w/index.php?title=Special%3AOAuth%2Ftoken',
             text='oauth_token=key&oauth_token_secret=secret')
         mock.post('/w/index.php?title=Special%3AOAuth%2Fidentify',
@@ -61,3 +64,20 @@ def test_mediawiki(mediawiki):
 @mark.gen_test
 def test_no_code(mediawiki):
     yield no_code_test(new_authenticator())
+
+
+@mark.gen_test
+def test_login_redirect(mediawiki):
+    authenticator = new_authenticator()
+    record = []
+    handler = mock_handler(authenticator.login_handler,
+        'https://hub.example.com/hub/login',
+        authenticator=authenticator,
+        )
+    handler.write = lambda buf: record.append(buf)
+    yield handler.get()
+    assert handler.get_status() == 302
+    assert 'Location' in handler._headers
+    assert handler._headers['Location'].startswith(MW_URL)
+    assert 'Set-Cookie' in handler._headers
+    assert AUTH_REQUEST_COOKIE_NAME in handler._headers['Set-Cookie']
