@@ -1,0 +1,6 @@
+# extra requirements for globus
+-r ./requirements.txt
+requests>=2.0.0,<3.0.0
+six==1.10.0
+python-jose
+pycrypto
