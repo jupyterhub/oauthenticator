@@ -11,9 +11,9 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 try:
     import globus_sdk
 except:
-    raise HTTPError(500, ("Trying to use the Globus Auth "
-                          "authenticator, but globus_sdk "
-                          "is not installed"))
+    raise ImportError("Trying to use the Globus Auth "
+                      "authenticator, but globus_sdk "
+                      "is not installed")
 
 
 class GlobusMixin(OAuth2Mixin):
@@ -49,22 +49,6 @@ class GlobusOAuthenticator(OAuthenticator):
     login_service = "Globus"
     login_handler = GlobusLoginHandler
 
-    def get_globus_app_id(self):
-        """
-        Getting the custom configuration value globus_app_id.
-        globus_app_id is the UUID of the Globus app to authenticate
-        against
-        """
-        return self.config.GlobusOAuthenticator.globus_app_id
-
-    def get_globus_app_secret(self):
-        """
-        Getting the custom configuration value globus_app_secret.
-        globus_app_secret is the secret generated on the Globus app
-        website use with Confidential Globus Auth Apps.
-        """
-        return self.config.GlobusOAuthenticator.globus_app_secret
-
     def globus_portal_client(self):
         """
         Create an Globus Auth ConfidentialAppAuthClient
@@ -73,8 +57,8 @@ class GlobusOAuthenticator(OAuthenticator):
         somewhere, which we wont do... for now.
         """
         return globus_sdk.ConfidentialAppAuthClient(
-            self.get_globus_app_id(),
-            self.get_globus_app_secret())
+            self.client_id,
+            self.client_secret)
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -103,13 +87,7 @@ class GlobusOAuthenticator(OAuthenticator):
                                   "to your {} account.".format("Globus ID")))
         # Need to return a username without the "email" ending
         username = username.split('@')[0]
-        # Checking the user exists... Paranoia!
-        try:
-            pwd.getpwnam(username)
-        except KeyError:
-            raise HTTPError(401, "You do not have an active account")
-        else:
-            return username
+        return username
 
     def get_callback_url(self, handler=None):
         """
