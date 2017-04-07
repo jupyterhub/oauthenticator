@@ -3,13 +3,13 @@
 Okpy + JupyterHub Authentication = OkpyAuthenticator!
 
 
-This repo adds OkpyAuthenticator into JupyterHub's OAuthenticator(https://github.com/jupyterhub/oauthenticator).
+This repo adds OkpyAuthenticator into JupyterHub's [OAuthenticator](https://github.com/jupyterhub/oauthenticator).
 
 
-Okpy(https://github.com/Cal-CS-61A-Staff/ok-client) is an auto-grading tool that
+[Okpy](https://github.com/Cal-CS-61A-Staff/ok-client) is an auto-grading tool that
 is widely used in UC Berkeley EECS and Data Science courses. This authenticator
 enhances its support for Jupyter Notebook by having students to authenticate with
-the Hub(http://datahub.berkeley.edu/hub/home) first and saving relevant user states
+the [Hub](http://datahub.berkeley.edu/hub/home) first and saving relevant user states
 to the `env`.
 
 
@@ -20,7 +20,6 @@ the authenticator class in your `jupyterhub_config.py` file:
 
 ```
 c.JupyterHub.authenticator_class = 'oauthenticator.OkpyOAuthenticator'
-
 ```
 
 You also need to configure the following parameters:
