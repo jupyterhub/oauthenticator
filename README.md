@@ -8,7 +8,7 @@ This repo adds OkpyAuthenticator into JupyterHub's [OAuthenticator](https://gith
 
 [Okpy](https://github.com/Cal-CS-61A-Staff/ok-client) is an auto-grading tool that
 is widely used in UC Berkeley EECS and Data Science courses. This authenticator
-enhances its support for Jupyter Notebook by having students to authenticate with
+enhances its support for Jupyter Notebook by enabling students to authenticate with
 the [Hub](http://datahub.berkeley.edu/hub/home) first and saving relevant user states
 to the `env`.
 
