@@ -11,13 +11,14 @@ def user_model(username):
         'login': username,
     }
 
+
 @fixture
 def globus_client(client):
     setup_oauth_mock(client,
-        host=['github.com', 'api.github.com'],
-        access_token_path='/login/oauth/access_token',
-        user_path='/user',
-        token_type='token',
+        host=['auth.globus.org'],
+        access_token_path='/v2/oauth2/token',
+        user_path='/userinfo',
+        token_type='bearer',
     )
     return client
 
