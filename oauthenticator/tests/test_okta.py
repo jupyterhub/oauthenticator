@@ -8,7 +8,7 @@ from .mocks import setup_oauth_mock, no_code_test
 def user_model(username):
     """Return a user model"""
     return {
-        'username': username,
+        'email': username,
     }
 
 @fixture
@@ -24,9 +24,9 @@ def okta_client(client):
 @mark.gen_test
 def test_okta(okta_client):
     authenticator = OktaOAuthenticator()
-    handler = okta_client.handler_for_user(user_model('wash'))
+    handler = okta_client.handler_for_user(user_model('foobar@gmail.com'))
     name = yield authenticator.authenticate(handler)
-    assert name == 'wash'
+    assert name == 'foobar@gmail.com'
 
 
 @mark.gen_test
