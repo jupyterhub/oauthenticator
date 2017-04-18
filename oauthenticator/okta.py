@@ -4,24 +4,23 @@ Custom Authenticator to use Okta OAuth with JupyterHub
 Derived from everyone else's authenticator (@frankhsu)
 """
 
-
+import base64
 import json
 import os
-
-from tornado.auth import OAuth2Mixin
-from tornado import gen, web
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+import urllib
 
 from jupyterhub.auth import LocalAuthenticator
-
+from tornado import gen, web
+from tornado.auth import OAuth2Mixin
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httputil import url_concat
 from traitlets import Unicode
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator, OAuthLoginHandler
 
 # Support okta.com and okta enterprise installations
 OKTA_HOST = os.environ.get('OKTA_HOST') or 'okta.com'
+
 
 class OktaMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://%s/oauth2/v1/authorize" % OKTA_HOST
@@ -38,10 +37,12 @@ class OktaOAuthenticator(OAuthenticator):
 
     # deprecated names
     okta_client_id = Unicode(config=True, help="DEPRECATED")
+
     def _okta_client_id_changed(self, name, old, new):
         self.log.warn("okta_client_id is deprecated, use client_id")
         self.client_id = new
     okta_client_secret = Unicode(config=True, help="DEPRECATED")
+
     def _okta_client_secret_changed(self, name, old, new):
         self.log.warn("okta_client_secret is deprecated, use client_secret")
         self.client_secret = new
@@ -60,7 +61,8 @@ class OktaOAuthenticator(OAuthenticator):
 
         # Exchange the OAuth code for a Okta Access Token
         #
-        # See: http://developer.okta.com/docs/api/resources/oidc.html#token-request
+        # See:
+        # http://developer.okta.com/docs/api/resources/oidc.html#token-request
 
         params = dict(
             client_id=self.client_id,
@@ -91,10 +93,10 @@ class OktaOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
 
         # Determine who the logged in user is
-        headers={"Accept": "application/json",
-                 "User-Agent": "JupyterHub",
-                 "Authorization": "Bearer {}".format(access_token)
-        }
+        headers = {"Accept": "application/json",
+                   "User-Agent": "JupyterHub",
+                   "Authorization": "Bearer {}".format(access_token)
+                   }
         req = HTTPRequest("https://%s/oauth2/v1/userinfo" % OKTA_HOST,
                           method="POST",
                           headers=headers
