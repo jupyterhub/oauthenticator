@@ -3,7 +3,6 @@
 from .oauth2 import *
 from .github import *
 from .bitbucket import *
-from .generic import *
 from .google import *
 from .okpy import *
 
