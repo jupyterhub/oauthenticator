@@ -21,8 +21,6 @@ from traitlets import Unicode
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 OKPY_USER_URL = "https://okpy.org/api/v3/user"
-OAUTH_ACCESS_TOKEN_URL = "https://okpy.org/oauth/token"
-OAUTH_AUTHORIZE_URL =  "https://okpy.org/oauth/authorize"
 
 class OkpyLoginHandler(OAuthLoginHandler, OAuth2Mixin):
     """ An OAuthLoginHandler that provides scope to
@@ -93,7 +91,6 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         code = handler.get_argument("code", False)
         if not code:
             raise web.HTTPError(400, "Authentication Cancelled.")
-        print(handler)
         http_client = AsyncHTTPClient()
         auth_request = handler.get_auth_request(code)
         response = yield http_client.fetch(auth_request)
