@@ -116,16 +116,18 @@ class BitbucketOAuthenticator(OAuthenticator):
         # We verify the team membership by calling teams endpoint.
         next_page = url_concat("https://api.bitbucket.org/2.0/teams",
                                {'role': 'member'})
-        user_teams = set()
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = resp_json.get('next', None)
 
-            user_teams |= \
+            user_teams = \
                 set([entry["username"] for entry in resp_json["values"]])
-        return len(self.bitbucket_team_whitelist & user_teams) > 0
+            # check if any of the organizations seen thus far are in whitelist
+            if len(self.bitbucket_team_whitelist & user_teams) > 0:
+                return True
+        return False
 
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator,

@@ -153,15 +153,16 @@ class GitLabOAuthenticator(OAuthenticator):
             # and check if any of these are in the whitelisted groups
             next_page = url_concat("%s/groups" % GITLAB_API,
                                    dict(all_available=True))
-            user_groups = set()
             while next_page:
                 req = HTTPRequest(next_page, method="GET", headers=headers)
                 resp = yield http_client.fetch(req)
                 resp_json = json.loads(resp.body.decode('utf8', 'replace'))
                 next_page = _get_next_page(resp)
-                user_groups |= set(entry["path"] for entry in resp_json)
-            # check if any of the organizations are in the whitelist
-            return len(self.gitlab_group_whitelist & user_orgs) > 0
+                user_groups = set(entry["path"] for entry in resp_json)
+                # check if any of the organizations seen thus far are in whitelist
+                if len(self.gitlab_group_whitelist & user_groups) > 0:
+                    return True
+            return False
 
 
 

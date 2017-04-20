@@ -143,15 +143,16 @@ class GitHubOAuthenticator(OAuthenticator):
         headers = _api_headers(access_token)
         # Get all the user's organizations
         next_page = "https://%s/orgs" % GITHUB_API
-        user_orgs = set()
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = _get_next_page(resp)
-            user_orgs |= set(entry["login"] for entry in resp_json)
-        # check if any of the organizations are in the whitelist
-        return len(self.github_organization_whitelist & user_orgs) > 0
+            user_orgs = set(entry["login"] for entry in resp_json)
+            # check if any of the organizations seen thus far are in whitelist
+            if len(self.github_organization_whitelist & user_orgs) > 0:
+                return True
+        return False
 
 
 
