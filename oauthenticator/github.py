@@ -131,26 +131,30 @@ class GitHubOAuthenticator(OAuthenticator):
         # Check if user is a member of any whitelisted organizations.
         # This check is performed here, as it requires `access_token`.
         if self.github_organization_whitelist:
-            user_in_org = yield self._check_organization_whitelist(username, access_token)
-            return username if user_in_org else None
+            for org in self.github_organization_whitelist:
+                user_in_org = yield self._check_organization_whitelist(org, username, access_token)
+                if user_in_org:
+                    return username
+            else:  # User not found in member list for any organisation
+                return None
         else:  # no organization whitelisting
             return username
 
 
     @gen.coroutine
-    def _check_organization_whitelist(self, username, access_token):
+    def _check_organization_whitelist(self, org, username, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        # Get all the user's organizations
-        next_page = "https://%s/orgs" % GITHUB_API
+        # Get all the members for organization 'org'
+        next_page = "https://%s/orgs/%s/members" % (GITHUB_API, org)
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = _get_next_page(resp)
-            user_orgs = set(entry["login"] for entry in resp_json)
+            org_members = set(entry["login"] for entry in resp_json)
             # check if any of the organizations seen thus far are in whitelist
-            if len(self.github_organization_whitelist & user_orgs) > 0:
+            if username in org_members:
                 return True
         return False
 
