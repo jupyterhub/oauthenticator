@@ -12,6 +12,7 @@ import re
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
+import requests
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
@@ -42,11 +43,9 @@ def _get_next_page(response):
     link_header = response.headers.get('Link')
     if not link_header:
         return
-    # parse the Link header; is this regex general enough?
-    link_regex = r',? *< *(.*?) *> *; *rel="(.*?)"'
-    for link_url, link_type in re.findall(link_regex, link_header):
-        if link_type == 'next':
-            return link_url
+    for link in requests.utils.parse_header_links(link_header):
+        if link.get('rel') == 'next':
+            return link['url']
     # if no "next" page, this is the last one
     return None
 
