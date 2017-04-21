@@ -14,6 +14,7 @@ from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 import requests
+from tornado.escape import url_escape
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
@@ -140,9 +141,8 @@ class GitLabOAuthenticator(OAuthenticator):
         if is_admin:
             # For admins, /groups returns *all* groups. As a workaround
             # we check if we are a member of each group in the whitelist
-            for group in self.gitlab_group_whitelist:
-                group_id = _get_group_id(group, headers)
-                url = "%s/groups/%d/members/%d" % (GITLAB_API, group_id, user_id)
+            for group in map(url_escape, self.gitlab_group_whitelist):
+                url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
                 req = HTTPRequest(url, method="GET", headers=headers)
                 resp = yield http_client.fetch(req)
                 if resp.code == 200:
