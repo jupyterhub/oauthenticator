@@ -21,15 +21,7 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
-    def get(self):
-        redirect_uri = self.authenticator.get_callback_url(self)
-        self.log.info('redirect_uri: %r', redirect_uri)
-
-        self.authorize_redirect(
-            redirect_uri=redirect_uri,
-            client_id=self.authenticator.client_id,
-            scope=['openid', 'email'],
-            response_type='code')
+    scope = ['openid', 'email']
 
 
 class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
