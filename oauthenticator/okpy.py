@@ -2,7 +2,6 @@
 Custom Authenticator to use okpy OAuth with JupyterHub
 """
 import json
-import os
 import base64
 
 from tornado.auth import OAuth2Mixin
@@ -13,49 +12,28 @@ from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.handlers import BaseHandler
-from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 OKPY_USER_URL = "https://okpy.org/api/v3/user"
-OAUTH_ACCESS_TOKEN_URL = "https://okpy.org/oauth/token"
-OAUTH_AUTHORIZE_URL =  "https://okpy.org/oauth/authorize"
+OKPY_ACCESS_TOKEN_URL = "https://okpy.org/oauth/token"
+OKPY_AUTHORIZE_URL =  "https://okpy.org/oauth/authorize"
 
-class OkpyLoginHandler(OAuthLoginHandler, OAuth2Mixin):
-    """ An OAuthLoginHandler that provides scope to
-        OkpyMixin's authorize_redirect.
-    """
-    _OAUTH_ACCESS_TOKEN_URL = "https://okpy.org/oauth/token"
-    _OAUTH_AUTHORIZE_URL =  "https://okpy.org/oauth/authorize"
-    def get(self):
-        self.authorize_redirect(
-            redirect_uri = self.authenticator.oauth_callback_url,
-            client_id = self.authenticator.client_id,
-            scope= ['all'],
-            response_type = 'code')
 
-class OkpyCallbackHandler(BaseHandler, OAuth2Mixin):
-    """ Basic handler for Okpy callback.
-        Calls authenticator to verify user and saves the state in user.
-    """
-    @gen.coroutine
-    def get(self):
-        username, state = yield self.authenticator.authenticate(self, None)
-        if username:
-            user = self.user_from_username(username)
-            self.db.commit()
-            self.set_login_cookie(user)
-            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
-        else:
-            raise web.HTTPError(403, "Authentication Failed.")
+class OkpyMixin(OAuth2Mixin):
+    _OAUTH_ACCESS_TOKEN_URL = OKPY_ACCESS_TOKEN_URL
+    _OAUTH_AUTHORIZE_URL = OKPY_AUTHORIZE_URL
+
+
+class OkpyLoginHandler(OAuthLoginHandler, OkpyMixin):
+    scope = ['all']
+
 
 class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
     login_service = "Okpy"
-    callback_handler = OkpyCallbackHandler
     login_handler = OkpyLoginHandler
+    
     def get_auth_request(self, code):
         params = dict(
             redirect_uri = self.oauth_callback_url,
@@ -67,7 +45,7 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
                                  self.client_secret), "utf8"
                  )
         )
-        url = url_concat(OAUTH_ACCESS_TOKEN_URL, params)
+        url = url_concat(OKPY_ACCESS_TOKEN_URL, params)
         req = HTTPRequest(url,
                 method = "POST",
                 headers = { "Accept": "application/json",
@@ -96,13 +74,14 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         response = yield http_client.fetch(auth_request)
         if not response:
             self.clear_all_cookies()
-            raise HTTPError(500, 'Authentication Failed: Token Not Acquired')
+            raise web.HTTPError(500, 'Authentication Failed: Token Not Acquired')
         state = json.loads(response.body.decode('utf8', 'replace'))
         access_token = state['access_token']
         info_request = self.get_user_info_request(access_token)
         response = yield http_client.fetch(info_request)
         user = json.loads(response.body.decode('utf8', 'replace'))
-        return user["email"], state
+        # TODO: preserve state in auth_state when JupyterHub supports encrypted auth_state
+        return user["email"] # , state
 
 class LocalOkpyOAuthenticator(LocalAuthenticator, OkpyOAuthenticator):
     """A version that mixes in local system user creation"""
