@@ -4,8 +4,9 @@ Base classes for Custom Authenticator to use GitHub OAuth with JupyterHub
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
 
-
+import json
 import os
+import uuid
 
 from tornado import gen, web
 
@@ -26,6 +27,7 @@ def guess_callback_uri(protocol, host, hub_server_url):
         )
     )
 
+STATE_COOKIE_NAME = 'oauthenticator-state'
 
 class OAuthLoginHandler(BaseHandler):
     """Base class for OAuth login handler
@@ -34,27 +36,102 @@ class OAuthLoginHandler(BaseHandler):
     """
     scope = []
 
+    def set_state_cookie(self, state):
+        self.set_secure_cookie(STATE_COOKIE_NAME, state)
+    
+    _state = None
+    def get_state(self):
+        next_url = self.get_argument('next', None)
+        if self._state is None:
+            self._state = json.dumps({
+                'state_id': uuid.uuid4().hex,
+                'next_url': next_url,
+            })
+        return self._state
+
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
-        self.log.info('oauth redirect: %r', redirect_uri)
+        self.log.info('OAuth redirect: %r', redirect_uri)
+        state = self.get_state()
+        self.set_state_cookie(state)
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=self.scope,
+            extra_params={'state': state},
             response_type='code')
 
 
 class OAuthCallbackHandler(BaseHandler):
     """Basic handler for OAuth callback. Calls authenticator to verify username."""
+
+    _state_cookie = None
+
+    def get_state_cookie(self):
+        """Get OAuth state from cookies
+
+        To be compared with the value in redirect URL
+        """
+        if self._state_cookie is None:
+            self._state_cookie = (self.get_secure_cookie(STATE_COOKIE_NAME) or b'').decode('utf8', 'replace')
+            self.clear_cookie(STATE_COOKIE_NAME)
+        return self._state_cookie
+
+    def get_state_url(self):
+        """Get OAuth state from URL parameters
+
+        to be compared with the value in cookies
+        """
+        return self.get_argument("state")
+
+    def check_state(self):
+        """Verify OAuth state
+        
+        compare value in cookie with redirect url param
+        """
+        cookie_state = self.get_state_cookie()
+        url_state = self.get_state_url()
+        if not cookie_state:
+            raise web.HTTPError(400, "OAuth state missing from cookies")
+        if not url_state:
+            raise web.HTTPError(400, "OAuth state missing from URL")
+        if cookie_state != url_state:
+            self.log.warning("OAuth state mismatch: %s != %s", cookie_state, url_state)
+            raise web.HTTPError(400, "OAuth state mismatch")
+    
+    def check_code(self):
+        """Check the OAuth code"""
+        if not self.get_argument("code", False):
+            raise web.HTTPError(400, "OAuth callback made without a code")
+    
+    def check_arguments(self):
+        """Validate the arguments of the redirect
+        
+        Default:
+        
+        - check that there's a code
+        - check that state matches 
+        """
+        self.check_code()
+        self.check_state()
+    
+    def get_next_url(self):
+        """Get the redirect target from the state field"""
+        state = self.get_state_url()
+        if state:
+            return json.loads(state).get('next_url')
+
     @gen.coroutine
     def get(self):
-        # TODO: Check if state argument needs to be checked
+        self.check_arguments()
+
         username = yield self.authenticator.get_authenticated_user(self, None)
 
         if username:
             user = self.user_from_username(username)
             self.set_login_cookie(user)
-            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+            next_url = self.get_next_url() or url_path_join(self.hub.server.base_url, 'home')
+            self.redirect(next_url)
         else:
             # todo: custom error page?
             raise web.HTTPError(403)

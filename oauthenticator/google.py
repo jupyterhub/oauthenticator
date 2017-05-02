@@ -54,9 +54,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        code = handler.get_argument('code', False)
-        if not code:
-            raise HTTPError(400, "oauth callback made without a token")
+        code = handler.get_argument("code")
         handler.settings['google_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
