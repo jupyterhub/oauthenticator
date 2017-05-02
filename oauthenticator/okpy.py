@@ -2,7 +2,7 @@
 Custom Authenticator to use okpy OAuth with JupyterHub
 """
 import json
-import base64
+from binascii import a2b_base64
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -40,19 +40,16 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
             code = code,
             grant_type = 'authorization_code'
         )
-        b64key = base64.b64encode(
-            bytes("{}:{}".format(self.client_id,
-                                 self.client_secret), "utf8"
-                 )
-        )
+        b64key = a2b_base64("{}:{}".format(self.client_id, self.client_secret)).decode('ascii')
         url = url_concat(OKPY_ACCESS_TOKEN_URL, params)
         req = HTTPRequest(url,
                 method = "POST",
                 headers = { "Accept": "application/json",
                             "User-Agent": "JupyterHub",
-                            "Authorization": "Basic {}".format(b64key.decode("utf8"))},
-                            body = '' # Body is required for a POST...
-                          )
+                            "Authorization": "Basic {}".format(b64key),
+                          },
+                body = '' # Body is required for a POST...
+        )
         return req
 
     def get_user_info_request(self, access_token):
