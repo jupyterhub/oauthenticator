@@ -70,7 +70,6 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         auth_request = self.get_auth_request(code)
         response = yield http_client.fetch(auth_request)
         if not response:
-            self.clear_all_cookies()
             raise web.HTTPError(500, 'Authentication Failed: Token Not Acquired')
         state = json.loads(response.body.decode('utf8', 'replace'))
         access_token = state['access_token']
