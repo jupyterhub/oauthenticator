@@ -6,7 +6,7 @@ from pytest import fixture, mark
 with patch.dict(os.environ, AUTH0_SUBDOMAIN='jupyterhub-test'):
     from ..auth0 import Auth0OAuthenticator, AUTH0_SUBDOMAIN
 
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(username):
@@ -33,7 +33,3 @@ def test_auth0(auth0_client):
     name = yield authenticator.authenticate(handler)
     assert name == 'kaylee@serenity.now'
 
-
-@mark.gen_test
-def test_no_code(auth0_client):
-    yield no_code_test(Auth0OAuthenticator())

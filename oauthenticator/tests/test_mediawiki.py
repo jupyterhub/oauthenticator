@@ -9,7 +9,7 @@ import requests_mock
 
 from ..mediawiki import MWOAuthenticator, AUTH_REQUEST_COOKIE_NAME
 
-from .mocks import no_code_test, mock_handler
+from .mocks import mock_handler
 import jwt
 
 MW_URL = 'https://meta.wikimedia.org/w/index.php'
@@ -59,11 +59,6 @@ def test_mediawiki(mediawiki):
     )
     name = yield authenticator.authenticate(handler)
     assert name == 'wash'
-
-
-@mark.gen_test
-def test_no_code(mediawiki):
-    yield no_code_test(new_authenticator())
 
 
 @mark.gen_test

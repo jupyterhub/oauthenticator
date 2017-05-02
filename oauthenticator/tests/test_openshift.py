@@ -2,7 +2,7 @@ from pytest import fixture, mark
 
 from ..openshift import OpenShiftOAuthenticator
 
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(username):
@@ -12,6 +12,7 @@ def user_model(username):
             'name': username,
         }
     }
+
 
 @fixture
 def openshift_client(client):
@@ -30,7 +31,3 @@ def test_openshift(openshift_client):
     name = yield authenticator.authenticate(handler)
     assert name == 'wash'
 
-
-@mark.gen_test
-def test_no_code(openshift_client):
-    yield no_code_test(OpenShiftOAuthenticator())
