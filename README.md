@@ -99,7 +99,7 @@ Set the generated client ID and secret in your `jupyterhub_config`:
 ```
 For a Google Apps domain you can set:
 ```
-    c.GoogleOAuthenticator.hosted_domain = 'mycollege.edu'
+    c.GoogleOAuthenticator.hosted_domain = ('mycollege.edu')
     c.GoogleOAuthenticator.login_service = 'My College'
 ```
 
