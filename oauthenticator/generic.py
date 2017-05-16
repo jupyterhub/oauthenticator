@@ -6,6 +6,7 @@ Custom Authenticator to use generic OAuth2 with JupyterHub
 import json
 import os
 import base64
+import urllib
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -76,7 +77,7 @@ class GenericOAuthenticator(OAuthenticator):
             grant_type='authorization_code'
         )
 
-        url = url_concat(self.token_url, params)
+        url = self.token_url
 
         b64key = base64.b64encode(
             bytes(
@@ -93,7 +94,7 @@ class GenericOAuthenticator(OAuthenticator):
         req = HTTPRequest(url,
                           method="POST",
                           headers=headers,
-                          body=''  # Body is required for a POST...
+                          body=urllib.parse.urlencode(params)  # Body is required for a POST...
                           )
 
         resp = yield http_client.fetch(req)
