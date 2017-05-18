@@ -144,7 +144,7 @@ class GitLabOAuthenticator(OAuthenticator):
             for group in map(url_escape, self.gitlab_group_whitelist):
                 url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
                 req = HTTPRequest(url, method="GET", headers=headers)
-                resp = yield http_client.fetch(req)
+                resp = yield http_client.fetch(req, raise_error=False)
                 if resp.code == 200:
                     return True  # user _is_ in group
         else:
