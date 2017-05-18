@@ -25,9 +25,9 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 # Support github.com and github enterprise installations
 GITHUB_HOST = os.environ.get('GITHUB_HOST') or 'github.com'
 if GITHUB_HOST == 'github.com':
-    GITHUB_API = 'api.github.com/user'
+    GITHUB_API = 'api.github.com'
 else:
-    GITHUB_API = '%s/api/v3/user' % GITHUB_HOST
+    GITHUB_API = '%s/api/v3' % GITHUB_HOST
 
 
 def _api_headers(access_token):
@@ -118,7 +118,7 @@ class GitHubOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
         
         # Determine who the logged in user is
-        req = HTTPRequest("https://%s" % GITHUB_API,
+        req = HTTPRequest("https://%s/user" % GITHUB_API,
                           method="GET",
                           headers=_api_headers(access_token)
                           )
