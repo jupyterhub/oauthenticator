@@ -209,7 +209,7 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
             method='GET',
             uri='https://hub.example.com?code=%s' % code
         )
-        handler.hub = Mock(server=Mock(base_url='/hub/'))
+        handler.hub = Mock(server=Mock(base_url='/hub/'), base_url='/hub/')
         return handler
 
     client.handler_for_user = handler_for_user
@@ -219,6 +219,7 @@ def mock_handler(Handler, uri='https://hub.example.com', method='GET', **setting
     """Instantiate a Handler in a mock application"""
     application = web.Application(
         hub=Mock(
+            base_url='/hub/',
             server=Mock(
                 base_url='/hub/'
             ),
