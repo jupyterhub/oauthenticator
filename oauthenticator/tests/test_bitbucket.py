@@ -41,7 +41,7 @@ def test_no_code(bitbucket_client):
 def test_team_whitelist(bitbucket_client):
     client = bitbucket_client
     authenticator = BitbucketOAuthenticator()
-    authenticator.team_whitelist = ['blue']
+    authenticator.bitbucket_team_whitelist = ['blue']
 
     teams = {
         'red': ['grif', 'simmons', 'donut', 'sarge', 'lopez'],
@@ -80,7 +80,3 @@ def test_team_whitelist(bitbucket_client):
     handler = client.handler_for_user(user_model('donut'))
     name = yield authenticator.authenticate(handler)
     assert name == 'donut'
-
-
-
-    
