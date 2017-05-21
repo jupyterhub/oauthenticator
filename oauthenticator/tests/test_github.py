@@ -10,7 +10,7 @@ from tornado.httputil import HTTPHeaders
 
 from ..github import GitHubOAuthenticator
 
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(username):
@@ -36,11 +36,6 @@ def test_github(github_client):
     handler = github_client.handler_for_user(user_model('wash'))
     name = yield authenticator.authenticate(handler)
     assert name == 'wash'
-
-
-@mark.gen_test
-def test_no_code(github_client):
-    yield no_code_test(GitHubOAuthenticator())
 
 
 def make_link_header(urlinfo, page):
@@ -122,3 +117,4 @@ def test_org_whitelist(github_client):
         assert name == 'donut'
 
         client.hosts['api.github.com'].pop()
+

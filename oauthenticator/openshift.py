@@ -39,10 +39,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        code = handler.get_argument("code", False)
-        if not code:
-            raise web.HTTPError(400, "oauth callback made without a token")
-
+        code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
 

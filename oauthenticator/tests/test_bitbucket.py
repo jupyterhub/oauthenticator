@@ -5,7 +5,7 @@ from pytest import fixture, mark
 
 from ..bitbucket import BitbucketOAuthenticator
 
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(username):
@@ -30,11 +30,6 @@ def test_bitbucket(bitbucket_client):
     handler = bitbucket_client.handler_for_user(user_model('yorba'))
     name = yield authenticator.authenticate(handler)
     assert name == 'yorba'
-
-
-@mark.gen_test
-def test_no_code(bitbucket_client):
-    yield no_code_test(BitbucketOAuthenticator())
 
 
 @mark.gen_test
