@@ -151,3 +151,29 @@ In this scenario your `OAUTH_CLIENT_ID` will be `system:serviceaccount:<servicea
 the OAUTH_CLIENT_SECRET is the API token of the service account (`oc sa get-token <serviceaccount_name>`)
 and the OAUTH_CALLBACK_URL is the value of the annotation `serviceaccounts.openshift.io/oauth-redirecturi.1`.
 More details can be found in the upstream documentation.
+
+## OkpyAuthenticator
+
+[Okpy](https://github.com/Cal-CS-61A-Staff/ok-client) is an auto-grading tool that
+is widely used in UC Berkeley EECS and Data Science courses. This authenticator
+enhances its support for Jupyter Notebook by enabling students to authenticate with
+the [Hub](http://datahub.berkeley.edu/hub/home) first and saving relevant user states
+to the `env` (the feature is redacted until a secure state saving mechanism is developed).
+
+
+### Configuration
+
+If you want to authenticate your Hub using OkpyAuthenticator, you need to specify
+the authenticator class in your `jupyterhub_config.py` file:
+
+```python
+c.JupyterHub.authenticator_class = 'oauthenticator.okpy.OkpyOAuthenticator'
+```
+
+You also need to configure the following parameters:
+
+```python
+c.OkpyOAuthenticator.client_id =  #client_id recognized by Okpy
+c.OkpyOAuthenticator.client_secret = #the associated client secret
+c.OkpyOAuthenticator.oauth_callback_url = #callback url to the Hub
+```
