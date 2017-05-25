@@ -1,4 +1,5 @@
 -r ./requirements.txt
+-r ./globus-requirements.txt
 codecov
 flake8
 jwt

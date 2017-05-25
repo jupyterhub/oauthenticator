@@ -1,0 +1,3 @@
+# extra requirements for globus
+-r ./requirements.txt
+globus_sdk[jwt]>=1.0.0,<2.0.0

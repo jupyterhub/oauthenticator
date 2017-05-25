@@ -177,3 +177,69 @@ c.OkpyOAuthenticator.client_id =  #client_id recognized by Okpy
 c.OkpyOAuthenticator.client_secret = #the associated client secret
 c.OkpyOAuthenticator.oauth_callback_url = #callback url to the Hub
 ```
+
+## Globus Setup
+
+Visit https://developers.globus.org/ to set up your app. Ensure _Native App_ is
+unchecked and make sure the callback URL looks like:
+
+    https://[your-host]/hub/oauth_callback
+
+Set scopes for authorization and transfer. The defaults include:
+
+    openid profile urn:globus:auth:scope:transfer.api.globus.org:all
+
+Set the above settings in your `jupyterhub_config`:
+```
+    # Set Jupyterhub to create system accounts
+    c.JupyterHub.authenticator_class = 'oauthenticator.globus.LocalGlobusOAuthenticator'
+    # Setup OAuth
+    c.LocalGlobusOAuthenticator.client_id = os.environ['OAUTH_CLIENT_ID']
+    c.LocalGlobusOAuthenticator.client_secret = os.environ['OAUTH_CLIENT_SECRET']
+    c.LocalGlobusOAuthenticator.oauth_callback_url = os.environ['OAUTH_CALLBACK_URL']
+```
+
+### User Identity
+
+By default, all users are restricted to their *Globus IDs* (malcolm@globusid.org)
+with the default Jupyterhub config:
+
+    c.GlobusOAuthenticator.identity_provider = 'globusid.org'
+
+If you want to use a _Linked Identity_ such as `malcolm@universityofindependence.edu`,
+go to your [App Developer page](http://www.developers.globus.org) and set
+*Required Identity Provider* for your app to _<Your University>_, and set the
+following in the config:
+
+    c.GlobusOAuthenticator.identity_provider = 'universityofindependence.edu'
+
+
+### Globus Scopes and Transfer
+
+The default configuration will automatically setup user environments with tokens,
+allowing them to start up python notebooks and initiate Globus Transfers. If you
+want to transfer data onto your Jupyterhub server, it's suggested you install
+[Globus Connect Server](https://docs.globus.org/globus-connect-server-installation-guide/#install_section) and add the `globus_local_endpoint` uuid below. If you want
+to change other behavior, you can modify the defaults below:
+
+```
+    # Allow Refresh Tokens in user notebooks. Disallow these for increased security,
+    # allow them for better usability.
+    c.LocalGlobusOAuthenticator.allow_refresh_tokens = True
+    # Default scopes are below if unspecified. Add a custom transfer server if you have one.
+    c.LocalGlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
+    # Default tokens excluded from being passed into the spawner environment
+    c.LocalGlobusOAuthenticator.exclude = ['auth.globus.org']
+    # If the Jupyterhub server is an endpoint, for convenience the endpoint id can be
+    # set here. It will show up in the notebook kernel for all users as 'GLOBUS_LOCAL_ENDPOINT'.
+    c.LocalGlobusOAuthenticator.globus_local_endpoint = '<Your Local Jupyterhub UUID>'
+```
+
+If you only want to authenticate users with their Globus IDs but don't want to
+allow them to do transfers, you can remove `urn:globus:auth:scope:transfer.api.globus.org:all`.
+Conversely, you can add an additional scope for another transfer server if you wish.
+
+Use `c.GlobusOAuthenticator.exclude` to prevent tokens from being passed into a
+users environment. By default, `auth.globus.org` is excluded but `transfer.api.globus.org`
+is allowed. If you want to disable transfers, modify `c.GlobusOAuthenticator.scope`
+instead of `c.GlobusOAuthenticator.exclude` to avoid procuring unnecessary tokens.
