@@ -2,7 +2,7 @@
 codecov
 flake8
 jwt
-mwoauth < 0.3
+mwoauth != 0.3.1
 pytest >= 2.8
 pytest-cov
 pytest-tornado
