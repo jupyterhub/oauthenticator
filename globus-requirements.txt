@@ -1,0 +1,4 @@
+# extra requirements for globus
+-r ./requirements.txt
+python-jose
+globus_sdk
