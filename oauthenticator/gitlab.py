@@ -13,7 +13,6 @@ import sys
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
-import requests
 from tornado.escape import url_escape
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
@@ -22,6 +21,7 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Set
 
+from .common import parse_header_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support gitlab.com and gitlab community edition installations
@@ -42,7 +42,7 @@ def _get_next_page(response):
     link_header = response.headers.get('Link')
     if not link_header:
         return
-    for link in requests.utils.parse_header_links(link_header):
+    for link in parse_header_links(link_header):
         if link.get('rel') == 'next':
             return link['url']
     # if no "next" page, this is the last one
