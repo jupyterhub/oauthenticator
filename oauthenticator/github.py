@@ -19,7 +19,7 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode, Set
 
-from .common import parse_header_links
+from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support github.com and github enterprise installations
@@ -35,20 +35,6 @@ def _api_headers(access_token):
             "User-Agent": "JupyterHub",
             "Authorization": "token {}".format(access_token)
            }
-
-
-def _get_next_page(response):
-    # Github uses Link headers for pagination.
-    # See https://developer.github.com/v3/#pagination
-    link_header = response.headers.get('Link')
-    if not link_header:
-        return
-    for link in parse_header_links(link_header):
-        if link.get('rel') == 'next':
-            return link['url']
-    # if no "next" page, this is the last one
-    return None
-
 
 
 class GitHubMixin(OAuth2Mixin):
@@ -148,7 +134,7 @@ class GitHubOAuthenticator(OAuthenticator):
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            next_page = _get_next_page(resp)
+            next_page = next_page_from_links(resp)
             org_members = set(entry["login"] for entry in resp_json)
             # check if any of the organizations seen thus far are in whitelist
             if username in org_members:

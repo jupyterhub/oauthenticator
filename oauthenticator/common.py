@@ -32,3 +32,23 @@ def parse_header_links(value):
         links.append(link)
 
     return links
+
+
+def next_page_from_links(response):
+    """Return the url of the 'next' link header as a string.
+
+    Return None if no link header called 'next' is found.
+
+    Both Gitlab and Github use link headers for pagination:
+        https://docs.gitlab.com/ee/api/README.html#pagination-link-header
+        https://developer.github.com/v3/#pagination
+    """
+    link_header = response.headers.get('Link')
+    if not link_header:
+        return None
+
+    for link in parse_header_links(link_header):
+        if link.get('rel') == 'next':
+            return link['url']
+    # if no "next" link, this page is the last one
+    return None
