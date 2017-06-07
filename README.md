@@ -45,7 +45,7 @@ auth).
 
 You will additionally need to specify the OAuth callback URL, the client ID, and
 the client secret (you should have gotten these when you created your OAuth app
-on GitHub). For example, if these values are in the environment variables
+on GitHub). For example, if these values are in the environment variables ([`/etc/environment` in Ubuntu](https://help.ubuntu.com/community/EnvironmentVariables#System-wide_environment_variables))
 `$OAUTH_CALLBACK_URL`, `$GITHUB_CLIENT_ID` and `$GITHUB_CLIENT_SECRET`, you
 should add the following to your `jupyterhub_config.py`:
 ```
