@@ -155,15 +155,23 @@ class OAuthenticator(Authenticator):
         Typically `https://{host}/hub/oauth_callback`"""
     )
 
-    client_id_env = 'OAUTH_CLIENT_ID'
+    client_id_env = ''
     client_id = Unicode(config=True)
     def _client_id_default(self):
-        return os.getenv(self.client_id_env, '')
+        if self.client_id_env:
+            client_id = os.getenv(self.client_id_env, '')
+            if client_id:
+                return client_id
+        return os.getenv('OAUTH_CLIENT_ID', '')
 
-    client_secret_env = 'OAUTH_CLIENT_SECRET'
+    client_secret_env = ''
     client_secret = Unicode(config=True)
     def _client_secret_default(self):
-        return os.getenv(self.client_secret_env, '')
+        if self.client_secret_env:
+            client_secret = os.getenv(self.client_secret_env, '')
+            if client_secret:
+                return client_secret
+        return os.getenv('OAUTH_CLIENT_SECRET', '')
 
     validate_server_cert_env = 'OAUTH_TLS_VERIFY'
     validate_server_cert = Bool(config=True)
