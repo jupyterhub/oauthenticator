@@ -37,8 +37,10 @@ class OAuthLoginHandler(BaseHandler):
     scope = []
 
     def set_state_cookie(self, state):
-        self.set_secure_cookie(STATE_COOKIE_NAME, state)
-    
+        self.set_secure_cookie(STATE_COOKIE_NAME,
+            state, expires_days=1, httponly=True,
+        )
+
     _state = None
     def get_state(self):
         next_url = self.get_argument('next', None)
