@@ -127,7 +127,12 @@ class OAuthCallbackHandler(BaseHandler):
     def get(self):
         self.check_arguments()
 
-        username = yield self.authenticator.get_authenticated_user(self, None)
+        user = yield self.authenticator.get_authenticated_user(self, None)
+        if isinstance(user, dict):
+            # JupyterHub 0.8 returns a dict
+            username = user['name']
+        else:
+            username = user
 
         if username:
             user = self.user_from_username(username)
