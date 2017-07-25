@@ -111,7 +111,7 @@ Then, add the following to your `jupyterhub_config.py` file:
     from oauthenticator.gitlab import GitLabOAuthenticator
     c.JupyterHub.authenticator_class = GitLabOAuthenticator
 
-You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local users.
+You can also use `LocalGitLabOAuthenticator` to map GitLab accounts onto local users.
 
 You can use your own GitLab CE/EE instance by setting the `GITLAB_HOST` environment
 flag.
