@@ -4,25 +4,27 @@ OAuth + JupyterHub Authenticator = OAuthenticator
 
 OAuthenticator currently supports the following authentication services:
 
-- Auth0
-- Bitbucket
-- CILogon
-- GitHub
-- Google
-- MediaWiki
-- Okpy
-- OpenShift
+- [Auth0](oauthenticator/auth0.py)
+- [Bitbucket](oauthenticator/bitbucket.py)
+- [CILogon](oauthenticator/cilogon.py)
+- [GitHub](#github-setup)
+- [GitLab](#gitlab-setup)
+- [Globus](#globus-setup)
+- [Google](#google-setup)
+- [MediaWiki](oauthenticator/mediawiki.py)
+- [Okpy](#okpyauthenticator)
+- [OpenShift](#openshift-setup)
 
-and a generic implementation, which you can use with any provider.
+A [generic implementation](oauthenticator/generic.py), which you can use with
+any provider, is also available.
 
 ## Examples
 
 For an example docker image using OAuthenticator, see the [example](example)
 directory.
 
-There is [another
-example](https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth)
-for using GitHub OAuth to spawn each user's server in a separate docker
+[Another example](https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth)
+is using GitHub OAuth to spawn each user's server in a separate docker
 container.
 
 ## Installation
@@ -39,23 +41,27 @@ Or clone the repo and do a dev install:
 
 ## General setup
 
-The first step is to tell JupyterHub to use your chosen OAuthenticator.
-In `jupyterhub_config.py`:
+The first step is to tell JupyterHub to use your chosen OAuthenticator. Each
+authenticator is provided in a submodule of `oauthenticator`, and each
+authenticator has a variant with `Local` (e.g. `LocalGitHubOAuthenticator`),
+which will map OAuth usernames onto local system usernames.
+
+### Set chosen OAuthenticator
+
+In `jupyterhub_config.py`, add:
 
 ```python
 from oauthenticator.github import GitHubOAuthenticator
 c.JupyterHub.authenticator_class = GitHubOAuthenticator
 ```
 
-Each authenticator is provided in a submodule of `oauthenticator`,
-and each authenticator has a variant with `Local` (e.g. `LocalGitHubOAuthenticator`),
-which will map OAuth usernames onto local system usernames.
+### Set callback URL, client ID, and client secret
 
-All OAuthenticators require setting a callback URL, client ID, and client secret.
-You will generally get these when you register your OAuth application with your OAuth provider.
-Provider-specific details are available in sections below.
-When registering your oauth application with your provider,
-you will probably need to specify a callback URL.
+All OAuthenticators require setting a callback URL, client ID, and client
+secret. You will generally get these when you register your OAuth application
+with your OAuth provider. Provider-specific details are available in sections
+below. When registering your oauth application with your provider, you will
+probably need to specify a callback URL.
 The callback URL should look like:
 
     http[s]://[your-host]/hub/oauth_callback
@@ -63,7 +69,7 @@ The callback URL should look like:
 where `[your-host]` is where your server will be running. Such as
 `example.com:8000`.
 
-When JupyterHub runs, these values will be retrieved from the environment variables:
+When JupyterHub runs, these values will be retrieved from the **environment variables**:
 
 ```bash
 $OAUTH_CALLBACK_URL
@@ -71,7 +77,7 @@ $OAUTH_CLIENT_ID
 $OAUTH_CLIENT_SECRET
 ```
 
-You can also set these values in your `jupyterhub_config.py`:
+You can also set these values in your **configuration file**, `jupyterhub_config.py`:
 
 ```python
 c.MyOAuthenticator.callback_url = 'http[s]://[your-host]/hub/oauth_callback'
@@ -97,7 +103,7 @@ You can use your own Github Enterprise instance by setting the `GITHUB_HOST` env
 ## GitLab Setup
 
 First, you'll need to create a [GitLab OAuth
-application](http://docs.gitlab.com/ce/integration/oauth_provider.html). 
+application](http://docs.gitlab.com/ce/integration/oauth_provider.html).
 
 
 Then, add the following to your `jupyterhub_config.py` file:
@@ -105,7 +111,7 @@ Then, add the following to your `jupyterhub_config.py` file:
     from oauthenticator.gitlab import GitLabOAuthenticator
     c.JupyterHub.authenticator_class = GitLabOAuthenticator
 
-You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local users.
+You can also use `LocalGitLabOAuthenticator` to map GitLab accounts onto local users.
 
 You can use your own GitLab CE/EE instance by setting the `GITLAB_HOST` environment
 flag.
