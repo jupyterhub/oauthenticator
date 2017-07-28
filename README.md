@@ -234,7 +234,7 @@ c.GlobusOAuthenticator.identity_provider = 'globusid.org'
 
 If you want to use a _Linked Identity_ such as `malcolm@universityofindependence.edu`,
 go to your [App Developer page](http://developers.globus.org) and set
-*Required Identity Provider* for your app to _<Your University>_, and set the
+*Required Identity Provider* for your app to `<Your University>`, and set the
 following in the config:
 
 ```python
