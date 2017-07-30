@@ -21,7 +21,7 @@ from mwoauth.tokens import RequestToken
 
 from traitlets import Any, Integer, Unicode
 
-from oauthenticator import OAuthenticator
+from oauthenticator import OAuthenticator, OAuthCallbackHandler
 
 
 # Name of cookie used to pass auth token between the oauth
@@ -42,7 +42,6 @@ def dejsonify(js):
     return RequestToken(key.encode('utf-8'), secret.encode('utf-8'))
 
 class MWLoginHandler(BaseHandler):
-
     @gen.coroutine
     def get(self):
         consumer_token = ConsumerToken(
@@ -66,20 +65,33 @@ class MWLoginHandler(BaseHandler):
 
         self.redirect(redirect)
 
+class MWCallbackHandler(OAuthCallbackHandler):
+    """
+    Override OAuthCallbackHandler to take out state parameter handling.
+
+    mwoauth doesn't seem to support it for now!
+    """
+
+    def check_arguments(self):
+        pass
+
+    def get_next_url(self):
+        return None
 
 class MWOAuthenticator(OAuthenticator):
     login_service = 'MediaWiki'
     login_handler = MWLoginHandler
+    callback_handler = MWCallbackHandler
 
     mw_index_url = Unicode(
         os.environ.get('MW_INDEX_URL', 'https://meta.wikimedia.org/w/index.php'),
         config=True,
         help='Full path to index.php of the MW instance to use to log in'
     )
-    
+
     executor_threads = Integer(12,
         help="""Number of executor threads.
-        
+
         MediaWiki OAuth requests happen in this thread,
         so it is mostly waiting for network replies.
         """,
@@ -88,10 +100,9 @@ class MWOAuthenticator(OAuthenticator):
     executor = Any()
     def _executor_default(self):
         return ThreadPoolExecutor(self.executor_threads)
-    
+
     @gen.coroutine
-    def authenticate(self, handler):
-        code = handler.get_argument("code")
+    def authenticate(self, handler, data):
         consumer_token = ConsumerToken(
             self.client_id,
             self.client_secret,
