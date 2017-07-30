@@ -88,7 +88,7 @@ class OAuthCallbackHandler(BaseHandler):
 
     def check_state(self):
         """Verify OAuth state
-        
+
         compare value in cookie with redirect url param
         """
         cookie_state = self.get_state_cookie()
@@ -116,7 +116,7 @@ class OAuthCallbackHandler(BaseHandler):
         """
         self.check_code()
         self.check_state()
-    
+
     def get_next_url(self):
         """Get the redirect target from the state field"""
         state = self.get_state_url()
