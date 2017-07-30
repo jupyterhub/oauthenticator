@@ -57,7 +57,7 @@ def test_mediawiki(mediawiki):
             query='oauth_token=key&oauth_verifier=me'
         )
     )
-    name = yield authenticator.authenticate(handler)
+    name = yield authenticator.authenticate(handler, None)
     assert name == 'wash'
 
 
