@@ -127,15 +127,18 @@ class OAuthCallbackHandler(BaseHandler):
     def get(self):
         self.check_arguments()
 
-        user = yield self.authenticator.get_authenticated_user(self, None)
-        if isinstance(user, dict):
+        user_info = yield self.authenticator.get_authenticated_user(self, None)
+        if isinstance(user_info, dict):
             # JupyterHub 0.8 returns a dict
-            username = user['name']
+            username = user_info['name']
         else:
-            username = user
+            username = user_info
 
         if username:
             user = self.user_from_username(username)
+            if isinstance(user_info, dict):
+                # it's a dict only in 0.8+, so we're ok!
+                yield user.save_auth_state(user_info['auth_state'])
             self.set_login_cookie(user)
             next_url = self.get_next_url() or url_path_join(self.hub.server.base_url, 'home')
             self.redirect(next_url)
