@@ -100,6 +100,40 @@ You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local u
 
 You can use your own Github Enterprise instance by setting the `GITHUB_HOST` environment variable.
 
+### GitHub-specific features
+
+There are four environment variables to use to configure additional
+GitHub features: `GITHUB_USE_ORGANIZATIONS`, `GITHUB_USE_PUSH_TOKEN`,
+`GITHUB_USE_PRIVATE_PUSH_TOKEN`, and `GITHUB_USE_EMAIL`.
+
+Each of these turns on a feature if it is set and requests additional
+scope on the GitHub token requested.
+
+`GITHUB_USE_ORGANIZATIONS` enables the use of GitHub organizations to
+allow provisioning of backend gids, which requires `read:org` scope to
+iterate through the user's organizations and map their names to their id
+numbers.
+
+`GITHUB_USE_PUSH_TOKEN` requests `public_repo` access in order to push
+code into public repositories--we use magic on the backend to cache
+the GitHub token and set up .git-credentials with it.
+
+`GITHUB_USE_PRIVATE_PUSH_TOKEN` does the same but with `repo` access, so
+it can access both public and private repositories. 
+
+`GITHUB_USE_EMAIL` looks at the GitHub email field; this is used to set
+up the user email address for GitHub in conjunction with the push token.
+It uses "user:email" scope but it's less than useful since private email
+addresses are still not visible.
+
+These are all stored in the authenticator's `auth_state` structure, so
+you'll need to enable `auth_state` and install the Python `cryptography`
+package to be able to use these.
+
+You will also need to subclass your spawner to be able to pull these
+fields out of `auth_state` and use them to provision your Notebook or
+Lab user.
+
 ## GitLab Setup
 
 First, you'll need to create a [GitLab OAuth
