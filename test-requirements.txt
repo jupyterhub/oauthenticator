@@ -2,7 +2,7 @@
 -r ./globus-requirements.txt
 codecov
 flake8
-jwt
+pyjwt
 mwoauth != 0.3.1
 pytest >= 2.8
 pytest-cov
