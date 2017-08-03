@@ -85,7 +85,6 @@ class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
     need to subclass your spawner to be able to pull these fields out
     of `auth_state` and use them to provision your Notebook or Lab
     user.
-
     """
 
 
