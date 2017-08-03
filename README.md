@@ -102,37 +102,46 @@ You can use your own Github Enterprise instance by setting the `GITHUB_HOST` env
 
 ### GitHub-specific features
 
-There are four environment variables to use to configure additional
-GitHub features: `GITHUB_USE_ORGANIZATIONS`, `GITHUB_USE_PUSH_TOKEN`,
-`GITHUB_USE_PRIVATE_PUSH_TOKEN`, and `GITHUB_USE_EMAIL`.
+Additional features are turned on by overriding the authenticator's
+`scope` list with particular GitHub scopes:
 
-Each of these turns on a feature if it is set and requests additional
-scope on the GitHub token requested.
+https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/
 
-`GITHUB_USE_ORGANIZATIONS` enables the use of GitHub organizations to
-allow provisioning of backend gids, which requires `read:org` scope to
-iterate through the user's organizations and map their names to their id
-numbers.
+Some example scopes you might want:
 
-`GITHUB_USE_PUSH_TOKEN` requests `public_repo` access in order to push
-code into public repositories--we use magic on the backend to cache
-the GitHub token and set up .git-credentials with it.
+`read:org` grants access to the users' organizations.  This is handy if
+you want to use GitHub organizations in your backend environment as Unix
+groups for collaboration purposes.  Having globally consistent UIDs
+(from the GitHub ID) and GIDs (from the organization IDs) makes access
+permissions on shared storage much easier.
 
-`GITHUB_USE_PRIVATE_PUSH_TOKEN` does the same but with `repo` access, so
-it can access both public and private repositories. 
+`public_repo` allows read and write of public repositories; if you want
+to pass the token back to your Lab or Notebook to automatically
+provision git pushes to GitHub magically working, you will want this.
 
-`GITHUB_USE_EMAIL` looks at the GitHub email field; this is used to set
-up the user email address for GitHub in conjunction with the push token.
-It uses "user:email" scope but it's less than useful since private email
-addresses are still not visible.
+`repo` does the same for private repositories too.
 
-These are all stored in the authenticator's `auth_state` structure, so
-you'll need to enable `auth_state` and install the Python `cryptography`
-package to be able to use these.
+The additional fields exposed by expanded scope are all stored in the
+authenticator's `auth_state` structure, so you'll need to enable
+`auth_state` and install the Python `cryptography` package to be able to
+use these.
 
-You will also need to subclass your spawner to be able to pull these
-fields out of `auth_state` and use them to provision your Notebook or
-Lab user.
+We currently use the following fields: 
+
+* `uid` is an integer set to the GitHub account ID.
+* `name` is the full name GitHub knows the user by.
+* `email` is the publicly visible email address (if any) for the user.
+* `auth_token` is the token used to authenticate to GitHub.
+* `organization_map` is a dict mapping the users' organization
+   memberships to the organization IDs, intended to be used to construct
+   group ID mappings for the user.
+
+If you are going to use this expanded user information, you will
+need to subclass your spawner to be able to pull these fields out
+of `auth_state` and use them to provision your Notebook or Lab
+user.
+
+
 
 ## GitLab Setup
 
