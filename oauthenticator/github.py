@@ -47,62 +47,46 @@ class GitHubMixin(OAuth2Mixin):
 
 
 class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
-    """We check the environment variables GITHUB_USE_ORGANIZATIONS,
-    GITHUB_USE_PUSH_TOKEN, GITHUB_USE_PRIVATE_PUSH_TOKEN, and
-    GITHUB_USE_EMAIL in order to set up the scope for the token we
-    request.
+    """The `scope` attribute is inherited from OAuthLoginHandler and is a
+    list of scopes requested when we acquire a GitHub token:
 
-    Each of these turns on a feature if it is set.
+    https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/
 
-    GITHUB_USE_ORGANIZATIONS enables the use of GitHub organizations
-    to allow provisioning of backend gids, which requires "read:org"
-    scope to iterate through the user's organizations and map their
-    names to their id numbers.
+    Some example scopes you might want:
 
-    GITHUB_USE_PUSH_TOKEN requests "public_repo" access in order to
-    push code into public repositories--we use magic on the backend to
-    cache the GitHub token and set up .git-credentials with it.
+    `read:org` grants access to the users' organizations.  This is handy if
+    you want to use GitHub organizations in your backend environment as 
+    Unix groups for collaboration purposes.  Having globally consistent
+    UIDs (from the GitHub ID) and GIDs (from the organization IDs) makes
+    access permissions on shared storage much easier.
 
-    GITHUB_USE_PRIVATE_PUSH_TOKEN does the same but with "repo"
-    access, so it can access both public and private repositories.
+    `public_repo` allows read and write of public repositories; if you want
+    to pass the token back to your Lab or Notebook to automatically provision
+    git pushes to GitHub magically working, you will want this.
 
-    GITHUB_USE_EMAIL looks at the GitHub email field; this is used to
-    set up the user email address for GitHub in conjunction with the
-    push token.  It uses "user:email" scope but it's less than useful
-    since private email addresses are still not visible.
+    `repo` does the same for private repositories too.
 
-    These are all stored in the authenticator's `auth_state`
-    structure, so you'll need to enable `auth_state` and install the
-    Python `cryptography` package to be able to use these.
+    The additional fields exposed by expanded scope are all stored in
+    the authenticator's `auth_state` structure, so you'll need to
+    enable `auth_state` and install the Python `cryptography` package
+    to be able to use these.
 
-    You will also need to subclass your spawner to be able to pull
-    these fields out of `auth_state` and use them to provision your
-    Notebook or Lab user.
+    We currently use the following fields: 
+      * `uid` is an integer set to the GitHub account ID.
+      * `name` is the full name GitHub knows the user by.
+      * `email` is the publicly visible email address (if any) for
+          the user.
+      * `auth_token` is the token used to authenticate to GitHub.
+      * `organization_map` is a dict mapping the users' organization
+          memberships to the organization IDs, intended to be used to
+          construct group ID mappings for the user.
+
+    If you are going to use this expanded user information, you will
+    need to subclass your spawner to be able to pull these fields out
+    of `auth_state` and use them to provision your Notebook or Lab
+    user.
 
     """
-
-    use_organizations = False
-    use_push_token = False
-    use_private_push_token = False
-    use_email = False
-
-    if os.environ.get('GITHUB_USE_ORGANIZATIONS'):
-        use_organizations = True
-    if os.environ.get('GITHUB_USE_PUSH_TOKEN'):
-        use_push_token = True
-    if os.environ.get('GITHUB_USE_PRIVATE_PUSH_TOKEN'):
-        use_private_push_token = True
-    if os.environ.get('GITHUB_USE_EMAIL'):
-        use_email = True
-    scope = []
-    if use_organizations:
-        scope.append("read:org")
-    if use_private_push_token:
-        scope.append("repo")
-    elif use_push_token:
-        scope.append("public_repo")
-    if use_email:
-        scope.append("user:email")
 
 
 class GitHubOAuthenticator(OAuthenticator):
@@ -189,31 +173,22 @@ class GitHubOAuthenticator(OAuthenticator):
         # Now we set up auth_state
         auth_state = {}
         auth_state["username"] = username
-        # We may want to do user provisioning in the server container.
+        # We may want to do user provisioning in the Lab/Notebook environment.
         #  This next bit is about that.
-        #  1) make the username look Unixy
+        #  1) stash the access token
         #  2) use the GitHub ID as the uid
-        #  3) set list of orgs/gids
+        #  3) set up map of orgs/gids
         #  4) set up name/email for .gitconfig
-        safe_chars = set(string.ascii_lowercase + string.digits)
-        safe_username = ''.join(
-            [s if s in safe_chars else '-' for s in username.lower()])
-        auth_state["canonicalname"] = safe_username
+        # Store the resulting structure in auth_state
+        auth_state["access_token"] = access_token
         auth_state["uid"] = resp_json["id"]
-        auth_state["name"] = resp_json["name"]
         orgs = yield self._get_user_organizations(access_token)
         if orgs:
             auth_state["organization_map"] = orgs
+        auth_state["name"] = resp_json["name"]
         # Entirely possible "email" isn't present or is null.
         if "email" in resp_json and resp_json["email"]:
             auth_state["email"] = resp_json["email"]
-        # Log authentication state (without token)
-        auth_state["access_token"] = "[secret]"
-        self.log.info("auth_state [%s]: %s" % (username,
-                                               json.dumps(auth_state,
-                                                          indent=4,
-                                                          sort_keys=True)))
-        auth_state["access_token"] = access_token
         userdict["auth_state"] = auth_state
         return userdict
 
