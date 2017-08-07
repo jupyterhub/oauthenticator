@@ -100,48 +100,8 @@ You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local u
 
 You can use your own Github Enterprise instance by setting the `GITHUB_HOST` environment variable.
 
-### GitHub-specific features
-
-Additional features are turned on by overriding the authenticator's
-`scope` list with particular GitHub scopes:
-
-https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/
-
-Some example scopes you might want:
-
-`read:org` grants access to the users' organizations.  This is handy if
-you want to use GitHub organizations in your backend environment as Unix
-groups for collaboration purposes.  Having globally consistent UIDs
-(from the GitHub ID) and GIDs (from the organization IDs) makes access
-permissions on shared storage much easier.
-
-`public_repo` allows read and write of public repositories; if you want
-to pass the token back to your Lab or Notebook to automatically
-provision git pushes to GitHub magically working, you will want this.
-
-`repo` does the same for private repositories too.
-
-The additional fields exposed by expanded scope are all stored in the
-authenticator's `auth_state` structure, so you'll need to enable
-`auth_state` and install the Python `cryptography` package to be able to
-use these.
-
-We currently use the following fields: 
-
-* `uid` is an integer set to the GitHub account ID.
-* `name` is the full name GitHub knows the user by.
-* `email` is the publicly visible email address (if any) for the user.
-* `auth_token` is the token used to authenticate to GitHub.
-* `organization_map` is a dict mapping the users' organization
-   memberships to the organization IDs, intended to be used to construct
-   group ID mappings for the user.
-
-If you are going to use this expanded user information, you will
-need to subclass your spawner to be able to pull these fields out
-of `auth_state` and use them to provision your Notebook or Lab
-user.
-
-
+GitHub allows expanded capabilities by
+adding [GitHub-Specific Scopes](github_scope.md) to the requested token.
 
 ## GitLab Setup
 

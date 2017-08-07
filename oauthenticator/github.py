@@ -50,41 +50,7 @@ class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
     """The `scope` attribute is inherited from OAuthLoginHandler and is a
     list of scopes requested when we acquire a GitHub token:
 
-    https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/
-
-    Some example scopes you might want:
-
-    `read:org` grants access to the users' organizations.  This is handy if
-    you want to use GitHub organizations in your backend environment as 
-    Unix groups for collaboration purposes.  Having globally consistent
-    UIDs (from the GitHub ID) and GIDs (from the organization IDs) makes
-    access permissions on shared storage much easier.
-
-    `public_repo` allows read and write of public repositories; if you want
-    to pass the token back to your Lab or Notebook to automatically provision
-    git pushes to GitHub magically working, you will want this.
-
-    `repo` does the same for private repositories too.
-
-    The additional fields exposed by expanded scope are all stored in
-    the authenticator's `auth_state` structure, so you'll need to
-    enable `auth_state` and install the Python `cryptography` package
-    to be able to use these.
-
-    We currently use the following fields: 
-      * `uid` is an integer set to the GitHub account ID.
-      * `name` is the full name GitHub knows the user by.
-      * `email` is the publicly visible email address (if any) for
-          the user.
-      * `auth_token` is the token used to authenticate to GitHub.
-      * `organization_map` is a dict mapping the users' organization
-          memberships to the organization IDs, intended to be used to
-          construct group ID mappings for the user.
-
-    If you are going to use this expanded user information, you will
-    need to subclass your spawner to be able to pull these fields out
-    of `auth_state` and use them to provision your Notebook or Lab
-    user.
+    See github_scope.md for details.
     """
 
 
@@ -156,7 +122,6 @@ class GitHubOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["login"]
-
         # Check if user is a member of any whitelisted organizations.
         # This check is performed here, as it requires `access_token`.
         if self.github_organization_whitelist:
@@ -168,6 +133,15 @@ class GitHubOAuthenticator(OAuthenticator):
         # username is now the GitHub userid.
         if not username:
             return None
+        # Check if user is a member of any whitelisted organizations.
+        # This check is performed here, as it requires `access_token`.
+        if self.github_organization_whitelist:
+            for org in self.github_organization_whitelist:
+                user_in_org = yield self._check_organization_whitelist(org, username, access_token)
+                if user_in_org:
+                    break
+            else:  # User not found in member list for any organisation
+                return None
         userdict = {"name": username}
         # Now we set up auth_state
         auth_state = {}
@@ -185,9 +159,14 @@ class GitHubOAuthenticator(OAuthenticator):
         if orgs:
             auth_state["organization_map"] = orgs
         auth_state["name"] = resp_json["name"]
-        # Entirely possible "email" isn't present or is null.
+        # A public email will return in the base query
         if "email" in resp_json and resp_json["email"]:
             auth_state["email"] = resp_json["email"]
+        else:
+            # Or if you gave
+            email = yield self._get_user_email(access_token)
+            if email:
+                auth_state["email"] = email
         userdict["auth_state"] = auth_state
         return userdict
 
@@ -203,7 +182,7 @@ class GitHubOAuthenticator(OAuthenticator):
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = next_page_from_links(resp)
             org_members = set(entry["login"] for entry in resp_json)
-            # check if any of the organizations seen thus far are in whitelist
+            # check if any of the organizations seen so far are in whitelist
             if username in org_members:
                 return True
         return False
@@ -222,6 +201,22 @@ class GitHubOAuthenticator(OAuthenticator):
             for entry in resp_json:
                 orgmap[entry["login"]] = entry["id"]
         return orgmap
+
+    @gen.coroutine
+    def _get_user_email(self, access_token):
+        http_client = AsyncHTTPClient()
+        headers = _api_headers(access_token)
+        next_page = "https://%s/user/emails" % (GITHUB_API)
+        while next_page:
+            req = HTTPRequest(next_page, method="GET", headers=headers)
+            resp = yield http_client.fetch(req)
+            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+            next_page = next_page_from_links(resp)
+            for entry in resp_json:
+                if "email" in entry:
+                    if "primary" in entry and entry["primary"]:
+                        return entry["email"]
+        return None
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
