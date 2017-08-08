@@ -75,8 +75,9 @@ class MWCallbackHandler(OAuthCallbackHandler):
     def check_arguments(self):
         pass
 
-    def get_next_url(self):
+    def get_state_url(self):
         return None
+
 
 class MWOAuthenticator(OAuthenticator):
     login_service = 'MediaWiki'
@@ -102,7 +103,7 @@ class MWOAuthenticator(OAuthenticator):
         return ThreadPoolExecutor(self.executor_threads)
 
     @gen.coroutine
-    def authenticate(self, handler, data):
+    def authenticate(self, handler, data=None):
         consumer_token = ConsumerToken(
             self.client_id,
             self.client_secret,

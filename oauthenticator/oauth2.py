@@ -122,29 +122,40 @@ class OAuthCallbackHandler(BaseHandler):
         state = self.get_state_url()
         if state:
             return json.loads(state).get('next_url')
+        # JupyterHub 0.8 adds default .get_next_url for a fallback
+        if hasattr(BaseHandler, 'get_next_url'):
+            return super().get_next_url()
+        return url_path_join(self.hub.server.base_url, 'home')
+
+    @gen.coroutine
+    def _login_user_pre_08(self):
+        """login_user simplifies the login+cookie+auth_state process in JupyterHub 0.8
+
+        _login_user_07 is for backward-compatibility with JupyterHub 0.7
+        """
+        user_info = yield self.authenticator.get_authenticated_user(self, None)
+        if user_info is None:
+            return
+        if isinstance(user_info, dict):
+            username = user_info['name']
+        else:
+            username = user_info
+        user = self.user_from_username(username)
+        self.set_login_cookie(user)
+        return user
+
+    if not hasattr(BaseHandler, 'login_user'):
+        # JupyterHub 0.7 doesn't have .login_user
+        login_user = _login_user_pre_08
 
     @gen.coroutine
     def get(self):
         self.check_arguments()
-
-        user_info = yield self.authenticator.get_authenticated_user(self, None)
-        if isinstance(user_info, dict):
-            # JupyterHub 0.8 returns a dict
-            username = user_info['name']
-        else:
-            username = user_info
-
-        if username:
-            user = self.user_from_username(username)
-            if isinstance(user_info, dict):
-                # it's a dict only in 0.8+, so we're ok!
-                yield user.save_auth_state(user_info['auth_state'])
-            self.set_login_cookie(user)
-            next_url = self.get_next_url() or url_path_join(self.hub.server.base_url, 'home')
-            self.redirect(next_url)
-        else:
+        user = yield self.login_user()
+        if user is None:
             # todo: custom error page?
             raise web.HTTPError(403)
+        self.redirect(self.get_next_url())
 
 
 class OAuthenticator(Authenticator):
