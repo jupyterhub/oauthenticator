@@ -20,7 +20,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Set
+from traitlets import List, Set, Unicode
 
 from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
@@ -76,6 +76,18 @@ class GitHubOAuthenticator(OAuthenticator):
     github_organization_whitelist = Set(
         config=True,
         help="Automatically whitelist members of selected organizations",
+    )
+    auth_state_keys = List([
+        'email',
+        'id',
+        'login',
+        'name',
+    ], config=True,
+        help="""keys from a GitHub authorization reply to preserve in
+        auth_state.
+        
+        See GitHub OAuth docs for available keys.
+        """
     )
 
     @gen.coroutine
@@ -135,28 +147,28 @@ class GitHubOAuthenticator(OAuthenticator):
                 return None
         userdict = {"name": username}
         # Now we set up auth_state
-        auth_state = {}
+        userdict["auth_state"] = auth_state = {}
         # We may want to do user provisioning in the Lab/Notebook environment.
         #  This next bit is about that.
         #  1) stash the access token
-        #  2) use the GitHub ID as the uid
+        #  2) use the GitHub ID as the id
         #  3) set up name/email for .gitconfig
         # Store the resulting structure in auth_state
+        auth_state['access_token'] = access_token
         #
         # Once you have the access token (and the appropriate scope set in the
         #  handler), you can use that in your subclassed authenticator to
         #  do nifty tricks by making more API calls to get more information
         #  to pass to the spawned Notebook/Lab.
-        auth_state["access_token"] = access_token
+
         # The following keys are loaded from the response into auth_state
-        # let's keep the keys matching upstream APIs where available
-        for key in ['id', 'name', 'login']:
-            auth_state[key] = resp_json[key]
+        # See the GitHub OAuth API for details
+        for key in self.auth_state_keys:
+            if key in resp_json:
+                auth_state[key] = resp_json[key]
         # A public email will return in the initial query (assuming default
-        #  scope).  Private will not.
-        if resp_json.get("email"):
-            auth_state["email"] = resp_json["email"]
-        userdict["auth_state"] = auth_state
+        # scope).  Private will not.
+
         return userdict
 
     @gen.coroutine
