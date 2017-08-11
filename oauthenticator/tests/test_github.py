@@ -16,7 +16,10 @@ from .mocks import setup_oauth_mock
 def user_model(username):
     """Return a user model"""
     return {
+        'email': 'dinosaurs@space',
+        'id': 5,
         'login': username,
+        'name': 'Hoban Washburn',
     }
 
 @fixture
@@ -34,8 +37,20 @@ def github_client(client):
 def test_github(github_client):
     authenticator = GitHubOAuthenticator()
     handler = github_client.handler_for_user(user_model('wash'))
-    name = yield authenticator.authenticate(handler)
+    user_info = yield authenticator.authenticate(handler)
+    name = user_info['name']
     assert name == 'wash'
+    auth_state = user_info['auth_state']
+    assert 'access_token' in auth_state
+    
+    assert auth_state == {
+        'access_token': auth_state['access_token'],
+        'email': 'dinosaurs@space',
+        'id': 5,
+        'login': name,
+        'name': 'Hoban Washburn',
+    }
+    
 
 
 def make_link_header(urlinfo, page):
@@ -98,23 +113,23 @@ def test_org_whitelist(github_client):
         authenticator.github_organization_whitelist = ['blue']
 
         handler = client.handler_for_user(user_model('caboose'))
-        name = yield authenticator.authenticate(handler)
-        assert name == 'caboose'
+        user = yield authenticator.authenticate(handler)
+        assert user['name'] == 'caboose'
 
         handler = client.handler_for_user(user_model('donut'))
-        name = yield authenticator.authenticate(handler)
-        assert name is None
+        user = yield authenticator.authenticate(handler)
+        assert user is None
 
         # reverse it, just to be safe
         authenticator.github_organization_whitelist = ['red']
 
         handler = client.handler_for_user(user_model('caboose'))
-        name = yield authenticator.authenticate(handler)
-        assert name is None
+        user = yield authenticator.authenticate(handler)
+        assert user is None
 
         handler = client.handler_for_user(user_model('donut'))
-        name = yield authenticator.authenticate(handler)
-        assert name == 'donut'
+        user = yield authenticator.authenticate(handler)
+        assert user['name'] == 'donut'
 
         client.hosts['api.github.com'].pop()
 
