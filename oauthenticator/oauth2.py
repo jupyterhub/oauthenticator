@@ -144,14 +144,16 @@ class OAuthCallbackHandler(BaseHandler):
         self.check_code()
         self.check_state()
 
-    def get_next_url(self):
+    def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
         state = self.get_state_url()
         if state:
-            return _deserialize_state(state).get('next_url')
+            next_url = _deserialize_state(state).get('next_url')
+            if next_url:
+                return next_url
         # JupyterHub 0.8 adds default .get_next_url for a fallback
         if hasattr(BaseHandler, 'get_next_url'):
-            return super().get_next_url()
+            return super().get_next_url(user)
         return url_path_join(self.hub.server.base_url, 'home')
 
     @gen.coroutine
@@ -182,7 +184,7 @@ class OAuthCallbackHandler(BaseHandler):
         if user is None:
             # todo: custom error page?
             raise web.HTTPError(403)
-        self.redirect(self.get_next_url())
+        self.redirect(self.get_next_url(user))
 
 
 class OAuthenticator(Authenticator):
