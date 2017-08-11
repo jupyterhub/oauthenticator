@@ -10,6 +10,15 @@ command line for details.
 
 ## 0.6
 
+### [0.6.1] - 2017-08-11
+
+0.6.1 has bugfixes for new behaviors in 0.6.0
+
+- Use `.login_url` and `next_url` from JupyterHub if defined (JupyterHub 0.8)
+- Fix empty login_url where final login redirect could be omitted
+- Fix mediawiki authenticator, which broke in 0.6.0
+- Encode state as base64 instead of JSON, for easier passing in URLs
+
 ### [0.6.0] - 2017-07-25
 
 - Support for changes in upcoming JupyterHub 0.8
@@ -62,7 +71,8 @@ command line for details.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...HEAD
+[0.6.1]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...0.6.1
 [0.6.0]:https://github.com/jupyterhub/oauthenticator/compare/0.5.1...0.6.0
 [0.5.1]:https://github.com/jupyterhub/oauthenticator/compare/0.5.0...0.5.1
 [0.5.0]:https://github.com/jupyterhub/oauthenticator/compare/0.4.1...0.5.0
