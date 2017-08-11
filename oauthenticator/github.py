@@ -136,7 +136,6 @@ class GitHubOAuthenticator(OAuthenticator):
         userdict = {"name": username}
         # Now we set up auth_state
         auth_state = {}
-        auth_state["username"] = username
         # We may want to do user provisioning in the Lab/Notebook environment.
         #  This next bit is about that.
         #  1) stash the access token
@@ -149,11 +148,13 @@ class GitHubOAuthenticator(OAuthenticator):
         #  do nifty tricks by making more API calls to get more information
         #  to pass to the spawned Notebook/Lab.
         auth_state["access_token"] = access_token
-        auth_state["uid"] = resp_json["id"]
-        auth_state["name"] = resp_json["name"]
+        # The following keys are loaded from the response into auth_state
+        # let's keep the keys matching upstream APIs where available
+        for key in ['id', 'name', 'login']:
+            auth_state[key] = resp_json[key]
         # A public email will return in the initial query (assuming default
         #  scope).  Private will not.
-        if "email" in resp_json and resp_json["email"]:
+        if resp_json.get("email"):
             auth_state["email"] = resp_json["email"]
         userdict["auth_state"] = auth_state
         return userdict

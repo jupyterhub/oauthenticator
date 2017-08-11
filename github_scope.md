@@ -35,13 +35,12 @@ use these.
 
 We currently use the following fields: 
 
-* `uid` is an integer set to the GitHub account ID.
+* `id` is an integer set to the GitHub account ID.
+* `login` is the GitHub username
 * `name` is the full name GitHub knows the user by.
 * `email` is the publicly visible email address (if any) for the user.
-* `auth_token` is the token used to authenticate to GitHub.
-* `organization_map` is a dict mapping the users' organization
-   memberships to the organization IDs, intended to be used to construct
-   group ID mappings for the user.
+* `access_token` is the token used to authenticate to GitHub.
+* ``
 
 To use this expanded user information, you will need to subclass your
 current spawner and modify the subclass to read these fields from
