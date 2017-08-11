@@ -3,8 +3,7 @@ Custom Authenticator to use GitHub OAuth with JupyterHub
 
 Most of the code c/o Kyle Kelley (@rgbkrk)
 
-Extended use of GH attributes (uid/gid, email, save-token) by Adam Thornton
- (athornton@lsst.org)
+Extended use of GH attributes by Adam Thornton (athornton@lsst.org)
 """
 
 
@@ -122,14 +121,6 @@ class GitHubOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["login"]
-        # Check if user is a member of any whitelisted organizations.
-        # This check is performed here, as it requires `access_token`.
-        if self.github_organization_whitelist:
-            for org in self.github_organization_whitelist:
-                user_in_org = yield self._check_organization_whitelist(org, username, access_token)
-                if not user_in_org:
-                    # User not found in member list for any organisation
-                    return None
         # username is now the GitHub userid.
         if not username:
             return None
@@ -150,23 +141,20 @@ class GitHubOAuthenticator(OAuthenticator):
         #  This next bit is about that.
         #  1) stash the access token
         #  2) use the GitHub ID as the uid
-        #  3) set up map of orgs/gids
-        #  4) set up name/email for .gitconfig
+        #  3) set up name/email for .gitconfig
         # Store the resulting structure in auth_state
+        #
+        # Once you have the access token (and the appropriate scope set in the
+        #  handler), you can use that in your subclassed authenticator to
+        #  do nifty tricks by making more API calls to get more information
+        #  to pass to the spawned Notebook/Lab.
         auth_state["access_token"] = access_token
         auth_state["uid"] = resp_json["id"]
-        orgs = yield self._get_user_organizations(access_token)
-        if orgs:
-            auth_state["organization_map"] = orgs
         auth_state["name"] = resp_json["name"]
-        # A public email will return in the base query
+        # A public email will return in the initial query (assuming default
+        #  scope).  Private will not.
         if "email" in resp_json and resp_json["email"]:
             auth_state["email"] = resp_json["email"]
-        else:
-            # Or if you gave
-            email = yield self._get_user_email(access_token)
-            if email:
-                auth_state["email"] = email
         userdict["auth_state"] = auth_state
         return userdict
 
@@ -175,6 +163,9 @@ class GitHubOAuthenticator(OAuthenticator):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Get all the members for organization 'org'
+        # With empty scope (even if authenticated by an org member), this
+        #  will only yield public org members.  You want 'read:org' in order
+        #  to be able to iterate through all members.
         next_page = "https://%s/orgs/%s/members" % (GITHUB_API, org)
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
@@ -186,37 +177,6 @@ class GitHubOAuthenticator(OAuthenticator):
             if username in org_members:
                 return True
         return False
-
-    @gen.coroutine
-    def _get_user_organizations(self, access_token):
-        http_client = AsyncHTTPClient()
-        headers = _api_headers(access_token)
-        next_page = "https://%s/user/orgs" % (GITHUB_API)
-        orgmap = {}
-        while next_page:
-            req = HTTPRequest(next_page, method="GET", headers=headers)
-            resp = yield http_client.fetch(req)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            next_page = next_page_from_links(resp)
-            for entry in resp_json:
-                orgmap[entry["login"]] = entry["id"]
-        return orgmap
-
-    @gen.coroutine
-    def _get_user_email(self, access_token):
-        http_client = AsyncHTTPClient()
-        headers = _api_headers(access_token)
-        next_page = "https://%s/user/emails" % (GITHUB_API)
-        while next_page:
-            req = HTTPRequest(next_page, method="GET", headers=headers)
-            resp = yield http_client.fetch(req)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            next_page = next_page_from_links(resp)
-            for entry in resp_json:
-                if "email" in entry:
-                    if "primary" in entry and entry["primary"]:
-                        return entry["email"]
-        return None
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
