@@ -4,11 +4,13 @@ Base classes for Custom Authenticator to use GitHub OAuth with JupyterHub
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
 
+import base64
 import json
 import os
 import uuid
 
 from tornado import gen, web
+from tornado.log import app_log
 
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
@@ -29,6 +31,31 @@ def guess_callback_uri(protocol, host, hub_server_url):
 
 STATE_COOKIE_NAME = 'oauthenticator-state'
 
+
+def _serialize_state(state):
+    """Serialize OAuth state to a base64 string after passing through JSON"""
+    json_state = json.dumps(state)
+    return base64.urlsafe_b64encode(
+        json_state.encode('utf8')
+    ).decode('ascii')
+
+
+def _deserialize_state(b64_state):
+    """Deserialize OAuth state as serialized in _serialize_state"""
+    if isinstance(b64_state, str):
+        b64_state = b64_state.encode('ascii')
+    try:
+        json_state = base64.urlsafe_b64decode(b64_state).decode('utf8')
+    except ValueError:
+        app_log.error("Failed to b64-decode state: %r", b64_state)
+        return {}
+    try:
+        return json.loads(json_state)
+    except ValueError:
+        app_log.error("Failed to json-decode state: %r", json_state)
+        return {}
+
+
 class OAuthLoginHandler(BaseHandler):
     """Base class for OAuth login handler
 
@@ -45,7 +72,7 @@ class OAuthLoginHandler(BaseHandler):
     def get_state(self):
         next_url = self.get_argument('next', None)
         if self._state is None:
-            self._state = json.dumps({
+            self._state = _serialize_state({
                 'state_id': uuid.uuid4().hex,
                 'next_url': next_url,
             })
@@ -117,14 +144,16 @@ class OAuthCallbackHandler(BaseHandler):
         self.check_code()
         self.check_state()
 
-    def get_next_url(self):
+    def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
         state = self.get_state_url()
         if state:
-            return json.loads(state).get('next_url')
+            next_url = _deserialize_state(state).get('next_url')
+            if next_url:
+                return next_url
         # JupyterHub 0.8 adds default .get_next_url for a fallback
         if hasattr(BaseHandler, 'get_next_url'):
-            return super().get_next_url()
+            return super().get_next_url(user)
         return url_path_join(self.hub.server.base_url, 'home')
 
     @gen.coroutine
@@ -155,7 +184,7 @@ class OAuthCallbackHandler(BaseHandler):
         if user is None:
             # todo: custom error page?
             raise web.HTTPError(403)
-        self.redirect(self.get_next_url())
+        self.redirect(self.get_next_url(user))
 
 
 class OAuthenticator(Authenticator):
