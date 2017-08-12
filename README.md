@@ -80,7 +80,7 @@ $OAUTH_CLIENT_SECRET
 You can also set these values in your **configuration file**, `jupyterhub_config.py`:
 
 ```python
-c.MyOAuthenticator.callback_url = 'http[s]://[your-host]/hub/oauth_callback'
+c.MyOAuthenticator.oauth_callback_url = 'http[s]://[your-host]/hub/oauth_callback'
 c.MyOAuthenticator.client_id = 'your-client-id'
 c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
