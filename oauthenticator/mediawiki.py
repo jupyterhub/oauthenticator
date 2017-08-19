@@ -127,8 +127,7 @@ class MWOAuthenticator(OAuthenticator):
                 'auth_state': {
                     'ACCESS_TOKEN_KEY': access_token.key.decode('utf-8'),
                     'ACCESS_TOKEN_SECRET': access_token.secret.decode('utf-8'),
-                    'MEDIAWIKI_USER_ID': identity['sub'],
-                    'MEDIAWIKI_USER_NAME': identity['username']
+                    'MEDIAWIKI_USER_IDENTITY': identity,
 
                 }
             }
