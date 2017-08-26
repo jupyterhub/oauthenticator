@@ -32,7 +32,7 @@ GITLAB_API = '%s/api/v3' % GITLAB_HOST
 def _api_headers(access_token):
     return {"Accept": "application/json",
             "User-Agent": "JupyterHub",
-            "Authorization": "token {}".format(access_token)
+            "Authorization": "Bearer {}".format(access_token)
            }
 
 
