@@ -16,11 +16,15 @@ from .mocks import setup_oauth_mock
 
 def user_model(username, id=1, is_admin=False):
     """Return a user model"""
-    return {
+    user = {
         'username': username,
         'id': id,
-        'is_admin': is_admin
     }
+    if is_admin:
+      # Some versions of the API do not return the is_admin property
+        # for non-admin users (See #115).
+        user['is_admin'] = True
+    return user
 
 @fixture
 def gitlab_client(client):
@@ -58,12 +62,10 @@ def test_group_whitelist(gitlab_client):
         'burns': ['blue', 'yellow'],
     })
 
-    def user_model(username, is_admin=False):
-        return {
-            'username': username,
-            'id': list(user_groups.keys()).index(username) + 1,
-            'is_admin': is_admin
-        }
+    def group_user_model(username, is_admin=False):
+        return user_model(username,
+                          list(user_groups.keys()).index(username) + 1,
+                          is_admin)
 
 
     member_regex = re.compile(r'/api/v3/groups/(.*)/members/(.*)')
@@ -116,30 +118,30 @@ def test_group_whitelist(gitlab_client):
 
         authenticator.gitlab_group_whitelist = ['blue']
 
-        handler = client.handler_for_user(user_model('caboose'))
+        handler = client.handler_for_user(group_user_model('caboose'))
         name = yield authenticator.authenticate(handler)
         assert name == 'caboose'
 
-        handler = client.handler_for_user(user_model('burns', is_admin=True))
+        handler = client.handler_for_user(group_user_model('burns', is_admin=True))
         name = yield authenticator.authenticate(handler)
         assert name == 'burns'
 
-        handler = client.handler_for_user(user_model('grif'))
+        handler = client.handler_for_user(group_user_model('grif'))
         name = yield authenticator.authenticate(handler)
         assert name is None
 
-        handler = client.handler_for_user(user_model('simmons', is_admin=True))
+        handler = client.handler_for_user(group_user_model('simmons', is_admin=True))
         name = yield authenticator.authenticate(handler)
         assert name is None
 
         # reverse it, just to be safe
         authenticator.gitlab_group_whitelist = ['red']
 
-        handler = client.handler_for_user(user_model('caboose'))
+        handler = client.handler_for_user(group_user_model('caboose'))
         name = yield authenticator.authenticate(handler)
         assert name is None
 
-        handler = client.handler_for_user(user_model('grif'))
+        handler = client.handler_for_user(group_user_model('grif'))
         name = yield authenticator.authenticate(handler)
         assert name == 'grif'
 
