@@ -57,8 +57,13 @@ def test_mediawiki(mediawiki):
             query='oauth_token=key&oauth_verifier=me'
         )
     )
-    name = yield authenticator.authenticate(handler, None)
-    assert name == 'wash'
+    user = yield authenticator.authenticate(handler, None)
+    assert user['name'] == 'wash'
+    auth_state = user['auth_state']
+    assert auth_state['ACCESS_TOKEN_KEY'] == 'key'
+    assert auth_state['ACCESS_TOKEN_SECRET'] == 'secret'
+    identity = auth_state['MEDIAWIKI_USER_IDENTITY']
+    assert identity['username'] == user['name']
 
 
 @mark.gen_test

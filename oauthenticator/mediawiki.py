@@ -122,7 +122,15 @@ class MWOAuthenticator(OAuthenticator):
         if identity and 'username' in identity:
             # this shouldn't be necessary anymore,
             # but keep for backward-compatibility
-            return identity['username'].replace(' ', '_')
+            return {
+                'name': identity['username'].replace(' ', '_'),
+                'auth_state': {
+                    'ACCESS_TOKEN_KEY': access_token.key.decode('utf-8'),
+                    'ACCESS_TOKEN_SECRET': access_token.secret.decode('utf-8'),
+                    'MEDIAWIKI_USER_IDENTITY': identity,
+
+                }
+            }
         else:
             self.log.error("No username found in %s", identity)
 
