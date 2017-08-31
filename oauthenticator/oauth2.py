@@ -16,7 +16,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode, Bool
+from traitlets import Unicode, Bool, List
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -85,7 +85,7 @@ class OAuthLoginHandler(BaseHandler):
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
-            scope=self.oauthenticator.scope,
+            scope=self.authenticator.scope,
             extra_params={'state': state},
             response_type='code')
 
