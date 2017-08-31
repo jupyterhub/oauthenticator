@@ -185,10 +185,9 @@ class GitHubOAuthenticator(OAuthenticator):
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = next_page_from_links(resp)
-            org_members = set(entry["login"] for entry in resp_json)
-            # check if any of the organizations seen so far are in whitelist
-            if username in org_members:
-                return True
+            for entry in resp_json:
+                if username == entry['login']:
+                    return True
         return False
 
 
