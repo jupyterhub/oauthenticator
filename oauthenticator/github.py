@@ -77,18 +77,6 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True,
         help="Automatically whitelist members of selected organizations",
     )
-    auth_state_keys = List([
-        'email',
-        'id',
-        'login',
-        'name',
-    ], config=True,
-        help="""keys from a GitHub authorization reply to preserve in
-        auth_state.
-        
-        See GitHub OAuth docs for available keys.
-        """
-    )
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -144,30 +132,22 @@ class GitHubOAuthenticator(OAuthenticator):
                 if user_in_org:
                     break
             else:  # User not found in member list for any organisation
+                self.log.warning("User %s is not in org whitelist", username)
                 return None
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
-        # We may want to do user provisioning in the Lab/Notebook environment.
-        #  This next bit is about that.
+        # Save the access token and full GitHub reply (name, id, email) in auth state
+        # These can be used for user provisioning in the Lab/Notebook environment.
+        # e.g.
         #  1) stash the access token
         #  2) use the GitHub ID as the id
         #  3) set up name/email for .gitconfig
-        # Store the resulting structure in auth_state
         auth_state['access_token'] = access_token
-        #
-        # Once you have the access token (and the appropriate scope set in the
-        #  handler), you can use that in your subclassed authenticator to
-        #  do nifty tricks by making more API calls to get more information
-        #  to pass to the spawned Notebook/Lab.
-
-        # The following keys are loaded from the response into auth_state
-        # See the GitHub OAuth API for details
-        for key in self.auth_state_keys:
-            if key in resp_json:
-                auth_state[key] = resp_json[key]
-        # A public email will return in the initial query (assuming default
-        # scope).  Private will not.
+        # store the whole user model in auth_state.github_user
+        auth_state['github_user'] = resp_json
+        # A public email will return in the initial query (assuming default scope).
+        # Private will not.
 
         return userdict
 
@@ -185,10 +165,9 @@ class GitHubOAuthenticator(OAuthenticator):
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = next_page_from_links(resp)
-            org_members = set(entry["login"] for entry in resp_json)
-            # check if any of the organizations seen so far are in whitelist
-            if username in org_members:
-                return True
+            for entry in resp_json:
+                if username == entry['login']:
+                    return True
         return False
 
 

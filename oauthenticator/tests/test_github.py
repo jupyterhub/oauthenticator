@@ -45,12 +45,13 @@ def test_github(github_client):
     
     assert auth_state == {
         'access_token': auth_state['access_token'],
-        'email': 'dinosaurs@space',
-        'id': 5,
-        'login': name,
-        'name': 'Hoban Washburn',
+        'github_user': {
+            'email': 'dinosaurs@space',
+            'id': 5,
+            'login': name,
+            'name': 'Hoban Washburn',
+        }
     }
-    
 
 
 def make_link_header(urlinfo, page):
