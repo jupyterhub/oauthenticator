@@ -105,13 +105,6 @@ class GlobusOAuthenticator(OAuthenticator):
     def _exclude_tokens_default(self):
         return ['auth.globus.org']
 
-    scope = List(
-        help="""Set scope for Globus Auth. The transfer scope can be removed in
-         which case a transfer token will no longer be passed to the spawner.
-         Alternatively, add additional transfer scopes and those transfer
-         tokens will automatically be added."""
-    ).tag(config=True)
-
     def _scope_default(self):
         return [
             'openid',

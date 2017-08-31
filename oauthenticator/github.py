@@ -46,14 +46,14 @@ class GitHubMixin(OAuth2Mixin):
 
 
 class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
-    """The `scope` attribute is inherited from OAuthLoginHandler and is a
-    list of scopes requested when we acquire a GitHub token:
-
-    See github_scope.md for details.
-    """
+    pass
 
 
 class GitHubOAuthenticator(OAuthenticator):
+
+    # see github_scopes.md for details about scope config
+    # set scopes via config, e.g.
+    # c.GitHubOAuthenticator.scopes = ['read:org']
 
     login_service = "GitHub"
 
