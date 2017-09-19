@@ -1,6 +1,0 @@
-# extra requirements for cilogon
--r ./requirements.txt
-PyOpenSSL
-oauthlib
-cryptography
-pyjwt
