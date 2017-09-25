@@ -6,13 +6,11 @@ from binascii import a2b_base64
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
-
-
-from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from tornado.httputil import url_concat
+from traitlets import default
 
 from jupyterhub.auth import LocalAuthenticator
-
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -27,13 +25,17 @@ class OkpyMixin(OAuth2Mixin):
 
 
 class OkpyLoginHandler(OAuthLoginHandler, OkpyMixin):
-    scope = ['all']
+    pass
 
 
 class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
     login_service = "Okpy"
     login_handler = OkpyLoginHandler
     
+    @default('scope')
+    def _default_scope(self):
+        return ['all']
+
     def get_auth_request(self, code):
         params = dict(
             redirect_uri = self.oauth_callback_url,
