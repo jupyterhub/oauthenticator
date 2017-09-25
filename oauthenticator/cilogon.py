@@ -51,28 +51,15 @@ class CILogonMixin(OAuth2Mixin):
 
 
 class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
-    """See http://www.cilogon.org/oidc for general information.
-
-
-    """
-
-    def get(self):
-        redirect_uri = self.authenticator.get_callback_url(self)
-        self.log.info('OAuth redirect: %r', redirect_uri)
-        state = self.get_state()
-        self.set_state_cookie(state)
-        extra_params = {'state': state}
+    """See http://www.cilogon.org/oidc for general information."""
+    def authorize_redirect(self, *args, **kwargs):
+        """Add idp, skin to redirect params"""
+        extra_params = kwargs.setdefault('extra_params', {})
         if self.authenticator.idp:
             extra_params["selected_idp"] = self.authenticator.idp
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
-
-        self.authorize_redirect(
-            redirect_uri=redirect_uri,
-            client_id=self.authenticator.client_id,
-            scope=self.authenticator.scope,
-            extra_params=extra_params,
-            response_type='code')
+        return super().authorize_redirect(*args, **kwargs)
 
 
 class CILogonOAuthenticator(OAuthenticator):
