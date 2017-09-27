@@ -114,9 +114,16 @@ class GitLabOAuthenticator(OAuthenticator):
         if self.gitlab_group_whitelist:
             user_in_group = yield self._check_group_whitelist(
                 username, user_id, is_admin, access_token)
-            return username if user_in_group else None
-        else:  # no organization whitelisting
-            return username
+            if not user_in_group:
+                self.log.warning("%s not in group whitelist", username)
+                return None
+        return {
+            'username': username,
+            'auth_state': {
+                'access_token': access_token,
+                'gitlab_user': resp_json,
+            }
+        }
 
 
     @gen.coroutine

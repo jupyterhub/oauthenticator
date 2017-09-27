@@ -74,9 +74,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             self.clear_all_cookies()
             raise HTTPError(500, 'Google authentication failed')
 
-        body = response.body.decode()
-        self.log.debug('response.body.decode(): {}'.format(body))
-        bodyjs = json.loads(body)
+        bodyjs = json.loads(response.body.decode())
 
         username = bodyjs['email']
 
@@ -90,7 +88,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             else:
                 username = username.split('@')[0]
 
-        return username
+        return {
+            'username': username,
+            'auth_state': {
+                'access_token': access_token,
+                'google_user': bodyjs,
+            }
+        }
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
     """A version that mixes in local system user creation"""

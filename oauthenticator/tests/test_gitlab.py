@@ -40,8 +40,13 @@ def gitlab_client(client):
 def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
     handler = gitlab_client.handler_for_user(user_model('wash'))
-    name = yield authenticator.authenticate(handler)
+    user_info = yield authenticator.authenticate(handler)
+    assert sorted(user_info) == ['auth_state', 'username']
+    name = user_info['username']
     assert name == 'wash'
+    auth_state = user_info['auth_state']
+    assert 'access_token' in auth_state
+    assert 'gitlab_user' in auth_state
 
 
 def make_link_header(urlinfo, page):
@@ -119,11 +124,13 @@ def test_group_whitelist(gitlab_client):
         authenticator.gitlab_group_whitelist = ['blue']
 
         handler = client.handler_for_user(group_user_model('caboose'))
-        name = yield authenticator.authenticate(handler)
+        user_info = yield authenticator.authenticate(handler)
+        name = user_info['username']
         assert name == 'caboose'
 
         handler = client.handler_for_user(group_user_model('burns', is_admin=True))
-        name = yield authenticator.authenticate(handler)
+        user_info = yield authenticator.authenticate(handler)
+        name = user_info['username']
         assert name == 'burns'
 
         handler = client.handler_for_user(group_user_model('grif'))
@@ -142,7 +149,8 @@ def test_group_whitelist(gitlab_client):
         assert name is None
 
         handler = client.handler_for_user(group_user_model('grif'))
-        name = yield authenticator.authenticate(handler)
+        user_info = yield authenticator.authenticate(handler)
+        name = user_info['username']
         assert name == 'grif'
 
         client.hosts['gitlab.com'].pop()

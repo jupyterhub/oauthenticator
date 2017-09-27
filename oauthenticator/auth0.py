@@ -95,7 +95,13 @@ class Auth0OAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return resp_json["email"]
+        return {
+            'username': resp_json["email"],
+            'auth_state': {
+                'access_token': access_token,
+                'auth0_user': resp_json,
+            }
+        }
 
 
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):

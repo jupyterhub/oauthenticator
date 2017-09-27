@@ -154,10 +154,6 @@ class GlobusOAuthenticator(OAuthenticator):
             self.client_id,
             self.client_secret)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.globus_data = {}
-
     @gen.coroutine
     def authenticate(self, handler, data=None):
         """
@@ -176,12 +172,11 @@ class GlobusOAuthenticator(OAuthenticator):
         )
         # Doing the code for token for id_token exchange
         tokens = client.oauth2_exchange_code_for_tokens(code)
-        self.globus_data['tokens'] = {
+        globus_data = {'client_id': self.client_id}
+        globus_data['tokens'] = {
             tok: v for tok, v in tokens.by_resource_server.items()
             if tok not in self.exclude_tokens
         }
-
-        self.globus_data['client_id'] = self.client_id
         id_token = tokens.decode_id_token(client)
         username, domain = id_token.get('preferred_username').split('@')
 
@@ -195,7 +190,12 @@ class GlobusOAuthenticator(OAuthenticator):
                     'globus.org/app/account'
                     )
             )
-        return username
+        return {
+            'username': username,
+            'auth_state': {
+                'globus_data': globus_data,
+            }
+        }
 
     def get_callback_url(self, handler=None):
         """
