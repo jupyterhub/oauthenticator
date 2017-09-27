@@ -16,7 +16,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode, Bool
+from traitlets import Unicode, Bool, List
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -61,7 +61,6 @@ class OAuthLoginHandler(BaseHandler):
 
     Typically subclasses will need
     """
-    scope = []
 
     def set_state_cookie(self, state):
         self.set_secure_cookie(STATE_COOKIE_NAME,
@@ -86,7 +85,7 @@ class OAuthLoginHandler(BaseHandler):
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
-            scope=self.scope,
+            scope=self.authenticator.scope,
             extra_params={'state': state},
             response_type='code')
 
@@ -196,6 +195,13 @@ class OAuthenticator(Authenticator):
     login_handler (likely a subclass of OAuthLoginHandler)
     authenticate (method takes one arg - the request handler handling the oauth callback)
     """
+
+    scope = List(Unicode(), config=True,
+        help="""The OAuth scopes to request.
+        See the OAuth documentation of your OAuth provider for options.
+        For GitHub in particular, you can see github_scopes.md in this repo.
+        """
+    )
 
     login_service = 'override in subclass'
     oauth_callback_url = Unicode(

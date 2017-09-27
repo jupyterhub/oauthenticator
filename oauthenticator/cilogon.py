@@ -19,8 +19,6 @@ Caveats:
 
 import json
 import os
-import re
-import string
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen
@@ -28,7 +26,7 @@ from tornado import gen
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from traitlets import Unicode
+from traitlets import Unicode, List, validate
 
 from jupyterhub.auth import LocalAuthenticator
 
@@ -53,45 +51,15 @@ class CILogonMixin(OAuth2Mixin):
 
 
 class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
-    """See http://www.cilogon.org/oidc for general information.
-
-    The `scope` attribute is inherited from OAuthLoginHandler and is a
-    list of scopes requested when we acquire a CILogon token.
-
-    See cilogon_scope.md for details.  At least 'openid' is required.
-
-    The `idp` attribute is the SAML Entity ID of the user's selected
-    identity provider.
-
-    See https://cilogon.org/include/idplist.xml for the list of identity
-    providers supported by CILogon.
-
-    The `skin` attribute is the name of the custom CILogon interface skin
-    for your application.  Contact help@cilogon.org to request a custom
-    skin.
-    """
-
-    scope = ['openid']
-    idp = None
-    skin = None
-
-    def get(self):
-        redirect_uri = self.authenticator.get_callback_url(self)
-        self.log.info('OAuth redirect: %r', redirect_uri)
-        state = self.get_state()
-        self.set_state_cookie(state)
-        extra_params = {'state': state}
-        if self.idp:
-            extra_params["selected_idp"] = self.idp
-        if self.skin:
-            extra_params["skin"] = self.skin
-
-        self.authorize_redirect(
-            redirect_uri=redirect_uri,
-            client_id=self.authenticator.client_id,
-            scope=self.scope,
-            extra_params=extra_params,
-            response_type='code')
+    """See http://www.cilogon.org/oidc for general information."""
+    def authorize_redirect(self, *args, **kwargs):
+        """Add idp, skin to redirect params"""
+        extra_params = kwargs.setdefault('extra_params', {})
+        if self.authenticator.idp:
+            extra_params["selected_idp"] = self.authenticator.idp
+        if self.authenticator.skin:
+            extra_params["skin"] = self.authenticator.skin
+        return super().authorize_redirect(*args, **kwargs)
 
 
 class CILogonOAuthenticator(OAuthenticator):
@@ -100,6 +68,39 @@ class CILogonOAuthenticator(OAuthenticator):
     client_id_env = 'CILOGON_CLIENT_ID'
     client_secret_env = 'CILOGON_CLIENT_SECRET'
     login_handler = CILogonLoginHandler
+
+    scope = List(Unicode(), default_value=['openid'],
+        config=True,
+        help="""The OAuth scopes to request.
+        
+        See cilogon_scope.md for details.
+        At least 'openid' is required.
+        """,
+    )
+    @validate('scope')
+    def _validate_scope(self, proposal):
+        """ensure openid is requested"""
+        if 'openid' not in proposal.value:
+            return ['openid'] + proposal.value
+        return proposal.value
+    
+    idp = Unicode(
+        config=True,
+        help="""The `idp` attribute is the SAML Entity ID of the user's selected
+            identity provider.
+
+            See https://cilogon.org/include/idplist.xml for the list of identity
+            providers supported by CILogon.
+        """,
+    )
+    skin = Unicode(
+        config=True,
+        help="""The `skin` attribute is the name of the custom CILogon interface skin
+            for your application.
+
+            Contact help@cilogon.org to request a custom skin.
+        """,
+    )
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
