@@ -32,6 +32,12 @@ if GITHUB_HOST == 'github.com':
 else:
     GITHUB_API = '%s/api/v3' % GITHUB_HOST
 
+# Support github enterprise installations with both http and https
+GITHUB_HTTP = os.environ.get('GITHUB_HTTP')
+if GITHUB_HTTP:
+    GITHUB_PROTOCOL = 'http'
+else:
+    GITHUB_PROTOCOL = 'https'
 
 def _api_headers(access_token):
     return {"Accept": "application/json",
@@ -41,8 +47,8 @@ def _api_headers(access_token):
 
 
 class GitHubMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "https://%s/login/oauth/authorize" % GITHUB_HOST
-    _OAUTH_ACCESS_TOKEN_URL = "https://%s/login/oauth/access_token" % GITHUB_HOST
+    _OAUTH_AUTHORIZE_URL = "%s://%s/login/oauth/authorize" % (GITHUB_PROTOCOL, GITHUB_HOST)
+    _OAUTH_ACCESS_TOKEN_URL = "%s://%s/login/oauth/access_token" % (GITHUB_PROTOCOL, GITHUB_HOST)
 
 
 class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
@@ -98,7 +104,7 @@ class GitHubOAuthenticator(OAuthenticator):
             code=code
         )
 
-        url = url_concat("https://%s/login/oauth/access_token" % GITHUB_HOST,
+        url = url_concat("%s://%s/login/oauth/access_token" % (GITHUB_PROTOCOL, GITHUB_HOST),
                          params)
 
         req = HTTPRequest(url,
@@ -113,7 +119,7 @@ class GitHubOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
 
         # Determine who the logged in user is
-        req = HTTPRequest("https://%s/user" % GITHUB_API,
+        req = HTTPRequest("%s://%s/user" % (GITHUB_PROTOCOL, GITHUB_API),
                           method="GET",
                           headers=_api_headers(access_token)
                           )
@@ -159,7 +165,7 @@ class GitHubOAuthenticator(OAuthenticator):
         # With empty scope (even if authenticated by an org member), this
         #  will only yield public org members.  You want 'read:org' in order
         #  to be able to iterate through all members.
-        next_page = "https://%s/orgs/%s/members" % (GITHUB_API, org)
+        next_page = "%s://%s/orgs/%s/members" % (GITHUB_PROTOCOL, GITHUB_API, org)
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = yield http_client.fetch(req)
