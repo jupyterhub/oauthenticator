@@ -100,6 +100,8 @@ You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local u
 
 You can use your own Github Enterprise instance by setting the `GITHUB_HOST` environment variable.
 
+You can set `GITHUB_HTTP` environment variable to true or anything if your GitHub Enterprise supports http only.
+
 GitHub allows expanded capabilities by
 adding [GitHub-Specific Scopes](github_scope.md) to the requested token.
 
