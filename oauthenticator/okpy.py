@@ -79,7 +79,13 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         response = yield http_client.fetch(info_request)
         user = json.loads(response.body.decode('utf8', 'replace'))
         # TODO: preserve state in auth_state when JupyterHub supports encrypted auth_state
-        return user["email"] # , state
+        return {
+            'username': user['email'],
+            'auth_state': {
+                'access_token': access_token,
+                'okpy_user': user,
+            }
+        }
 
 class LocalOkpyOAuthenticator(LocalAuthenticator, OkpyOAuthenticator):
     """A version that mixes in local system user creation"""

@@ -28,6 +28,11 @@ def openshift_client(client):
 def test_openshift(openshift_client):
     authenticator = OpenShiftOAuthenticator()
     handler = openshift_client.handler_for_user(user_model('wash'))
-    name = yield authenticator.authenticate(handler)
+    user_info = yield authenticator.authenticate(handler)
+    assert sorted(user_info) == ['auth_state', 'username']
+    name = user_info['username']
     assert name == 'wash'
+    auth_state = user_info['auth_state']
+    assert 'access_token' in auth_state
+    assert 'openshift_user' in auth_state
 

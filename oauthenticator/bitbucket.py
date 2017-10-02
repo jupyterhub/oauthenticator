@@ -102,9 +102,17 @@ class BitbucketOAuthenticator(OAuthenticator):
         # This check is performed here, as the check requires `access_token`.
         if self.bitbucket_team_whitelist:
             user_in_team = yield self._check_team_whitelist(username, access_token)
-            return username if user_in_team else None
-        else:  # no team whitelisting
-            return username
+            if not user_in_team:
+                self.log.warning("%s not in team whitelist", username)
+                return None
+
+        return {
+            'username': username,
+            'auth_state': {
+                'access_token': access_token,
+                'bitbucket_user': resp_json,
+            }
+        }
 
     @gen.coroutine
     def _check_team_whitelist(self, username, access_token):
