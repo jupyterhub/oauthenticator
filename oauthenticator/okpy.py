@@ -34,7 +34,7 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
     
     @default('scope')
     def _default_scope(self):
-        return ['all']
+        return ['email']
 
     def get_auth_request(self, code):
         params = dict(
