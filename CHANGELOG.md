@@ -8,6 +8,36 @@ command line for details.
 
 ## [Unreleased]
 
+## [0.7] - 2017-10-02
+
+0.7.0 adds significant new functionality to all authenticators.
+
+- CILogon now uses OAuth 2 instead of OAuth 1, to be more consistent with the rest.
+- All OAuthenticators support `auth_state` when used with JupyterHub 0.8.
+  In every case, the auth_state is a dict with two keys: `access_token` and the
+  user-info reply identifying the user.
+  For instance, GitHubOAuthenticator auth_state looks like:
+
+  ```python
+  {
+    'acces_token': 'abc123',
+    'github_user': {
+      'username': 'fake-user',
+      'email': 'fake@email.com',
+      ...
+    }
+  }
+  ```
+
+  auth_state can be passed to Spawners by defining a `.pre_spawn_start` method.
+  See [examples/auth_state](examples/auth_state) for an example.
+- All OAuthenticators have a `.scope` trait, which is a list of string scopes to request.
+  See your OAuth provider's documentation for what scopes you may want.
+  This is useful in conjunction with `auth_state`, which may be used to pass access tokens
+  to Spawners via environment variables. `.scope` can control what permissions those
+  tokens will have. In general, OAuthenticator default scopes should only have read-only access to identify users.
+- GITHUB_HTTP environment variable can be used to talk to HTTP-only GitHub Enterprise deployments.
+
 ## 0.6
 
 ### [0.6.1] - 2017-08-11
@@ -70,8 +100,8 @@ command line for details.
 
 - First release
 
-
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...HEAD
+[0.7]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.7.0
 [0.6.1]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...0.6.1
 [0.6.0]:https://github.com/jupyterhub/oauthenticator/compare/0.5.1...0.6.0
 [0.5.1]:https://github.com/jupyterhub/oauthenticator/compare/0.5.0...0.5.1
