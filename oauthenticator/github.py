@@ -59,7 +59,7 @@ class GitHubOAuthenticator(OAuthenticator):
 
     # see github_scopes.md for details about scope config
     # set scopes via config, e.g.
-    # c.GitHubOAuthenticator.scopes = ['read:org']
+    # c.GitHubOAuthenticator.scope = ['read:org']
 
     login_service = "GitHub"
 
