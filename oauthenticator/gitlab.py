@@ -118,7 +118,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 self.log.warning("%s not in group whitelist", username)
                 return None
         return {
-            'username': username,
+            'name': username,
             'auth_state': {
                 'access_token': access_token,
                 'gitlab_user': resp_json,

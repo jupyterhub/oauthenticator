@@ -107,7 +107,7 @@ class BitbucketOAuthenticator(OAuthenticator):
                 return None
 
         return {
-            'username': username,
+            'name': username,
             'auth_state': {
                 'access_token': access_token,
                 'bitbucket_user': resp_json,

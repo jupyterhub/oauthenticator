@@ -80,7 +80,7 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         user = json.loads(response.body.decode('utf8', 'replace'))
         # TODO: preserve state in auth_state when JupyterHub supports encrypted auth_state
         return {
-            'username': user['email'],
+            'name': user['email'],
             'auth_state': {
                 'access_token': access_token,
                 'okpy_user': user,

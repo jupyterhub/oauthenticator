@@ -59,8 +59,8 @@ def test_globus(globus_client, mock_globus_sdk):
     authenticator = GlobusOAuthenticator()
     handler = globus_client.handler_for_user(user_model('wash'))
     user_info = yield authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'username']
-    name = user_info['username']
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'globus_data' in auth_state
@@ -108,7 +108,7 @@ def test_token_exclusion(globus_client, mock_globus_sdk):
     ]
     handler = globus_client.handler_for_user(user_model('wash'))
     user_info = yield authenticator.authenticate(handler)
-    name = user_info['username']
+    name = user_info['name']
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'globus_data' in auth_state

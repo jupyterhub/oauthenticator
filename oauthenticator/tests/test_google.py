@@ -41,8 +41,8 @@ def test_google(google_client):
     authenticator = GoogleOAuthenticator()
     handler = google_client.handler_for_user(user_model('fake@email.com'))
     user_info = yield authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'username']
-    name = user_info['username']
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
     assert name == 'fake@email.com'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
@@ -55,7 +55,7 @@ def test_hosted_domain(google_client):
     authenticator = GoogleOAuthenticator(hosted_domain='email.com')
     handler = google_client.handler_for_user(user_model('fake@email.com'))#, authenticator)
     user_info = yield authenticator.authenticate(handler)
-    name = user_info['username']
+    name = user_info['name']
     assert name == 'fake'
 
     handler = google_client.handler_for_user(user_model('notallowed@notemail.com'))

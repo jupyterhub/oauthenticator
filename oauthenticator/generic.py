@@ -122,7 +122,7 @@ class GenericOAuthenticator(OAuthenticator):
             return
 
         return {
-            'username': resp_json.get(self.username_key),
+            'name': resp_json.get(self.username_key),
             'auth_state': {
                 'access_token': access_token,
                 'oauth_user': resp_json,
