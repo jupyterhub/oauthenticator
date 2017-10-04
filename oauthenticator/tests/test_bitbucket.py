@@ -29,8 +29,8 @@ def test_bitbucket(bitbucket_client):
     authenticator = BitbucketOAuthenticator()
     handler = bitbucket_client.handler_for_user(user_model('yorba'))
     user_info = yield authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'username']
-    name = user_info['username']
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
     assert name == 'yorba'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
@@ -64,7 +64,7 @@ def test_team_whitelist(bitbucket_client):
 
     handler = client.handler_for_user(user_model('caboose'))
     user_info = yield authenticator.authenticate(handler)
-    name = user_info['username']
+    name = user_info['name']
     assert name == 'caboose'
 
     handler = client.handler_for_user(user_model('donut'))
@@ -80,5 +80,5 @@ def test_team_whitelist(bitbucket_client):
 
     handler = client.handler_for_user(user_model('donut'))
     user_info = yield authenticator.authenticate(handler)
-    name = user_info['username']
+    name = user_info['name']
     assert name == 'donut'

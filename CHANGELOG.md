@@ -8,7 +8,13 @@ command line for details.
 
 ## [Unreleased]
 
-## [0.7] - 2017-10-02
+## 0.7
+
+### [0.7.1] - 2017-10-04
+
+- fix regression in 0.7.0 preventing authentication via providers other than GitHub, MediaWiki
+
+### [0.7.0] - 2017-10-02
 
 0.7.0 adds significant new functionality to all authenticators.
 
@@ -100,8 +106,9 @@ command line for details.
 
 - First release
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...HEAD
-[0.7]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.7.0
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...HEAD
+[0.7.1]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...0.7.1
+[0.7.0]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.7.0
 [0.6.1]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...0.6.1
 [0.6.0]:https://github.com/jupyterhub/oauthenticator/compare/0.5.1...0.6.0
 [0.5.1]:https://github.com/jupyterhub/oauthenticator/compare/0.5.0...0.5.1

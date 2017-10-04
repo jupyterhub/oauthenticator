@@ -31,8 +31,8 @@ def test_generic(generic_client):
     authenticator = Authenticator()
     handler = generic_client.handler_for_user(user_model('wash'))
     user_info = yield authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'username']
-    name = user_info['username']
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state

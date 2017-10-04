@@ -191,7 +191,7 @@ class GlobusOAuthenticator(OAuthenticator):
                     )
             )
         return {
-            'username': username,
+            'name': username,
             'auth_state': {
                 'globus_data': globus_data,
             }

@@ -84,7 +84,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         return {
-            'username': resp_json['metadata']['name'],
+            'name': resp_json['metadata']['name'],
             'auth_state': {
                 'access_token': access_token,
                 'openshift_user': resp_json,

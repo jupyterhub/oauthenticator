@@ -89,7 +89,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 username = username.split('@')[0]
 
         return {
-            'username': username,
+            'name': username,
             'auth_state': {
                 'access_token': access_token,
                 'google_user': bodyjs,

@@ -41,8 +41,8 @@ def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
     handler = gitlab_client.handler_for_user(user_model('wash'))
     user_info = yield authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'username']
-    name = user_info['username']
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
@@ -125,12 +125,12 @@ def test_group_whitelist(gitlab_client):
 
         handler = client.handler_for_user(group_user_model('caboose'))
         user_info = yield authenticator.authenticate(handler)
-        name = user_info['username']
+        name = user_info['name']
         assert name == 'caboose'
 
         handler = client.handler_for_user(group_user_model('burns', is_admin=True))
         user_info = yield authenticator.authenticate(handler)
-        name = user_info['username']
+        name = user_info['name']
         assert name == 'burns'
 
         handler = client.handler_for_user(group_user_model('grif'))
@@ -150,7 +150,7 @@ def test_group_whitelist(gitlab_client):
 
         handler = client.handler_for_user(group_user_model('grif'))
         user_info = yield authenticator.authenticate(handler)
-        name = user_info['username']
+        name = user_info['name']
         assert name == 'grif'
 
         client.hosts['gitlab.com'].pop()
