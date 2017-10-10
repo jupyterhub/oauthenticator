@@ -7,7 +7,6 @@ import base64
 
 from tornado import gen, web
 from tornado.auth import OAuth2Mixin
-from tornado.concurrent import return_future
 from tornado.web import HTTPError
 
 from traitlets import List, Unicode, Bool
@@ -26,33 +25,11 @@ except:
 
 
 class GlobusMixin(OAuth2Mixin):
-    """
-    Use the globus_sdk to get the auth URL.
-    """
-    @return_future
-    def authorize_redirect(self, client=None, callback=None):
-        self.redirect(client.oauth2_get_authorize_url())
+    _OAUTH_AUTHORIZE_URL = 'https://auth.globus.org/v2/oauth2/authorize'
 
 
 class GlobusLoginHandler(OAuthLoginHandler, GlobusMixin):
-    """
-    The login handler sets the scope and provides the redirect URL.
-    The scope can be modified from the config.
-    """
-
-    def get(self):
-        redirect_uri = self.authenticator.get_callback_url(self)
-        client = self.authenticator.globus_portal_client()
-        state = self.get_state()
-        self.set_state_cookie(state)
-        client.oauth2_start_flow(
-            redirect_uri,
-            requested_scopes=' '.join(self.authenticator.scope),
-            refresh_tokens=self.authenticator.allow_refresh_tokens,
-            state=state
-        )
-        self.log.info('globus redirect: %r', redirect_uri)
-        self.authorize_redirect(client)
+    pass
 
 
 class GlobusLogoutHandler(LogoutHandler):
