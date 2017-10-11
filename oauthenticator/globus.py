@@ -219,11 +219,7 @@ class GlobusOAuthenticator(OAuthenticator):
         return url_path_join(base_url, 'logout')
 
     def get_handlers(self, app):
-        return [
-            (r'/oauth_login', self.login_handler),
-            (r'/oauth_callback', self.callback_handler),
-            (r'/logout', self.logout_handler),
-        ]
+        return super().get_handlers(app) + [(r'/logout', self.logout_handler)]
 
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):
