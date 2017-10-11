@@ -59,6 +59,9 @@ class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
             extra_params["selected_idp"] = self.authenticator.idp
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
+        if self.authenticator.username_key:
+            extra_params["claim"] = self.authenticator.username_key
+
         return super().authorize_redirect(*args, **kwargs)
 
 
@@ -99,6 +102,15 @@ class CILogonOAuthenticator(OAuthenticator):
             for your application.
 
             Contact help@cilogon.org to request a custom skin.
+        """,
+    )
+    claim = Unicode(
+        config=True,
+        default_value = "sub", # Username is "sub" claim, or what specified in jupytherhub_config.py
+        help="""The `claim` attribute is the username key to use in your application
+             from the various supported CILogon claims.
+
+             See http://www.cilogon.org/oidc for details.
         """,
     )
 
@@ -146,10 +158,11 @@ class CILogonOAuthenticator(OAuthenticator):
 
         self.log.info(json.dumps(resp_json, sort_keys=True, indent=4))
 
-        if "sub" not in resp_json or not resp_json["sub"]:
+        if self.claim not in resp_json or not resp_json[self.claim]:
+            self.log.info("Username claim %s not found in the response: %s" %
+                                 (self.claim, str(resp_json)))
             return None
-        username = resp_json["sub"]
-        # username is now the CILogon "sub" claim.  This is not ideal.
+        username = resp_json[self.claim]
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
