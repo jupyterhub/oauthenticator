@@ -2,18 +2,11 @@
 
 Uses OAuth 2.0 with cilogon.org (override with CILOGON_HOST)
 
-Based on the GitHub plugin.
-
-Most of the code c/o Kyle Kelley (@rgbkrk)
-
-CILogon support by Adam Thornton (athornton@lsst.org)
-
 Caveats:
 
-- For user whitelist/admin purposes, username will be the sub claim.  This
-  is unlikely to work as a Unix userid.  Typically an actual implementation
-  will specify the identity provider and scopes sufficient to retrieve an
-  ePPN or other unique identifier more amenable to being used as a username.
+- For user whitelist/admin purposes, username will be the ePPN by default.
+  This may not work as a Unix userid, and normalization may be required
+  to turn the JupyterHub username into a Unix username.
 """
 
 
@@ -33,16 +26,6 @@ from jupyterhub.auth import LocalAuthenticator
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 CILOGON_HOST = os.environ.get('CILOGON_HOST') or 'cilogon.org'
-
-
-def _api_headers():
-    return {"Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            }
-
-
-def _add_access_token(access_token, params):
-    params["access_token"] = access_token
 
 
 class CILogonMixin(OAuth2Mixin):
@@ -126,7 +109,11 @@ class CILogonOAuthenticator(OAuthenticator):
 
         # Exchange the OAuth code for a CILogon Access Token
         # See: http://www.cilogon.org/oidc
-        headers = _api_headers()
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+        }
+
         params = dict(
             client_id=self.client_id,
             client_secret=self.client_secret,
@@ -175,7 +162,7 @@ class CILogonOAuthenticator(OAuthenticator):
         return userdict
 
 
-class LocalGitHubOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
+class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
