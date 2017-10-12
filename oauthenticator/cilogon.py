@@ -5,8 +5,12 @@ Uses OAuth 2.0 with cilogon.org (override with CILOGON_HOST)
 Caveats:
 
 - For user whitelist/admin purposes, username will be the ePPN by default.
-  This may not work as a Unix userid, and normalization may be required
-  to turn the JupyterHub username into a Unix username.
+  This is typically an email address and may not work as a Unix userid.
+  Normalization may be required to turn the JupyterHub username into a Unix username.
+- Default username_claim of ePPN does not work for all providers,
+  e.g. generic OAuth such as Google.
+  Use `c.CILogonOAuthenticator.username_claim = 'email'` to use
+  email instead of ePPN as the JupyterHub username.
 """
 
 
@@ -85,10 +89,10 @@ class CILogonOAuthenticator(OAuthenticator):
             Contact help@cilogon.org to request a custom skin.
         """,
     )
-    username_key = Unicode(
+    username_claim = Unicode(
         "eppn",
         config=True,
-        help="""The key in the userinfo response from which to get the JupyterHub username
+        help="""The claim in the userinfo response from which to get the JupyterHub username
 
             Examples include: eppn, email
 
@@ -143,10 +147,10 @@ class CILogonOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        username = resp_json.get(self.username_key)
+        username = resp_json.get(self.username_claim)
         if not username:
-            self.log.error("Username key %s not found in the response: %s",
-                self.username_key, sorted(resp_json.keys())
+            self.log.error("Username claim %s not found in the response: %s",
+                self.username_claim, sorted(resp_json.keys())
             )
             raise web.HTTPError(500, "Failed to get username from CILogon")
         userdict = {"name": username}
