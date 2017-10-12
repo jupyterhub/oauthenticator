@@ -21,7 +21,7 @@ import json
 import os
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen
+from tornado import gen, web
 
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
@@ -59,8 +59,6 @@ class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
             extra_params["selected_idp"] = self.authenticator.idp
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
-        if self.authenticator.username_key:
-            extra_params["claim"] = self.authenticator.username_key
 
         return super().authorize_redirect(*args, **kwargs)
 
@@ -72,10 +70,10 @@ class CILogonOAuthenticator(OAuthenticator):
     client_secret_env = 'CILOGON_CLIENT_SECRET'
     login_handler = CILogonLoginHandler
 
-    scope = List(Unicode(), default_value=['openid'],
+    scope = List(Unicode(), default_value=['openid', 'email', 'org.cilogon.userinfo'],
         config=True,
         help="""The OAuth scopes to request.
-        
+
         See cilogon_scope.md for details.
         At least 'openid' is required.
         """,
@@ -86,7 +84,7 @@ class CILogonOAuthenticator(OAuthenticator):
         if 'openid' not in proposal.value:
             return ['openid'] + proposal.value
         return proposal.value
-    
+
     idp = Unicode(
         config=True,
         help="""The `idp` attribute is the SAML Entity ID of the user's selected
@@ -104,13 +102,16 @@ class CILogonOAuthenticator(OAuthenticator):
             Contact help@cilogon.org to request a custom skin.
         """,
     )
-    claim = Unicode(
+    username_key = Unicode(
+        "eppn",
         config=True,
-        default_value = "sub", # Username is "sub" claim, or what specified in jupytherhub_config.py
-        help="""The `claim` attribute is the username key to use in your application
-             from the various supported CILogon claims.
+        help="""The key in the userinfo response from which to get the JupyterHub username
 
-             See http://www.cilogon.org/oidc for details.
+            Examples include: eppn, email
+
+            What keys are available will depend on the scopes requested.
+
+            See http://www.cilogon.org/oidc for details.
         """,
     )
 
@@ -152,17 +153,16 @@ class CILogonOAuthenticator(OAuthenticator):
                                      CILOGON_HOST, params),
                           headers=headers
                           )
-        self.log.info("REQ: %s / %r" % (str(req), req))
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         self.log.info(json.dumps(resp_json, sort_keys=True, indent=4))
-
-        if self.claim not in resp_json or not resp_json[self.claim]:
-            self.log.info("Username claim %s not found in the response: %s" %
-                                 (self.claim, str(resp_json)))
-            return None
-        username = resp_json[self.claim]
+        username = resp_json.get(self.username_key)
+        if not username:
+            self.log.error("Username key %s not found in the response: %s",
+                self.username_key, sorted(resp_json.keys())
+            )
+            raise web.HTTPError(500, "Failed to get username from CILogon")
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
