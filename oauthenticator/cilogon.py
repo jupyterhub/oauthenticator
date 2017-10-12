@@ -143,7 +143,6 @@ class CILogonOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        self.log.info(json.dumps(resp_json, sort_keys=True, indent=4))
         username = resp_json.get(self.username_key)
         if not username:
             self.log.error("Username key %s not found in the response: %s",
