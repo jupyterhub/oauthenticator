@@ -1,12 +1,12 @@
 from pytest import fixture, mark, raises
-from tornado import web
+from tornado import web, gen
 from unittest.mock import Mock
 
 from globus_sdk import ConfidentialAppAuthClient
 
-from ..globus import GlobusOAuthenticator
+from ..globus import GlobusOAuthenticator, GlobusLogoutHandler
 
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import setup_oauth_mock, no_code_test, mock_handler
 
 
 def user_model(username):
@@ -58,14 +58,10 @@ def globus_client(client):
 def test_globus(globus_client, mock_globus_sdk):
     authenticator = GlobusOAuthenticator()
     handler = globus_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
-    assert 'globus_data' in auth_state
-    assert list(auth_state['globus_data']['tokens'].keys()) == \
-        ['transfer.api.globus.org']
+    data = yield authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+    tokens = list(data['auth_state']['tokens'].keys())
+    assert tokens == ['transfer.api.globus.org']
 
 
 @mark.gen_test
@@ -107,9 +103,68 @@ def test_token_exclusion(globus_client, mock_globus_sdk):
         'auth.globus.org'
     ]
     handler = globus_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
-    assert 'globus_data' in auth_state
-    assert list(auth_state['globus_data']['tokens'].keys()) == []
+    data = yield authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+    assert list(data['auth_state']['tokens'].keys()) == []
+
+
+def test_revoke_tokens(monkeypatch):
+    monkeypatch.setattr(
+        ConfidentialAppAuthClient,
+        'oauth2_revoke_token',
+        Mock()
+    )
+    authenticator = GlobusOAuthenticator()
+    service = {'transfer.api.globus.org': {'access_token': 'foo',
+                                           'refresh_token': 'bar'}}
+    authenticator.revoke_service_tokens(service)
+    assert ConfidentialAppAuthClient.oauth2_revoke_token.called
+
+
+@mark.gen_test
+def test_custom_logout(monkeypatch):
+    custom_logout_url = 'https://universityofindependence.edu/logout'
+    authenticator = GlobusOAuthenticator()
+    logout_handler = mock_handler(GlobusLogoutHandler,
+                                  authenticator=authenticator)
+    monkeypatch.setattr(
+        web.RequestHandler,
+        'redirect',
+        Mock()
+    )
+    logout_handler.clear_login_cookie = Mock()
+    logout_handler.get_current_user = Mock()
+
+    authenticator.logout_redirect_url = custom_logout_url
+    yield logout_handler.get()
+    logout_handler.redirect.assert_called_once_with(custom_logout_url)
+    assert logout_handler.clear_login_cookie.called
+
+
+@mark.gen_test
+def test_logout_revokes_tokens(monkeypatch):
+
+    class User:
+        @gen.coroutine
+        def get_auth_state(self):
+            return {'tokens': {}}
+
+        save_auth_state = Mock()
+        name = 'Wash'
+
+    user = User()
+    authenticator = GlobusOAuthenticator()
+    logout_handler = mock_handler(GlobusLogoutHandler,
+                                  authenticator=authenticator)
+    monkeypatch.setattr(
+        web.RequestHandler,
+        'redirect',
+        Mock()
+    )
+    logout_handler.clear_login_cookie = Mock()
+    authenticator.revoke_service_tokens = Mock()
+    authenticator.revoke_tokens_on_logout = True
+
+    yield logout_handler.clear_tokens(user)
+    assert authenticator.revoke_service_tokens.called
+    assert user.save_auth_state.called

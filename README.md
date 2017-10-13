@@ -224,13 +224,22 @@ Set the above settings in your `jupyterhub_config`:
 # Tell JupyterHub to create system accounts
 from oauthenticator.globus import LocalGlobusOAuthenticator
 c.JupyterHub.authenticator_class = LocalGlobusOAuthenticator
+c.LocalGlobusOAuthenticator.enable_auth_state = True
+c.LocalGlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
+c.LocalGlobusOAuthenticator.client_id = '[your app client id]'
+c.LocalGlobusOAuthenticator.client_secret = '[your app client secret]'
 ```
 
-and set the `OAUTH_` environment variables or config values.
+Alternatively you can set env variables for the following: `OAUTH_CALLBACK_URL`, `OAUTH_CLIENT_ID`,
+and `OAUTH_CLIENT_SECRET`. Setting `JUPYTERHUB_CRYPT_KEY` is required, and can be generated
+with OpenSSL: `openssl rand -hex 32`
+
+You are all set by this point! Be sure to check below for tweaking settings
+related to User Identity, Transfer, and additional security.
 
 ### User Identity
 
-By default, all users are restricted to their *Globus IDs* (malcolm@globusid.org)
+By default, all users are restricted to their *Globus IDs* (example@globusid.org)
 with the default Jupyterhub config:
 
 ```python
@@ -265,6 +274,11 @@ c.LocalGlobusOAuthenticator.exclude = ['auth.globus.org']
 # If the JupyterHub server is an endpoint, for convenience the endpoint id can be
 # set here. It will show up in the notebook kernel for all users as 'GLOBUS_LOCAL_ENDPOINT'.
 c.LocalGlobusOAuthenticator.globus_local_endpoint = '<Your Local JupyterHub UUID>'
+# Set a custom logout URL for your identity provider
+c.LocalGlobusOAuthenticator.logout_redirect_url = 'https://auth.globus.org/v2/web/logout'
+# For added security, revoke all service tokens when users logout. (Note: users must start
+# a new server to get fresh tokens, logging out does not shut it down by default)
+c.LocalGlobusOAuthenticator.revoke_tokens_on_logout = False
 ```
 
 If you only want to authenticate users with their Globus IDs but don't want to
