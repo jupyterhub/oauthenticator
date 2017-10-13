@@ -212,7 +212,7 @@ and set your `OAUTH_` environment variables.
 Visit https://developers.globus.org/ to set up your app. Ensure _Native App_ is
 unchecked and make sure the callback URL looks like:
 
-    https://[your-host]/oauth_callback
+    https://[your-host]/hub/oauth_callback
 
 Set scopes for authorization and transfer. The defaults include:
 
@@ -225,7 +225,7 @@ Set the above settings in your `jupyterhub_config`:
 from oauthenticator.globus import LocalGlobusOAuthenticator
 c.JupyterHub.authenticator_class = LocalGlobusOAuthenticator
 c.LocalGlobusOAuthenticator.enable_auth_state = True
-c.LocalGlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/oauth_callback'
+c.LocalGlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
 c.LocalGlobusOAuthenticator.client_id = '[your app client id]'
 c.LocalGlobusOAuthenticator.client_secret = '[your app client secret]'
 ```
