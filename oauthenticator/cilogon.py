@@ -2,18 +2,15 @@
 
 Uses OAuth 2.0 with cilogon.org (override with CILOGON_HOST)
 
-Based on the GitHub plugin.
-
-Most of the code c/o Kyle Kelley (@rgbkrk)
-
-CILogon support by Adam Thornton (athornton@lsst.org)
-
 Caveats:
 
-- For user whitelist/admin purposes, username will be the sub claim.  This
-  is unlikely to work as a Unix userid.  Typically an actual implementation
-  will specify the identity provider and scopes sufficient to retrieve an
-  ePPN or other unique identifier more amenable to being used as a username.
+- For user whitelist/admin purposes, username will be the ePPN by default.
+  This is typically an email address and may not work as a Unix userid.
+  Normalization may be required to turn the JupyterHub username into a Unix username.
+- Default username_claim of ePPN does not work for all providers,
+  e.g. generic OAuth such as Google.
+  Use `c.CILogonOAuthenticator.username_claim = 'email'` to use
+  email instead of ePPN as the JupyterHub username.
 """
 
 
@@ -21,7 +18,7 @@ import json
 import os
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen
+from tornado import gen, web
 
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
@@ -33,16 +30,6 @@ from jupyterhub.auth import LocalAuthenticator
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 CILOGON_HOST = os.environ.get('CILOGON_HOST') or 'cilogon.org'
-
-
-def _api_headers():
-    return {"Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            }
-
-
-def _add_access_token(access_token, params):
-    params["access_token"] = access_token
 
 
 class CILogonMixin(OAuth2Mixin):
@@ -59,6 +46,7 @@ class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
             extra_params["selected_idp"] = self.authenticator.idp
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
+
         return super().authorize_redirect(*args, **kwargs)
 
 
@@ -69,10 +57,10 @@ class CILogonOAuthenticator(OAuthenticator):
     client_secret_env = 'CILOGON_CLIENT_SECRET'
     login_handler = CILogonLoginHandler
 
-    scope = List(Unicode(), default_value=['openid'],
+    scope = List(Unicode(), default_value=['openid', 'email', 'org.cilogon.userinfo'],
         config=True,
         help="""The OAuth scopes to request.
-        
+
         See cilogon_scope.md for details.
         At least 'openid' is required.
         """,
@@ -83,7 +71,7 @@ class CILogonOAuthenticator(OAuthenticator):
         if 'openid' not in proposal.value:
             return ['openid'] + proposal.value
         return proposal.value
-    
+
     idp = Unicode(
         config=True,
         help="""The `idp` attribute is the SAML Entity ID of the user's selected
@@ -101,6 +89,18 @@ class CILogonOAuthenticator(OAuthenticator):
             Contact help@cilogon.org to request a custom skin.
         """,
     )
+    username_claim = Unicode(
+        "eppn",
+        config=True,
+        help="""The claim in the userinfo response from which to get the JupyterHub username
+
+            Examples include: eppn, email
+
+            What keys are available will depend on the scopes requested.
+
+            See http://www.cilogon.org/oidc for details.
+        """,
+    )
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
@@ -113,7 +113,11 @@ class CILogonOAuthenticator(OAuthenticator):
 
         # Exchange the OAuth code for a CILogon Access Token
         # See: http://www.cilogon.org/oidc
-        headers = _api_headers()
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+        }
+
         params = dict(
             client_id=self.client_id,
             client_secret=self.client_secret,
@@ -140,16 +144,15 @@ class CILogonOAuthenticator(OAuthenticator):
                                      CILOGON_HOST, params),
                           headers=headers
                           )
-        self.log.info("REQ: %s / %r" % (str(req), req))
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        self.log.info(json.dumps(resp_json, sort_keys=True, indent=4))
-
-        if "sub" not in resp_json or not resp_json["sub"]:
-            return None
-        username = resp_json["sub"]
-        # username is now the CILogon "sub" claim.  This is not ideal.
+        username = resp_json.get(self.username_claim)
+        if not username:
+            self.log.error("Username claim %s not found in the response: %s",
+                self.username_claim, sorted(resp_json.keys())
+            )
+            raise web.HTTPError(500, "Failed to get username from CILogon")
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
@@ -162,7 +165,7 @@ class CILogonOAuthenticator(OAuthenticator):
         return userdict
 
 
-class LocalGitHubOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
+class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
