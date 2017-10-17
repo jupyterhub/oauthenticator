@@ -9,9 +9,11 @@ from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from pytest import fixture, mark
 
-from ..gitlab import GitLabOAuthenticator
+from ..gitlab import GitLabOAuthenticator, GITLAB_API_VERSION
 
 from .mocks import setup_oauth_mock
+
+API_ENDPOINT = '/api/v%s' % (GITLAB_API_VERSION,)
 
 
 def user_model(username, id=1, is_admin=False):
@@ -31,7 +33,7 @@ def gitlab_client(client):
     setup_oauth_mock(client,
         host='gitlab.com',
         access_token_path='/oauth/token',
-        user_path='/api/v3/user',
+        user_path=API_ENDPOINT + '/user',
     )
     return client
 
@@ -73,7 +75,7 @@ def test_group_whitelist(gitlab_client):
                           is_admin)
 
 
-    member_regex = re.compile(r'/api/v3/groups/(.*)/members/(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/(.*)')
     def is_member(request):
         urlinfo = urlparse(request.url)
         group, uid = member_regex.match(urlinfo.path).group(1, 2)
@@ -118,7 +120,7 @@ def test_group_whitelist(gitlab_client):
 
     for paginate in (False, True):
         client.hosts['gitlab.com'].append(
-            ('/api/v3/groups', functools.partial(groups, paginate))
+            (API_ENDPOINT + '/groups', functools.partial(groups, paginate))
         )
 
         authenticator.gitlab_group_whitelist = ['blue']
