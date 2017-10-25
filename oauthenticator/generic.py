@@ -32,7 +32,10 @@ class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
 
 class GenericOAuthenticator(OAuthenticator):
 
-    login_service = "GenericOAuth2"
+    login_service = Unicode(
+        "GenericOAuth2",
+        config=True
+    )
 
     login_handler = GenericLoginHandler
 
