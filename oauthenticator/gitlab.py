@@ -26,7 +26,8 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support gitlab.com and gitlab community edition installations
 GITLAB_HOST = os.environ.get('GITLAB_HOST') or 'https://gitlab.com'
-GITLAB_API = '%s/api/v3' % GITLAB_HOST
+GITLAB_API_VERSION = os.environ.get('GITLAB_API_VERSION') or '4'
+GITLAB_API = '%s/api/v%s' % (GITLAB_HOST, GITLAB_API_VERSION)
 
 
 def _api_headers(access_token):
