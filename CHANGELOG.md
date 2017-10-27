@@ -10,6 +10,18 @@ command line for details.
 
 ## 0.7
 
+### [0.7.2] - 2017-10-27
+
+- Fix CILogon OAuth 2 implementation. ePPN claim is used for default username
+  (typically institutional email).
+  `CILogonOAuthenticator.username_claim` can be used to change which field is
+  used for JupyterHub usernames.
+- `GenericOAuthenticator.login_service` is now configurable.
+- default to GitLab API version 4 and allow v3 via GITLAB_API_VERSION=3 environment variable.
+- Add `GlobusOAuthenticator.revoke_tokens_on_logout` and
+  `GlobusOAuthenticator.logout_redirect_url` config for further clearing
+  of credentials on JupyterHub logout.
+
 ### [0.7.1] - 2017-10-04
 
 - fix regression in 0.7.0 preventing authentication via providers other than GitHub, MediaWiki
@@ -106,7 +118,8 @@ command line for details.
 
 - First release
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...HEAD
+[0.7.2]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.7.0
 [0.6.1]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...0.6.1
