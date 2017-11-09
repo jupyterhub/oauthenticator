@@ -164,12 +164,13 @@ class CILogonOAuthenticator(OAuthenticator):
             )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-        gotten_name, gotten_idp = username.split('@')
-        if self.idp_whitelist and gotten_idp not in self.idp_whitelist:
-            self.log.error("Trying to login from not whitelisted domain %s", gotten_idp)
-            raise web.HTTPError(500, "Trying to login from not whitelisted domain")
-        if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
-            username = gotten_name
+        if self.idp_whitelist:
+            gotten_name, gotten_idp = username.split('@')
+            if gotten_idp not in self.idp_whitelist:
+                self.log.error("Trying to login from not whitelisted domain %s", gotten_idp)
+                raise web.HTTPError(500, "Trying to login from not whitelisted domain")
+            if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
+                username = gotten_name
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
