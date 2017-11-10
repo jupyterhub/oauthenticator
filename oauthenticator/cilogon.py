@@ -23,7 +23,7 @@ from tornado import gen, web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from traitlets import Unicode, List, validate
+from traitlets import Unicode, List, Bool, validate
 
 from jupyterhub.auth import LocalAuthenticator
 
@@ -72,6 +72,16 @@ class CILogonOAuthenticator(OAuthenticator):
             return ['openid'] + proposal.value
         return proposal.value
 
+    idp_whitelist = List(
+        config=True,
+        help="""A list of IDP which can be stripped from the username after the @ sign.""",
+    )
+    strip_idp_domain = Bool(
+        False,
+        config=True,
+        help="""Remove the IDP domain from the username. Note that only domains which
+             appear in the `idp_whitelist` will be stripped.""",
+    )
     idp = Unicode(
         config=True,
         help="""The `idp` attribute is the SAML Entity ID of the user's selected
@@ -153,6 +163,14 @@ class CILogonOAuthenticator(OAuthenticator):
                 self.username_claim, sorted(resp_json.keys())
             )
             raise web.HTTPError(500, "Failed to get username from CILogon")
+
+        if self.idp_whitelist:
+            gotten_name, gotten_idp = username.split('@')
+            if gotten_idp not in self.idp_whitelist:
+                self.log.error("Trying to login from not whitelisted domain %s", gotten_idp)
+                raise web.HTTPError(500, "Trying to login from not whitelisted domain")
+            if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
+                username = gotten_name
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
