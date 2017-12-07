@@ -40,10 +40,16 @@ class GenericOAuthenticator(OAuthenticator):
     login_handler = GenericLoginHandler
 
     userdata_url = Unicode(
-        os.environ.get('OAUTH2_USERDATA_URL', ''),
+        os.environ.get('OAUTH2_USERDATA_URL'),
         config=True,
         help="Userdata url to get user data login information"
     )
+    token_url = Unicode(
+        os.environ.get('OAUTH2_TOKEN_URL'),
+        config=True,
+        help="Access token endpoint URL"
+    )
+
     username_key = Unicode(
         os.environ.get('OAUTH2_USERNAME_KEY', 'username'),
         config=True,
@@ -60,12 +66,6 @@ class GenericOAuthenticator(OAuthenticator):
         help="Userdata method to get user data login information"
     )
 
-    token_url = Unicode(
-        os.environ.get('OAUTH2_TOKEN_URL', 'GET'),
-        config=True,
-        help="Userdata method to get user data login information"
-    )
-
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -78,7 +78,10 @@ class GenericOAuthenticator(OAuthenticator):
             grant_type='authorization_code'
         )
 
-        url = self.token_url
+        if self.token_url:
+            url = self.token_url
+        else:
+            raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable ({})".format(token_url.help))
 
         b64key = base64.b64encode(
             bytes(
@@ -111,7 +114,10 @@ class GenericOAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub",
             "Authorization": "{} {}".format(token_type, access_token)
         }
-        url = url_concat(self.userdata_url, self.userdata_params)
+        if self.userdata.url:
+            url = url_concat(self.userdata_url, self.userdata_params)
+        else:
+            raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable ({})".format(userdata_url.help))
 
         req = HTTPRequest(url,
                           method=self.userdata_method,
