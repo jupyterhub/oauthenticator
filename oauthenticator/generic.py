@@ -40,12 +40,12 @@ class GenericOAuthenticator(OAuthenticator):
     login_handler = GenericLoginHandler
 
     userdata_url = Unicode(
-        os.environ.get('OAUTH2_USERDATA_URL'),
+        os.environ.get('OAUTH2_USERDATA_URL', ''),
         config=True,
         help="Userdata url to get user data login information"
     )
     token_url = Unicode(
-        os.environ.get('OAUTH2_TOKEN_URL'),
+        os.environ.get('OAUTH2_TOKEN_URL', ''),
         config=True,
         help="Access token endpoint URL"
     )
@@ -78,7 +78,7 @@ class GenericOAuthenticator(OAuthenticator):
             grant_type='authorization_code'
         )
 
-        if self.token_url:
+        if 'OAUTH2_TOKEN_URL' in os.environ:
             url = self.token_url
         else:
             raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable ({})".format(token_url.help))
@@ -114,7 +114,7 @@ class GenericOAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub",
             "Authorization": "{} {}".format(token_type, access_token)
         }
-        if self.userdata.url:
+        if 'OAUTH2_USERDATA_URL' in os.environ:
             url = url_concat(self.userdata_url, self.userdata_params)
         else:
             raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable ({})".format(userdata_url.help))
