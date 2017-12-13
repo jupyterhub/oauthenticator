@@ -81,7 +81,7 @@ class GenericOAuthenticator(OAuthenticator):
         if 'OAUTH2_TOKEN_URL' in os.environ:
             url = self.token_url
         else:
-            raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable ({})".format(token_url.help))
+            raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable ({})".format(self.token_url.help))
 
         b64key = base64.b64encode(
             bytes(
@@ -117,7 +117,7 @@ class GenericOAuthenticator(OAuthenticator):
         if 'OAUTH2_USERDATA_URL' in os.environ:
             url = url_concat(self.userdata_url, self.userdata_params)
         else:
-            raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable ({})".format(userdata_url.help))
+            raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable ({})".format(self.userdata_url.help))
 
         req = HTTPRequest(url,
                           method=self.userdata_method,
