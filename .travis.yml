@@ -12,6 +12,8 @@ install:
   - pip freeze
 script:
   - |
+    export OAUTH2_TOKEN_URL
+    export OAUTH2_USERDATA_URL
     if [[ "$TEST_LINT" = 1 ]]; then
       flake8 oauthenticator
     else
