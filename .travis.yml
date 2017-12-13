@@ -10,10 +10,11 @@ install:
   - pip install --upgrade pip
   - pip install --upgrade --pre -r test-requirements.txt .
   - pip freeze
+env:
+  OAUTH2_TOKEN_URL="token_url"
+  OAUTH2_USERDATA_URL="userdata_url"
 script:
   - |
-    export OAUTH2_TOKEN_URL
-    export OAUTH2_USERDATA_URL
     if [[ "$TEST_LINT" = 1 ]]; then
       flake8 oauthenticator
     else
