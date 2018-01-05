@@ -61,9 +61,9 @@ class GenericOAuthenticator(OAuthenticator):
     )
 
     token_url = Unicode(
-        os.environ.get('OAUTH2_TOKEN_URL', 'GET'),
+        os.environ.get('OAUTH2_TOKEN_URL', ''),
         config=True,
-        help="Userdata method to get user data login information"
+        help="Token url to get the user token"
     )
 
     @gen.coroutine
