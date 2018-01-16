@@ -78,7 +78,7 @@ class GenericOAuthenticator(OAuthenticator):
             grant_type='authorization_code'
         )
 
-        if 'OAUTH2_TOKEN_URL' in os.environ:
+        if self.token_url:
             url = self.token_url
         else:
             raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable")
@@ -114,7 +114,7 @@ class GenericOAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub",
             "Authorization": "{} {}".format(token_type, access_token)
         }
-        if 'OAUTH2_USERDATA_URL' in os.environ:
+        if self.userdata_url:
             url = url_concat(self.userdata_url, self.userdata_params)
         else:
             raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable")
