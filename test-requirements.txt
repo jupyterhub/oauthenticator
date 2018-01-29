@@ -1,0 +1,10 @@
+-r ./requirements.txt
+-r ./globus-requirements.txt
+codecov
+flake8
+pyjwt
+mwoauth != 0.3.1
+pytest >= 2.8
+pytest-cov
+pytest-tornado
+requests-mock

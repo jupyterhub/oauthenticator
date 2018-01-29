@@ -1,315 +1,189 @@
 """CILogon OAuthAuthenticator for JupyterHub
 
-Usese OAuth 1.0a with cilogon.org
-
-Setup:
-
-1. generate rsa keypair:
-
-       openssl genrsa -out oauth-privkey.pem 2048
-       openssl rsa -in oauth-privkey.pem -pubout -out oauth-pubkey.pem
-
-2. generate certificate request (interactive)
-
-       openssl req -new -key oauth-privkey.pem -out oauth-cert.csr
-
-3. register with CILogon: https://cilogon.org/oauth/register
-4. save your client_id from the request.
-   It will be used as CILOGON_CLIENT_ID env
+Uses OAuth 2.0 with cilogon.org (override with CILOGON_HOST)
 
 Caveats:
 
-- For user whitelist/admin names,
-  usernames will be email addresses where '@' is replaced with '.'
-
+- For user whitelist/admin purposes, username will be the ePPN by default.
+  This is typically an email address and may not work as a Unix userid.
+  Normalization may be required to turn the JupyterHub username into a Unix username.
+- Default username_claim of ePPN does not work for all providers,
+  e.g. generic OAuth such as Google.
+  Use `c.CILogonOAuthenticator.username_claim = 'email'` to use
+  email instead of ePPN as the JupyterHub username.
 """
 
-import errno
+
+import json
 import os
-import pwd
-from urllib.parse import parse_qs
 
-try:
-    from OpenSSL.crypto import load_certificate, FILETYPE_PEM
-except ImportError:
-    raise ImportError("CILogon OAuth requires PyOpenSSL")
+from tornado.auth import OAuth2Mixin
+from tornado import gen, web
 
-try:
-    from oauthlib.oauth1 import SIGNATURE_RSA, SIGNATURE_TYPE_QUERY, Client as OAuthClient
-except ImportError:
-    raise ImportError("CILogon requires oauthlib")
-
-from tornado import gen
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.httputil import url_concat
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from traitlets.config import Configurable
+from traitlets import Unicode, List, Bool, validate
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.handlers.base import BaseHandler
-from jupyterhub.utils import url_path_join as ujoin
 
-from traitlets import Unicode, Instance
+from .oauth2 import OAuthLoginHandler, OAuthenticator
 
-from .oauth2 import OAuthenticator
+CILOGON_HOST = os.environ.get('CILOGON_HOST') or 'cilogon.org'
 
 
-class CILogonHandler(BaseHandler):
-    """OAuth handler for redirecting to CILogon delegator"""
-    
-    @gen.coroutine
-    def get(self):
-        token = yield self.authenticator.get_oauth_token()
-        self.redirect(url_concat(self.authenticator.authorization_url,
-            {'oauth_token': token, 'cilogon_skin': self.authenticator.cilogon_skin}))
+class CILogonMixin(OAuth2Mixin):
+    _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % CILOGON_HOST
+    _OAUTH_TOKEN_URL = "https://%s/oauth2/token" % CILOGON_HOST
+
+
+class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
+    """See http://www.cilogon.org/oidc for general information."""
+    def authorize_redirect(self, *args, **kwargs):
+        """Add idp, skin to redirect params"""
+        extra_params = kwargs.setdefault('extra_params', {})
+        if self.authenticator.idp:
+            extra_params["selected_idp"] = self.authenticator.idp
+        if self.authenticator.skin:
+            extra_params["skin"] = self.authenticator.skin
+
+        return super().authorize_redirect(*args, **kwargs)
 
 
 class CILogonOAuthenticator(OAuthenticator):
-    """CILogon OAuthenticator
-    
-    required env:
-    
-    CILOGON_CLIENT_ID - the client ID for CILogon OAuth
-    CILOGON_RSA_KEY_PATH - path to file containing rsa private key
-    CILOGON_CSR_PATH - path to file certificate request (.csr)
-    """
     login_service = "CILogon"
-    
-    authorization_url = "https://cilogon.org/delegate"
-    cilogon_skin = "xsede"
-    oauth_url = "https://cilogon.org/oauth"
-    
-    login_handler = CILogonHandler
-    client_id_env = 'CILOGON_CLIENT_ID'
-    
-    rsa_key_path = Unicode(config=True)
-    def _rsa_key_path_default(self):
-        return os.getenv('CILOGON_RSA_KEY_PATH') or 'oauth-privkey.pem'
-    
-    rsa_key = Unicode()
-    def _rsa_key_default(self):
-        with open(self.rsa_key_path) as f:
-            return f.read()
-    
-    certreq_path = Unicode(config=True)
-    def _certreq_path_default(self):
-        return os.getenv('CILOGON_CSR_PATH') or 'oauth-certreq.csr'
-    
-    certreq = Unicode()
-    def _certreq_default(self):
-        # read certreq. CILogon API can't handle standard BEGIN/END lines, so strip them
-        lines = []
-        with open(self.certreq_path) as f:
-            for line in f:
-                if not line.isspace() and '----' not in line:
-                    lines.append(line)
-        return ''.join(lines)
-    
-    user_cert_dir = Unicode(config=True,
-        help="""Directory in which to store user credentials.
-        This directory will be made user-private.
-        If not specified, user credentials will not be stored.
-        """
-    )
-    def _user_cert_dir_changed(self, name, old, new):
-        # ensure dir exists
-        if not new:
-            return
-        try:
-            os.mkdir(new)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        # make it private
-        os.chmod(new, 0o700)
-        # double-check that it's private
-        mode = os.stat(new).st_mode
-        if mode & 0o077:
-            raise IOError("Bad permissions on user cert dir %r: %o" % (new, mode))
 
-    oauth_client = Instance(OAuthClient)
-    def _oauth_client_default(self):
-        return OAuthClient(
-            self.client_id,
-            rsa_key=self.rsa_key,
-            signature_method=SIGNATURE_RSA,
-            signature_type=SIGNATURE_TYPE_QUERY,
+    client_id_env = 'CILOGON_CLIENT_ID'
+    client_secret_env = 'CILOGON_CLIENT_SECRET'
+    login_handler = CILogonLoginHandler
+
+    scope = List(Unicode(), default_value=['openid', 'email', 'org.cilogon.userinfo'],
+        config=True,
+        help="""The OAuth scopes to request.
+
+        See cilogon_scope.md for details.
+        At least 'openid' is required.
+        """,
+    )
+    @validate('scope')
+    def _validate_scope(self, proposal):
+        """ensure openid is requested"""
+        if 'openid' not in proposal.value:
+            return ['openid'] + proposal.value
+        return proposal.value
+
+    idp_whitelist = List(
+        config=True,
+        help="""A list of IDP which can be stripped from the username after the @ sign.""",
+    )
+    strip_idp_domain = Bool(
+        False,
+        config=True,
+        help="""Remove the IDP domain from the username. Note that only domains which
+             appear in the `idp_whitelist` will be stripped.""",
+    )
+    idp = Unicode(
+        config=True,
+        help="""The `idp` attribute is the SAML Entity ID of the user's selected
+            identity provider.
+
+            See https://cilogon.org/include/idplist.xml for the list of identity
+            providers supported by CILogon.
+        """,
+    )
+    skin = Unicode(
+        config=True,
+        help="""The `skin` attribute is the name of the custom CILogon interface skin
+            for your application.
+
+            Contact help@cilogon.org to request a custom skin.
+        """,
+    )
+    username_claim = Unicode(
+        "eppn",
+        config=True,
+        help="""The claim in the userinfo response from which to get the JupyterHub username
+
+            Examples include: eppn, email
+
+            What keys are available will depend on the scopes requested.
+
+            See http://www.cilogon.org/oidc for details.
+        """,
+    )
+
+    @gen.coroutine
+    def authenticate(self, handler, data=None):
+        """We set up auth_state based on additional CILogon info if we
+        receive it.
+        """
+        code = handler.get_argument("code")
+        # TODO: Configure the curl_httpclient for tornado
+        http_client = AsyncHTTPClient()
+
+        # Exchange the OAuth code for a CILogon Access Token
+        # See: http://www.cilogon.org/oidc
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+        }
+
+        params = dict(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            redirect_uri=self.oauth_callback_url,
+            code=code,
+            grant_type='authorization_code',
         )
-    
-    client = Instance(AsyncHTTPClient, args=())
-    
-    @gen.coroutine
-    def get_oauth_token(self):
-        """Get the temporary OAuth token"""
-        uri = url_concat(ujoin(self.oauth_url, "initiate"), {
-            'oauth_callback': self.oauth_callback_url,
-            'certreq': self.certreq,
-        })
-        uri, _, _ = self.oauth_client.sign(uri)
-        req = HTTPRequest(uri)
-        # FIXME: handle failure (CILogon replies with 200 on failure)
-        resp = yield self.client.fetch(req)
-        reply = resp.body.decode('utf8', 'replace')
-        credentials = parse_qs(reply)
-        return credentials['oauth_token'][0]
-    
-    @gen.coroutine
-    def get_user_token(self, token, verifier):
-        """Get a user token from an oauth callback parameters"""
-        uri = url_concat(ujoin(self.oauth_url, 'token'), {
-            'oauth_token': token,
-            'oauth_verifier': verifier,
-        })
-        uri, _, _ = self.oauth_client.sign(uri)
-        resp = yield self.client.fetch(uri)
-        # FIXME: handle failure
-        reply = resp.body.decode('utf8', 'replace')
-        return parse_qs(reply)['oauth_token'][0]
-    
-    @gen.coroutine
-    def username_from_token(self, token):
-        """Turn a user token into a username"""
-        uri = url_concat(ujoin(self.oauth_url, 'getcert'), {
-            'oauth_token': token,
-        })
-        uri, _, _ = self.oauth_client.sign(uri)
-        resp = yield self.client.fetch(uri)
-        # FIXME: handle failure
-        reply = resp.body.decode('utf8', 'replace')
-        _, cert_txt = reply.split('\n', 1)
-        cert = load_certificate(FILETYPE_PEM, cert_txt)
-        username = None
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name().decode('ascii', 'replace') == 'subjectAltName':
-                data = ext.get_data()
-                # cert starts with some weird bytes. Not sure why or if they are consistent
-                username = data[4:].decode('utf8').lower()
-                # workaround notebook bug not handling @
-                username = username.replace('@', '.')
-                break
-        if username is None:
-            raise ValueError("Failed to get username from cert: %s", cert_txt)
-        
-        return username, cert_txt
-    
-    def _user_cert_path(self, username):
-        return os.path.join(self.user_cert_dir, username + '.crt')
-    
-    def save_user_cert(self, username, cert):
-        """Save the certificate for a given user in self.user_cert_dir"""
-        if not self.user_cert_dir:
-            return
-        cert_path = self._user_cert_path(username)
-        self.log.info("Saving cert for %s in %s", username, cert_path)
-        with open(cert_path, 'w') as f:
-            f.write(cert)
-    
-    def user_cert(self, username):
-        """Get the certificate for a user by name"""
-        if not self.user_cert_dir:
-            # not storing certs
-            return
-        # FIXME: handle cert file missing?
-        with open(self._user_cert_path(username)) as f:
-            return f.read()
-    
-    @gen.coroutine
-    def authenticate(self, handler):
-        """Called on the OAuth callback"""
-        token = yield self.get_user_token(
-            handler.get_argument('oauth_token'),
-            handler.get_argument('oauth_verifier'),
-        )
-        username, cert = yield self.username_from_token(token)
+
+        url = url_concat("https://%s/oauth2/token" % CILOGON_HOST, params)
+
+        req = HTTPRequest(url,
+                          headers=headers,
+                          method="POST",
+                          body=''
+                          )
+
+        resp = yield http_client.fetch(req)
+        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        access_token = resp_json['access_token']
+        self.log.info("Access token acquired.")
+        # Determine who the logged in user is
+        params = dict(access_token=access_token)
+        req = HTTPRequest(url_concat("https://%s/oauth2/userinfo" %
+                                     CILOGON_HOST, params),
+                          headers=headers
+                          )
+        resp = yield http_client.fetch(req)
+        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+
+        username = resp_json.get(self.username_claim)
         if not username:
-            return
-        if not self.check_whitelist(username):
-            self.log.warn("Rejecting user not in whitelist: %s", username)
-            return
-        self.save_user_cert(username, cert)
-        return username
+            self.log.error("Username claim %s not found in the response: %s",
+                self.username_claim, sorted(resp_json.keys())
+            )
+            raise web.HTTPError(500, "Failed to get username from CILogon")
+
+        if self.idp_whitelist:
+            gotten_name, gotten_idp = username.split('@')
+            if gotten_idp not in self.idp_whitelist:
+                self.log.error("Trying to login from not whitelisted domain %s", gotten_idp)
+                raise web.HTTPError(500, "Trying to login from not whitelisted domain")
+            if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
+                username = gotten_name
+        userdict = {"name": username}
+        # Now we set up auth_state
+        userdict["auth_state"] = auth_state = {}
+        # Save the access token and full CILogon reply in auth state
+        # These can be used for user provisioning
+        #  in the Lab/Notebook environment.
+        auth_state['access_token'] = access_token
+        # store the whole user model in auth_state.cilogon_user
+        auth_state['cilogon_user'] = resp_json
+        return userdict
 
 
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
+
     """A version that mixes in local system user creation"""
     pass
-
-
-class CILogonSpawnerMixin(Configurable):
-    """Spawner Mixin for staging the CILogon cert file"""
-    
-    cert_file_path = Unicode("cilogon.crt", config=True,
-        help="The path (relative to home) where the CILogon cert should be placed.")
-    
-    def get_user_info(self):
-        """Get the user's home dir, uid, gid, for resolving relative cert_file_path.
-        
-        Returns a dict with 'home', 'uid', 'gid' keys.
-        
-        By default, populated from pwd.getpwname(self.user.name).
-        """
-        pw_struct = pwd.getpwnam(self.user.name)
-        return {
-            'home': pw_struct.pw_dir,
-            'uid': pw_struct.pw_uid,
-            'gid': pw_struct.pw_gid,
-        }
-    
-    _cert = None
-    @property
-    def cert(self):
-        if self._cert is None:
-            self._cert = self.authenticator.user_cert(self.user.name)
-        return self._cert
-    
-    def stage_cert_file(self):
-        """Stage the CILogon user cert for the spawner.
-        
-        Override for Spawners not on the local filesystem.
-        """
-        if not self.cert:
-            self.log.info("No cert found for %s", self.user.name)
-        
-        uinfo = self.get_user_info()
-        dst = os.path.join(uinfo['home'], self.cert_file_path)
-        self.log.info("Staging cert for %s: %s", self.user.name, dst)
-        
-        with open(dst, 'w') as f:
-            fd = f.fileno()
-            os.fchmod(fd, 0o600) # make private before writing content
-            f.write(self.cert)
-            # set user as owner
-            os.fchown(fd, uinfo['uid'], uinfo['gid'])
-    
-    @gen.coroutine
-    def start(self):
-        yield gen.maybe_future(self.stage_cert_file())
-        result = yield gen.maybe_future(super().start())
-        return result
-    
-    def unstage_cert_file(self):
-        """Unstage user cert
-        
-        called after stopping
-        """
-        uinfo = self.get_user_info()
-        dst = os.path.join(uinfo['home'], self.cert_file_path)
-        if not os.path.exists(dst):
-            self.log.debug("No cert for %s: %s", self.user.name, dst)
-            return
-        self.log.info("Unstaging cert for %s: %s", self.user.name, dst)
-        try:
-            os.remove(dst)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                pass
-            self.log.error("Failed to unstage cert for %s (%s): %s",
-                self.user.name, dst, e)
-        
-    @gen.coroutine
-    def stop(self):
-        result = yield gen.maybe_future(super().stop())
-        yield gen.maybe_future(self.unstage_cert_file())
-        return result
-

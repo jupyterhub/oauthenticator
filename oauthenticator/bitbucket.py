@@ -18,6 +18,13 @@ from traitlets import Set
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
+
+def _api_headers(access_token):
+    return {"Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "Bearer {}".format(access_token)
+           }
+
 class BitbucketMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
     _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
@@ -39,11 +46,17 @@ class BitbucketOAuthenticator(OAuthenticator):
         help="Automatically whitelist members of selected teams",
     )
 
+    bitbucket_team_whitelist = team_whitelist
+
+
+    headers = {"Accept": "application/json",
+               "User-Agent": "JupyterHub",
+               "Authorization": "Bearer {}"
+               }
+
     @gen.coroutine
-    def authenticate(self, handler):
-        code = handler.get_argument("code", False)
-        if not code:
-            raise web.HTTPError(400, "oauth callback made without a token")
+    def authenticate(self, handler, data=None):
+        code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
 
@@ -52,7 +65,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             grant_type="authorization_code",
             code=code,
-            redirect_uri=self.oauth_callback_url
+            redirect_uri=self.get_callback_url(handler),
         )
 
         url = url_concat(
@@ -74,52 +87,53 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         access_token = resp_json['access_token']
 
+
         # Determine who the logged in user is
-        headers = {"Accept": "application/json",
-                   "User-Agent": "JupyterHub",
-                   "Authorization": "Bearer {}".format(access_token)
-                   }
         req = HTTPRequest("https://api.bitbucket.org/2.0/user",
                           method="GET",
-                          headers=headers
+                          headers=_api_headers(access_token)
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["username"]
-        whitelisted = yield self.check_whitelist(username, headers)
-        if not whitelisted:
-            username = None
-        return username
 
-    def check_whitelist(self, username, headers):
-        if self.team_whitelist:
-            return self._check_group_whitelist(username, headers)
-        else:
-            return self._check_user_whitelist(username)
+        # Check if user is a member of any whitelisted teams.
+        # This check is performed here, as the check requires `access_token`.
+        if self.bitbucket_team_whitelist:
+            user_in_team = yield self._check_team_whitelist(username, access_token)
+            if not user_in_team:
+                self.log.warning("%s not in team whitelist", username)
+                return None
+
+        return {
+            'name': username,
+            'auth_state': {
+                'access_token': access_token,
+                'bitbucket_user': resp_json,
+            }
+        }
 
     @gen.coroutine
-    def _check_user_whitelist(self, user):
-        return (not self.whitelist) or (user in self.whitelist)
-
-    @gen.coroutine
-    def _check_group_whitelist(self, username, headers):
+    def _check_team_whitelist(self, username, access_token):
         http_client = AsyncHTTPClient()
 
+        headers = _api_headers(access_token)
         # We verify the team membership by calling teams endpoint.
-        # Re-use the headers, change the request.
         next_page = url_concat("https://api.bitbucket.org/2.0/teams",
                                {'role': 'member'})
-        user_teams = set()
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = resp_json.get('next', None)
 
-            user_teams |= \
+            user_teams = \
                 set([entry["username"] for entry in resp_json["values"]])
-        return len(self.team_whitelist & user_teams) > 0
+            # check if any of the organizations seen thus far are in whitelist
+            if len(self.bitbucket_team_whitelist & user_teams) > 0:
+                return True
+        return False
 
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator,
