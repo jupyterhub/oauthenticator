@@ -77,7 +77,7 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
 #    """Basic handler for OAuth callback. Calls authenticator to verify username."""
     @gen.coroutine
     def get(self):
-        user_data = yield self.authenticator.get_authenticated_user(self)
+        user_data = yield self.authenticator.get_authenticated_user(self, None)
 
         if user_data:
 
