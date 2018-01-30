@@ -90,7 +90,7 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
             self.log.debug('HydroShareCallbackHandler, redirect url: '+next_url) 
 
             # redirect the user to the next uri, or the server homepage
-            redirect_file = os.path.join(os.environ['HYDROSHARE_REDIRECT_COOKIE_PATH'], '.redirect_%s'%username)
+            redirect_file = os.path.join(os.environ['HYDROSHARE_REDIRECT_COOKIE_PATH'], '.redirect_%s'%user_data['name'])
             welcome_page = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
             if os.path.exists(redirect_file):
                 self.log.debug('HydroShareCallbackHandler, redirect file: %s' % redirect_file)
