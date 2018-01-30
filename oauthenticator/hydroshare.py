@@ -80,17 +80,17 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
         user_data = yield self.authenticator.get_authenticated_user(self, None)
 
         if user_data:
-
+            username = user_data['name']
             self.log.info('HydroShareCallbackHandler, base url: ' +self.request.uri)
 
             # get or generate jupyter user object. this calls user_from_username in jupyterhub/handlers/base.py
-            user = self.user_from_username(user_data['name'])
+            user = self.user_from_username(username)
             self.set_login_cookie(user)
 
             self.log.debug('HydroShareCallbackHandler, redirect url: '+next_url) 
 
             # redirect the user to the next uri, or the server homepage
-            redirect_file = os.path.join(os.environ['HYDROSHARE_REDIRECT_COOKIE_PATH'], '.redirect_%s'%user_data['name'])
+            redirect_file = os.path.join(os.environ['HYDROSHARE_REDIRECT_COOKIE_PATH'], '.redirect_%s'%username)
             welcome_page = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
             if os.path.exists(redirect_file):
                 self.log.debug('HydroShareCallbackHandler, redirect file: %s' % redirect_file)
