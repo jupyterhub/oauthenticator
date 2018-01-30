@@ -40,7 +40,6 @@ class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
     def get(self):
         # store the uri that was recieved
         self.url = self.request.uri
-        print('LOGIN URL RECIEVED: ' + self.url)
         guess_uri = '{proto}://{host}{path}'.format(
             proto=self.request.protocol,
             host=self.request.host,
@@ -49,14 +48,13 @@ class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
                 'oauth_callback'
             )
         )
-        
         redirect_uri = self.authenticator.oauth_callback_url or guess_uri
-        self.log.info('oauth redirect: %r', redirect_uri)
+        self.log.debug('HydroShareLoginHandler, oauth redirect: %r', redirect_uri)
         
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
-            scope=self.scope,
+            scope=[],
             response_type='code',
             callback=self.setNextUrl)
 
@@ -69,7 +67,7 @@ class HydroShareLoginHandler(OAuthLoginHandler, HydroShareMixin):
             path=clean_url
         )
 
-        self.log.info('NEXT URL: ' + redirect_url)
+        self.log.debug('HydroShareLoginHandler, next url: ' + redirect_url)
 
         # save this url path so that it can be accessed in the CallbackHandler
         global next_url
@@ -79,21 +77,23 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
 #    """Basic handler for OAuth callback. Calls authenticator to verify username."""
     @gen.coroutine
     def get(self):
-        self.log.info('Inside HydroShareCallbackHandler')
-        username = yield self.authenticator.get_authenticated_user(self, None)
+        user_data = yield self.authenticator.get_authenticated_user(self)
 
-        if username:
+        if user_data:
 
-            self.log.info('base url: ' +self.request.uri)
-            user = self.user_from_username(username)
+            self.log.info('HydroShareCallbackHandler, base url: ' +self.request.uri)
+
+            # get or generate jupyter user object. this calls user_from_username in jupyterhub/handlers/base.py
+            user = self.user_from_username(user_data['name'])
             self.set_login_cookie(user)
-            print('CALLBACKHANDLER REDIRECTING TO: '+next_url) 
+
+            self.log.debug('HydroShareCallbackHandler, redirect url: '+next_url) 
 
             # redirect the user to the next uri, or the server homepage
             redirect_file = os.path.join(os.environ['HYDROSHARE_REDIRECT_COOKIE_PATH'], '.redirect_%s'%username)
             welcome_page = '%s/user/%s/tree/notebooks/Welcome.ipynb' % (self.hub.server.base_url, username)
             if os.path.exists(redirect_file):
-                print('FOUND REDIRECT FILE AT: %s' % redirect_file)
+                self.log.debug('HydroShareCallbackHandler, redirect file: %s' % redirect_file)
                 with open(redirect_file,'r') as f:
                     u = f.read().strip()
                     os.remove(redirect_file)
@@ -106,21 +106,15 @@ class HydroShareCallbackHandler(OAuthCallbackHandler, HydroShareMixin):
 class HydroShareOAuthenticator(OAuthenticator):
 
     login_service = "HydroShare"
-
     client_id_env = 'HYDROSHARE_CLIENT_ID'
     client_secret_env = 'HYDROSHARE_CLIENT_SECRET'
     login_handler = HydroShareLoginHandler
     callback_handler = HydroShareCallbackHandler
 
-    username_map = Dict(config=True, default_value={},
-                        help="""Optional dict to remap github usernames to nix usernames.
-        """)
-
     @gen.coroutine
-    def authenticate(self, handler, data):
-        print('request uri: ' + handler.request.uri)
+    def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
-        self.log.info('code: ' + code)
+        self.log.debug('HydroShareCallbackHandler, code: ' + code)
         if not code:
             raise web.HTTPError(400, "oauth callback made without a token")
 
@@ -138,9 +132,8 @@ class HydroShareOAuthenticator(OAuthenticator):
         url = url_concat(
                         'https://www.hydroshare.org/o/token/',
                          params)
-        self.log.info(url)
 
-        self.log.info('url: '+str(url))
+        self.log.debug('HydroShareCallbackHandler, url: '+str(url))
 
         req = HTTPRequest(url,method="POST",body='', headers={"Accept": "application/json"}, validate_cert=False,)
 
@@ -148,7 +141,7 @@ class HydroShareOAuthenticator(OAuthenticator):
 
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        self.log.info('RESPONSE_JSON: '+str(resp_json))
+        self.log.debug('HydroShareCallbackHandler, response json: '+str(resp_json))
 
         access_token = resp_json['access_token']
 
@@ -163,21 +156,14 @@ class HydroShareOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        self.log.info('user: '+str(resp_json))
+        self.log.debug('HydroShareOAuthenticator, user: '+str(resp_json))
         
         # get the username variable from the response
-        hs_username = resp_json["username"]
+        username = resp_json["username"]
         
-        # remap hydroshare username to system username
-        nix_username = self.username_map.get(hs_username, hs_username)
-        
-        #check system username against whitelist
-        use_whitelist = int(os.getenv('HYDROSHARE_USE_WHITELIST', '1'))
-        if use_whitelist:
-            if self.whitelist and nix_username not in self.whitelist:
-                self.log.error('Username not in whitelist: %s' % nix_username)
-                nix_username = None
-        return nix_username
+        userdict = {"name": username}
+        userdict["auth_state"] = auth_state = {}
+        auth_state['access_token'] = access_token
+        auth_state['github_user'] = resp_json
 
-
-
+        return userdict
