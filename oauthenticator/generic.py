@@ -104,6 +104,7 @@ class GenericOAuthenticator(OAuthenticator):
 
         access_token = resp_json['access_token']
         token_type = resp_json['token_type']
+        scope = (resp_json['scope'] or '').split(' ')
 
         # Determine who the logged in user is
         headers = {
@@ -129,6 +130,7 @@ class GenericOAuthenticator(OAuthenticator):
             'auth_state': {
                 'access_token': access_token,
                 'oauth_user': resp_json,
+                'scope': scope,
             }
         }
 
