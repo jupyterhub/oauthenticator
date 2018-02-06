@@ -10,6 +10,9 @@ install:
   - pip install --upgrade pip
   - pip install --upgrade --pre -r test-requirements.txt .
   - pip freeze
+env:
+  OAUTH2_TOKEN_URL="token_url"
+  OAUTH2_USERDATA_URL="userdata_url"
 script:
   - |
     if [[ "$TEST_LINT" = 1 ]]; then
