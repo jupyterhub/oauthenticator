@@ -183,6 +183,8 @@ class CILogonOAuthenticator(OAuthenticator):
         #  in the Lab/Notebook environment.
         auth_state['token_response'] = token_response
         # store the whole user model in auth_state.cilogon_user
+        # keep access_token as well, in case anyone was relying on it
+        auth_state['access_token'] = access_token
         auth_state['cilogon_user'] = resp_json
         return userdict
 
