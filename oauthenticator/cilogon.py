@@ -39,6 +39,7 @@ class CILogonMixin(OAuth2Mixin):
 
 class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
     """See http://www.cilogon.org/oidc for general information."""
+
     def authorize_redirect(self, *args, **kwargs):
         """Add idp, skin to redirect params"""
         extra_params = kwargs.setdefault('extra_params', {})
@@ -58,13 +59,14 @@ class CILogonOAuthenticator(OAuthenticator):
     login_handler = CILogonLoginHandler
 
     scope = List(Unicode(), default_value=['openid', 'email', 'org.cilogon.userinfo'],
-        config=True,
-        help="""The OAuth scopes to request.
+                 config=True,
+                 help="""The OAuth scopes to request.
 
         See cilogon_scope.md for details.
         At least 'openid' is required.
         """,
-    )
+                 )
+
     @validate('scope')
     def _validate_scope(self, proposal):
         """ensure openid is requested"""
@@ -145,8 +147,8 @@ class CILogonOAuthenticator(OAuthenticator):
                           )
 
         resp = yield http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        access_token = resp_json['access_token']
+        token_response = json.loads(resp.body.decode('utf8', 'replace'))
+        access_token = token_response['access_token']
         self.log.info("Access token acquired.")
         # Determine who the logged in user is
         params = dict(access_token=access_token)
@@ -160,25 +162,29 @@ class CILogonOAuthenticator(OAuthenticator):
         username = resp_json.get(self.username_claim)
         if not username:
             self.log.error("Username claim %s not found in the response: %s",
-                self.username_claim, sorted(resp_json.keys())
-            )
+                           self.username_claim, sorted(resp_json.keys())
+                           )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
         if self.idp_whitelist:
             gotten_name, gotten_idp = username.split('@')
             if gotten_idp not in self.idp_whitelist:
-                self.log.error("Trying to login from not whitelisted domain %s", gotten_idp)
-                raise web.HTTPError(500, "Trying to login from not whitelisted domain")
+                self.log.error(
+                    "Trying to login from not whitelisted domain %s", gotten_idp)
+                raise web.HTTPError(
+                    500, "Trying to login from not whitelisted domain")
             if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
                 username = gotten_name
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
-        # Save the access token and full CILogon reply in auth state
+        # Save the token response and full CILogon reply in auth state
         # These can be used for user provisioning
         #  in the Lab/Notebook environment.
-        auth_state['access_token'] = access_token
+        auth_state['token_response'] = token_response
         # store the whole user model in auth_state.cilogon_user
+        # keep access_token as well, in case anyone was relying on it
+        auth_state['access_token'] = access_token
         auth_state['cilogon_user'] = resp_json
         return userdict
 
