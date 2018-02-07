@@ -35,7 +35,9 @@ def test_cilogon(cilogon_client):
     assert name == 'wash@serenity.space'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
+    assert 'token_response' in auth_state
     assert auth_state == {
         'access_token': auth_state['access_token'],
         'cilogon_user': user_model('wash'),
+        'token_response': auth_state['token_response'],
     }
