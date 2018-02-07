@@ -14,11 +14,12 @@ def user_model(email):
         'hd': email.split('@')[1],
     }
 
+import re
 @fixture
 def google_client(client):
     setup_oauth_mock(client,
         host=['accounts.google.com', 'www.googleapis.com'],
-        access_token_path='/o/oauth2/token',
+        access_token_path=re.compile('^(/o/oauth2/token|/oauth2/v4/token)$'),
         user_path='/oauth2/v1/userinfo',
     )
     original_handler_for_user = client.handler_for_user
