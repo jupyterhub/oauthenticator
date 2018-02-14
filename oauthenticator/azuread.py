@@ -26,35 +26,19 @@ from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-def _api_headers(access_token):
-    return {
-        "Accept": "application/json",
-        "User-Agent": "JupyterHub",
-        "Authorization": "token {}".format(access_token)
-    }
-
-
-# we need this, as microsoft expects '&' not to be encoded in the POST body
-def dictToQuery(d):
-    query = ''
-    for key in d.keys():
-        query += str(key) + '=' + str(d[key]) + "&"
-    return query
-
-
-def azureTokenUrlFor(tentant):
+def azure_token_url_for(tentant):
     return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(tentant)
 
 
-def azureAuthorizeUrlFor(tentant):
+def azure_authorize_url_for(tentant):
     return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(
         tentant)
 
 
 class AzureAdMixin(OAuth2Mixin):
     tenant_id = os.environ.get('AAD_TENANT_ID', '')
-    _OAUTH_ACCESS_TOKEN_URL = azureTokenUrlFor(tenant_id)
-    _OAUTH_AUTHORIZE_URL = azureAuthorizeUrlFor(tenant_id)
+    _OAUTH_ACCESS_TOKEN_URL = azure_token_url_for(tenant_id)
+    _OAUTH_AUTHORIZE_URL = azure_authorize_url_for(tenant_id)
 
 
 class AzureAdLoginHandler(OAuthLoginHandler, AzureAdMixin):
@@ -68,7 +52,7 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     tenant_id = Unicode(config=True)
 
-    def getTenant(self):
+    def get_tenant(self):
         if hasattr(self, 'tenant_id') and self.tenant_id:
             app_log.info('ID3: {0}'.format(self.tenant_id))
             return self.tenant_id
@@ -82,10 +66,6 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        app_log.info('AZUREAD: authenticate')
-        """We set up auth_state based on additional GitHub info if we
-        receive it.
-        """
         code = handler.get_argument("code")
         http_client = AsyncHTTPClient()
 
@@ -100,7 +80,7 @@ class AzureAdOAuthenticator(OAuthenticator):
         data = urllib.parse.urlencode(
             params, doseq=True, encoding='utf-8', safe='=')
 
-        url = azureTokenUrlFor(self.getTenant())
+        url = azure_token_url_for(self.get_tenant())
 
         headers = {
             'Content-Type':
@@ -125,10 +105,9 @@ class AzureAdOAuthenticator(OAuthenticator):
         decoded = jwt.decode(id_token, verify=False)
 
         userdict = {"name": decoded['name']}
-        # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
-        # store the whole user model in auth_state.github_user
+        # results in a decoded JWT for the user data
         auth_state['user'] = decoded
 
         return userdict

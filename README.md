@@ -5,6 +5,7 @@ OAuth + JupyterHub Authenticator = OAuthenticator
 OAuthenticator currently supports the following authentication services:
 
 - [Auth0](oauthenticator/auth0.py)
+- [Azure](#azure-setup)
 - [Bitbucket](oauthenticator/bitbucket.py)
 - [CILogon](oauthenticator/cilogon.py)
 - [GitHub](#github-setup)
@@ -94,6 +95,12 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 
 > ***Follow this [link to create an AAD APP](https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/)***
 
+> CLIENT_ID === Azure `Application ID` - found in AD --> app registrations --> app
+
+> TENANT_ID === Azure `Airectory ID` - found in AD --> properties
+
+
+
 
 Requires: **`PyJWT>=1.5.3`**
 
@@ -126,6 +133,8 @@ c.Spawner.cmd = ['/usr/local/bin/jupyterhub-singleuser']
 ```
 sudo jupyterhub -f ./path/to/jupyter_config.py –no-ssl –log-level=DEBUG
 ```
+
+* [Source Code](oauthenticator/azuread.py)
 
 
 ## GitHub Setup

@@ -9,8 +9,8 @@ class Config(object):
 
 
 @mark.gen_test
-def test_getTenant_with_tenant_id():
-    t_id = AzureAdOAuthenticator.getTenant(Config())
+def test_gettenant_with_tenant_id():
+    t_id = AzureAdOAuthenticator.get_tenant(Config())
     assert t_id == _t_id
 
 
@@ -19,6 +19,6 @@ os.environ["AAD_TENANT_ID"] = "some_random_id"
 
 
 @mark.gen_test
-def test_getTenant_from_vars():
-    t_id = AzureAdOAuthenticator.getTenant(object)
+def test_gettenant_from_env():
+    t_id = AzureAdOAuthenticator.get_tenant(object)
     assert t_id.default_value == "some_random_id"
