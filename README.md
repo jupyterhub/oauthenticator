@@ -86,6 +86,48 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
 
 
+## Azure Setup
+
+* A sample is provided for you in `examples > azuread > sample_jupyter_config.py` 
+* Just add the code below to your `jupyterhub_config.py` file
+* Making sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
+
+> ***Follow this [link to create an AAD APP](https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/)***
+
+
+Requires: **`PyJWT>=1.5.3`**
+
+```
+> pip3 install PyJWT
+```
+
+
+```
+import os
+os.environ["AAD_TENANT_ID"] = '{AAD-TENANT-ID}'
+# **BE SURE TO SET THE AAD-TENANT-ID ABOVE, HERE! FOR THINGS TO WORK CORRECTLY**
+
+from oauthenticator.azuread import AzureAdOAuthenticator
+c.JupyterHub.authenticator_class = AzureAdOAuthenticator
+
+c.Application.log_level = 'DEBUG'
+
+c.AzureAdOAuthenticator.tenant_id = os.environ.get('AAD_TENANT_ID')
+
+c.AzureAdOAuthenticator.oauth_callback_url = 'http://{your-domain}/hub/oauth_callback'
+c.AzureAdOAuthenticator.client_id = '{AAD-APP-CLIENT-ID}'
+c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
+
+c.Spawner.cmd = ['/usr/local/bin/jupyterhub-singleuser']
+```
+
+* Run via:
+
+```
+sudo jupyterhub -f ./path/to/jupyter_config.py –no-ssl –log-level=DEBUG
+```
+
+
 ## GitHub Setup
 
 First, you'll need to create a [GitHub OAuth

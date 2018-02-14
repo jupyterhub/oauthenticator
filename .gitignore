@@ -61,3 +61,5 @@ env
 src
 jupyterhub.sqlite
 jupyterhub_cookie_secret
+
+.vscode/
