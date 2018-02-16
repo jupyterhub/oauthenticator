@@ -5,6 +5,7 @@ OAuth + JupyterHub Authenticator = OAuthenticator
 OAuthenticator currently supports the following authentication services:
 
 - [Auth0](oauthenticator/auth0.py)
+- [Azure](#azure-setup)
 - [Bitbucket](oauthenticator/bitbucket.py)
 - [CILogon](oauthenticator/cilogon.py)
 - [GitHub](#github-setup)
@@ -84,6 +85,63 @@ c.MyOAuthenticator.oauth_callback_url = 'http[s]://[your-host]/hub/oauth_callbac
 c.MyOAuthenticator.client_id = 'your-client-id'
 c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
+
+
+## Azure Setup
+
+
+#### _Prereqs_:
+
+* Requires: **`PyJWT>=1.5.3`**
+
+```
+> pip3 install PyJWT
+```
+
+* BE SURE TO SET THE **`AAD_TENANT_ID`** environment variable
+
+```
+> export AAD_TENANT_ID='{AAD-TENANT-ID}'
+```
+
+* Sample code is provided for you in `examples > azuread > sample_jupyter_config.py` 
+* Just add the code below to your `jupyterhub_config.py` file
+* Making sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
+
+> ***Follow this [link to create an AAD APP](https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/)***
+
+> CLIENT_ID === Azure `Application ID` - found in `Azure portal --> AD --> App Registrations --> App`
+
+> TENANT_ID === Azure `Directory ID` - found in `Azure portal --> AD --> Properties`
+
+
+
+**jupyterhub_config.py:**
+
+```
+import os
+from oauthenticator.azuread import AzureAdOAuthenticator
+c.JupyterHub.authenticator_class = AzureAdOAuthenticator
+
+c.Application.log_level = 'DEBUG'
+
+c.AzureAdOAuthenticator.tenant_id = os.environ.get('AAD_TENANT_ID')
+
+c.AzureAdOAuthenticator.oauth_callback_url = 'http://{your-domain}/hub/oauth_callback'
+c.AzureAdOAuthenticator.client_id = '{AAD-APP-CLIENT-ID}'
+c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
+
+```
+
+#### _Run via_:
+
+```
+sudo jupyterhub -f ./path/to/jupyterhub_config.py
+```
+
+> See `run.sh` for an [example](./examples/azuread/)
+
+* [Source Code](oauthenticator/azuread.py)
 
 
 ## GitHub Setup
