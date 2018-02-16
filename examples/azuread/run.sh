@@ -1,2 +1,3 @@
-sudo jupyterhub -f ./sample_jupyter_config.py –-no-ssl –-log-level=DEBUG
+export AAD_TENANT_ID='{AAD-TENANT-ID}'
+jupyterhub -f ./sample_jupyter_config.py –-log-level=DEBUG
 

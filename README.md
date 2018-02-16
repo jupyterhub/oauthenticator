@@ -101,19 +101,20 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 
 
 
+### _Prereqs_:
 
-Requires: **`PyJWT>=1.5.3`**
+* Requires: **`PyJWT>=1.5.3`**
 
 ```
 > pip3 install PyJWT
 ```
 
+* BE SURE TO SET THE **`AAD_TENANT_ID`** environment variable
+* See `run.sh` for an [example](./examples/azuread/)
+
 
 ```
 import os
-os.environ["AAD_TENANT_ID"] = '{AAD-TENANT-ID}'
-# **BE SURE TO SET THE AAD-TENANT-ID ABOVE, HERE! FOR THINGS TO WORK CORRECTLY**
-
 from oauthenticator.azuread import AzureAdOAuthenticator
 c.JupyterHub.authenticator_class = AzureAdOAuthenticator
 
@@ -125,7 +126,6 @@ c.AzureAdOAuthenticator.oauth_callback_url = 'http://{your-domain}/hub/oauth_cal
 c.AzureAdOAuthenticator.client_id = '{AAD-APP-CLIENT-ID}'
 c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 
-c.Spawner.cmd = ['/usr/local/bin/jupyterhub-singleuser']
 ```
 
 * Run via:
@@ -133,6 +133,7 @@ c.Spawner.cmd = ['/usr/local/bin/jupyterhub-singleuser']
 ```
 sudo jupyterhub -f ./path/to/jupyter_config.py –no-ssl –log-level=DEBUG
 ```
+
 
 * [Source Code](oauthenticator/azuread.py)
 
