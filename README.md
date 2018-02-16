@@ -89,19 +89,8 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 
 ## Azure Setup
 
-* A sample is provided for you in `examples > azuread > sample_jupyter_config.py` 
-* Just add the code below to your `jupyterhub_config.py` file
-* Making sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
 
-> ***Follow this [link to create an AAD APP](https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/)***
-
-> CLIENT_ID === Azure `Application ID` - found in AD --> app registrations --> app
-
-> TENANT_ID === Azure `Airectory ID` - found in AD --> properties
-
-
-
-### _Prereqs_:
+#### _Prereqs_:
 
 * Requires: **`PyJWT>=1.5.3`**
 
@@ -110,8 +99,24 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
 
 * BE SURE TO SET THE **`AAD_TENANT_ID`** environment variable
-* See `run.sh` for an [example](./examples/azuread/)
 
+```
+> export AAD_TENANT_ID='{AAD-TENANT-ID}'
+```
+
+* Sample code is provided for you in `examples > azuread > sample_jupyter_config.py` 
+* Just add the code below to your `jupyterhub_config.py` file
+* Making sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
+
+> ***Follow this [link to create an AAD APP](https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/)***
+
+> CLIENT_ID === Azure `Application ID` - found in `Azure portal --> AD --> App Registrations --> App`
+
+> TENANT_ID === Azure `Directory ID` - found in `Azure portal --> AD --> Properties`
+
+
+
+**jupyterhub_config.py:**
 
 ```
 import os
@@ -128,12 +133,13 @@ c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 
 ```
 
-* Run via:
+#### _Run via_:
 
 ```
-sudo jupyterhub -f ./path/to/jupyter_config.py –no-ssl –log-level=DEBUG
+sudo jupyterhub -f ./path/to/jupyterhub_config.py
 ```
 
+> See `run.sh` for an [example](./examples/azuread/)
 
 * [Source Code](oauthenticator/azuread.py)
 
