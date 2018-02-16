@@ -20,7 +20,7 @@ any provider, is also available.
 
 ## Examples
 
-For an example docker image using OAuthenticator, see the [example](example)
+For an example docker image using OAuthenticator, see the [examples](examples)
 directory.
 
 [Another example](https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth)
