@@ -58,6 +58,12 @@ command line for details.
 
 ## 0.6
 
+### [0.6.2] - 2018-02-16
+
+0.6.2 is a security fix.
+It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
+
+
 ### [0.6.1] - 2017-08-11
 
 0.6.1 has bugfixes for new behaviors in 0.6.0
@@ -118,10 +124,12 @@ command line for details.
 
 - First release
 
+
 [Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...HEAD
 [0.7.2]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.7.0
+[0.6.2]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.6.2
 [0.6.1]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...0.6.1
 [0.6.0]:https://github.com/jupyterhub/oauthenticator/compare/0.5.1...0.6.0
 [0.5.1]:https://github.com/jupyterhub/oauthenticator/compare/0.5.0...0.5.1
