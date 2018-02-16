@@ -21,7 +21,6 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Set
 
-from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support gitlab.com and gitlab community edition installations
@@ -131,31 +130,14 @@ class GitLabOAuthenticator(OAuthenticator):
     def _check_group_whitelist(self, username, user_id, is_admin, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        if is_admin:
-            # For admins, /groups returns *all* groups. As a workaround
-            # we check if we are a member of each group in the whitelist
-            for group in map(url_escape, self.gitlab_group_whitelist):
-                url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
-                req = HTTPRequest(url, method="GET", headers=headers)
-                resp = yield http_client.fetch(req, raise_error=False)
-                if resp.code == 200:
-                    return True  # user _is_ in group
-        else:
-            # For regular users we get all the groups to which they have access
-            # and check if any of these are in the whitelisted groups
-            next_page = url_concat("%s/groups" % GITLAB_API,
-                                   dict(all_available=True))
-            while next_page:
-                req = HTTPRequest(next_page, method="GET", headers=headers)
-                resp = yield http_client.fetch(req)
-                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-                next_page = next_page_from_links(resp)
-                user_groups = set(entry["path"] for entry in resp_json)
-                # check if any of the organizations seen thus far are in whitelist
-                if len(self.gitlab_group_whitelist & user_groups) > 0:
-                    return True
-            return False
-
+        # Check if we are a member of each group in the whitelist
+        for group in map(url_escape, self.gitlab_group_whitelist):
+            url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
+            req = HTTPRequest(url, method="GET", headers=headers)
+            resp = yield http_client.fetch(req, raise_error=False)
+            if resp.code == 200:
+                return True  # user _is_ in group
+        return False
 
 
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
