@@ -28,7 +28,9 @@ class OpenShiftMixin(OAuth2Mixin):
 class OpenShiftLoginHandler(OAuthLoginHandler, OpenShiftMixin):
     # This allows `Service Accounts as OAuth Clients` scenario
     # https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#service-accounts-as-oauth-clients
-    scope=['user:info']
+    @property
+    def scope(self):
+        return self.authenticator.scope
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
@@ -36,6 +38,8 @@ class OpenShiftOAuthenticator(OAuthenticator):
     login_service = "OpenShift"
 
     login_handler = OpenShiftLoginHandler
+
+    scope = ['user:info']
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
