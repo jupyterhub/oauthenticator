@@ -74,7 +74,10 @@ class MoodleOAuthenticator(OAuthenticator):
             scope='user_info'
         )
 
-        url = self.token_url
+        if self.token_url:
+            url = self.token_url
+        else:
+            raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable")
 
         b64key = base64.b64encode(
             bytes(
