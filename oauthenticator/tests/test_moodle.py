@@ -13,11 +13,17 @@ def user_model(username):
         }
     }
 
+def Authenticator():
+    return MoodleOAuthenticator(
+        token_url='http://moodledomain.com/local/oauth/token.php',
+        userdata_url='http://moodledomain.com/local/oauth/user_info.php'
+    )
+
 
 @fixture
 def moodle_client(client):
     setup_oauth_mock(client,
-                     host=['localhost'],
+                     host=['moodledomain.com'],
                      access_token_path='/oauth/token',
                      user_path='/oauth/user',
                      )
@@ -26,7 +32,7 @@ def moodle_client(client):
 
 @mark.gen_test
 def test_moodle(moodle_client):
-    authenticator = MoodleOAuthenticator()
+    authenticator = Authenticator()
     handler = moodle_client.handler_for_user(user_model('test.user'))
     user_info = yield authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
