@@ -12,7 +12,7 @@ command line for details.
 
 ### [0.7.3] - 2018-02-16
 
-0.7.3 is a security fix.
+0.7.3 is a security fix for CVE-2018-7206.
 It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 The same fix is backported to 0.6.2.
 
@@ -66,7 +66,7 @@ The same fix is backported to 0.6.2.
 
 ### [0.6.2] - 2018-02-16
 
-0.6.2 is a security fix.
+0.6.2 is a security fix for CVE-2018-7206.
 It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 ### [0.6.1] - 2017-08-11
