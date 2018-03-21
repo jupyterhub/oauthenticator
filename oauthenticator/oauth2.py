@@ -1,5 +1,5 @@
 """
-Base classes for Custom Authenticator to use GitHub OAuth with JupyterHub
+Base classes for Custom Authenticator to use OAuth with JupyterHub
 
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
