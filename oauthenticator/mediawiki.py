@@ -99,6 +99,13 @@ class MWOAuthenticator(OAuthenticator):
         config=True,
     )
     executor = Any()
+
+    def normalize_username(self, username):
+        """
+        Override normalize_username to avoid lowercasing usernames
+        """
+        return username
+
     def _executor_default(self):
         return ThreadPoolExecutor(self.executor_threads)
 
