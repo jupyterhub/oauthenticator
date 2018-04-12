@@ -71,7 +71,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         )
 
         if not response:
-            self.clear_all_cookies()
+            handler.clear_all_cookies()
             raise HTTPError(500, 'Google authentication failed')
 
         bodyjs = json.loads(response.body.decode())
