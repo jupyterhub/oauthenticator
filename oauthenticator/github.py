@@ -67,12 +67,12 @@ class GitHubOAuthenticator(OAuthenticator):
     github_client_id = Unicode(config=True, help="DEPRECATED")
 
     def _github_client_id_changed(self, name, old, new):
-        self.log.warn("github_client_id is deprecated, use client_id")
+        self.log.warning("github_client_id is deprecated, use client_id")
         self.client_id = new
     github_client_secret = Unicode(config=True, help="DEPRECATED")
 
     def _github_client_secret_changed(self, name, old, new):
-        self.log.warn("github_client_secret is deprecated, use client_secret")
+        self.log.warning("github_client_secret is deprecated, use client_secret")
         self.client_secret = new
 
     client_id_env = 'GITHUB_CLIENT_ID'
