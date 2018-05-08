@@ -49,6 +49,10 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Access token endpoint URL"
     )
+    extra_params = Dict(
+        os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', {}),
+        help="Extra parameters for first POST request"
+    ).tag(config=True)
 
     username_key = Unicode(
         os.environ.get('OAUTH2_USERNAME_KEY', 'username'),
@@ -77,6 +81,7 @@ class GenericOAuthenticator(OAuthenticator):
             code=code,
             grant_type='authorization_code'
         )
+        params.update(self.extra_params)
 
         if self.token_url:
             url = self.token_url
@@ -124,6 +129,7 @@ class GenericOAuthenticator(OAuthenticator):
         req = HTTPRequest(url,
                           method=self.userdata_method,
                           headers=headers,
+                          body=urllib.parse.urlencode({'access_token': access_token})
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
