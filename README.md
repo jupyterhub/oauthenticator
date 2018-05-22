@@ -13,6 +13,7 @@ OAuthenticator currently supports the following authentication services:
 - [Globus](#globus-setup)
 - [Google](#google-setup)
 - [MediaWiki](oauthenticator/mediawiki.py)
+- [Moodle](#moodle-setup)
 - [Okpy](#okpyauthenticator)
 - [OpenShift](#openshift-setup)
 
@@ -347,3 +348,30 @@ Use `c.GlobusOAuthenticator.exclude` to prevent tokens from being passed into a
 users environment. By default, `auth.globus.org` is excluded but `transfer.api.globus.org`
 is allowed. If you want to disable transfers, modify `c.GlobusOAuthenticator.scope`
 instead of `c.GlobusOAuthenticator.exclude` to avoid procuring unnecessary tokens.
+
+## Moodle Setup
+
+First install the [OAuth2 Server Plugin](https://github.com/projectestac/moodle-local_oauth) for Moodle.
+
+Use the `GenericOAuthenticator` for Jupyterhub by editing your `jupyterhub_config.py` accordingly:
+
+```python
+from oauthenticator.generic import GenericOAuthenticator
+c.JupyterHub.authenticator_class = GenericOAuthenticator
+
+c.GenericOAuthenticator.oauth_callback_url = 'http://YOUR-JUPYTERHUB.com/hub/oauth_callback'
+c.GenericOAuthenticator.client_id = 'MOODLE-CLIENT-ID'
+c.GenericOAuthenticator.client_secret = 'MOODLE-CLIENT-SECRET-KEY'
+c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE'
+c.GenericOAuthenticator.userdata_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/user_info.php'
+c.GenericOAuthenticator.token_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/token.php'
+c.GenericOAuthenticator.userdata_method = 'POST'
+c.GenericOAuthenticator.extra_params = {
+    'scope': 'user_info',
+    'client_id': 'MOODLE-CLIENT-ID',
+    'client_secret': 'MOODLE-CLIENT-SECRET-KEY'}
+```
+
+And set your environmental variable `_OAUTH_AUTHORIZE_URL` to:
+
+`http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`
