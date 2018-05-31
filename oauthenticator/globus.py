@@ -166,10 +166,9 @@ class GlobusOAuthenticator(OAuthenticator):
         # Doing the code for token for id_token exchange
         tokens = client.oauth2_exchange_code_for_tokens(code)
         id_token = tokens.decode_id_token(client)
-        id_chunks = id_token.get('preferred_username').split('@')
         # It's possible for identity provider domains to be namespaced
         # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username, domain = id_chunks[0], '@'.join(id_chunks[1:])
+        username, domain = id_token.get('preferred_username').split('@', 1)
 
         if self.identity_provider and domain != self.identity_provider:
             raise HTTPError(
