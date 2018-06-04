@@ -96,6 +96,18 @@ def test_restricted_domain(globus_client, mock_globus_sdk):
 
 
 @mark.gen_test
+def test_namespaced_domain(globus_client, mock_globus_sdk):
+    mock_globus_sdk.id_token = {'preferred_username':
+                                'wash@legitshipping.com@serenity.com'}
+    authenticator = GlobusOAuthenticator()
+    # Allow any idp
+    authenticator.identity_provider = ''
+    handler = globus_client.handler_for_user(user_model('wash'))
+    data = yield authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+
+
+@mark.gen_test
 def test_token_exclusion(globus_client, mock_globus_sdk):
     authenticator = GlobusOAuthenticator()
     authenticator.exclude_tokens = [
