@@ -7,7 +7,6 @@ import json
 import os
 import base64
 import urllib
-import ast
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -25,7 +24,7 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 class GenericEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
-    
+
 
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
     pass
@@ -45,6 +44,16 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata url to get user data login information"
     )
+    token_url = Unicode(
+        os.environ.get('OAUTH2_TOKEN_URL', ''),
+        config=True,
+        help="Access token endpoint URL"
+    )
+    extra_params = Dict(
+        os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', {}),
+        help="Extra parameters for first POST request"
+    ).tag(config=True)
+
     username_key = Unicode(
         os.environ.get('OAUTH2_USERNAME_KEY', 'username'),
         config=True,
@@ -57,12 +66,6 @@ class GenericOAuthenticator(OAuthenticator):
 
     userdata_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
-        config=True,
-        help="Userdata method to get user data login information"
-    )
-
-    token_url = Unicode(
-        os.environ.get('OAUTH2_TOKEN_URL', 'GET'),
         config=True,
         help="Userdata method to get user data login information"
     )
@@ -84,8 +87,12 @@ class GenericOAuthenticator(OAuthenticator):
             code=code,
             grant_type='authorization_code'
         )
+        params.update(self.extra_params)
 
-        url = self.token_url
+        if self.token_url:
+            url = self.token_url
+        else:
+            raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable")
 
         b64key = base64.b64encode(
             bytes(
@@ -111,7 +118,9 @@ class GenericOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         access_token = resp_json['access_token']
+        refresh_token = resp_json.get('refresh_token', None)
         token_type = resp_json['token_type']
+        scope = (resp_json.get('scope', '')).split(' ')
 
         # Determine who the logged in user is
         headers = {
@@ -119,12 +128,16 @@ class GenericOAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub",
             "Authorization": "{} {}".format(token_type, access_token)
         }
-        url = url_concat(self.userdata_url, self.userdata_params)
+        if self.userdata_url:
+            url = url_concat(self.userdata_url, self.userdata_params)
+        else:
+            raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable")
 
         req = HTTPRequest(url,
                           method=self.userdata_method,
                           headers=headers,
                           validate_cert=self.tls_verify,
+                          body=urllib.parse.urlencode({'access_token': access_token})
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
@@ -137,7 +150,9 @@ class GenericOAuthenticator(OAuthenticator):
             'name': resp_json.get(self.username_key),
             'auth_state': {
                 'access_token': access_token,
+                'refresh_token': refresh_token,
                 'oauth_user': resp_json,
+                'scope': scope,
             }
         }
 
