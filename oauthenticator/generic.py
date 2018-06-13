@@ -7,7 +7,6 @@ import json
 import os
 import base64
 import urllib
-import ast
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -77,7 +76,7 @@ class GenericOAuthenticator(OAuthenticator):
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
         
-        tls_verify = ast.literal_eval(os.environ.get('OAUTH2_TLS_VERIFY', 'True'))
+        tls_verify = os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'}
 
         params = dict(
             redirect_uri=self.get_callback_url(handler),
