@@ -73,7 +73,7 @@ class GenericOAuthenticator(OAuthenticator):
     tls_verify = Bool(
         os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
         config=True,
-        help="Disable TLS verification at http request"
+        help="Disable TLS verification on http request"
     )
 
     @gen.coroutine
