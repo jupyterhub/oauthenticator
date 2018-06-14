@@ -16,7 +16,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict
+from traitlets import Unicode, Dict, Bool
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -70,6 +70,12 @@ class GenericOAuthenticator(OAuthenticator):
         help="Userdata method to get user data login information"
     )
 
+    tls_verify = Bool(
+        os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
+        config=True,
+        help="Disable TLS verification on http request"
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -103,6 +109,7 @@ class GenericOAuthenticator(OAuthenticator):
         req = HTTPRequest(url,
                           method="POST",
                           headers=headers,
+                          validate_cert=self.tls_verify,
                           body=urllib.parse.urlencode(params)  # Body is required for a POST...
                           )
 
@@ -129,6 +136,7 @@ class GenericOAuthenticator(OAuthenticator):
         req = HTTPRequest(url,
                           method=self.userdata_method,
                           headers=headers,
+                          validate_cert=self.tls_verify,
                           body=urllib.parse.urlencode({'access_token': access_token})
                           )
         resp = yield http_client.fetch(req)
