@@ -136,9 +136,7 @@ class GenericOAuthenticator(OAuthenticator):
         req = HTTPRequest(url,
                           method=self.userdata_method,
                           headers=headers,
-                          validate_cert=self.tls_verify,
-                          body=urllib.parse.urlencode({'access_token': access_token})
-                          )
+                          validate_cert=self.tls_verify)
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
