@@ -9,6 +9,7 @@ based on the GitHub plugin by Kyle Kelley (@rgbkrk)
 import json
 import os
 import sys
+import warnings
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -23,10 +24,31 @@ from traitlets import Set
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
+GITLAB_URL = os.getenv('GITLAB_URL')
+GITLAB_HOST = os.getenv('GITLAB_HOST')
+
+if not GITLAB_URL and GITLAB_HOST:
+    warnings.warn('Use of GITLAB_HOST might be deprecated in the future. '
+                  'Rename GITLAB_HOST environemnt variable to GITLAB_URL.',
+                  PendingDeprecationWarning)
+    if GITLAB_HOST.startswith('https://') or GITLAB_HOST.startswith('http://'):
+        GITLAB_URL = GITLAB_HOST
+    else:
+        # Hides common mistake of users which set the GITLAB_HOST
+        # without a protocol specification.
+        GITLAB_URL = 'https://{0}'.format(GITLAB_HOST)
+        warnings.warn('The https:// prefix has been added to GITLAB_HOST.'
+                      'Set GITLAB_URL="{0}" instead.'.format(GITLAB_URL))
+
 # Support gitlab.com and gitlab community edition installations
-GITLAB_HOST = os.environ.get('GITLAB_HOST') or 'https://gitlab.com'
+if not GITLAB_URL:
+    GITLAB_URL = 'https://gitlab.com'
+
+# Use only GITLAB_URL in the code bellow.
+del GITLAB_HOST
+
 GITLAB_API_VERSION = os.environ.get('GITLAB_API_VERSION') or '4'
-GITLAB_API = '%s/api/v%s' % (GITLAB_HOST, GITLAB_API_VERSION)
+GITLAB_API = '%s/api/v%s' % (GITLAB_URL, GITLAB_API_VERSION)
 
 
 def _api_headers(access_token):
@@ -37,8 +59,8 @@ def _api_headers(access_token):
 
 
 class GitLabMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_HOST
-    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_HOST
+    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_URL
+    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_URL
 
 
 class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
@@ -81,7 +103,7 @@ class GitLabOAuthenticator(OAuthenticator):
 
         validate_server_cert = self.validate_server_cert
 
-        url = url_concat("%s/oauth/token" % GITLAB_HOST,
+        url = url_concat("%s/oauth/token" % GITLAB_URL,
                          params)
 
         req = HTTPRequest(url,

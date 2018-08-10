@@ -7,6 +7,7 @@ command line for details.
 
 
 ## [Unreleased]
+- Use GITLAB_URL instead of GITLAB_HOST to specify URL of your GitLab instance.
 
 ## 0.7
 
