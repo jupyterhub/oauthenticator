@@ -7,7 +7,21 @@ command line for details.
 
 
 ## [Unreleased]
-- Use GITLAB_URL instead of GITLAB_HOST to specify URL of your GitLab instance.
+
+## 0.8
+
+### [0.8.0] - 2018-08-10
+
+- Add `azuread.AzureADOAuthenticator`
+- Add `CILogonOAuthenticator.idp_whitelist` and `CILogonOAuthenticator.strip_idp_domain` options
+- Add `GenericOAuthenticator.tls_verify` and `GenericOAuthenticator.extra_params` options
+- Add refresh token and scope to generic oauthenticator auth state
+- Better error messages when GitHub oauth fails
+- Stop normalizing mediawiki usernames, which can be case-sensitive
+- Fixes for group-membership checks with GitLab
+- Bugfixes in various authenticators
+- Deprecate GITLAB_HOST in favor of GITLAB_URL, since we expect `https://` in the url, not just the host.
+
 
 ## 0.7
 
@@ -131,7 +145,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...HEAD
+[0.8.0]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...0.8.0
 [0.7.3]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...0.7.3
 [0.7.2]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...0.7.1
