@@ -12,6 +12,7 @@ def user_model(email):
     return {
         'email': email,
         'hd': email.split('@')[1],
+        'verified_email': true
     }
 
 import re
@@ -53,15 +54,19 @@ def test_google(google_client):
 
 @mark.gen_test
 def test_hosted_domain(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain=('email.com', 'gmail.com'))
+    authenticator = GoogleOAuthenticator(hosted_domain=('email.com', 'mycollege.edu'))
+
     handler = google_client.handler_for_user(user_model('fake@email.com'))#, authenticator)
     user_info = yield authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'fake'
 
+    handler = google_client.handler_for_user(user_model('fake2@mycollege.edu'))#, authenticator)
+    user_info = yield authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'fake2'
+
     handler = google_client.handler_for_user(user_model('notallowed@notemail.com'))
     with raises(HTTPError) as exc:
         name = yield authenticator.authenticate(handler)
     assert exc.value.status_code == 403
-
-
