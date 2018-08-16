@@ -10,7 +10,6 @@ import json
 from tornado import gen
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
-from tornado.log import app_log
 
 from traitlets import Unicode, Tuple, default
 
