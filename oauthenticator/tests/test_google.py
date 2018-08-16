@@ -53,7 +53,7 @@ def test_google(google_client):
 
 @mark.gen_test
 def test_hosted_domain(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain='email.com')
+    authenticator = GoogleOAuthenticator(hosted_domain=('email.com', 'gmail.com'))
     handler = google_client.handler_for_user(user_model('fake@email.com'))#, authenticator)
     user_info = yield authenticator.authenticate(handler)
     name = user_info['name']
