@@ -12,7 +12,7 @@ def user_model(email):
     return {
         'email': email,
         'hd': email.split('@')[1],
-        'verified_email': true
+        'verified_email': True
     }
 
 import re
