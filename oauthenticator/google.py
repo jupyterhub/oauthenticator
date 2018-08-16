@@ -6,12 +6,14 @@ Derived from the GitHub OAuth authenticator.
 
 import os
 import json
+import sys
 
 from tornado import gen
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
+from tornado.log import app_log
 
-from traitlets import Unicode, default
+from traitlets import Unicode, Tuple, default
 
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
@@ -40,10 +42,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def _scope_default(self):
         return ['openid', 'email']
 
-    hosted_domain = Unicode(
-        os.environ.get('HOSTED_DOMAIN', ''),
+    hosted_domain = Tuple(
         config=True,
-        help="""Hosted domain used to restrict sign-in, e.g. mycollege.edu"""
+        help="""Tuple of domains used to restrict sign-in, e.g. mycollege.edu"""
     )
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Google'),
@@ -53,6 +54,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
+        if not self.hosted_domain:
+            self.log.error("OAuth: no authorized domain(s) defined in configuration")
+            handler.clear_all_cookies()
+            raise HTTPError(500)
+
         code = handler.get_argument("code")
         handler.settings['google_oauth'] = {
             'key': self.client_id,
@@ -75,18 +81,22 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             raise HTTPError(500, 'Google authentication failed')
 
         bodyjs = json.loads(response.body.decode())
+        user_email = bodyjs['email']
+        user_email_domain = user_email.split('@')[1]
 
-        username = bodyjs['email']
+        if not bodyjs['verified_email']:
+            self.log.warning("OAuth unverified email attempt: %s", user_email)
+            raise HTTPError(403,
+                "Google email {} not verified".format(user_email)
+            )
 
-        if self.hosted_domain:
-            if not username.endswith('@'+self.hosted_domain) or \
-                bodyjs['hd'] != self.hosted_domain:
-                raise HTTPError(403,
-                    "You are not signed in to your {} account.".format(
-                        self.hosted_domain)
-                )
-            else:
-                username = username.split('@')[0]
+        if user_email_domain not in self.hosted_domain or bodyjs['hd'] not in self.hosted_domain:
+            self.log.warning("OAuth unauthorized domain attempt: %s", user_email)
+            raise HTTPError(403,
+                "Google account domain @{} not authorized.".format(user_email_domain)
+            )
+        else:
+            username = user_email.split('@')[0]
 
         return {
             'name': username,
