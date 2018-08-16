@@ -6,7 +6,6 @@ Derived from the GitHub OAuth authenticator.
 
 import os
 import json
-import sys
 
 from tornado import gen
 from tornado.auth import GoogleOAuth2Mixin
