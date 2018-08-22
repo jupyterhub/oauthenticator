@@ -11,7 +11,7 @@ from tornado import gen
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import Unicode, Tuple, default
+from traitlets import Unicode, List, Tuple, default, validate
 
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
@@ -40,10 +40,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def _scope_default(self):
         return ['openid', 'email']
 
-    hosted_domain = Tuple(
+    hosted_domain = List(
+        # Convert String to List of one element
+        [os.environ.get('HOSTED_DOMAIN', '')],
         config=True,
-        help="""Tuple of domains used to restrict sign-in, e.g. mycollege.edu"""
+        help="""List of domains used to restrict sign-in, e.g. mycollege.edu"""
     )
+
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Google'),
         config=True,
@@ -52,11 +55,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        if not self.hosted_domain:
-            self.log.error("OAuth: no authorized domain(s) defined in configuration")
-            handler.clear_all_cookies()
-            raise HTTPError(500)
-
         code = handler.get_argument("code")
         handler.settings['google_oauth'] = {
             'key': self.client_id,
@@ -83,13 +81,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_email_domain = user_email.split('@')[1]
 
         if not bodyjs['verified_email']:
-            self.log.warning("OAuth unverified email attempt: %s", user_email)
+            self.log.warning("Google OAuth unverified email attempt: %s", user_email)
             raise HTTPError(403,
                 "Google email {} not verified".format(user_email)
             )
 
-        if user_email_domain not in self.hosted_domain or bodyjs['hd'] not in self.hosted_domain:
-            self.log.warning("OAuth unauthorized domain attempt: %s", user_email)
+        if (self.hosted_domain != [''] and (
+                user_email_domain not in self.hosted_domain or
+                bodyjs['hd'] not in self.hosted_domain)):
+            self.log.warning("Google OAuth unauthorized domain attempt: %s", user_email)
             raise HTTPError(403,
                 "Google account domain @{} not authorized.".format(user_email_domain)
             )

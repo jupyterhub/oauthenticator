@@ -40,12 +40,12 @@ def google_client(client):
 
 @mark.gen_test
 def test_google(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain=('email.com', 'mycollege.edu'))
+    authenticator = GoogleOAuthenticator()
     handler = google_client.handler_for_user(user_model('fake@email.com'))
     user_info = yield authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
-    assert name == 'fake'
+    assert name == 'fake@email.com'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'google_user' in auth_state
@@ -54,7 +54,7 @@ def test_google(google_client):
 
 @mark.gen_test
 def test_hosted_domain(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain=('email.com', 'mycollege.edu'))
+    authenticator = GoogleOAuthenticator(hosted_domain=['email.com', 'mycollege.edu'])
 
     handler = google_client.handler_for_user(user_model('fake@email.com'))#, authenticator)
     user_info = yield authenticator.authenticate(handler)
