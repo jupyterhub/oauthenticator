@@ -194,12 +194,10 @@ By default, any domain is allowed to login but you can restrict authorized domai
 c.GoogleOAuthenticator.hosted_domain = ['mycollege.edu', 'mycompany.com']
 ```
 
-You can customize the sign in button text:
+You can customize the sign in button text (optional):
 ```python
 c.GoogleOAuthenticator.login_service = 'My College'
 ```
-
-If you don't set 
 
 ## OpenShift Setup
 

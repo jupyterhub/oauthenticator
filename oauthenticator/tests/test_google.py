@@ -45,7 +45,7 @@ def test_google(google_client):
     user_info = yield authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
-    assert name == 'fake@email.com'
+    assert name == 'fake'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'google_user' in auth_state

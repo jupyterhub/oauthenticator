@@ -11,7 +11,7 @@ from tornado import gen
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import Unicode, List, Tuple, default, validate
+from traitlets import Unicode, List, default
 
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
