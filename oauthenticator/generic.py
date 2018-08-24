@@ -50,7 +50,7 @@ class GenericOAuthenticator(OAuthenticator):
         help="Access token endpoint URL"
     )
     extra_params = Dict(
-        os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', {}),
+        json.loads(os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', '{}')),
         help="Extra parameters for first POST request"
     ).tag(config=True)
 
@@ -60,7 +60,7 @@ class GenericOAuthenticator(OAuthenticator):
         help="Userdata username key from returned json for USERDATA_URL"
     )
     userdata_params = Dict(
-        os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
+        json.loads(os.environ.get('OAUTH2_USERDATA_PARAMS', '{}')),
         help="Userdata params to get user data login information"
     ).tag(config=True)
 
