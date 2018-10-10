@@ -122,7 +122,7 @@ class GenericOAuthenticator(OAuthenticator):
         token_type = resp_json['token_type']
         scope = resp_json.get('scope', '')
         if (isinstance(scope, basestring)):
-                scope = (resp_json.get('scope', '')).split(' ')        
+                scope = scope.split(' ')        
 
         # Determine who the logged in user is
         headers = {
