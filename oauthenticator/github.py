@@ -166,23 +166,64 @@ class GitHubOAuthenticator(OAuthenticator):
         return userdict
 
     @gen.coroutine
-    def _check_organization_whitelist(self, org, username, access_token):
+    def _check_whitelist(self, target, username, access_token):
+        # Check if the user has permission against the target.
+
+        # If target is specified with `:`, treat the latter part as level specifier.
+        if ':' in target:
+            target, level = target.split(':', 1)
+        else:
+            level = None
+
+        if target.beginswith('orgs/'):
+            # https://developer.github.com/v3/orgs/members/#check-membership
+            # With empty scope (even if authenticated by an org member), this
+            #  will only check public org members.  You want 'read:org' in order
+            #  to be include private members.
+            resp = yield self._call_github(target, username, 'members/{username}', access_token)
+            if resp.get('state') != 'active':
+                return False
+            if level == 'admin':
+                return resp.get('role') == 'admin'
+            return True
+
+        if target.beginswith('teams/'):
+            # https://developer.github.com/v3/teams/members/#get-team-membership
+            # Note that you need to specify team id rather than team name.
+            # To find team id, use 'List teams' API (`GET /orgs/:org/teams`)
+            resp = yield self._call_github(target, username, 'memberships/{username}', access_token)
+            if resp.get('state') != 'active':
+                return False
+            if level == 'maintainer':
+                return resp.get('role') == 'maintainer'
+            return True
+
+        if target.beginswith('repos/'):
+            # https://developer.github.com/v3/orgs/members/#check-membership
+            # You may need 'repo' scope.
+            resp = yield self._call_github(target, username, 'collaborators/{username}/permission', access_token)
+            permission = resp.get('permission', 'none')
+            if level == 'admin':
+                return permission == 'admin'
+            if level == 'write':
+                return permission in {'admin', 'write'}
+            return level != 'none'
+
+        self.log.warning("Unknown target '%s' specified. Must begins with 'orgs/', 'teams/' or 'repos/'", target)
+        return False
+
+    @gen.coroutine
+    def _call_github(self, target, username, api_uri, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        # Get all the members for organization 'org'
-        # With empty scope (even if authenticated by an org member), this
-        #  will only yield public org members.  You want 'read:org' in order
-        #  to be able to iterate through all members.
-        next_page = "%s://%s/orgs/%s/members" % (GITHUB_PROTOCOL, GITHUB_API, org)
-        while next_page:
-            req = HTTPRequest(next_page, method="GET", headers=headers)
-            resp = yield http_client.fetch(req)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            next_page = next_page_from_links(resp)
-            for entry in resp_json:
-                if username == entry['login']:
-                    return True
-        return False
+        url = "%s://%s/%s/%s" % (GITHUB_PROTOCOL, GITHUB_API, target, api_uri.format(username=username))
+        req = HTTPRequest(url, method="GET", headers=headers)
+        resp = yield http_client.fetch(req, raise_error=False)
+        if resp.code != 404:
+            resp.rethrow()
+        if resp.code == 404 or not resp.body:
+            return {}
+        return json.loads(resp.body)
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
