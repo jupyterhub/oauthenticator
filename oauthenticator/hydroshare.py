@@ -163,7 +163,7 @@ class HydroShareOAuthenticator(OAuthenticator):
         username = resp_json["username"]
         
         # save token to users home dir
-        self.log.info("ENVIRON: " + os.environ)
+        self.log.info("ENVIRON: " + str(os.environ))
         fname = os.path.join(os.environ['JUPYTER_USERSPACE_DIR_HOST'], username, '.hs_auth')
         self.log.info("fname: " + fname)
         auth = (token_dict, os.getenv('HYDROSHARE_CLIENT_ID'))
