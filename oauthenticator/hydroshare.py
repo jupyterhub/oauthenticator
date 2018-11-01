@@ -162,8 +162,10 @@ class HydroShareOAuthenticator(OAuthenticator):
         # get the username variable from the response
         username = resp_json["username"]
         
-        # save toekn to users home dir
-        fname = '/userspace/%s/.hs_auth' % (username)
+        # save token to users home dir
+        self.log.info("ENVIRON: " + os.environ)
+        fname = os.path.join(os.environ['JUPYTER_USERSPACE_DIR_HOST'], username, '.hs_auth')
+        self.log.info("fname: " + fname)
         auth = (token_dict, os.getenv('HYDROSHARE_CLIENT_ID'))
         with open(fname, 'wb') as f:
             pickle.dump(auth, f, protocol=2)
