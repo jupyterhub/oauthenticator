@@ -26,6 +26,7 @@ from pwd import getpwnam
 import grp
 import shutil
 import requests
+import pickle
 
 # hold on the the next_url for redirecting after authentication
 next_url = None
@@ -139,11 +140,11 @@ class HydroShareOAuthenticator(OAuthenticator):
 
         resp = yield http_client.fetch(req)
 
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        token_dict = json.loads(resp.body.decode('utf8', 'replace'))
 
-        self.log.debug('HydroShareCallbackHandler, response json: '+str(resp_json))
+        self.log.debug('HydroShareCallbackHandler, response json: ' + str(token_dict))
 
-        access_token = resp_json['access_token']
+        access_token = token_dict['access_token']
 
         # Determine who the logged in user is
         headers={"Accept": "application/json",
@@ -161,6 +162,13 @@ class HydroShareOAuthenticator(OAuthenticator):
         # get the username variable from the response
         username = resp_json["username"]
         
+        # save token to users home dir
+        fname = os.path.join(os.environ['JUPYTER_USERSPACE_DIR'], username, '.hs_auth')
+        self.log.info("fname: " + fname)
+        auth = (token_dict, os.getenv('HYDROSHARE_CLIENT_ID'))
+        with open(fname, 'wb') as f:
+            pickle.dump(auth, f, protocol=2)
+
         userdict = {"name": username}
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
