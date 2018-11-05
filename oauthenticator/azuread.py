@@ -10,6 +10,7 @@ import re
 import string
 import urllib
 import sys
+import unidecode
 
 from tornado.auth import OAuth2Mixin
 from tornado.log import app_log
@@ -102,15 +103,23 @@ class AzureAdOAuthenticator(OAuthenticator):
         id_token = resp_json['id_token']
         decoded = jwt.decode(id_token, verify=False)
 
-        userdict = {"name": decoded['name']}
+        # use AD OID as username to ensure unicity (name is not immutable)
+        # https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-id-and-access-tokens
+        userdict = {"name": decoded['oid']} 
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
         # results in a decoded JWT for the user data
         auth_state['user'] = decoded
 
         return userdict
+    
 
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
+    def normalize_username(self, username):
+        # fix azure ad guid to match unix username standards (no accents or dashes)
+        unaccented_string = unidecode.unidecode(username)
+        return unaccented_string.lower().replace('-', '')
+
     """A version that mixes in local system user creation"""
     pass
