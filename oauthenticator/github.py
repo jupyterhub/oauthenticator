@@ -169,19 +169,15 @@ class GitHubOAuthenticator(OAuthenticator):
     def _check_organization_whitelist(self, org, username, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        # Get all the members for organization 'org'
+        # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)
         # With empty scope (even if authenticated by an org member), this
         #  will only yield public org members.  You want 'read:org' in order
         #  to be able to iterate through all members.
-        next_page = "%s://%s/orgs/%s/members" % (GITHUB_PROTOCOL, GITHUB_API, org)
-        while next_page:
-            req = HTTPRequest(next_page, method="GET", headers=headers)
-            resp = yield http_client.fetch(req)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            next_page = next_page_from_links(resp)
-            for entry in resp_json:
-                if username == entry['login']:
-                    return True
+        check_membership_url = "%s://%s/orgs/%s/members/%s" % (GITHUB_PROTOCOL, GITHUB_API, org, username)
+        req = HTTPRequest(check_membership_url, method="GET", headers=headers)
+        resp = yield http_client.fetch(req, raise_error=False)
+        if resp.code == 204:
+            return True
         return False
 
 
