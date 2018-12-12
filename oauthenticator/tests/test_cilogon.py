@@ -25,11 +25,10 @@ def cilogon_client(client):
     return client
 
 
-@mark.gen_test
-def test_cilogon(cilogon_client):
+async def test_cilogon(cilogon_client):
     authenticator = CILogonOAuthenticator()
     handler = cilogon_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     print(json.dumps(user_info, sort_keys=True, indent=4))
     name = user_info['name']
     assert name == 'wash@serenity.space'

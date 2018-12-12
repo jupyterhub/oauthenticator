@@ -14,6 +14,7 @@ import jwt
 
 MW_URL = 'https://meta.wikimedia.org/w/index.php'
 
+
 @fixture
 def mediawiki():
     def post_token(request, context):
@@ -38,14 +39,15 @@ def mediawiki():
             content=post_token)
         yield mock
 
+
 def new_authenticator():
     return MWOAuthenticator(
         client_id='client_id',
         client_secret='client_secret',
     )
 
-@mark.gen_test
-def test_mediawiki(mediawiki):
+
+async def test_mediawiki(mediawiki):
     authenticator = new_authenticator()
     handler = Mock(spec=web.RequestHandler,
         get_secure_cookie=Mock(
@@ -57,7 +59,7 @@ def test_mediawiki(mediawiki):
             query='oauth_token=key&oauth_verifier=me'
         )
     )
-    user = yield authenticator.authenticate(handler, None)
+    user = await authenticator.authenticate(handler, None)
     assert user['name'] == 'wash'
     auth_state = user['auth_state']
     assert auth_state['ACCESS_TOKEN_KEY'] == 'key'
@@ -66,8 +68,7 @@ def test_mediawiki(mediawiki):
     assert identity['username'] == user['name']
 
 
-@mark.gen_test
-def test_login_redirect(mediawiki):
+async def test_login_redirect(mediawiki):
     authenticator = new_authenticator()
     record = []
     handler = mock_handler(authenticator.login_handler,
@@ -75,7 +76,7 @@ def test_login_redirect(mediawiki):
         authenticator=authenticator,
         )
     handler.write = lambda buf: record.append(buf)
-    yield handler.get()
+    await handler.get()
     assert handler.get_status() == 302
     assert 'Location' in handler._headers
     assert handler._headers['Location'].startswith(MW_URL)
