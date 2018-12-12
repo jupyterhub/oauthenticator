@@ -372,6 +372,6 @@ c.GenericOAuthenticator.extra_params = {
     'client_secret': 'MOODLE-CLIENT-SECRET-KEY'}
 ```
 
-And set your environmental variable `_OAUTH_AUTHORIZE_URL` to:
+And set your environmental variable `OAUTH2_AUTHORIZE_URL` to:
 
 `http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`
