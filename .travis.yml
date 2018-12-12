@@ -2,10 +2,9 @@ language: python
 sudo: false
 cache: pip
 python:
-  - "nightly"
-  - "3.6"
-  - "3.5"
-  - "3.4"
+  - nightly
+  - 3.6
+  - 3.5
 install:
   - pip install --upgrade pip
   - pip install --upgrade --pre -r test-requirements.txt .
@@ -25,5 +24,5 @@ after_success:
 
 matrix:
   include:
-    python: "3.5"
+    python: 3.6
     env: TEST_LINT=1
