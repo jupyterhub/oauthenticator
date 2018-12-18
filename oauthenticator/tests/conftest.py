@@ -1,17 +1,28 @@
 """Py.Test fixtures"""
 
+import inspect
+
 from tornado.httpclient import AsyncHTTPClient
 from tornado import ioloop
+from tornado.platform.asyncio import AsyncIOMainLoop
 from pytest import fixture
 
 from .mocks import MockAsyncHTTPClient
 
 
+def pytest_collection_modifyitems(items):
+    """add asyncio marker to all async tests"""
+    for item in items:
+        if inspect.iscoroutinefunction(item.obj):
+            item.add_marker('asyncio')
+
+
 @fixture
-def io_loop(request):
+def io_loop(event_loop, request):
     """Same as pytest-tornado.io_loop, adapted for tornado 5"""
-    io_loop = ioloop.IOLoop()
+    io_loop = AsyncIOMainLoop()
     io_loop.make_current()
+    assert io_loop.asyncio_loop is event_loop
 
     def _close():
         io_loop.clear_current()

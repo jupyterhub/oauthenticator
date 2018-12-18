@@ -27,11 +27,10 @@ def generic_client(client):
     return client
 
 
-@mark.gen_test
-def test_generic(generic_client):
+async def test_generic(generic_client):
     authenticator = Authenticator()
     handler = generic_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
     assert name == 'wash'

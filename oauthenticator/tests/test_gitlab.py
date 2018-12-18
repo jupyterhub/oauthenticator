@@ -38,11 +38,10 @@ def gitlab_client(client):
     return client
 
 
-@mark.gen_test
-def test_gitlab(gitlab_client):
+async def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
     handler = gitlab_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
     assert name == 'wash'
@@ -55,8 +54,8 @@ def make_link_header(urlinfo, page):
     return {'Link': '<{}://{}{}?page={}>;rel="next"'
                     .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
 
-@mark.gen_test
-def test_group_whitelist(gitlab_client):
+
+async def test_group_whitelist(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
 
@@ -126,32 +125,32 @@ def test_group_whitelist(gitlab_client):
         authenticator.gitlab_group_whitelist = ['blue']
 
         handler = client.handler_for_user(group_user_model('caboose'))
-        user_info = yield authenticator.authenticate(handler)
+        user_info = await authenticator.authenticate(handler)
         name = user_info['name']
         assert name == 'caboose'
 
         handler = client.handler_for_user(group_user_model('burns', is_admin=True))
-        user_info = yield authenticator.authenticate(handler)
+        user_info = await authenticator.authenticate(handler)
         name = user_info['name']
         assert name == 'burns'
 
         handler = client.handler_for_user(group_user_model('grif'))
-        name = yield authenticator.authenticate(handler)
+        name = await authenticator.authenticate(handler)
         assert name is None
 
         handler = client.handler_for_user(group_user_model('simmons', is_admin=True))
-        name = yield authenticator.authenticate(handler)
+        name = await authenticator.authenticate(handler)
         assert name is None
 
         # reverse it, just to be safe
         authenticator.gitlab_group_whitelist = ['red']
 
         handler = client.handler_for_user(group_user_model('caboose'))
-        name = yield authenticator.authenticate(handler)
+        name = await authenticator.authenticate(handler)
         assert name is None
 
         handler = client.handler_for_user(group_user_model('grif'))
-        user_info = yield authenticator.authenticate(handler)
+        user_info = await authenticator.authenticate(handler)
         name = user_info['name']
         assert name == 'grif'
 

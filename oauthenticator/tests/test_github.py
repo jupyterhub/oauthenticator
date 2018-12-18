@@ -33,16 +33,15 @@ def github_client(client):
     return client
 
 
-@mark.gen_test
-def test_github(github_client):
+async def test_github(github_client):
     authenticator = GitHubOAuthenticator()
     handler = github_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
-    
+
     assert auth_state == {
         'access_token': auth_state['access_token'],
         'github_user': {
@@ -59,8 +58,7 @@ def make_link_header(urlinfo, page):
                     .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
 
 
-@mark.gen_test
-def test_org_whitelist(github_client):
+async def test_org_whitelist(github_client):
     client = github_client
     authenticator = GitHubOAuthenticator()
 
@@ -114,22 +112,22 @@ def test_org_whitelist(github_client):
         authenticator.github_organization_whitelist = ['blue']
 
         handler = client.handler_for_user(user_model('caboose'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user['name'] == 'caboose'
 
         handler = client.handler_for_user(user_model('donut'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user is None
 
         # reverse it, just to be safe
         authenticator.github_organization_whitelist = ['red']
 
         handler = client.handler_for_user(user_model('caboose'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user is None
 
         handler = client.handler_for_user(user_model('donut'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user['name'] == 'donut'
 
         client.hosts['api.github.com'].pop()

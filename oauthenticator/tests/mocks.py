@@ -241,12 +241,12 @@ def mock_handler(Handler, uri='https://hub.example.com', method='GET', **setting
     handler._transforms = []
     return handler
 
-@gen.coroutine
-def no_code_test(authenticator):
+
+async def no_code_test(authenticator):
     """Run a test to exercise no code in the request"""
     handler = Mock(spec=web.RequestHandler)
     handler.get_argument = Mock(return_value=None)
     with pytest.raises(web.HTTPError) as exc:
-        name = yield authenticator.authenticate(handler)
+        name = await authenticator.authenticate(handler)
     assert exc.value.status_code == 400
-    
+
