@@ -33,8 +33,9 @@ class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
 class GenericOAuthenticator(OAuthenticator):
 
     login_service = Unicode(
-        "GenericOAuth2",
-        config=True
+        os.environ.get('LOGIN_SERVICE', 'GenericOAuth2'),
+        config=True,
+        help="Service name for GenericOAuth2 connect button, e.g. My College"
     )
 
     login_handler = GenericLoginHandler
