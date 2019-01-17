@@ -162,8 +162,13 @@ class HydroShareOAuthenticator(OAuthenticator):
         # get the username variable from the response
         username = resp_json["username"]
         
+        # create home directory if it does not exist
+        path = os.path.join(os.environ['JUPYTER_USERSPACE_DIR'], username)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         # save token to users home dir
-        fname = os.path.join(os.environ['JUPYTER_USERSPACE_DIR'], username, '.hs_auth')
+        fname = os.path.join(path, '.hs_auth')
         self.log.info("fname: " + fname)
         auth = (token_dict, os.getenv('HYDROSHARE_CLIENT_ID'))
         with open(fname, 'wb') as f:
