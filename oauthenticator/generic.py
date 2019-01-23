@@ -16,7 +16,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict, Bool
+from traitlets import Unicode, Dict, Bool, Set
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -44,6 +44,11 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata url to get user data login information"
     )
+    groupdata_url = Unicode(
+        os.environ.get('OAUTH2_GROUPDATA_URL', ''),
+        config=True,
+        help="Url to get user group data"
+    )
     token_url = Unicode(
         os.environ.get('OAUTH2_TOKEN_URL', ''),
         config=True,
@@ -67,6 +72,11 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata method to get user data login information"
     )
+    groupdata_method = Unicode(
+        os.environ.get('OAUTH2_GROUPDATA_METHOD', 'GET'),
+        config=True,
+        help="Groupdata method to get group data login information"
+    )
     userdata_token_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_REQUEST_TYPE', 'header'),
         config=True,
@@ -83,6 +93,11 @@ class GenericOAuthenticator(OAuthenticator):
         os.environ.get('OAUTH2_BASIC_AUTH', 'True').lower() in {'true', '1'},
         config=True,
         help="Disable basic authentication for access token request"
+    )
+
+    group_whitelist = Set(
+        config=True,
+        help="Automatically whitelist members of selected groups",
     )
 
     async def authenticate(self, handler, data=None):
@@ -159,6 +174,13 @@ class GenericOAuthenticator(OAuthenticator):
         if not resp_json.get(self.username_key):
             self.log.error("OAuth user contains no key %s: %s", self.username_key, resp_json)
             return
+        username = resp_json.get(self.username_key)
+
+        if self.group_whitelist:
+            user_in_group = await self._check_group_whitelist(http_client, username, headers)
+            if not user_in_group:
+                self.log.warning("%s not in group whitelist", username)
+                return
 
         return {
             'name': resp_json.get(self.username_key),
@@ -170,6 +192,25 @@ class GenericOAuthenticator(OAuthenticator):
             }
         }
 
+    async def _check_group_whitelist(self, http_client, username, headers):
+        if self.groupdata_url:
+            url = self.groupdata_url
+        else:
+            raise ValueError("Please set the OAUTH2_GROUPDATA_URL environment variable")
+
+        req = HTTPRequest(url,
+                          method=self.groupdata_method,
+                          headers=headers,
+                          validate_cert=self.tls_verify,
+                          )
+        resp = await http_client.fetch(req)
+        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        user_groups = resp_json.get('groups')
+        if user_groups:
+            for group in self.group_whitelist:
+                if group in user_groups:
+                    return True
+        return False
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
 
