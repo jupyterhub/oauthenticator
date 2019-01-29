@@ -162,8 +162,11 @@ class HydroShareOAuthenticator(OAuthenticator):
         # get the username variable from the response
         username = resp_json["username"]
         
+        # jupyter usernames are lowercase
+        jusername = username.lower()
+
         # create home directory if it does not exist
-        path = os.path.join(os.environ['JUPYTER_USERSPACE_DIR'], username)
+        path = os.path.join(os.environ['JUPYTER_USERSPACE_DIR'], jusername)
         if not os.path.exists(path):
             os.makedirs(path)
 
