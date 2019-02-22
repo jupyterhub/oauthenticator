@@ -144,7 +144,7 @@ class GitLabOAuthenticator(OAuthenticator):
             is_group_specified = True
             user_in_group = yield self._check_group_whitelist(user_id, access_token)
 
-        if self.gitlab_project_id_whitelist:
+        if self.gitlab_project_id_whitelist and not user_in_group:
             is_project_id_specified = True
             user_in_project = yield self._check_project_id_whitelist(user_id, access_token)
 
