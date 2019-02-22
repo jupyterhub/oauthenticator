@@ -188,13 +188,15 @@ class GitLabOAuthenticator(OAuthenticator):
             url = "%s/projects/%s/members/%d" % (GITLAB_API, project, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = yield http_client.fetch(req, raise_error=False)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            access_level = resp_json.get('access_level', 0)
 
-            # we only allow access level Developer and above
-            # Reference: https://docs.gitlab.com/ee/api/members.html
-            if resp.code == 200 and access_level >= 30:
-                return True
+            if resp.body:
+                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+                access_level = resp_json.get('access_level', 0)
+
+                # We only allow access level Developer and above
+                # Reference: https://docs.gitlab.com/ee/api/members.html
+                if resp.code == 200 and access_level >= 30:
+                    return True
         return False
 
 
