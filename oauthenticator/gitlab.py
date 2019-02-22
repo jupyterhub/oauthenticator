@@ -184,7 +184,7 @@ class GitLabOAuthenticator(OAuthenticator):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the whitelist
-        for project in map(url_escape, self.gitlab_project_id_whitelist):
+        for project in self.gitlab_project_id_whitelist:
             url = "%s/projects/%s/members/%d" % (GITLAB_API, project, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = yield http_client.fetch(req, raise_error=False)
