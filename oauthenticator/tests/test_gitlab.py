@@ -202,7 +202,9 @@ async def test_project_id_whitelist(gitlab_client):
                 headers={'Content-Type': 'application/json'},
             )
         else:
-            return HTTPResponse(request, 404)
+            return HTTPResponse(request=request, code=404,
+                buffer=BytesIO(''.encode('utf8'))
+            )
 
     client.hosts['gitlab.com'].append(
         (member_regex, is_member)
