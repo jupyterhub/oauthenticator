@@ -175,9 +175,24 @@ class GitHubOAuthenticator(OAuthenticator):
         #  to be able to iterate through all members.
         check_membership_url = "%s://%s/orgs/%s/members/%s" % (GITHUB_PROTOCOL, GITHUB_API, org, username)
         req = HTTPRequest(check_membership_url, method="GET", headers=headers)
+        self.log.debug("Checking GitHub organization membership: %s in %s?", username, org)
         resp = yield http_client.fetch(req, raise_error=False)
         if resp.code == 204:
+            self.log.info("Allowing %s as member of %s", username, org)
             return True
+        else:
+            try:
+                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+                message = resp_json.get('message', '')
+            except ValueError:
+                message = ''
+            self.log.debug(
+                "%s does not appear to be a member of %s (status=%s): %s",
+                username,
+                org,
+                resp.code,
+                message,
+            )
         return False
 
 
