@@ -156,3 +156,89 @@ async def test_group_whitelist(gitlab_client):
 
         client.hosts['gitlab.com'].pop()
 
+
+async def test_project_id_whitelist(gitlab_client):
+    client = gitlab_client
+    authenticator = GitLabOAuthenticator()
+
+    user_projects = {
+        '1231231': {
+            '3588673': {
+                'id': 3588674,
+                'name': 'john',
+                'username': 'john',
+                'state': 'active',
+                'avatar_url': 'https://secure.gravatar.com/avatar/382a6b306679b2d97b547bfff3d73242?s=80&d=identicon',
+                'web_url': 'https://gitlab.com/john',
+                'access_level': 10,  # Guest
+                'expires_at': '2030-02-23'
+            },
+            '3588674': {
+                'id': 3588674,
+                'name': 'harry',
+                'username': 'harry',
+                'state': 'active',
+                'avatar_url': 'https://secure.gravatar.com/avatar/382a6b306679b2d97b547bfff3d73242?s=80&d=identicon',
+                'web_url': 'https://gitlab.com/harry',
+                'access_level': 30,  # Developer
+                'expires_at': '2030-02-23'
+            }
+        }
+    }
+    john_user_model = user_model('john', 3588673)
+    harry_user_model = user_model('harry', 3588674)
+    sheila_user_model = user_model('sheila', 3588675)
+
+    member_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/(.*)')
+
+    def is_member(request):
+        urlinfo = urlparse(request.url)
+        project_id, uid = member_regex.match(urlinfo.path).group(1, 2)
+
+        if user_projects.get(project_id) and user_projects.get(project_id).get(uid):
+            res = user_projects.get(project_id).get(uid)
+            return HTTPResponse(request=request, code=200,
+                buffer=BytesIO(json.dumps(res).encode('utf8')),
+                headers={'Content-Type': 'application/json'},
+            )
+        else:
+            return HTTPResponse(request=request, code=404,
+                buffer=BytesIO(''.encode('utf8'))
+            )
+
+    client.hosts['gitlab.com'].append(
+        (member_regex, is_member)
+    )
+
+    authenticator.gitlab_project_id_whitelist = [1231231]
+
+    # Forbidden since John has guest access
+    handler = client.handler_for_user(john_user_model)
+    user_info = await authenticator.authenticate(handler)
+    assert user_info is None
+
+    # Authenticated since Harry has developer access to the project
+    handler = client.handler_for_user(harry_user_model)
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'harry'
+
+    # Forbidden since Sheila doesn't have access to the project
+    handler = client.handler_for_user(sheila_user_model)
+    user_info = await authenticator.authenticate(handler)
+    assert user_info is None
+
+    authenticator.gitlab_project_id_whitelist = [123123152543]
+
+    # Forbidden since the project does not exist.
+    handler = client.handler_for_user(harry_user_model)
+    user_info = await authenticator.authenticate(handler)
+    assert user_info is None
+
+    authenticator.gitlab_project_id_whitelist = [123123152543, 1231231]
+
+    # Authenticated since Harry has developer access to one of the project in the list
+    handler = client.handler_for_user(harry_user_model)
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'harry'
