@@ -50,7 +50,6 @@ class GenericOAuthenticator(OAuthenticator):
         help="Access token endpoint URL"
     )
     extra_params = Dict(
-        os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', {}),
         help="Extra parameters for first POST request"
     ).tag(config=True)
 
@@ -60,7 +59,6 @@ class GenericOAuthenticator(OAuthenticator):
         help="Userdata username key from returned json for USERDATA_URL"
     )
     userdata_params = Dict(
-        os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
         help="Userdata params to get user data login information"
     ).tag(config=True)
 
@@ -120,7 +118,9 @@ class GenericOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
         refresh_token = resp_json.get('refresh_token', None)
         token_type = resp_json['token_type']
-        scope = (resp_json.get('scope', '')).split(' ')
+        scope = resp_json.get('scope', '')
+        if (isinstance(scope, str)):
+                scope = scope.split(' ')        
 
         # Determine who the logged in user is
         headers = {

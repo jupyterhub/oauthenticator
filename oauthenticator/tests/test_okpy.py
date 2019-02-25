@@ -11,6 +11,7 @@ def user_model(email):
         'email': email,
     }
 
+
 @fixture
 def okpy_client(client):
     setup_oauth_mock(client,
@@ -22,11 +23,10 @@ def okpy_client(client):
     return client
 
 
-@mark.gen_test
-def test_okpy(okpy_client):
+async def test_okpy(okpy_client):
     authenticator = OkpyOAuthenticator()
     handler = okpy_client.handler_for_user(user_model('testing@example.com'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
     assert name == 'testing@example.com'
@@ -35,6 +35,5 @@ def test_okpy(okpy_client):
     assert 'okpy_user' in auth_state
 
 
-@mark.gen_test
-def test_no_code(okpy_client):
-    yield no_code_test(OkpyOAuthenticator())
+async def test_no_code(okpy_client):
+    await no_code_test(OkpyOAuthenticator())

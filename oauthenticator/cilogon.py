@@ -114,6 +114,15 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
+    additional_username_claims = List(
+        config=True,
+        help="""Additional claims to check if the username_claim fails.
+
+        This is useful for linked identities where not all of them return
+        the primary username_claim.
+        """
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         """We set up auth_state based on additional CILogon info if we
@@ -159,11 +168,22 @@ class CILogonOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        username = resp_json.get(self.username_claim)
+        claimlist = [self.username_claim]
+        if self.additional_username_claims:
+            claimlist.extend(self.additional_username_claims)
+
+        for claim in claimlist:
+            username = resp_json.get(claim)
+            if username:
+                break
         if not username:
-            self.log.error("Username claim %s not found in the response: %s",
-                           self.username_claim, sorted(resp_json.keys())
-                           )
+            if len(claimlist) < 2:
+                self.log.error("Username claim %s not found in response: %s",
+                               self.username_claim, sorted(resp_json.keys())
+                               )
+            else:
+                self.log.error("No username claim from %r in response: %s",
+                               claimlist, sorted(resp_json.keys()))
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
         if self.idp_whitelist:

@@ -26,11 +26,10 @@ def auth0_client(client):
     return client
 
 
-@mark.gen_test
-def test_auth0(auth0_client):
+async def test_auth0(auth0_client):
     authenticator = Auth0OAuthenticator()
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
     assert name == 'kaylee@serenity.now'

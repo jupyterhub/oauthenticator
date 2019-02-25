@@ -332,7 +332,7 @@ c.LocalGlobusOAuthenticator.allow_refresh_tokens = True
 # Default scopes are below if unspecified. Add a custom transfer server if you have one.
 c.LocalGlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
 # Default tokens excluded from being passed into the spawner environment
-c.LocalGlobusOAuthenticator.exclude = ['auth.globus.org']
+c.LocalGlobusOAuthenticator.exclude_tokens = ['auth.globus.org']
 # If the JupyterHub server is an endpoint, for convenience the endpoint id can be
 # set here. It will show up in the notebook kernel for all users as 'GLOBUS_LOCAL_ENDPOINT'.
 c.LocalGlobusOAuthenticator.globus_local_endpoint = '<Your Local JupyterHub UUID>'
@@ -375,6 +375,6 @@ c.GenericOAuthenticator.extra_params = {
     'client_secret': 'MOODLE-CLIENT-SECRET-KEY'}
 ```
 
-And set your environmental variable `_OAUTH_AUTHORIZE_URL` to:
+And set your environmental variable `OAUTH2_AUTHORIZE_URL` to:
 
 `http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`

@@ -126,20 +126,29 @@ class OAuthCallbackHandler(BaseHandler):
         if cookie_state != url_state:
             self.log.warning("OAuth state mismatch: %s != %s", cookie_state, url_state)
             raise web.HTTPError(400, "OAuth state mismatch")
-    
+
+    def check_error(self):
+        """Check the OAuth code"""
+        error = self.get_argument("error", False)
+        if error:
+            message = self.get_argument("error_description", error)
+            raise web.HTTPError(400, "OAuth error: %s" % message)
+
     def check_code(self):
         """Check the OAuth code"""
         if not self.get_argument("code", False):
             raise web.HTTPError(400, "OAuth callback made without a code")
-    
+
     def check_arguments(self):
         """Validate the arguments of the redirect
-        
+
         Default:
-        
+
+        - check for oauth-standard error, error_description arguments
         - check that there's a code
-        - check that state matches 
+        - check that state matches
         """
+        self.check_error()
         self.check_code()
         self.check_state()
 

@@ -24,11 +24,10 @@ def bitbucket_client(client):
     return client
 
 
-@mark.gen_test
-def test_bitbucket(bitbucket_client):
+async def test_bitbucket(bitbucket_client):
     authenticator = BitbucketOAuthenticator()
     handler = bitbucket_client.handler_for_user(user_model('yorba'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
     name = user_info['name']
     assert name == 'yorba'
@@ -37,8 +36,7 @@ def test_bitbucket(bitbucket_client):
     assert 'bitbucket_user' in auth_state
 
 
-@mark.gen_test
-def test_team_whitelist(bitbucket_client):
+async def test_team_whitelist(bitbucket_client):
     client = bitbucket_client
     authenticator = BitbucketOAuthenticator()
     authenticator.bitbucket_team_whitelist = ['blue']
@@ -63,22 +61,22 @@ def test_team_whitelist(bitbucket_client):
     )
 
     handler = client.handler_for_user(user_model('caboose'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'caboose'
 
     handler = client.handler_for_user(user_model('donut'))
-    name = yield authenticator.authenticate(handler)
+    name = await authenticator.authenticate(handler)
     assert name is None
 
     # reverse it, just to be safe
     authenticator.team_whitelist = ['red']
 
     handler = client.handler_for_user(user_model('caboose'))
-    name = yield authenticator.authenticate(handler)
+    name = await authenticator.authenticate(handler)
     assert name is None
 
     handler = client.handler_for_user(user_model('donut'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'donut'

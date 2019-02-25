@@ -79,6 +79,10 @@ class GitLabOAuthenticator(OAuthenticator):
         config=True,
         help="Automatically whitelist members of selected groups",
     )
+    gitlab_project_id_whitelist = Set(
+        config=True,
+        help="Automatically whitelist members with Developer access to selected project ids",
+    )
 
 
     @gen.coroutine
@@ -131,34 +135,69 @@ class GitLabOAuthenticator(OAuthenticator):
         user_id = resp_json["id"]
         is_admin = resp_json.get("is_admin", False)
 
-        # Check if user is a member of any whitelisted organizations.
-        # This check is performed here, as it requires `access_token`.
+        # Check if user is a member of any whitelisted groups or projects.
+        # These checks are performed here, as it requires `access_token`.
+        user_in_group = user_in_project = False
+        is_group_specified = is_project_id_specified = False
+
         if self.gitlab_group_whitelist:
-            user_in_group = yield self._check_group_whitelist(
-                username, user_id, is_admin, access_token)
-            if not user_in_group:
-                self.log.warning("%s not in group whitelist", username)
-                return None
-        return {
-            'name': username,
-            'auth_state': {
-                'access_token': access_token,
-                'gitlab_user': resp_json,
+            is_group_specified = True
+            user_in_group = yield self._check_group_whitelist(user_id, access_token)
+
+        # We skip project_id check if user is in whitelisted group.
+        if self.gitlab_project_id_whitelist and not user_in_group:
+            is_project_id_specified = True
+            user_in_project = yield self._check_project_id_whitelist(user_id, access_token)
+
+        no_config_specified = not (is_group_specified or is_project_id_specified)
+
+        if (is_group_specified and user_in_group) or \
+            (is_project_id_specified and user_in_project) or \
+                no_config_specified:
+            return {
+                'name': username,
+                'auth_state': {
+                    'access_token': access_token,
+                    'gitlab_user': resp_json,
+                }
             }
-        }
+        else:
+            self.log.warning("%s not in group or project whitelist", username)
+            return None
 
 
     @gen.coroutine
-    def _check_group_whitelist(self, username, user_id, is_admin, access_token):
+    def _check_group_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        # Check if we are a member of each group in the whitelist
+        # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.gitlab_group_whitelist):
             url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = yield http_client.fetch(req, raise_error=False)
             if resp.code == 200:
                 return True  # user _is_ in group
+        return False
+
+
+    @gen.coroutine
+    def _check_project_id_whitelist(self, user_id, access_token):
+        http_client = AsyncHTTPClient()
+        headers = _api_headers(access_token)
+        # Check if user has developer access to any project in the whitelist
+        for project in self.gitlab_project_id_whitelist:
+            url = "%s/projects/%s/members/%d" % (GITLAB_API, project, user_id)
+            req = HTTPRequest(url, method="GET", headers=headers)
+            resp = yield http_client.fetch(req, raise_error=False)
+
+            if resp.body:
+                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+                access_level = resp_json.get('access_level', 0)
+
+                # We only allow access level Developer and above
+                # Reference: https://docs.gitlab.com/ee/api/members.html
+                if resp.code == 200 and access_level >= 30:
+                    return True
         return False
 
 
