@@ -116,7 +116,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 raise HTTPError(403,
                     "Google account domain @{} not authorized.".format(user_email_domain)
                 )
-            else:
+            if len(self.hosted_domain) == 1:
+                # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
         return {
