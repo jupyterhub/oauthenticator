@@ -14,6 +14,7 @@ def user_model(email):
     return {
         'email': email,
         'hd': email.split('@')[1],
+        'verified_email': True
     }
 
 
@@ -51,10 +52,9 @@ async def test_google(google_client):
     assert 'google_user' in auth_state
 
 
-
 async def test_hosted_domain(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain='email.com')
-    handler = google_client.handler_for_user(user_model('fake@email.com'))#, authenticator)
+    authenticator = GoogleOAuthenticator(hosted_domain=['email.com'])
+    handler = google_client.handler_for_user(user_model('fake@email.com'))
     user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'fake'
@@ -65,3 +65,19 @@ async def test_hosted_domain(google_client):
     assert exc.value.status_code == 403
 
 
+async def test_multiple_hosted_domain(google_client):
+    authenticator = GoogleOAuthenticator(hosted_domain=['email.com', 'mycollege.edu'])
+    handler = google_client.handler_for_user(user_model('fake@email.com'))
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'fake@email.com'
+
+    handler = google_client.handler_for_user(user_model('fake2@mycollege.edu'))
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'fake2@mycollege.edu'
+
+    handler = google_client.handler_for_user(user_model('notallowed@notemail.com'))
+    with raises(HTTPError) as exc:
+        name = await authenticator.authenticate(handler)
+    assert exc.value.status_code == 403
