@@ -16,9 +16,9 @@ command line for details.
 - Allow auth scope to be array or strings
 - GitHubOAuthenticator: More efficient org_whitelist check
 - Use pytest-asyncio instead of pytest-tornado since latter is unmaintained
-- CILogon: New additional_username_claims config for linked identities where not all of them return the primary username claim
+- CILogon: New additional_username_claims config for linked identities, fallback to the primary username claim
 - GitLab: New project_id_whitelist config to whitelist users who has Developer+ access to the project
-- Google: Allow email domains (hosted_domain) to be a list & hosted_domain is now mandatory
+- Google: Allow email domains (hosted_domain) to be a list & the field is now mandatory
 - Cleanup & bugfixes
 
 ### [0.8.0] - 2018-08-10
