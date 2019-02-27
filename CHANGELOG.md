@@ -10,6 +10,17 @@ command line for details.
 
 ## 0.8
 
+### [0.8.1] - 2019-02-27
+
+- Provide better error messages
+- Allow auth scope to be array or strings
+- GitHubOAuthenticator: More efficient org_whitelist check
+- Use pytest-asyncio instead of pytest-tornado since latter is unmaintained
+- CILogon: New additional_username_claims config for linked identities where not all of them return the primary username claim
+- GitLab: New project_id_whitelist config to whitelist users who has Developer+ access to the project
+- Google: Allow email domains (hosted_domain) to be a list & hosted_domain is now mandatory
+- Cleanup & bugfixes
+
 ### [0.8.0] - 2018-08-10
 
 - Add `azuread.AzureADOAuthenticator`
@@ -145,7 +156,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.1...HEAD
+[0.8.1]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...0.8.0
 [0.7.3]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...0.7.3
 [0.7.2]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...0.7.2
