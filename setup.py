@@ -49,6 +49,45 @@ setup_args = dict(
     license             = "BSD",
     platforms           = "Linux, Mac OS X",
     keywords            = ['Interactive', 'Interpreter', 'Shell', 'Web'],
+    entry_points={
+        'jupyterhub.authenticators': [
+            'auth0 = oauthenticator.auth0:Auth0OAuthenticator',
+            'local-auth0 = oauthenticator.auth0:LocalAuth0OAuthenticator',
+
+            'azuread = oauthenticator.azuread:AzureAdOAuthenticator',
+            'local-azuread = oauthenticator.azuread:LocalAzureAdOAuthenticator',
+
+            'bitbucket = oauthenticator.bitbucket:BitbucketOAuthenticator',
+            'local-bitbucket = oauthenticator.bitbucket:LocalBitbucketOAuthenticator',
+
+            'cilogon = oauthenticator.cilogon:CILogonOAuthenticator',
+            'local-cilogon = oauthenticator.cilogon:LocalCILogonOAuthenticator',
+
+            'generic-oauth = oauthenticator.generic:GenericOAuthenticator',
+            'local-generic-oauth = oauthenticator.generic:LocalGenericOAuthenticator',
+
+            'github = oauthenticator.github:GitHubOAuthenticator',
+            'local-github = oauthenticator.github:LocalGitHubOAuthenticator',
+
+            'gitlab = oauthenticator.gitlab:GitLabOAuthenticator',
+            'local-gitlab = oauthenticator.gitlab:LocalGitLabOAuthenticator',
+
+            'globus = oauthenticator.globus:GlobusOAuthenticator',
+            'local-globus = oauthenticator.globus:LocalGlobusOAuthenticator',
+
+            'google = oauthenticator.google:GoogleOAuthenticator',
+            'local-google = oauthenticator.google:LocalGoogleOAuthenticator',
+
+            'mediawiki = oauthenticator.mediawiki:MWOAuthenticator',
+            'local-mediawiki = oauthenticator.mediawiki:LocalMWOAuthenticator',
+
+            'okpy = oauthenticator.okpy:OkpyOAuthenticator',
+            'local-okpy = oauthenticator.okpy:LocalOkpyOAuthenticator',
+
+            'openshift = oauthenticator.openshift:OpenShiftOAuthenticator',
+            'local-openshift = oauthenticator.openshift:LocalOpenShiftOAuthenticator',
+        ],
+    },
     classifiers         = [
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
