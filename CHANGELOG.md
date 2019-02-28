@@ -10,15 +10,16 @@ command line for details.
 
 ## 0.8
 
-### [0.8.1] - 2019-02-27
+### [0.8.1] - 2019-02-28
 
 - Provide better error messages
 - Allow auth scope to be array or strings
 - `GitHubOAuthenticator`: More efficient `org_whitelist` check
-- Use pytest-asyncio instead of pytest-tornado since latter is unmaintained
+- Use pytest-asyncio instead of pytest-tornado
 - CILogon: New additional_username_claims config for linked identities, fallback to the primary username claim
 - `GitLabOAuthenticator`: New `project_id_whitelist` config to whitelist users who have Developer+ access to the project
-- `GoogleOAuthenticator`: Allow email domains (`hosted_domain`) to be a list & the field is now mandatory
+- `GoogleOAuthenticator`: Allow email domains (`hosted_domain`) to be a list
+- Add `jupyterhub-authenticator` entrypoints for jupyterhub 1.0.
 - Cleanup & bugfixes
 
 ### [0.8.0] - 2018-08-10
