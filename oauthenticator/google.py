@@ -31,7 +31,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
     pass
 
 
-class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
+class GoogleOAuthenticator(OAuthenticator):
 
     login_handler = GoogleLoginHandler
     callback_handler = GoogleOAuthHandler
@@ -90,7 +90,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         http_client = handler.get_auth_http_client()
 
         response = yield http_client.fetch(
-            self._OAUTH_USERINFO_URL + '?access_token=' + access_token
+            handler._OAUTH_USERINFO_URL + '?access_token=' + access_token
         )
 
         if not response:

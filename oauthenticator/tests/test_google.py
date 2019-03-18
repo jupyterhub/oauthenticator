@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from pytest import fixture, mark, raises
 from tornado.web import Application, HTTPError
 
-from ..google import GoogleOAuthenticator, GoogleOAuthHandler
+from ..google import GoogleOAuthenticator, GoogleLoginHandler
 
 from .mocks import setup_oauth_mock
 
@@ -31,7 +31,7 @@ def google_client(client):
     def handler_for_user(user):
         mock_handler = original_handler_for_user(user)
         mock_handler.request.connection = Mock()
-        real_handler = GoogleOAuthHandler(
+        real_handler = GoogleLoginHandler(
             application=Application(hub=mock_handler.hub),
             request=mock_handler.request,
         )
