@@ -12,7 +12,6 @@ import os
 import re
 import string
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
@@ -46,7 +45,7 @@ def _api_headers(access_token):
             }
 
 
-class GitHubMixin(OAuth2Mixin):
+class GitHubMixin():
     _OAUTH_AUTHORIZE_URL = "%s://%s/login/oauth/authorize" % (GITHUB_PROTOCOL, GITHUB_HOST)
     _OAUTH_ACCESS_TOKEN_URL = "%s://%s/login/oauth/access_token" % (GITHUB_PROTOCOL, GITHUB_HOST)
 

@@ -32,7 +32,6 @@ jupyterhub_config.py :
 import json
 import os
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
@@ -43,7 +42,7 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 AUTH0_SUBDOMAIN = os.getenv('AUTH0_SUBDOMAIN')
 
-class Auth0Mixin(OAuth2Mixin):
+class Auth0Mixin():
     _OAUTH_AUTHORIZE_URL = "https://%s.auth0.com/authorize" % AUTH0_SUBDOMAIN
     _OAUTH_ACCESS_TOKEN_URL = "https://%s.auth0.com/oauth/token" % AUTH0_SUBDOMAIN
 

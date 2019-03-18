@@ -6,7 +6,6 @@ Custom Authenticator to use Bitbucket OAuth with JupyterHub
 import json
 import urllib
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
@@ -25,7 +24,7 @@ def _api_headers(access_token):
             "Authorization": "Bearer {}".format(access_token)
            }
 
-class BitbucketMixin(OAuth2Mixin):
+class BitbucketMixin():
     _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
     _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
 

@@ -17,7 +17,6 @@ Caveats:
 import json
 import os
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
@@ -32,7 +31,7 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 CILOGON_HOST = os.environ.get('CILOGON_HOST') or 'cilogon.org'
 
 
-class CILogonMixin(OAuth2Mixin):
+class CILogonMixin():
     _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % CILOGON_HOST
     _OAUTH_TOKEN_URL = "https://%s/oauth2/token" % CILOGON_HOST
 

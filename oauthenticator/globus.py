@@ -6,7 +6,6 @@ import pickle
 import base64
 
 from tornado import gen, web
-from tornado.auth import OAuth2Mixin
 from tornado.web import HTTPError
 
 from traitlets import List, Unicode, Bool
@@ -24,7 +23,7 @@ except:
                       '"globus-requirements.txt" for using Globus oauth.')
 
 
-class GlobusMixin(OAuth2Mixin):
+class GlobusMixin():
     _OAUTH_AUTHORIZE_URL = 'https://auth.globus.org/v2/oauth2/authorize'
 
 

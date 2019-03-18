@@ -4,7 +4,6 @@ Custom Authenticator to use okpy OAuth with JupyterHub
 import json
 from binascii import a2b_base64
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.httputil import url_concat
@@ -19,7 +18,7 @@ OKPY_ACCESS_TOKEN_URL = "https://okpy.org/oauth/token"
 OKPY_AUTHORIZE_URL =  "https://okpy.org/oauth/authorize"
 
 
-class OkpyMixin(OAuth2Mixin):
+class OkpyMixin():
     _OAUTH_ACCESS_TOKEN_URL = OKPY_ACCESS_TOKEN_URL
     _OAUTH_AUTHORIZE_URL = OKPY_AUTHORIZE_URL
 

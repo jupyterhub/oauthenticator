@@ -8,7 +8,6 @@ import os
 import base64
 import urllib
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
@@ -21,7 +20,7 @@ from traitlets import Unicode, Dict, Bool
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-class GenericEnvMixin(OAuth2Mixin):
+class GenericMixin():
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
 

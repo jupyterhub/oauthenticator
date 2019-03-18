@@ -11,7 +11,6 @@ import os
 import sys
 import warnings
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.escape import url_escape
@@ -58,7 +57,7 @@ def _api_headers(access_token):
            }
 
 
-class GitLabMixin(OAuth2Mixin):
+class GitLabMixin():
     _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_URL
     _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_URL
 

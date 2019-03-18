@@ -11,7 +11,6 @@ import string
 import urllib
 import sys
 
-from tornado.auth import OAuth2Mixin
 from tornado.log import app_log
 from tornado import gen, web
 
@@ -35,7 +34,7 @@ def azure_authorize_url_for(tentant):
         tentant)
 
 
-class AzureAdMixin(OAuth2Mixin):
+class AzureAdMixin():
     tenant_id = os.environ.get('AAD_TENANT_ID', '')
     _OAUTH_ACCESS_TOKEN_URL = azure_token_url_for(tenant_id)
     _OAUTH_AUTHORIZE_URL = azure_authorize_url_for(tenant_id)

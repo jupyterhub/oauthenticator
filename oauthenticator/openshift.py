@@ -8,7 +8,6 @@ Derived from the GitHub OAuth authenticator.
 import json
 import os
 
-from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
@@ -20,7 +19,7 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 OPENSHIFT_URL = os.environ.get('OPENSHIFT_URL') or 'https://localhost:8443'
 
-class OpenShiftMixin(OAuth2Mixin):
+class OpenShiftMixin():
     _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % OPENSHIFT_URL
     _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/token" % OPENSHIFT_URL
 
