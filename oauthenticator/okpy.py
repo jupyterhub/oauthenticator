@@ -28,7 +28,7 @@ class OkpyLoginHandler(OAuthLoginHandler, OkpyMixin):
     pass
 
 
-class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
+class OkpyOAuthenticator(OAuthenticator):
     login_service = "Okpy"
     login_handler = OkpyLoginHandler
     
