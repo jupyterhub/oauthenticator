@@ -27,14 +27,9 @@ class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
         return self.authenticator.scope
 
 
-class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
-    pass
-
-
 class GoogleOAuthenticator(OAuthenticator):
 
     login_handler = GoogleLoginHandler
-    callback_handler = GoogleOAuthHandler
 
     @default('scope')
     def _scope_default(self):
