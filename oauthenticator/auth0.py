@@ -48,7 +48,7 @@ class Auth0Mixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "https://%s.auth0.com/oauth/token" % AUTH0_SUBDOMAIN
 
 
-class Auth0LoginHandler(OAuthLoginHandler, Auth0Mixin):
+class Auth0LoginHandler(Auth0Mixin, OAuthLoginHandler):
     pass
 
 class Auth0OAuthenticator(OAuthenticator):

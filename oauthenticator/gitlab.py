@@ -63,7 +63,7 @@ class GitLabMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_URL
 
 
-class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
+class GitLabLoginHandler(GitLabMixin, OAuthLoginHandler):
     pass
 
 

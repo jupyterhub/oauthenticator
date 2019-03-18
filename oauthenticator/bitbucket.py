@@ -30,7 +30,7 @@ class BitbucketMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
 
 
-class BitbucketLoginHandler(OAuthLoginHandler, BitbucketMixin):
+class BitbucketLoginHandler(BitbucketMixin, OAuthLoginHandler):
     pass
 
 

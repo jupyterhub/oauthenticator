@@ -24,7 +24,7 @@ class OkpyMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = OKPY_AUTHORIZE_URL
 
 
-class OkpyLoginHandler(OAuthLoginHandler, OkpyMixin):
+class OkpyLoginHandler(OkpyMixin, OAuthLoginHandler):
     pass
 
 

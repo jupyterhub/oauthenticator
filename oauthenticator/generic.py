@@ -26,7 +26,7 @@ class GenericEnvMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
 
 
-class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
+class GenericLoginHandler(GenericMixin, OAuthLoginHandler):
     pass
 
 

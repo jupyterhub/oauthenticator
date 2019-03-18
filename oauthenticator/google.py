@@ -19,7 +19,7 @@ from jupyterhub.utils import url_path_join
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
-class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
+class GoogleLoginHandler(GoogleOAuth2Mixin, OAuthLoginHandler):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     @property

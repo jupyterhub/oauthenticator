@@ -37,7 +37,7 @@ class CILogonMixin(OAuth2Mixin):
     _OAUTH_TOKEN_URL = "https://%s/oauth2/token" % CILOGON_HOST
 
 
-class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
+class CILogonLoginHandler(CILogonMixin, OAuthLoginHandler):
     """See http://www.cilogon.org/oidc for general information."""
 
     def authorize_redirect(self, *args, **kwargs):

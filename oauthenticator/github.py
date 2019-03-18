@@ -51,7 +51,7 @@ class GitHubMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "%s://%s/login/oauth/access_token" % (GITHUB_PROTOCOL, GITHUB_HOST)
 
 
-class GitHubLoginHandler(OAuthLoginHandler, GitHubMixin):
+class GitHubLoginHandler(GitHubMixin, OAuthLoginHandler):
     pass
 
 

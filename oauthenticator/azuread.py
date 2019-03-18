@@ -41,7 +41,7 @@ class AzureAdMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = azure_authorize_url_for(tenant_id)
 
 
-class AzureAdLoginHandler(OAuthLoginHandler, AzureAdMixin):
+class AzureAdLoginHandler(AzureAdMixin, OAuthLoginHandler):
     pass
 
 

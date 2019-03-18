@@ -28,7 +28,7 @@ class GlobusMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = 'https://auth.globus.org/v2/oauth2/authorize'
 
 
-class GlobusLoginHandler(OAuthLoginHandler, GlobusMixin):
+class GlobusLoginHandler(GlobusMixin, OAuthLoginHandler):
     pass
 
 

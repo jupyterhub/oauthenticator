@@ -25,7 +25,7 @@ class OpenShiftMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/token" % OPENSHIFT_URL
 
 
-class OpenShiftLoginHandler(OAuthLoginHandler, OpenShiftMixin):
+class OpenShiftLoginHandler(OpenShiftMixin, OAuthLoginHandler):
     # This allows `Service Accounts as OAuth Clients` scenario
     # https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#service-accounts-as-oauth-clients
     @property
