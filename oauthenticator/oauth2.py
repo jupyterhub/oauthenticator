@@ -10,6 +10,7 @@ import os
 import uuid
 
 from tornado import gen, web
+from tornado.auth import OAuth2Mixin
 from tornado.log import app_log
 
 from jupyterhub.handlers import BaseHandler
@@ -56,7 +57,7 @@ def _deserialize_state(b64_state):
         return {}
 
 
-class OAuthLoginHandler(BaseHandler):
+class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     """Base class for OAuth login handler
 
     Typically subclasses will need
