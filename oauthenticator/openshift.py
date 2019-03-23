@@ -41,6 +41,8 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     scope = ['user:info']
 
+    users_rest_api_path = '/apis/user.openshift.io/v1/users/~'
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -79,7 +81,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
                  "Authorization": "Bearer {}".format(access_token)
         }
 
-        req = HTTPRequest("%s/oapi/v1/users/~" % OPENSHIFT_URL,
+        req = HTTPRequest("%s%s" % (OPENSHIFT_URL, self.users_rest_api_path),
                           method="GET",
                           validate_cert=False,
                           headers=headers)
