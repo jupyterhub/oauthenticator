@@ -19,10 +19,12 @@ from jupyterhub.auth import LocalAuthenticator
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 OPENSHIFT_URL = os.environ.get('OPENSHIFT_URL') or 'https://localhost:8443'
+OPENSHIFT_AUTH_API_URL = os.environ.get('OPENSHIFT_AUTH_API_URL') or OPENSHIFT_URL
+OPENSHIFT_REST_API_URL = os.environ.get('OPENSHIFT_REST_API_URL') or OPENSHIFT_URL
 
 class OpenShiftMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % OPENSHIFT_URL
-    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/token" % OPENSHIFT_URL
+    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % OPENSHIFT_AUTH_API_URL
+    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/token" % OPENSHIFT_AUTH_API_URL
 
 
 class OpenShiftLoginHandler(OAuthLoginHandler, OpenShiftMixin):
@@ -60,7 +62,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             code=code
         )
 
-        url = url_concat("%s/oauth/token" % OPENSHIFT_URL, params)
+        url = url_concat(self.login_handler._OAUTH_ACCESS_TOKEN_URL, params)
 
         req = HTTPRequest(url,
                           method="POST",
@@ -81,7 +83,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
                  "Authorization": "Bearer {}".format(access_token)
         }
 
-        req = HTTPRequest("%s%s" % (OPENSHIFT_URL, self.users_rest_api_path),
+        req = HTTPRequest("%s%s" % (OPENSHIFT_REST_API_URL, self.users_rest_api_path),
                           method="GET",
                           validate_cert=False,
                           headers=headers)
