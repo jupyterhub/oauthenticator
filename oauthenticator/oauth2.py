@@ -7,6 +7,7 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 import base64
 import json
 import os
+from urllib.parse import quote, urlparse
 import uuid
 
 from tornado import gen, web
@@ -69,7 +70,24 @@ class OAuthLoginHandler(BaseHandler):
 
     _state = None
     def get_state(self):
-        next_url = self.get_argument('next', None)
+        next_url = original_next_url = self.get_argument('next', None)
+        if next_url:
+            # avoid browsers treating \ as /
+            next_url = next_url.replace('\\', quote('\\'))
+            # disallow hostname-having urls,
+            # force absolute path redirect
+            urlinfo = urlparse(next_url)
+            next_url = urlinfo._replace(
+                scheme='',
+                netloc='',
+                path='/' + urlinfo.path.lstrip('/'),
+            ).geturl()
+            if next_url != original_next_url:
+                self.log.warning(
+                    "Ignoring next_url %r, using %r",
+                    original_next_url,
+                    next_url,
+                )
         if self._state is None:
             self._state = _serialize_state({
                 'state_id': uuid.uuid4().hex,

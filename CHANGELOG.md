@@ -10,6 +10,10 @@ command line for details.
 
 ## 0.8
 
+### [0.8.2] - 2019-04-09
+
+- Validate login URL redirects to avoid Open Redirect issues.
+
 ### [0.8.1] - 2019-02-28
 
 - Provide better error messages
@@ -157,7 +161,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.1...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.2...HEAD
+[0.8.2]: https://github.com/jupyterhub/oauthenticator/compare/0.8.1...0.8.2
 [0.8.1]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...0.8.0
 [0.7.3]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...0.7.3
