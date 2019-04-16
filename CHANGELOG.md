@@ -10,7 +10,7 @@ command line for details.
 
 ## 0.8
 
-### [0.8.2] - 2019-04-09
+### [0.8.2] - 2019-04-16
 
 - Validate login URL redirects to avoid Open Redirect issues.
 
