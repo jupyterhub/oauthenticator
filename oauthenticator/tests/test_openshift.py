@@ -19,7 +19,7 @@ def openshift_client(client):
     setup_oauth_mock(client,
         host=['localhost'],
         access_token_path='/oauth/token',
-        user_path='/oapi/v1/users/~',
+        user_path='/apis/user.openshift.io/v1/users/~',
     )
     return client
 

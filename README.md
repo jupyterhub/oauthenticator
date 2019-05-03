@@ -204,8 +204,13 @@ c.GoogleOAuthenticator.login_service = 'My College'
 In case you have an OpenShift deployment with OAuth properly configured (see the
 following sections for a quick reference), you should set the client ID and
 secret by the environment variables `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET` and
-`OAUTH_CALLBACK_URL`. The OpenShift API URL can be specified by setting the
-variable `OPENSHIFT_URL`.
+`OAUTH_CALLBACK_URL`.
+
+Prior to OpenShift 4.0, the OAuth provider and REST API URL endpoints can
+be specified by setting the single environment variable `OPENSHIFT_URL`. From
+OpenShift 4.0 onwards, these two endpoints are on different hosts. You need to
+set `OPENSHIFT_AUTH_API_URL` to the OAuth provider URL, and
+`OPENSHIFT_REST_API_URL` to the REST API URL endpoint.
 
 The `OAUTH_CALLBACK_URL` should match `http[s]://[your-app-route]/hub/oauth_callback`
 
