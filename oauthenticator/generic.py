@@ -74,8 +74,8 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable TLS verification on http request"
     )
 
-    authorization_header = Bool(
-        os.environ.get('OAUTH2_AUTHORIZATION_HEADER', 'True').lower() in {'true', '1'},
+    basic_auth = Bool(
+        os.environ.get('OAUTH2_BASIC_AUTH', 'True').lower() in {'true', '1'},
         config=True,
         help="Disable basic authentication for access token request"
     )
@@ -103,7 +103,7 @@ class GenericOAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub"
         }
 
-        if self.authorization_header:
+        if self.basic_auth:
             b64key = base64.b64encode(
                 bytes(
                     "{}:{}".format(self.client_id, self.client_secret),
