@@ -58,6 +58,11 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
     )
+    username_key_nested = Bool(
+        os.environ.get('OAUTH2_USERNAME_KEY_NESTED', 'False').lower() in {'true', '1'},
+        config=True,
+        help="Fetch username out of a nested datastructure. Seperate levels with a dot in the key."
+    )
     userdata_params = Dict(
         help="Userdata params to get user data login information"
     ).tag(config=True)
@@ -141,12 +146,20 @@ class GenericOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        if not resp_json.get(self.username_key):
+        if self.username_key_nested:
+            data = resp_json
+            for part in self.username_key.split("."):
+                data = data.get(part, {})
+            username = data
+        else:
+            username = resp_json.get(self.username_key)
+
+        if not username:
             self.log.error("OAuth user contains no key %s: %s", self.username_key, resp_json)
             return
 
         return {
-            'name': resp_json.get(self.username_key),
+            'name': username,
             'auth_state': {
                 'access_token': access_token,
                 'refresh_token': refresh_token,
