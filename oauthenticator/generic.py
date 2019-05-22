@@ -74,6 +74,12 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable TLS verification on http request"
     )
 
+    basic_auth = Bool(
+        os.environ.get('OAUTH2_BASIC_AUTH', 'True').lower() in {'true', '1'},
+        config=True,
+        help="Disable basic authentication for access token request"
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -92,18 +98,20 @@ class GenericOAuthenticator(OAuthenticator):
         else:
             raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable")
 
-        b64key = base64.b64encode(
-            bytes(
-                "{}:{}".format(self.client_id, self.client_secret),
-                "utf8"
-            )
-        )
-
         headers = {
             "Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "Basic {}".format(b64key.decode("utf8"))
+            "User-Agent": "JupyterHub"
         }
+
+        if self.basic_auth:
+            b64key = base64.b64encode(
+                bytes(
+                    "{}:{}".format(self.client_id, self.client_secret),
+                    "utf8"
+                )
+            )
+            headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
+
         req = HTTPRequest(url,
                           method="POST",
                           headers=headers,
@@ -120,7 +128,7 @@ class GenericOAuthenticator(OAuthenticator):
         token_type = resp_json['token_type']
         scope = resp_json.get('scope', '')
         if (isinstance(scope, str)):
-                scope = scope.split(' ')        
+            scope = scope.split(' ')
 
         # Determine who the logged in user is
         headers = {
