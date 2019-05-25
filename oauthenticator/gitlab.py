@@ -68,6 +68,9 @@ class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
 
 
 class GitLabOAuthenticator(OAuthenticator):
+    # see gitlab_scopes.md for details about scope config
+    # set scopes via config, e.g.
+    # c.GitLabOAuthenticator.scope = ['read_user']
 
     login_service = "GitLab"
 
