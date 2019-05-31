@@ -67,10 +67,15 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     only the Jupyterhub session is cleared.
     """
     async def handle_logout(self):
+        user = self.get_current_user()
+        if user:
+            self.clear_tokens(user)
+
         http_client = AsyncHTTPClient()
 
         params = dict(
-            client_id=self.authenticator.client_id
+            client_id=self.authenticator.client_id,
+            redirect_uri=self.authenticator.logout_redirect_url
         )
         url = url_concat("https://%s/logout" % AWSCOGNITO_DOMAIN, params)
 
@@ -86,10 +91,6 @@ class AWSCognitoLogoutHandler(LogoutHandler):
                           )
 
         await http_client.fetch(req)
-        user = self.get_current_user()
-        if user:
-            self.clear_tokens(user)
-            self.clear_login_cookie()
 
     async def clear_tokens(self, user):
         state = await user.get_auth_state()
@@ -102,10 +103,14 @@ class AWSCognitoAuthenticator(OAuthenticator):
 
     login_service = 'AWSCognito'
     login_handler = AWSCognitoLoginHandler
-    logout_handler = AWSCognitoLogoutHandler
 
     userdata_url = "https://%s/oauth2/userInfo" % AWSCOGNITO_DOMAIN
     token_url = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
+    logout_redirect_url = \
+        Unicode(help="""URL for logging out.""").tag(config=True)
+
+    def _logout_redirect_url_default(self):
+        return os.getenv('LOGOUT_REDIRECT_URL', '')
 
     username_key = Unicode(
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
@@ -188,11 +193,8 @@ class AWSCognitoAuthenticator(OAuthenticator):
             }
         }
 
-    def logout_url(self, base_url):
-        return url_path_join(base_url, 'logout')
-
     def get_handlers(self, app):
-        return super().get_handlers(app) + [(r'/logout', self.logout_handler)]
+        return super().get_handlers(app) + [(r'/logout', AWSCognitoLogoutHandler)]
 
 
 class LocalAWSCognitoAuthenticator(LocalAuthenticator, AWSCognitoAuthenticator):
