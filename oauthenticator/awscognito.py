@@ -66,11 +66,23 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    async def handle_logout(self):
+    async def get(self):
         user = self.get_current_user()
         if user:
-            self.clear_tokens(user)
+            await self.clear_tokens(user)
 
+        await self.default_handle_logout()
+        await self.handle_logout()
+        await self.render_logout_page()
+
+    async def clear_tokens(self, user):
+        state = await user.get_auth_state()
+        if state:
+            state['access_token'] = ''
+            state['awscognito_user'] = ''
+            user.save_auth_state(state)
+
+    async def handle_logout(self):
         http_client = AsyncHTTPClient()
 
         params = dict(
@@ -92,12 +104,6 @@ class AWSCognitoLogoutHandler(LogoutHandler):
 
         await http_client.fetch(req)
 
-    async def clear_tokens(self, user):
-        state = await user.get_auth_state()
-        if state:
-            state['access_token'] = ''
-            state['awscognito_user'] = ''
-            user.save_auth_state(state)
 
 class AWSCognitoAuthenticator(OAuthenticator):
 
