@@ -82,7 +82,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
         req = HTTPRequest(url,
                           method="GET",
                           headers=headers,
-                          validate_cert=True,
+                          validate_cert=True
                           )
 
         await http_client.fetch(req)
