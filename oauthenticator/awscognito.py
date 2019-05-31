@@ -39,6 +39,7 @@ from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from tornado.httputil import url_concat
 
 from jupyterhub.handlers import LogoutHandler
 from jupyterhub.auth import LocalAuthenticator
@@ -65,22 +66,37 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    @gen.coroutine
-    def get(self):
+    async def handle_logout(self):
+        http_client = AsyncHTTPClient()
+
+        params = dict(
+            client_id=self.authenticator.client_id
+        )
+        url = url_concat("https://%s/logout" % AWSCOGNITO_DOMAIN, params)
+
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub"
+        }
+
+        req = HTTPRequest(url,
+                          method="GET",
+                          headers=headers,
+                          validate_cert=True,
+                          body=''
+                          )
+
+        await http_client.fetch(req)
         user = self.get_current_user()
         if user:
             self.clear_tokens(user)
             self.clear_login_cookie()
-        if self.authenticator.logout_redirect_url:
-            self.redirect(self.authenticator.logout_redirect_url)
-        else:
-            super().get()
 
-    @gen.coroutine
-    def clear_tokens(self, user):
-        state = yield user.get_auth_state()
+    async def clear_tokens(self, user):
+        state = await user.get_auth_state()
         if state:
-            state['tokens'] = ''
+            state['access_token'] = ''
+            state['awscognito_user'] = ''
             user.save_auth_state(state)
 
 class AWSCognitoAuthenticator(OAuthenticator):
