@@ -51,6 +51,11 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 AWSCOGNITO_DOMAIN = os.getenv('AWSCOGNITO_DOMAIN')
 
+try:
+    import boto3
+except:
+    raise ImportError('boto3 is not installed')
+
 class AWSCognitoMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://%s/oauth2/authorize" % AWSCOGNITO_DOMAIN
     _OAUTH_ACCESS_TOKEN_URL = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
@@ -66,28 +71,17 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    async def get(self):
-        user = self.get_current_user()
+
+    async def handle_logout(self):
+        user = await self.get_current_user()
         if user:
             await self.clear_tokens(user)
 
-        await self.default_handle_logout()
-        await self.handle_logout()
-        await self.render_logout_page()
-
-    async def clear_tokens(self, user):
-        state = await user.get_auth_state()
-        if state:
-            state['access_token'] = ''
-            state['awscognito_user'] = ''
-            user.save_auth_state(state)
-
-    async def handle_logout(self):
         http_client = AsyncHTTPClient()
 
         params = dict(
             client_id=self.authenticator.client_id,
-            redirect_uri=self.authenticator.logout_redirect_url
+            logout_uri=self.get_login_url()
         )
         url = url_concat("https://%s/logout" % AWSCOGNITO_DOMAIN, params)
 
@@ -104,6 +98,16 @@ class AWSCognitoLogoutHandler(LogoutHandler):
 
         await http_client.fetch(req)
 
+    async def clear_tokens(self, user):
+        state = await user.get_auth_state()
+        if state:
+            client = boto3.client('cognito-idp')
+            client.global_sign_out(
+                AccessToken=state['access_token']
+            )
+            state['access_token'] = ''
+            state['awscognito_user'] = ''
+            user.save_auth_state(state)
 
 class AWSCognitoAuthenticator(OAuthenticator):
 
@@ -112,11 +116,6 @@ class AWSCognitoAuthenticator(OAuthenticator):
 
     userdata_url = "https://%s/oauth2/userInfo" % AWSCOGNITO_DOMAIN
     token_url = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
-    logout_redirect_url = \
-        Unicode(help="""URL for logging out.""").tag(config=True)
-
-    def _logout_redirect_url_default(self):
-        return os.getenv('LOGOUT_REDIRECT_URL', '')
 
     username_key = Unicode(
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
