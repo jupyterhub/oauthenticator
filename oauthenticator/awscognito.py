@@ -83,7 +83,6 @@ class AWSCognitoLogoutHandler(LogoutHandler):
                           method="GET",
                           headers=headers,
                           validate_cert=True,
-                          body=''
                           )
 
         await http_client.fetch(req)
@@ -107,7 +106,6 @@ class AWSCognitoAuthenticator(OAuthenticator):
 
     userdata_url = "https://%s/oauth2/userInfo" % AWSCOGNITO_DOMAIN
     token_url = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
-    logout_redirect_url = "https://%s/logout" % AWSCOGNITO_DOMAIN
 
     username_key = Unicode(
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
