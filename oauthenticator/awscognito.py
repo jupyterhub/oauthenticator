@@ -69,8 +69,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     def get(self):
         user = self.get_current_user()
         if user:
-            if self.authenticator.revoke_tokens_on_logout:
-                self.clear_tokens(user)
+            self.clear_tokens(user)
             self.clear_login_cookie()
         if self.authenticator.logout_redirect_url:
             self.redirect(self.authenticator.logout_redirect_url)
@@ -79,14 +78,8 @@ class AWSCognitoLogoutHandler(LogoutHandler):
 
     @gen.coroutine
     def clear_tokens(self, user):
-        if not self.authenticator.revoke_tokens_on_logout:
-            return
-
         state = yield user.get_auth_state()
         if state:
-            self.authenticator.revoke_service_tokens(state.get('tokens'))
-            self.log.info('Logout: Revoked tokens for user "{}" services: {}'
-                          .format(user.name, ','.join(state['tokens'].keys())))
             state['tokens'] = ''
             user.save_auth_state(state)
 
