@@ -14,6 +14,7 @@ OAuthenticator currently supports the following authentication services:
 - [Google](#google-setup)
 - [MediaWiki](oauthenticator/mediawiki.py)
 - [Moodle](#moodle-setup)
+- [Nextcloud](#nextcloud-setup)
 - [Okpy](#okpyauthenticator)
 - [OpenShift](#openshift-setup)
 
@@ -383,3 +384,26 @@ c.GenericOAuthenticator.extra_params = {
 And set your environmental variable `OAUTH2_AUTHORIZE_URL` to:
 
 `http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`
+
+## Nextcloud Setup
+
+Add a new OAuth2 Application in the Nextcloud Administrator Security Settings.
+
+Use the `GenericOAuthenticator` for Jupyterhub by editing your `jupyterhub_config.py` accordingly:
+
+```python
+from oauthenticator.generic import GenericOAuthenticator
+c.JupyterHub.authenticator_class = GenericOAuthenticator
+
+c.GenericOAuthenticator.client_id = 'NEXTCLOUD-CLIENT-ID'
+c.GenericOAuthenticator.client_secret = 'NEXTCLOUD-CLIENT-SECRET-KEY'
+c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE' # name to be displayed at login
+```
+
+And set the following environmental variables:
+```shell
+OAUTH2_AUTHORIZE_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/authorize
+OAUTH2_TOKEN_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/api/v1/token
+OAUTH2_USERDATA_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2.php/cloud/user?format=json
+OAUTH2_USERNAME_KEY=ocs,data,id
+```
