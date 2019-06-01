@@ -149,12 +149,18 @@ class GenericOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        if not resp_json.get(self.username_key):
+        # Get the username from json, allow nested keys separated by `,`
+        userdata = resp_json
+        for key in self.username_key.split(',')[:-1]:
+            userdata = userdata.get(key, {})
+        username = userdata.get(self.username_key.split(',')[-1])
+
+        if not username:
             self.log.error("OAuth user contains no key %s: %s", self.username_key, resp_json)
             return
 
         return {
-            'name': resp_json.get(self.username_key),
+            'name': username,
             'auth_state': {
                 'access_token': access_token,
                 'refresh_token': refresh_token,
