@@ -43,7 +43,6 @@ from tornado.httputil import url_concat
 
 from jupyterhub.handlers import LogoutHandler
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.utils import url_path_join
 
 from traitlets import Unicode, Dict, Bool
 
@@ -71,17 +70,17 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
+    async def default_handle_logout(self):
+        await self.clear_tokens()
+        await super().default_handle_logout()
+
 
     async def handle_logout(self):
-        user = await self.get_current_user()
-        if user:
-            await self.clear_tokens(user)
-
         http_client = AsyncHTTPClient()
 
         params = dict(
             client_id=self.authenticator.client_id,
-            logout_uri=self.get_login_url()
+            logout_uri=self.authenticator.logout_redirect_uri
         )
         url = url_concat("https://%s/logout" % AWSCOGNITO_DOMAIN, params)
 
@@ -99,7 +98,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
         await http_client.fetch(req)
 
     async def clear_tokens(self, user):
-        state = await user.get_auth_state()
+        state = await self.current_user.get_auth_state()
         if state:
             client = boto3.client('cognito-idp')
             client.global_sign_out(
@@ -121,6 +120,12 @@ class AWSCognitoAuthenticator(OAuthenticator):
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
+    )
+
+    logout_redirect_uri = Unicode(
+        os.environ.get('LOGOUT_REDIRECT_URL'),
+        config=True,
+        help="User is redirected to that url when logout ends"
     )
 
     @gen.coroutine
