@@ -97,7 +97,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
 
         await http_client.fetch(req)
 
-    async def clear_tokens(self, user):
+    async def clear_tokens(self):
         state = await self.current_user.get_auth_state()
         if state:
             client = boto3.client('cognito-idp')
