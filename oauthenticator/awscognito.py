@@ -10,6 +10,7 @@ The following environment variables may be used for configuration:
     OAUTH_CLIENT_ID - Your client id
     OAUTH_CLIENT_SECRET - Your client secret
     OAUTH_CALLBACK_URL - Your callback handler URL
+    OAUTH_LOGOUT_REDIRECT_URL - Your logout redirect URL
 
 Additionally, if you are concerned about your secrets being exposed by
 an env dump(I know I am!) you can set the client_secret, client_id and
@@ -21,6 +22,7 @@ One instance of this could be adding the following to your jupyterhub_config.py 
   c.AWSCognitoAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
   c.AWSCognitoAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
   c.AWSCognitoAuthenticator.username_key = 'YOUR_USERNAME_KEY'
+  c.AWSCognitoAuthenticator.oauth_logout_redirect_url = 'YOUR_LOGOUT_REDIRECT_URL'
 
 If you are using the environment variable config, all you should need to
 do is define them in the environment then add the following line to
@@ -69,7 +71,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     async def render_logout_page(self):
         params = dict(
             client_id=self.authenticator.client_id,
-            logout_uri=self.settings['login_url']
+            logout_uri=self.authenticator.oauth_logout_redirect_url
         )
         url = url_concat(self.authenticator.oidc_logout_url, params)
         self.log.debug("Redirecting to AWSCognito logout: {0}".format(url))
@@ -89,6 +91,12 @@ class AWSCognitoAuthenticator(OAuthenticator):
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
+    )
+
+    oauth_logout_redirect_url = Unicode(
+        os.environ.get('OAUTH_LOGOUT_REDIRECT_URL'),
+        config=True,
+        help="Logout redirect URL to be shown after IdP logout"
     )
 
     @gen.coroutine
