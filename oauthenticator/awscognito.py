@@ -94,7 +94,7 @@ class AWSCognitoAuthenticator(OAuthenticator):
     )
 
     oauth_logout_redirect_url = Unicode(
-        os.environ.get('OAUTH_LOGOUT_REDIRECT_URL'),
+        os.environ.get('OAUTH_LOGOUT_REDIRECT_URL', ''),
         config=True,
         help="Logout redirect URL to be shown after IdP logout"
     )
