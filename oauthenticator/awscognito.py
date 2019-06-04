@@ -17,9 +17,9 @@ oauth_callback_url directly on the config for Auth0OAuthenticator.
 
 One instance of this could be adding the following to your jupyterhub_config.py :
 
-  c.Auth0OAuthenticator.client_id = 'YOUR_CLIENT_ID'
-  c.Auth0OAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
-  c.Auth0OAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
+  c.AWSCognitoAuthenticator.client_id = 'YOUR_CLIENT_ID'
+  c.AWSCognitoAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
+  c.AWSCognitoAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
   c.AWSCognitoAuthenticator.username_key = 'YOUR_USERNAME_KEY'
 
 If you are using the environment variable config, all you should need to
@@ -36,7 +36,7 @@ import base64
 import urllib
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen, web
+from tornado import gen
 
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.httputil import url_concat
@@ -44,16 +44,12 @@ from tornado.httputil import url_concat
 from jupyterhub.handlers import LogoutHandler
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict, Bool
+from traitlets import Unicode
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 AWSCOGNITO_DOMAIN = os.getenv('AWSCOGNITO_DOMAIN')
 
-try:
-    import boto3
-except:
-    raise ImportError('boto3 is not installed')
 
 class AWSCognitoMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://%s/oauth2/authorize" % AWSCOGNITO_DOMAIN
@@ -70,43 +66,15 @@ class AWSCognitoLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    async def default_handle_logout(self):
-        await self.clear_tokens()
-        await super().default_handle_logout()
-
-
-    async def handle_logout(self):
-        http_client = AsyncHTTPClient()
-
+    async def render_logout_page(self):
         params = dict(
             client_id=self.authenticator.client_id,
-            logout_uri=self.authenticator.logout_redirect_uri
+            logout_uri=self.settings['login_url']
         )
-        url = url_concat("https://%s/logout" % AWSCOGNITO_DOMAIN, params)
+        url = url_concat(self.authenticator.logout_url, params)
+        self.log.debug("Redirecting to AWSCognito logout: {0}".format(url))
+        self.redirect(url, permanent=False)
 
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "JupyterHub"
-        }
-
-        req = HTTPRequest(url,
-                          method="GET",
-                          headers=headers,
-                          validate_cert=True
-                          )
-
-        await http_client.fetch(req)
-
-    async def clear_tokens(self):
-        state = await self.current_user.get_auth_state()
-        if state:
-            client = boto3.client('cognito-idp')
-            client.global_sign_out(
-                AccessToken=state['access_token']
-            )
-            state['access_token'] = ''
-            state['awscognito_user'] = ''
-            user.save_auth_state(state)
 
 class AWSCognitoAuthenticator(OAuthenticator):
 
@@ -115,17 +83,12 @@ class AWSCognitoAuthenticator(OAuthenticator):
 
     userdata_url = "https://%s/oauth2/userInfo" % AWSCOGNITO_DOMAIN
     token_url = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
+    logout_url = "https://%s/logout" % AWSCOGNITO_DOMAIN
 
     username_key = Unicode(
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
-    )
-
-    logout_redirect_uri = Unicode(
-        os.environ.get('LOGOUT_REDIRECT_URL'),
-        config=True,
-        help="User is redirected to that url when logout ends"
     )
 
     @gen.coroutine
