@@ -24,8 +24,7 @@ def awscognito_client(client):
     setup_oauth_mock(client,
         host=AWSCOGNITO_DOMAIN,
         access_token_path='/oauth2/token',
-        user_path='/oauth2/userInfo',
-        token_request_style='json',
+        user_path='/oauth2/userInfo'
     )
     return client
 
