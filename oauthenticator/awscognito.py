@@ -71,7 +71,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
             client_id=self.authenticator.client_id,
             logout_uri=self.settings['login_url']
         )
-        url = url_concat(self.authenticator.oicd_logout_url, params)
+        url = url_concat(self.authenticator.oidc_logout_url, params)
         self.log.debug("Redirecting to AWSCognito logout: {0}".format(url))
         self.redirect(url, permanent=False)
 
