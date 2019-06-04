@@ -71,7 +71,7 @@ class AWSCognitoLogoutHandler(LogoutHandler):
             client_id=self.authenticator.client_id,
             logout_uri=self.settings['login_url']
         )
-        url = url_concat(self.authenticator.logout_url, params)
+        url = url_concat(self.authenticator.oicd_logout_url, params)
         self.log.debug("Redirecting to AWSCognito logout: {0}".format(url))
         self.redirect(url, permanent=False)
 
@@ -81,9 +81,9 @@ class AWSCognitoAuthenticator(OAuthenticator):
     login_service = 'AWSCognito'
     login_handler = AWSCognitoLoginHandler
 
-    userdata_url = "https://%s/oauth2/userInfo" % AWSCOGNITO_DOMAIN
-    token_url = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
-    logout_url = "https://%s/logout" % AWSCOGNITO_DOMAIN
+    oidc_userdata_url = "https://%s/oauth2/userInfo" % AWSCOGNITO_DOMAIN
+    oidc_token_url = "https://%s/oauth2/token" % AWSCOGNITO_DOMAIN
+    oidc_logout_url = "https://%s/logout" % AWSCOGNITO_DOMAIN
 
     username_key = Unicode(
         os.environ.get('AWSCOGNITO_USERNAME_KEY', 'username'),
@@ -103,8 +103,8 @@ class AWSCognitoAuthenticator(OAuthenticator):
             grant_type='authorization_code'
         )
 
-        if self.token_url:
-            url = self.token_url
+        if self.oidc_token_url:
+            url = self.oidc_token_url
         else:
             raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable")
 
@@ -141,8 +141,8 @@ class AWSCognitoAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub",
             "Authorization": "{} {}".format(token_type, access_token)
         }
-        if self.userdata_url:
-            url = self.userdata_url
+        if self.oidc_userdata_url:
+            url = self.oidc_userdata_url
         else:
             raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable")
 
