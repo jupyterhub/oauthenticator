@@ -155,6 +155,17 @@ Then, add the following to your `jupyterhub_config.py` file:
     from oauthenticator.github import GitHubOAuthenticator
     c.JupyterHub.authenticator_class = GitHubOAuthenticator
 
+In addition to these settings, you will need to configure Tornado to use `curl` for
+issuing token requests to GitHub, as Tornado's 'simple' HTTP client does not support
+HTTP protocol features used by GitHub. To do this,  add the following to your
+`jupyterhub_config.py` file:
+
+    from tornado.httpclient import AsyncHTTPClient
+    AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
+
+Note: You will need to install `pycurl` in order to use curl_httpclient; it is not installed
+by default when installing `oauthenticator`.
+
 You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local users.
 
 You can use your own Github Enterprise instance by setting the `GITHUB_HOST` environment variable.
