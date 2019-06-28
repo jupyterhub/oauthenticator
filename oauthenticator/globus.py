@@ -5,7 +5,7 @@ import os
 import pickle
 import base64
 
-from tornado import gen, web
+from tornado import web
 from tornado.auth import OAuth2Mixin
 from tornado.web import HTTPError
 
@@ -39,8 +39,7 @@ class GlobusLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    @gen.coroutine
-    def get(self):
+    async def get(self):
         user = self.get_current_user()
         if user:
             if self.authenticator.revoke_tokens_on_logout:
@@ -51,12 +50,11 @@ class GlobusLogoutHandler(LogoutHandler):
         else:
             super().get()
 
-    @gen.coroutine
-    def clear_tokens(self, user):
+    async def clear_tokens(self, user):
         if not self.authenticator.revoke_tokens_on_logout:
             return
 
-        state = yield user.get_auth_state()
+        state = await user.get_auth_state()
         if state:
             self.authenticator.revoke_service_tokens(state.get('tokens'))
             self.log.info('Logout: Revoked tokens for user "{}" services: {}'
@@ -127,15 +125,14 @@ class GlobusOAuthenticator(OAuthenticator):
     def _revoke_tokens_on_logout_default(self):
         return False
 
-    @gen.coroutine
-    def pre_spawn_start(self, user, spawner):
+    async def pre_spawn_start(self, user, spawner):
         """Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
         globus-sdk-python.readthedocs.io/en/stable/tutorial/#tutorial-step4
         """
         spawner.environment['GLOBUS_LOCAL_ENDPOINT'] = \
             self.globus_local_endpoint
-        state = yield user.get_auth_state()
+        state = await user.get_auth_state()
         if state:
             globus_data = base64.b64encode(
                 pickle.dumps(state)
@@ -147,8 +144,7 @@ class GlobusOAuthenticator(OAuthenticator):
             self.client_id,
             self.client_secret)
 
-    @gen.coroutine
-    def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None):
         """
         Authenticate with globus.org. Usernames (and therefore Jupyterhub
         accounts) will correspond to a Globus User ID, so foouser@globusid.org

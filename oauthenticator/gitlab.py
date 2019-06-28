@@ -12,7 +12,7 @@ import sys
 import warnings
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen, web
+from tornado import web
 
 from tornado.escape import url_escape
 from tornado.httputil import url_concat
@@ -88,8 +88,7 @@ class GitLabOAuthenticator(OAuthenticator):
     )
 
 
-    @gen.coroutine
-    def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
@@ -120,7 +119,7 @@ class GitLabOAuthenticator(OAuthenticator):
                           body='' # Body is required for a POST...
                           )
 
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         access_token = resp_json['access_token']
@@ -131,7 +130,7 @@ class GitLabOAuthenticator(OAuthenticator):
                           validate_cert=validate_server_cert,
                           headers=_api_headers(access_token)
                           )
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["username"]
@@ -145,12 +144,12 @@ class GitLabOAuthenticator(OAuthenticator):
 
         if self.gitlab_group_whitelist:
             is_group_specified = True
-            user_in_group = yield self._check_group_whitelist(user_id, access_token)
+            user_in_group = await self._check_group_whitelist(user_id, access_token)
 
         # We skip project_id check if user is in whitelisted group.
         if self.gitlab_project_id_whitelist and not user_in_group:
             is_project_id_specified = True
-            user_in_project = yield self._check_project_id_whitelist(user_id, access_token)
+            user_in_project = await self._check_project_id_whitelist(user_id, access_token)
 
         no_config_specified = not (is_group_specified or is_project_id_specified)
 
@@ -169,29 +168,27 @@ class GitLabOAuthenticator(OAuthenticator):
             return None
 
 
-    @gen.coroutine
-    def _check_group_whitelist(self, user_id, access_token):
+    async def _check_group_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.gitlab_group_whitelist):
             url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
-            resp = yield http_client.fetch(req, raise_error=False)
+            resp = await http_client.fetch(req, raise_error=False)
             if resp.code == 200:
                 return True  # user _is_ in group
         return False
 
 
-    @gen.coroutine
-    def _check_project_id_whitelist(self, user_id, access_token):
+    async def _check_project_id_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the whitelist
         for project in self.gitlab_project_id_whitelist:
             url = "%s/projects/%s/members/%d" % (GITLAB_API, project, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
-            resp = yield http_client.fetch(req, raise_error=False)
+            resp = await http_client.fetch(req, raise_error=False)
 
             if resp.body:
                 resp_json = json.loads(resp.body.decode('utf8', 'replace'))

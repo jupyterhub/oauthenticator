@@ -28,13 +28,11 @@ jupyterhub_config.py :
 
 """
 
-
 import json
 import os
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen, web
-
+from tornado import web
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
@@ -51,14 +49,14 @@ class Auth0Mixin(OAuth2Mixin):
 class Auth0LoginHandler(OAuthLoginHandler, Auth0Mixin):
     pass
 
+
 class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
-    
+
     login_handler = Auth0LoginHandler
-    
-    @gen.coroutine
-    def authenticate(self, handler, data=None):
+
+    async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
@@ -77,12 +75,12 @@ class Auth0OAuthenticator(OAuthenticator):
                           headers={"Content-Type": "application/json"},
                           body=json.dumps(params)
                           )
-        
-        resp = yield http_client.fetch(req)
+
+        resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        
+
         access_token = resp_json['access_token']
-        
+
         # Determine who the logged in user is
         headers={"Accept": "application/json",
                  "User-Agent": "JupyterHub",
@@ -92,7 +90,7 @@ class Auth0OAuthenticator(OAuthenticator):
                           method="GET",
                           headers=headers
                           )
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         return {

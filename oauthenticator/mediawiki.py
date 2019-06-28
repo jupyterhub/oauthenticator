@@ -8,9 +8,10 @@ Requires `mwoauth` package.
 
 import os
 import json
+from asyncio import wrap_future
 from concurrent.futures import ThreadPoolExecutor
 
-from tornado import gen, web
+from tornado import web
 
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
@@ -41,9 +42,9 @@ def dejsonify(js):
     key, secret = json.loads(js.decode('utf-8'))
     return RequestToken(key.encode('utf-8'), secret.encode('utf-8'))
 
+
 class MWLoginHandler(BaseHandler):
-    @gen.coroutine
-    def get(self):
+    async def get(self):
         consumer_token = ConsumerToken(
             self.authenticator.client_id,
             self.authenticator.client_secret,
@@ -53,7 +54,9 @@ class MWLoginHandler(BaseHandler):
             self.authenticator.mw_index_url, consumer_token
         )
 
-        redirect, request_token = yield self.authenticator.executor.submit(handshaker.initiate)
+        redirect, request_token = await wrap_future(
+            self.authenticator.executor.submit(handshaker.initiate)
+        )
 
         self.set_secure_cookie(
             AUTH_REQUEST_COOKIE_NAME,
@@ -64,6 +67,7 @@ class MWLoginHandler(BaseHandler):
         self.log.info('oauth redirect: %r', redirect)
 
         self.redirect(redirect)
+
 
 class MWCallbackHandler(OAuthCallbackHandler):
     """
@@ -109,8 +113,7 @@ class MWOAuthenticator(OAuthenticator):
     def _executor_default(self):
         return ThreadPoolExecutor(self.executor_threads)
 
-    @gen.coroutine
-    def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None):
         consumer_token = ConsumerToken(
             self.client_id,
             self.client_secret,
@@ -121,11 +124,11 @@ class MWOAuthenticator(OAuthenticator):
         )
         request_token = dejsonify(handler.get_secure_cookie(AUTH_REQUEST_COOKIE_NAME))
         handler.clear_cookie(AUTH_REQUEST_COOKIE_NAME)
-        access_token = yield self.executor.submit(
+        access_token = await wrap_future(self.executor.submit(
             handshaker.complete, request_token, handler.request.query
-        )
+        ))
 
-        identity = yield self.executor.submit(handshaker.identify, access_token)
+        identity = await wrap_future(self.executor.submit(handshaker.identify, access_token))
         if identity and 'username' in identity:
             # this shouldn't be necessary anymore,
             # but keep for backward-compatibility

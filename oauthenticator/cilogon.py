@@ -13,12 +13,11 @@ Caveats:
   email instead of ePPN as the JupyterHub username.
 """
 
-
 import json
 import os
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen, web
+from tornado import web
 
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
@@ -123,8 +122,7 @@ class CILogonOAuthenticator(OAuthenticator):
         """
     )
 
-    @gen.coroutine
-    def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None):
         """We set up auth_state based on additional CILogon info if we
         receive it.
         """
@@ -155,7 +153,7 @@ class CILogonOAuthenticator(OAuthenticator):
                           body=''
                           )
 
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
         token_response = json.loads(resp.body.decode('utf8', 'replace'))
         access_token = token_response['access_token']
         self.log.info("Access token acquired.")
@@ -165,7 +163,7 @@ class CILogonOAuthenticator(OAuthenticator):
                                      CILOGON_HOST, params),
                           headers=headers
                           )
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         claimlist = [self.username_claim]

@@ -12,20 +12,20 @@ from __future__ import print_function
 import os
 import sys
 
-v = sys.version_info
-if v[:2] < (3,3):
-    error = "ERROR: Jupyter Hub requires Python version 3.3 or above."
-    print(error, file=sys.stderr)
-    sys.exit(1)
+from setuptools import setup
+from setuptools.command.bdist_egg import bdist_egg
 
+class bdist_egg_disabled(bdist_egg):
+    """Disabled version of bdist_egg
 
-if os.name in ('nt', 'dos'):
-    error = "ERROR: Windows is not supported"
-    print(error, file=sys.stderr)
+    Prevents setup.py install from performing setuptools' default easy_install,
+    which it should never ever do.
+    """
 
-# At least we're on the python version we need, move on.
-
-from distutils.core import setup
+    def run(self):
+        sys.exit(
+            "Aborting implicit building of eggs. Use `pip install .` to install from source."
+        )
 
 pjoin = os.path.join
 here = os.path.abspath(os.path.dirname(__file__))
@@ -49,6 +49,7 @@ setup_args = dict(
     license             = "BSD",
     platforms           = "Linux, Mac OS X",
     keywords            = ['Interactive', 'Interpreter', 'Shell', 'Web'],
+    python_requires     = ">=3.5",
     entry_points={
         'jupyterhub.authenticators': [
             'auth0 = oauthenticator.auth0:Auth0OAuthenticator',
@@ -98,18 +99,17 @@ setup_args = dict(
     ],
 )
 
-if 'bdist_wheel' in sys.argv:
-    import setuptools
+setup_args['cmdclass'] = {
+    'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
+}
 
-# setuptools requirements
-if 'setuptools' in sys.modules:
-    setup_args['install_requires'] = install_requires = []
-    with open('requirements.txt') as f:
-        for line in f.readlines():
-            req = line.strip()
-            if not req or req.startswith(('-e', '#')):
-                continue
-            install_requires.append(req)
+setup_args['install_requires'] = install_requires = []
+with open('requirements.txt') as f:
+    for line in f.readlines():
+        req = line.strip()
+        if not req or req.startswith(('-e', '#')):
+            continue
+        install_requires.append(req)
 
 
 def main():
