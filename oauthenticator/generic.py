@@ -67,6 +67,11 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata method to get user data login information"
     )
+    userdata_token_method = Unicode(
+        os.environ.get('OAUTH2_USERDATA_REQUEST_TYPE', 'header'),
+        config=True,
+        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header" 
+    )
 
     tls_verify = Bool(
         os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
@@ -140,6 +145,9 @@ class GenericOAuthenticator(OAuthenticator):
             url = url_concat(self.userdata_url, self.userdata_params)
         else:
             raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable")
+
+        if self.userdata_token_method == "url":
+            url = url_concat(self.userdata_url, dict(access_token=access_token))
 
         req = HTTPRequest(url,
                           method=self.userdata_method,
