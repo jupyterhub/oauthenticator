@@ -9,7 +9,7 @@ import base64
 import urllib
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen, web
+from tornado import web
 
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
@@ -85,8 +85,7 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable basic authentication for access token request"
     )
 
-    @gen.coroutine
-    def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
@@ -124,7 +123,7 @@ class GenericOAuthenticator(OAuthenticator):
                           body=urllib.parse.urlencode(params)  # Body is required for a POST...
                           )
 
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
 
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
@@ -154,7 +153,7 @@ class GenericOAuthenticator(OAuthenticator):
                           headers=headers,
                           validate_cert=self.tls_verify,
                           )
-        resp = yield http_client.fetch(req)
+        resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         if not resp_json.get(self.username_key):

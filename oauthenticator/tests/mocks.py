@@ -10,7 +10,6 @@ import uuid
 
 import pytest
 
-from tornado import gen
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPServerRequest
 from tornado.log import app_log
