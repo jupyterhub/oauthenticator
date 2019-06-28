@@ -5,7 +5,7 @@ be used to extend the GitHub OAuthenticator. By overriding the scope
 list in the authenticator, additional features can be enabled for
 specific deployment needs.
 
-## Example GiHub scopes
+## Example GitHub scopes
 
 The following GitHub scopes may be suitable for certain use cases:
 
