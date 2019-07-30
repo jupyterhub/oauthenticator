@@ -8,6 +8,16 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.9
+
+### [0.9.0] - 2019-07-30
+
+- switch to asyncio coroutines from tornado coroutines (requires Python 3.5)
+- add `GenericOAuthenticator.userdata_token_method` configurable
+- add `GenericOAuthenticator.basic_auth` configurable
+- support for OpenShift 4.0 API changes
+
+
 ## 0.8
 
 ### [0.8.2] - 2019-04-16
@@ -161,7 +171,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.2...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.9.0...HEAD
+[0.9.0]: https://github.com/jupyterhub/oauthenticator/compare/0.8.2...0.9.0
 [0.8.2]: https://github.com/jupyterhub/oauthenticator/compare/0.8.1...0.8.2
 [0.8.1]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...0.8.0
