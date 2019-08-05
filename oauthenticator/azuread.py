@@ -51,6 +51,7 @@ class AzureAdOAuthenticator(OAuthenticator):
     login_handler = AzureAdLoginHandler
 
     tenant_id = Unicode(config=True)
+    username_claim = Unicode(config=True)
 
     def get_tenant(self):
         if hasattr(self, 'tenant_id') and self.tenant_id:
@@ -63,6 +64,16 @@ class AzureAdOAuthenticator(OAuthenticator):
                 help="Tenant")
             app_log.info('ID4: {0}'.format(tenant_id))
             return tenant_id
+
+    def get_username_claim(self):
+        """
+        The claim to map to the jupyter username, such as `upn` or `unique_name`
+        See https://docs.microsoft.com/en-gb/azure/active-directory/develop/id-tokens
+        """
+        if hasattr(self, 'username_claim') and self.username_claim:
+            app_log.info('ID5: {0}'.format(self.username_claim))
+            return self.username_claim
+        return 'oid'
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -101,7 +112,7 @@ class AzureAdOAuthenticator(OAuthenticator):
         id_token = resp_json['id_token']
         decoded = jwt.decode(id_token, verify=False)
 
-        userdict = {"name": decoded['name']}
+        userdict = {"name": decoded[self.get_username_claim()]}
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
         # results in a decoded JWT for the user data
