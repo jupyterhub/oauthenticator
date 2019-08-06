@@ -35,4 +35,4 @@ def test_username_claim_default():
         tenant_id = _t_id
 
     t_username_claim = AzureAdOAuthenticator.get_username_claim(Config())
-    assert t_username_claim == 'oid'
+    assert t_username_claim == 'name'

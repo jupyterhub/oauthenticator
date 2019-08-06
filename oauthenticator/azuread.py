@@ -73,7 +73,7 @@ class AzureAdOAuthenticator(OAuthenticator):
         if hasattr(self, 'username_claim') and self.username_claim:
             app_log.info('ID5: {0}'.format(self.username_claim))
             return self.username_claim
-        return 'oid'
+        return 'name'
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
