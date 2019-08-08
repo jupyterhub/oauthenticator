@@ -6,23 +6,16 @@ Custom Authenticator to use Azure AD with JupyterHub
 import json
 import jwt
 import os
-import re
-import string
 import urllib
-import sys
 
 from tornado.auth import OAuth2Mixin
 from tornado.log import app_log
-from tornado import web
-
-from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import List, Set, Unicode
+from traitlets import Unicode, default
 
-from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
@@ -51,6 +44,7 @@ class AzureAdOAuthenticator(OAuthenticator):
     login_handler = AzureAdLoginHandler
 
     tenant_id = Unicode(config=True)
+    username_claim = Unicode(config=True)
 
     def get_tenant(self):
         if hasattr(self, 'tenant_id') and self.tenant_id:
@@ -63,6 +57,10 @@ class AzureAdOAuthenticator(OAuthenticator):
                 help="Tenant")
             app_log.info('ID4: {0}'.format(tenant_id))
             return tenant_id
+
+    @default('username_claim')
+    def _username_claim_default(self):
+        return 'name'
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -101,7 +99,7 @@ class AzureAdOAuthenticator(OAuthenticator):
         id_token = resp_json['id_token']
         decoded = jwt.decode(id_token, verify=False)
 
-        userdict = {"name": decoded['name']}
+        userdict = {"name": decoded[self.username_claim]}
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
         # results in a decoded JWT for the user data
