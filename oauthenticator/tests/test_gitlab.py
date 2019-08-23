@@ -74,7 +74,7 @@ async def test_group_whitelist(gitlab_client):
                           is_admin)
 
 
-    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/(.*)/all')
     def is_member(request):
         urlinfo = urlparse(request.url)
         group, uid = member_regex.match(urlinfo.path).group(1, 2)
