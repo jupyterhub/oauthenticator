@@ -7,6 +7,8 @@ import json
 import os
 import base64
 import urllib
+import time
+import jwt
 
 from tornado.auth import OAuth2Mixin
 from tornado import web
@@ -169,6 +171,95 @@ class GenericOAuthenticator(OAuthenticator):
                 'scope': scope,
             }
         }
+
+    # Refresh user access and refresh tokens (called periodically)
+    async def refresh_user(self, user, handler=None):
+        # Retrieve user authentication info, decode, and check if refresh is needed
+        auth_state = await user.get_auth_state()
+        decoded_access_token = jwt.decode(auth_state['access_token'], verify=False)
+        decoded_refresh_token = jwt.decode(auth_state['refresh_token'], verify=False)
+        diff_access=decoded_access_token['exp']-time.time()
+        diff_refresh=decoded_refresh_token['exp']-time.time()
+        if diff_access>0:
+            # Access token still valid, function returns True
+            refresh_user_return = True
+        elif diff_refresh<0:
+            # Refresh token not valid, need to completely reauthenticate
+            refresh_user_return = False
+        else:
+            # We need to refresh access token (which will also refresh the refresh token)
+            refresh_token = auth_state['refresh_token']
+            http_client = AsyncHTTPClient()
+            
+            if self.token_url:
+                url = self.token_url
+            else:
+                raise ValueError("Please set the OAUTH2_TOKEN_URL environment variable")
+            
+            params = dict(
+                grant_type = 'refresh_token',
+                client_id = os.environ.get('OAUTH_CLIENT_ID'),
+                client_secret = os.environ.get('OAUTH_CLIENT_SECRET'),
+                refresh_token = refresh_token
+            )
+            
+            headers = {
+            "Content-Type": "application/x-www-form-urlencoded"
+            }
+            
+            req = HTTPRequest(url,
+                          method="POST",
+                          headers=headers,
+                          validate_cert=self.tls_verify,
+                          body=urllib.parse.urlencode(params)  # Body is required for a POST...
+                          )
+            resp = await http_client.fetch(req)
+
+            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+
+            access_token = resp_json['access_token']
+            refresh_token = resp_json.get('refresh_token', None)
+            token_type = resp_json['token_type']
+            scope = resp_json.get('scope', '')
+            if (isinstance(scope, str)):
+                scope = scope.split(' ')
+
+            # Determine who the logged in user is
+            headers = {
+                "Accept": "application/json",
+                "User-Agent": "JupyterHub",
+                "Authorization": "{} {}".format(token_type, access_token)
+            }
+            if self.userdata_url:
+                url = url_concat(self.userdata_url, self.userdata_params)
+            else:
+                raise ValueError("Please set the OAUTH2_USERDATA_URL environment variable")
+
+            if self.userdata_token_method == "url":
+                url = url_concat(self.userdata_url, dict(access_token=access_token))
+
+            req = HTTPRequest(url,
+                            method=self.userdata_method,
+                            headers=headers,
+                            validate_cert=self.tls_verify,
+                            )
+            resp = await http_client.fetch(req)
+            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+
+            if not resp_json.get(self.username_key):
+                self.log.error("OAuth user contains no key %s: %s", self.username_key, resp_json)
+                return
+            
+            refresh_user_return = {
+                'name': resp_json.get(self.username_key),
+                'auth_state': {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                    'oauth_user': resp_json,
+                    'scope': scope,
+                }
+            }
+        return refresh_user_return
 
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
