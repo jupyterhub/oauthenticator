@@ -40,27 +40,25 @@ class GlobusLogoutHandler(LogoutHandler):
     only the Jupyterhub session is cleared.
     """
     async def get(self):
-        user = self.get_current_user()
-        if user:
-            if self.authenticator.revoke_tokens_on_logout:
-                self.clear_tokens(user)
-            self.clear_login_cookie()
         if self.authenticator.logout_redirect_url:
+            await self.default_handle_logout()
+            await self.handle_logout()
             self.redirect(self.authenticator.logout_redirect_url)
         else:
-            super().get()
+            await super().get()
+
+    async def handle_logout(self):
+        if self.current_user and self.authenticator.revoke_tokens_on_logout:
+                await self.clear_tokens(self.current_user)
 
     async def clear_tokens(self, user):
-        if not self.authenticator.revoke_tokens_on_logout:
-            return
-
         state = await user.get_auth_state()
         if state:
             self.authenticator.revoke_service_tokens(state.get('tokens'))
             self.log.info('Logout: Revoked tokens for user "{}" services: {}'
                           .format(user.name, ','.join(state['tokens'].keys())))
             state['tokens'] = ''
-            user.save_auth_state(state)
+            await user.save_auth_state(state)
 
 
 class GlobusOAuthenticator(OAuthenticator):
