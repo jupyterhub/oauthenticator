@@ -81,9 +81,7 @@ async def test_group_whitelist(gitlab_client):
         }
 
     def group_user_model(username, is_admin=False):
-        return user_model(username,
-                          list(user_groups.keys()).index(username) + 1,
-                          is_admin)
+        return user_model(username, hash(username), is_admin)
 
     group_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all')
     uname_regex = re.compile('query=(.*)')
