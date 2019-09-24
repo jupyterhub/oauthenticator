@@ -196,10 +196,10 @@ class GitLabOAuthenticator(OAuthenticator):
             if resp.code == 200 and resp.body:
                 resp_json = json.loads(resp.body.decode('utf8', 'replace'))
                 for user in resp_json:
-                    # We only allow access level Developer and above
-                    # Reference: https://docs.gitlab.com/ee/api/members.html
-                    if user['id'] == user_id and user['username'] == username and user['access_level'] >= 30:
-                        return True
+                    if user['id'] == user_id and user['username'] == username:
+                        # We only allow access level Developer and above
+                        # Reference: https://docs.gitlab.com/ee/api/members.html
+                        return user['access_level'] >= 30
         return False
 
 
