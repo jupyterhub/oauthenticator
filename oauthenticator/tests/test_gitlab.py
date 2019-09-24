@@ -68,11 +68,22 @@ async def test_group_whitelist(gitlab_client):
         'burns': ['blue', 'yellow'],
     })
 
+    def mock_user(username):
+        return {
+            'id': hash(username),
+            'name': 'name of ' + username,
+            'username': username,
+            'state': 'active',
+            'avatar_url': 'https://secure.gravatar.com/avatar/382a6b306679b2d97b547bfff3d73242?s=80&d=identicon',
+            'web_url': 'https://gitlab.com/' + username,
+            'access_level': 10,  # Guest
+            'expires_at': '2030-02-23'
+        }
+
     def group_user_model(username, is_admin=False):
         return user_model(username,
                           list(user_groups.keys()).index(username) + 1,
                           is_admin)
-
 
     group_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all')
     uname_regex = re.compile('query=(.*)')
@@ -80,10 +91,13 @@ async def test_group_whitelist(gitlab_client):
         urlinfo = urlparse(request.url)
         group = group_regex.match(urlinfo.path).group(1)
         uname = uname_regex.match(urlinfo.query).group(1)
+
+        res = [mock_user('not_the_user_we_want_to_find')]
         if group in user_groups[uname]:
-            return HTTPResponse(request, 200)
-        else:
-            return HTTPResponse(request, 404)
+            res.append(mock_user(uname))
+
+        return HTTPResponse(request=request, code=200,
+                            buffer=BytesIO(json.dumps(res).encode('utf8')))
 
     def groups(paginate, request):
         urlinfo = urlparse(request.url)
@@ -164,7 +178,7 @@ async def test_project_id_whitelist(gitlab_client):
 
     user_projects = {
         '1231231': {
-            'john': {
+            'john': [{
                 'id': 3588673,
                 'name': 'john',
                 'username': 'john',
@@ -174,7 +188,17 @@ async def test_project_id_whitelist(gitlab_client):
                 'access_level': 10,  # Guest
                 'expires_at': '2030-02-23'
             },
-            'harry': {
+            {
+                'id': 9999999,
+                'name': 'the other john',
+                'username': 'johntheother',
+                'state': 'active',
+                'avatar_url': 'https://secure.gravatar.com/avatar/382a6b306679b2d97b547bfff3d73242?s=80&d=identicon',
+                'web_url': 'https://gitlab.com/johntheother',
+                'access_level': 30,  # Developer
+                'expires_at': '2030-02-23'
+            }],
+            'harry': [{
                 'id': 3588674,
                 'name': 'harry',
                 'username': 'harry',
@@ -183,7 +207,7 @@ async def test_project_id_whitelist(gitlab_client):
                 'web_url': 'https://gitlab.com/harry',
                 'access_level': 30,  # Developer
                 'expires_at': '2030-02-23'
-            }
+            }]
         }
     }
     john_user_model = user_model('john', 3588673)
@@ -205,8 +229,9 @@ async def test_project_id_whitelist(gitlab_client):
                 headers={'Content-Type': 'application/json'},
             )
         else:
-            return HTTPResponse(request=request, code=404,
-                buffer=BytesIO(''.encode('utf8'))
+            return HTTPResponse(request=request, code=200,
+                buffer=BytesIO('[]'.encode('utf8')),
+                headers={'Content-Type': 'application/json'},
             )
 
     client.hosts['gitlab.com'].append(
