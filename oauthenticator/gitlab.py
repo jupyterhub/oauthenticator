@@ -173,7 +173,7 @@ class GitLabOAuthenticator(OAuthenticator):
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.gitlab_group_whitelist):
-            url = "%s/groups/%s/members/%d/all" % (GITLAB_API, group, user_id)
+            url = "%s/groups/%s/members/all/%d" % (GITLAB_API, group, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
             if resp.code == 200:
@@ -186,7 +186,7 @@ class GitLabOAuthenticator(OAuthenticator):
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the whitelist
         for project in self.gitlab_project_id_whitelist:
-            url = "%s/projects/%s/members/%d/all" % (GITLAB_API, project, user_id)
+            url = "%s/projects/%s/members/all/%d" % (GITLAB_API, project, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
 
