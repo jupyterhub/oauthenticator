@@ -74,12 +74,10 @@ async def test_group_whitelist(gitlab_client):
                           is_admin)
 
 
-    group_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all')
-    uname_regex = re.compile('query=(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all\?query=(.*)')
     def is_member(request):
         urlinfo = urlparse(request.url)
-        group = group_regex.match(urlinfo.path).group(1)
-        uname = uname_regex.match(urlinfo.query).group(1)
+        group, uname = member_regex.match(urlinfo.path).group(1, 2)
         if group in user_groups[uname]:
             return HTTPResponse(request, 200)
         else:
@@ -113,7 +111,7 @@ async def test_group_whitelist(gitlab_client):
                         buffer=BytesIO(json.dumps(ret).encode('utf-8')))
 
     client.hosts['gitlab.com'].append(
-        (group_regex, is_member)
+        (member_regex, is_member)
     )
 
     ## actual tests
@@ -190,13 +188,11 @@ async def test_project_id_whitelist(gitlab_client):
     harry_user_model = user_model('harry', 3588674)
     sheila_user_model = user_model('sheila', 3588675)
 
-    project_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/all')
-    uname_regex = re.compile('query=(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/all\?query=(.*)')
 
     def is_member(request):
         urlinfo = urlparse(request.url)
-        project_id = project_regex.match(urlinfo.path).group(1)
-        uname = uname_regex.match(urlinfo.query).group(1)
+        project_id, uname = member_regex.match(urlinfo.path).group(1, 2)
 
         if user_projects.get(project_id) and user_projects.get(project_id).get(uname):
             res = user_projects.get(project_id).get(uname)
@@ -210,7 +206,7 @@ async def test_project_id_whitelist(gitlab_client):
             )
 
     client.hosts['gitlab.com'].append(
-        (project_regex, is_member)
+        (member_regex, is_member)
     )
 
     authenticator.gitlab_project_id_whitelist = [1231231]
