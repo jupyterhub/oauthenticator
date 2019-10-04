@@ -74,10 +74,11 @@ async def test_group_whitelist(gitlab_client):
                           is_admin)
 
 
-    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all\?query=(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/(.*)/all')
     def is_member(request):
         urlinfo = urlparse(request.url)
-        group, uname = member_regex.match(urlinfo.path).group(1, 2)
+        group, uid = member_regex.match(urlinfo.path).group(1, 2)
+        uname = list(user_groups.keys())[int(uid) - 1]
         if group in user_groups[uname]:
             return HTTPResponse(request, 200)
         else:
@@ -162,8 +163,8 @@ async def test_project_id_whitelist(gitlab_client):
 
     user_projects = {
         '1231231': {
-            'john': {
-                'id': 3588673,
+            '3588673': {
+                'id': 3588674,
                 'name': 'john',
                 'username': 'john',
                 'state': 'active',
@@ -172,7 +173,7 @@ async def test_project_id_whitelist(gitlab_client):
                 'access_level': 10,  # Guest
                 'expires_at': '2030-02-23'
             },
-            'harry': {
+            '3588674': {
                 'id': 3588674,
                 'name': 'harry',
                 'username': 'harry',
@@ -188,14 +189,14 @@ async def test_project_id_whitelist(gitlab_client):
     harry_user_model = user_model('harry', 3588674)
     sheila_user_model = user_model('sheila', 3588675)
 
-    member_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/all\?query=(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/(.*)/all')
 
     def is_member(request):
         urlinfo = urlparse(request.url)
-        project_id, uname = member_regex.match(urlinfo.path).group(1, 2)
+        project_id, uid = member_regex.match(urlinfo.path).group(1, 2)
 
-        if user_projects.get(project_id) and user_projects.get(project_id).get(uname):
-            res = user_projects.get(project_id).get(uname)
+        if user_projects.get(project_id) and user_projects.get(project_id).get(uid):
+            res = user_projects.get(project_id).get(uid)
             return HTTPResponse(request=request, code=200,
                 buffer=BytesIO(json.dumps(res).encode('utf8')),
                 headers={'Content-Type': 'application/json'},
