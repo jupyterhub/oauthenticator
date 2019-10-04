@@ -134,6 +134,7 @@ class GitLabOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["username"]
+        user_id = resp_json["id"]
         is_admin = resp_json.get("is_admin", False)
 
         # Check if user is a member of any whitelisted groups or projects.
@@ -173,13 +174,11 @@ class GitLabOAuthenticator(OAuthenticator):
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.gitlab_group_whitelist):
             url = "%s/groups/%s/members/all?query=%s" % (GITLAB_API, group, username)
+            self.log.warning(url)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
-            if resp.code == 200 and resp.body:
-                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-                for user in resp_json:
-                    if user['username'] == username:
-                        return True  # user _is_ in group
+            if resp.code == 200:
+                return True  # user _is_ in group
         return False
 
 
@@ -189,16 +188,18 @@ class GitLabOAuthenticator(OAuthenticator):
         # Check if user has developer access to any project in the whitelist
         for project in self.gitlab_project_id_whitelist:
             url = "%s/projects/%s/members/all?query=%s" % (GITLAB_API, project, username)
+            self.log.warning(url)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
 
-            if resp.code == 200 and resp.body:
+            if resp.body:
                 resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-                for user in resp_json:
-                    # We only allow access level Developer and above
-                    # Reference: https://docs.gitlab.com/ee/api/members.html
-                    if user['username'] == username and user['access_level'] >= 30:
-                        return True
+                access_level = resp_json.get('access_level', 0)
+
+                # We only allow access level Developer and above
+                # Reference: https://docs.gitlab.com/ee/api/members.html
+                if resp.code == 200 and access_level >= 30:
+                    return True
         return False
 
 
