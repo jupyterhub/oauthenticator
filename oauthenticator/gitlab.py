@@ -134,7 +134,6 @@ class GitLabOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         username = resp_json["username"]
-        user_id = resp_json["id"]
         is_admin = resp_json.get("is_admin", False)
 
         # Check if user is a member of any whitelisted groups or projects.
@@ -144,12 +143,12 @@ class GitLabOAuthenticator(OAuthenticator):
 
         if self.gitlab_group_whitelist:
             is_group_specified = True
-            user_in_group = await self._check_group_whitelist(user_id, username, access_token)
+            user_in_group = await self._check_group_whitelist(username, access_token)
 
         # We skip project_id check if user is in whitelisted group.
         if self.gitlab_project_id_whitelist and not user_in_group:
             is_project_id_specified = True
-            user_in_project = await self._check_project_id_whitelist(user_id, username, access_token)
+            user_in_project = await self._check_project_id_whitelist(username, access_token)
 
         no_config_specified = not (is_group_specified or is_project_id_specified)
 
@@ -168,7 +167,7 @@ class GitLabOAuthenticator(OAuthenticator):
             return None
 
 
-    async def _check_group_whitelist(self, user_id, username, access_token):
+    async def _check_group_whitelist(self, username, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the whitelist
@@ -179,12 +178,12 @@ class GitLabOAuthenticator(OAuthenticator):
             if resp.code == 200 and resp.body:
                 resp_json = json.loads(resp.body.decode('utf8', 'replace'))
                 for user in resp_json:
-                    if user['id'] == user_id and user['username'] == username:
+                    if user['username'] == username:
                         return True  # user _is_ in group
         return False
 
 
-    async def _check_project_id_whitelist(self, user_id, username, access_token):
+    async def _check_project_id_whitelist(self, username, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the whitelist
@@ -198,7 +197,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 for user in resp_json:
                     # We only allow access level Developer and above
                     # Reference: https://docs.gitlab.com/ee/api/members.html
-                    if user['id'] == user_id and user['username'] == username and user['access_level'] >= 30:
+                    if user['username'] == username and user['access_level'] >= 30:
                         return True
         return False
 
