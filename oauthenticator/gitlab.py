@@ -10,7 +10,6 @@ import json
 import os
 import sys
 import warnings
-import urllib
 
 from tornado.auth import OAuth2Mixin
 from tornado import web
