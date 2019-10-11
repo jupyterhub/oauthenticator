@@ -170,7 +170,7 @@ async def test_group_whitelist(gitlab_client):
 async def test_project_id_whitelist(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
-    mock_api_version(client, '12.4')
+    mock_api_version(client, '12.4.0-pre')
 
     user_projects = {
         '1231231': {

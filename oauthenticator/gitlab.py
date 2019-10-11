@@ -8,6 +8,7 @@ based on the GitHub plugin by Kyle Kelley (@rgbkrk)
 
 import json
 import os
+import re
 import sys
 import warnings
 
@@ -127,7 +128,7 @@ class GitLabOAuthenticator(OAuthenticator):
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
             self.gitlab_version = await self._get_gitlab_version(access_token)
-            self.member_api_variant = 'all/' if self.gitlab_version >= '12.4' else ''
+            self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
 
         # Determine who the logged in user is
         req = HTTPRequest("%s/user" % GITLAB_API,
@@ -180,7 +181,9 @@ class GitLabOAuthenticator(OAuthenticator):
                           validate_cert=self.validate_server_cert)
         resp = await AsyncHTTPClient().fetch(req, raise_error=True)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        return resp_json['version']
+        version_string = re.sub(r'-pre$', '', resp_json['version'])
+        return list(map(int, str.split(version_string, '.')))
+
 
     async def _check_group_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
