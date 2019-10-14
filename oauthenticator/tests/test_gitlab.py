@@ -48,7 +48,7 @@ def mock_api_version(client, version):
 
 async def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
-    mock_api_version(gitlab_client, '12.3')
+    mock_api_version(gitlab_client, '12.3.1-ee')
     handler = gitlab_client.handler_for_user(user_model('wash'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
@@ -67,7 +67,7 @@ def make_link_header(urlinfo, page):
 async def test_group_whitelist(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
-    mock_api_version(client, '12.4')
+    mock_api_version(client, '12.4.0-ee')
 
     ## set up fake Gitlab API
 

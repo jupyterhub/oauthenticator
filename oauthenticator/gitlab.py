@@ -181,8 +181,9 @@ class GitLabOAuthenticator(OAuthenticator):
                           validate_cert=self.validate_server_cert)
         resp = await AsyncHTTPClient().fetch(req, raise_error=True)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-        version_string = re.sub(r'-pre$', '', resp_json['version'])
-        return list(map(int, str.split(version_string, '.')))
+        version_strings = resp_json['version'].split('-')[0].split('.')[:3]
+        version_ints = list(map(int, version_strings))
+        return version_ints
 
 
     async def _check_group_whitelist(self, user_id, access_token):
