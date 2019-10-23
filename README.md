@@ -106,7 +106,7 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 > export AAD_TENANT_ID='{AAD-TENANT-ID}'
 ```
 
-* Sample code is provided for you in `examples > azuread > sample_jupyter_config.py` 
+* Sample code is provided for you in `examples > azuread > sample_jupyter_config.py`
 * Just add the code below to your `jupyterhub_config.py` file
 * Making sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
 
@@ -180,6 +180,16 @@ You can also use `LocalGitLabOAuthenticator` to map GitLab accounts onto local u
 
 You can use your own GitLab CE/EE instance by setting the `GITLAB_HOST` environment
 flag.
+
+You can restrict access to only accept members of certain projects or groups by setting
+```
+c.GitLabOAuthenticator.gitlab_project_id_whitelist = [ ... ]
+```
+and
+```
+c.GitLabOAuthenticator.gitlab_group_whitelist = [ ... ]
+```
+but be aware that each entry incurs a separate API call, increasing the risk of rate limiting and timeouts.
 
 ## Google Setup
 

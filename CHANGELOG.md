@@ -8,6 +8,8 @@ command line for details.
 
 ## [Unreleased]
 
+- fix GitLab login for inherited group or project members. Requires GitLab 12.4 or newer, falls back to previous behavior for older versions.
+
 ## 0.9
 
 ### [0.9.0] - 2019-07-30
