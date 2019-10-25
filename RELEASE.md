@@ -1,0 +1,56 @@
+# How to make a release
+
+`oauthenticator` is a package [available on
+PyPI](https://pypi.org/project/oauthenticator/). These are instructions on how
+to make a release on PyPI.
+
+For you to follow along according to these instructions, you need:
+- To be a maintainer of the [PyPI chartpress
+  project](https://pypi.org/project/oauthenticator/).
+- To have push rights to the [oauthenticator GitHub
+  repository](https://github.com/jupyterhub/oauthenticator).
+
+## Technical steps to make a release
+
+1. Checkout master and make sure it is up to date.
+
+   ```
+   git checkout master
+   git fetch <upstream> master
+   git reset --hard <upstream>/master
+   ```
+
+1. Update [CHANGELOG.md](CHANGELOG.md). Doing this can be made easier with the
+   help of the
+   [choldgraf/github-activity](https://github.com/choldgraf/github-activity)
+   utility.
+
+1. Set the `version_info` variable in [_version.py](oauthenticator/_version.py)
+   appropriately and make a commit with message `release <tag>`.
+
+1. Create a git tag for the commit.
+
+   ```
+   git tag -a <tag> -m <tag> HEAD
+   ```
+
+1. Package the release
+   ```
+   python3 setup.py bdist_wheel
+   ```
+
+1. Upload it to PyPI
+   ```
+   twine upload dist/oauthenticator-<tag>-py3-none-any.whl
+   ```
+
+1. Reset the `version_info` variable in
+   [_version.py](oauthenticator/_version.py) appropriately with a `dev` element
+   and make a commit with the message `back to dev`.
+
+1. Push your two commits to master along with the annotated tags referencing
+   commits on master.
+
+   ```
+   git push --follow-tags <upstream> master
+   ```
