@@ -1,4 +1,7 @@
-# OAuthenticator
+# [OAuthenticator](https://github.com/jupyterhub/oauthenticator)
+
+[![PyPI](https://img.shields.io/pypi/v/oauthenticator.svg)](https://pypi.python.org/pypi/oauthenticator)
+[![Build Status](https://travis-ci.org/jupyterhub/oauthenticator.svg?branch=master)](https://travis-ci.org/jupyterhub/oauthenticator)
 
 OAuth + JupyterHub Authenticator = OAuthenticator
 
