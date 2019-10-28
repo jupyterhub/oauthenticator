@@ -33,14 +33,14 @@ AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v2'
 # It is a named tuple with bytestrings, json.dumps balks
 def jsonify(request_token):
     return json.dumps([
-        request_token.key.decode('utf-8'),
-        request_token.secret.decode('utf-8')
+        request_token.key,
+        request_token.secret,
     ])
 
 
 def dejsonify(js):
-    key, secret = json.loads(js.decode('utf-8'))
-    return RequestToken(key.encode('utf-8'), secret.encode('utf-8'))
+    key, secret = json.loads(js)
+    return RequestToken(key, secret)
 
 
 class MWLoginHandler(BaseHandler):
@@ -135,8 +135,8 @@ class MWOAuthenticator(OAuthenticator):
             return {
                 'name': identity['username'].replace(' ', '_'),
                 'auth_state': {
-                    'ACCESS_TOKEN_KEY': access_token.key.decode('utf-8'),
-                    'ACCESS_TOKEN_SECRET': access_token.secret.decode('utf-8'),
+                    'ACCESS_TOKEN_KEY': access_token.key,
+                    'ACCESS_TOKEN_SECRET': access_token.secret,
                     'MEDIAWIKI_USER_IDENTITY': identity,
 
                 }
