@@ -53,7 +53,7 @@ async def test_mediawiki(mediawiki):
         get_secure_cookie=Mock(
             return_value=json.dumps(
                 ['key', 'secret']
-            ).encode('utf8')
+            )
         ),
         request=Mock(
             query='oauth_token=key&oauth_verifier=me'
