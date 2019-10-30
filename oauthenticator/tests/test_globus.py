@@ -60,12 +60,10 @@ def mock_globus_user(mock_globus_sdk):
         name = 'Wash'
         state = {'tokens': mock_globus_sdk.by_resource_server}
 
-        @gen.coroutine
-        def get_auth_state(self):
+        async def get_auth_state(self):
             return self.state
 
-        @gen.coroutine
-        def save_auth_state(self, state):
+        async def save_auth_state(self, state):
             self.state = state
     return User()
 
