@@ -11,8 +11,8 @@ c.Application.log_level = 'DEBUG'
 
 
 c.AzureAdB2COAuthenticator.oauth_callback_url = 'http://localhost:8000/hub/oauth_callback'
-c.AzureAdB2COAuthenticator.client_id = 'Your valueu'
-c.AzureAdB2COAuthenticator.client_secret = 'Your value'
+c.AzureAdB2COAuthenticator.client_id = ''
+c.AzureAdB2COAuthenticator.client_secret = ''
 
 c.Authenticator.delete_invalid_users = True
 
