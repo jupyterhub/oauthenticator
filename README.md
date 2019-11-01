@@ -8,7 +8,7 @@ OAuth + JupyterHub Authenticator = OAuthenticator
 OAuthenticator currently supports the following authentication services:
 
 - [Auth0](oauthenticator/auth0.py)
-- [Azure](#azure-setup)
+- [Azure AD and AD B2C](#azure-setup)
 - [Bitbucket](oauthenticator/bitbucket.py)
 - [CILogon](oauthenticator/cilogon.py)
 - [GitHub](#github-setup)
@@ -92,7 +92,7 @@ c.MyOAuthenticator.client_id = 'your-client-id'
 c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
 
-## Azure Setup
+## Azure AD and Azure AD B2C Setup
 
 
 #### _Prereqs_:
@@ -102,6 +102,8 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
 > pip3 install PyJWT
 ```
+
+#### For Azure AD
 
 * BE SURE TO SET THE **`AAD_TENANT_ID`** environment variable
 
@@ -147,6 +149,16 @@ sudo jupyterhub -f ./path/to/jupyterhub_config.py
 > See `run.sh` for an [example](./examples/azuread/)
 
 * [Source Code](oauthenticator/azuread.py)
+
+#### For Azure AD B2C
+
+> See `run.sh` for an [example](./examples/azureadb2c/)
+
+* [Source Code](oauthenticator/azureadb2c.py)
+
+
+
+## 
 
 
 ## GitHub Setup
