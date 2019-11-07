@@ -87,6 +87,9 @@ setup_args = dict(
 
             'openshift = oauthenticator.openshift:OpenShiftOAuthenticator',
             'local-openshift = oauthenticator.openshift:LocalOpenShiftOAuthenticator',
+
+            'awscognito = oauthenticator.awscognito:AWSCognitoAuthenticator',
+            'local-awscognito = oauthenticator.awscognito:LocalAWSCognitoAuthenticator',
         ],
     },
     classifiers         = [
