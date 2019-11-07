@@ -1,11 +1,11 @@
 # How to make a release
 
 `oauthenticator` is a package [available on
-PyPI](https://pypi.org/project/oauthenticator/). These are instructions on how
+PyPI](https://pypi.org/project/oauthenticator/) and conda-forge. These are instructions on how
 to make a release on PyPI.
 
 For you to follow along according to these instructions, you need:
-- To be a maintainer of the [PyPI chartpress
+- To be a maintainer of the [PyPI oauthenticator
   project](https://pypi.org/project/oauthenticator/).
 - To have push rights to the [oauthenticator GitHub
   repository](https://github.com/jupyterhub/oauthenticator).
@@ -31,17 +31,17 @@ For you to follow along according to these instructions, you need:
 1. Create a git tag for the commit.
 
    ```
-   git tag -a <tag> -m <tag> HEAD
+   git tag -a $TAG -m $TAG
    ```
 
 1. Package the release
    ```
-   python3 setup.py bdist_wheel
+   python3 setup.py sdist bdist_wheel
    ```
 
 1. Upload it to PyPI
    ```
-   twine upload dist/oauthenticator-<tag>-py3-none-any.whl
+   twine upload dist/*
    ```
 
 1. Reset the `version_info` variable in
