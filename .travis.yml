@@ -2,11 +2,7 @@ language: python
 sudo: false
 cache: pip
 dist: xenial
-python:
-  - nightly
-  - 3.7
-  - 3.6
-  - 3.5
+
 install:
   - pip install --upgrade pip
   - pip install --upgrade --pre -r test-requirements.txt .
@@ -24,7 +20,22 @@ script:
 after_success:
   - codecov
 
-matrix:
+jobs:
   include:
+    # Default stage: test
     - python: 3.7
       env: TEST_LINT=1
+    - python: nightly
+    - python: 3.7
+    - python: 3.6
+    - python: 3.5
+    # Only deploy if all test jobs passed
+    - stage: deploy
+      python: 3.7
+      if: tag IS present
+      deploy:
+        provider: pypi
+        user: __token__
+        password: $PYPI_TOKEN
+        on:
+          tags: true
