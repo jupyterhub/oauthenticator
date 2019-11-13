@@ -1,8 +1,9 @@
 # How to make a release
 
 `oauthenticator` is a package [available on
-PyPI](https://pypi.org/project/oauthenticator/) and conda-forge. These are instructions on how
-to make a release on PyPI.
+PyPI](https://pypi.org/project/oauthenticator/) and
+[conda-forge](https://conda-forge.org/). These are instructions on how to make a
+release on PyPI.
 
 For you to follow along according to these instructions, you need:
 - To be a maintainer of the [PyPI oauthenticator
@@ -10,7 +11,7 @@ For you to follow along according to these instructions, you need:
 - To have push rights to the [oauthenticator GitHub
   repository](https://github.com/jupyterhub/oauthenticator).
 
-## Technical steps to make a release
+## Steps to make a release
 
 1. Checkout master and make sure it is up to date.
 
@@ -54,3 +55,8 @@ For you to follow along according to these instructions, you need:
    ```
    git push --follow-tags <upstream> master
    ```
+
+1. Following the release to PyPI, an automated PR should arrive to
+   [conda-forge/oauthenticator-feedstock](https://github.com/conda-forge/oauthenticator-feedstock),
+   check for the tests to succeed on this PR and then merge it to successfully
+   update the package for `conda` on the conda-forge channel.
