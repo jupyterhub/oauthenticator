@@ -37,5 +37,3 @@ jobs:
         provider: pypi
         user: __token__
         password: $PYPI_TOKEN
-        on:
-          tags: true
