@@ -21,14 +21,17 @@ after_success:
   - codecov
 
 jobs:
+  allow_failures:
+    - python: nightly
+  fast_finish: true
   include:
     # Default stage: test
     - python: 3.7
       env: TEST_LINT=1
-    - python: nightly
     - python: 3.7
     - python: 3.6
     - python: 3.5
+    - python: nightly
     # Only deploy if all test jobs passed
     - stage: deploy
       python: 3.7
