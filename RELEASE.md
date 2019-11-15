@@ -15,10 +15,13 @@ For you to follow along according to these instructions, you need:
 
 1. Checkout master and make sure it is up to date.
 
-   ```
+   ```shell
+   ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
    git checkout master
-   git fetch <upstream> master
-   git reset --hard <upstream>/master
+   git fetch $ORIGIN master
+   git reset --hard $ORIGIN/master
+   # WARNING! This next command deletes any untracked files in the repo
+   git clean -xfd
    ```
 
 1. Update [CHANGELOG.md](CHANGELOG.md). Doing this can be made easier with the
@@ -31,17 +34,17 @@ For you to follow along according to these instructions, you need:
 
 1. Create a git tag for the commit.
 
-   ```
+   ```shell
    git tag -a $TAG -m $TAG
    ```
 
 1. Package the release
-   ```
+   ```shell
    python3 setup.py sdist bdist_wheel
    ```
 
 1. Upload it to PyPI
-   ```
+   ```shell
    twine upload dist/*
    ```
 
@@ -52,8 +55,8 @@ For you to follow along according to these instructions, you need:
 1. Push your two commits to master along with the annotated tags referencing
    commits on master.
 
-   ```
-   git push --follow-tags <upstream> master
+   ```shell
+   git push --follow-tags $ORIGIN master
    ```
 
 1. Following the release to PyPI, an automated PR should arrive to
