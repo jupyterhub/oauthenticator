@@ -19,6 +19,7 @@ One instance of this could be adding the following to your jupyterhub_config.py 
   c.Auth0OAuthenticator.client_id = 'YOUR_CLIENT_ID'
   c.Auth0OAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
   c.Auth0OAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
+  c.Auth0OAuthenticator.scopes = ['openid','profile','email']
 
 If you are using the environment variable config, all you should need to
 do is define them in the environment then add the following line to 
