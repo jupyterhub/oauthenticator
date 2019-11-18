@@ -40,3 +40,4 @@ jobs:
         provider: pypi
         user: __token__
         # password: see secret PYPI_PASSWORD variable
+        distributions: sdist bdist_wheel
