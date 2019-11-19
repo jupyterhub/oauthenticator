@@ -5,18 +5,22 @@ from ..generic import GenericOAuthenticator
 from .mocks import setup_oauth_mock
 
 
-def user_model(username):
+def user_model(username, **kwargs):
     """Return a user model"""
-    return {
+    user = {
         'username': username,
         'scope': 'basic',
     }
+    user.update(kwargs)
+    return user
 
-def Authenticator():
+def Authenticator(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
-        userdata_url='https://generic.horse/oauth/userinfo'
+        userdata_url='https://generic.horse/oauth/userinfo',
+        **kwargs
     )
+
 @fixture
 def generic_client(client):
     setup_oauth_mock(client,
@@ -39,3 +43,14 @@ async def test_generic(generic_client):
     assert 'oauth_user' in auth_state
     assert 'refresh_token' in auth_state
     assert 'scope' in auth_state
+
+
+async def test_generic_callable_username_key(generic_client):
+    authenticator = Authenticator(
+        username_key=lambda r: r['alternate_username']
+    )
+    handler = generic_client.handler_for_user(
+        user_model('wash', alternate_username='zoe')
+    )
+    user_info = await authenticator.authenticate(handler)
+    assert user_info['name'] == 'zoe'
