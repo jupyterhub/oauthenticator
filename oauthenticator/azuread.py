@@ -46,17 +46,9 @@ class AzureAdOAuthenticator(OAuthenticator):
     tenant_id = Unicode(config=True)
     username_claim = Unicode(config=True)
 
-    def get_tenant(self):
-        if hasattr(self, 'tenant_id') and self.tenant_id:
-            app_log.info('ID3: {0}'.format(self.tenant_id))
-            return self.tenant_id
-        else:
-            tenant_id = Unicode(
-                os.environ.get('AAD_TENANT_ID', ''),
-                config=True,
-                help="Tenant")
-            app_log.info('ID4: {0}'.format(tenant_id))
-            return tenant_id
+    @default('tenant_id')
+    def _tenant_id_default(self):
+        return os.environ.get('AAD_TENANT_ID', '')
 
     @default('username_claim')
     def _username_claim_default(self):
@@ -77,7 +69,7 @@ class AzureAdOAuthenticator(OAuthenticator):
         data = urllib.parse.urlencode(
             params, doseq=True, encoding='utf-8', safe='=')
 
-        url = azure_token_url_for(self.get_tenant())
+        url = azure_token_url_for(self.tenant_id)
 
         headers = {
             'Content-Type':

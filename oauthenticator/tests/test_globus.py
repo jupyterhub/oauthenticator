@@ -54,6 +54,20 @@ def globus_client(client):
     return client
 
 
+@fixture
+def mock_globus_user(mock_globus_sdk):
+    class User:
+        name = 'Wash'
+        state = {'tokens': mock_globus_sdk.by_resource_server}
+
+        async def get_auth_state(self):
+            return self.state
+
+        async def save_auth_state(self, state):
+            self.state = state
+    return User()
+
+
 async def test_globus(globus_client, mock_globus_sdk):
     authenticator = GlobusOAuthenticator()
     handler = globus_client.handler_for_user(user_model('wash'))
@@ -61,6 +75,14 @@ async def test_globus(globus_client, mock_globus_sdk):
     assert data['name'] == 'wash'
     tokens = list(data['auth_state']['tokens'].keys())
     assert tokens == ['transfer.api.globus.org']
+
+
+async def test_globus_pre_spawn_start(mock_globus_user):
+    authenticator = GlobusOAuthenticator()
+    spawner = Mock()
+    spawner.environment = {}
+    await authenticator.pre_spawn_start(mock_globus_user, spawner)
+    assert 'GLOBUS_DATA' in spawner.environment
 
 
 async def test_allow_refresh_tokens(globus_client, mock_globus_sdk, monkeypatch):
@@ -128,7 +150,7 @@ def test_revoke_tokens(monkeypatch):
     assert ConfidentialAppAuthClient.oauth2_revoke_token.called
 
 
-async def test_custom_logout(monkeypatch):
+async def test_custom_logout(monkeypatch, mock_globus_user):
     custom_logout_url = 'https://universityofindependence.edu/logout'
     authenticator = GlobusOAuthenticator()
     logout_handler = mock_handler(GlobusLogoutHandler,
@@ -139,25 +161,24 @@ async def test_custom_logout(monkeypatch):
         Mock()
     )
     logout_handler.clear_login_cookie = Mock()
-    logout_handler.get_current_user = Mock()
+    logout_handler.get_current_user = Mock(return_value=mock_globus_user)
+    logout_handler._jupyterhub_user = mock_globus_user
+    monkeypatch.setitem(logout_handler.settings, 'statsd', Mock())
 
+    # Sanity check: Ensure the logout handler and url are set on the hub
+    handlers = [handler for _, handler in authenticator.get_handlers(None)]
+    assert any([h == GlobusLogoutHandler for h in handlers])
+    assert authenticator.logout_url('http://myhost') == 'http://myhost/logout'
+
+    # Test the logout handler uses the custom URL
     authenticator.logout_redirect_url = custom_logout_url
     await logout_handler.get()
     logout_handler.redirect.assert_called_once_with(custom_logout_url)
     assert logout_handler.clear_login_cookie.called
 
 
-async def test_logout_revokes_tokens(monkeypatch):
+async def test_logout_revokes_tokens(monkeypatch, mock_globus_user):
 
-    class User:
-        @gen.coroutine
-        def get_auth_state(self):
-            return {'tokens': {}}
-
-        save_auth_state = Mock()
-        name = 'Wash'
-
-    user = User()
     authenticator = GlobusOAuthenticator()
     logout_handler = mock_handler(GlobusLogoutHandler,
                                   authenticator=authenticator)
@@ -166,10 +187,16 @@ async def test_logout_revokes_tokens(monkeypatch):
         'redirect',
         Mock()
     )
+    logout_handler.get_current_user = Mock(return_value=mock_globus_user)
+    logout_handler._jupyterhub_user = mock_globus_user
+    monkeypatch.setitem(logout_handler.settings, 'statsd', Mock())
+    monkeypatch.setitem(logout_handler.settings, 'login_url', '')
+
     logout_handler.clear_login_cookie = Mock()
     authenticator.revoke_service_tokens = Mock()
     authenticator.revoke_tokens_on_logout = True
 
-    await logout_handler.clear_tokens(user)
+    await logout_handler.get()
     assert authenticator.revoke_service_tokens.called
-    assert user.save_auth_state.called
+    auth_state = await mock_globus_user.get_auth_state()
+    assert auth_state == {'tokens': ''}
