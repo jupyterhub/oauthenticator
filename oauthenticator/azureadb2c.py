@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Azure AD with JupyterHub
+Custom Authenticator to use Azure AD B2C with JupyterHub
 
 """
 
