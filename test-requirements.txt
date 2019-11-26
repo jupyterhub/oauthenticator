@@ -2,7 +2,7 @@
 -r ./globus-requirements.txt
 codecov
 flake8
-mwoauth != 0.3.1
+mwoauth >= 0.3.7
 pytest >= 2.8
 pytest-cov
 pytest-asyncio
