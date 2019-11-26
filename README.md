@@ -8,7 +8,7 @@ OAuth + JupyterHub Authenticator = OAuthenticator
 OAuthenticator currently supports the following authentication services:
 
 - [Auth0](oauthenticator/auth0.py)
-- [Azure](#azure-setup)
+- [Azure AD and AD B2C](#azure-setup)
 - [Bitbucket](oauthenticator/bitbucket.py)
 - [CILogon](oauthenticator/cilogon.py)
 - [GitHub](#github-setup)
@@ -92,8 +92,7 @@ c.MyOAuthenticator.client_id = 'your-client-id'
 c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
 
-## Azure Setup
-
+## Azure AD Setup
 
 #### _Prereqs_:
 
@@ -118,7 +117,6 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 > CLIENT_ID === Azure `Application ID` - found in `Azure portal --> AD --> App Registrations --> App`
 
 > TENANT_ID === Azure `Directory ID` - found in `Azure portal --> AD --> Properties`
-
 
 
 **jupyterhub_config.py:**
@@ -148,6 +146,29 @@ sudo jupyterhub -f ./path/to/jupyterhub_config.py
 
 * [Source Code](oauthenticator/azuread.py)
 
+## Azure AD B2C Setup
+#### _Prereqs_:
+
+* Requires: **`PyJWT>=1.5.3`**
+
+```
+> pip3 install PyJWT
+```
+* BE SURE TO SET THE **`OAUTH_ACCESS_TOKEN_URL`, `OAUTH_AUTHORIZE_URL` and `OAUTH_SCOPE`** environment variables
+
+```
+> export OAUTH_ACCESS_TOKEN_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/token?p=YOUR_POLICY_NAME'
+> export OAUTH_AUTHORIZE_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/authorize?p=YOUR_POLICY_NAME'
+> export OAUTH_SCOPE='openid YOUR_RESOURCE'
+
+```
+#### Sample code
+The sample code can be found at [examples folder](./examples/azureadb2c/)
+* See `run.sh` for setting up environment variables. 
+* See `config.py` for setting up such as client id/secret and add_user_cmd.
+
+#### Source code 
+The source code can be found at [here](oauthenticator/azureadb2c.py).
 
 ## GitHub Setup
 
