@@ -18,7 +18,8 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict, Bool
+from traitlets import Unicode, Dict, Bool, Union
+from .traitlets import Callable
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -55,11 +56,22 @@ class GenericOAuthenticator(OAuthenticator):
         help="Extra parameters for first POST request"
     ).tag(config=True)
 
-    username_key = Unicode(
-        os.environ.get('OAUTH2_USERNAME_KEY', 'username'),
+    username_key = Union(
+        [
+            Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')),
+            Callable()
+        ],
         config=True,
-        help="Userdata username key from returned json for USERDATA_URL"
+        help="""
+        Userdata username key from returned json for USERDATA_URL.
+
+        Can be a string key name or a callable that accepts the returned
+        json (as a dict) and returns the username.  The callable is useful
+        e.g. for extracting the username from a nested object in the
+        response.
+        """
     )
+
     userdata_params = Dict(
         help="Userdata params to get user data login information"
     ).tag(config=True)
@@ -72,7 +84,7 @@ class GenericOAuthenticator(OAuthenticator):
     userdata_token_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_REQUEST_TYPE', 'header'),
         config=True,
-        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header" 
+        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header"
     )
 
     tls_verify = Bool(
@@ -158,12 +170,16 @@ class GenericOAuthenticator(OAuthenticator):
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        if not resp_json.get(self.username_key):
-            self.log.error("OAuth user contains no key %s: %s", self.username_key, resp_json)
-            return
+        if callable(self.username_key):
+            name = self.username_key(resp_json)
+        else:
+            name = resp_json.get(self.username_key)
+            if not name:
+                self.log.error("OAuth user contains no key %s: %s", self.username_key, resp_json)
+                return
 
         return {
-            'name': resp_json.get(self.username_key),
+            'name': name,
             'auth_state': {
                 'access_token': access_token,
                 'refresh_token': refresh_token,

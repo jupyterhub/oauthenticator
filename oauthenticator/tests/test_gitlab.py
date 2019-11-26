@@ -37,9 +37,18 @@ def gitlab_client(client):
     )
     return client
 
+def mock_api_version(client, version):
+    def mock_version_response(request):
+        ret = { 'version': version, 'revision': "f79c1794977" }
+        return HTTPResponse(request, 200,
+                            headers={'Content-Type': 'application/json'},
+                            buffer=BytesIO(json.dumps(ret).encode('utf-8')))
+    regex = re.compile(API_ENDPOINT + '/version')
+    client.hosts['gitlab.com'].append((regex, mock_version_response))
 
 async def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
+    mock_api_version(gitlab_client, '12.3.1-ee')
     handler = gitlab_client.handler_for_user(user_model('wash'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
@@ -58,6 +67,7 @@ def make_link_header(urlinfo, page):
 async def test_group_whitelist(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
+    mock_api_version(client, '12.4.0-ee')
 
     ## set up fake Gitlab API
 
@@ -74,7 +84,7 @@ async def test_group_whitelist(gitlab_client):
                           is_admin)
 
 
-    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all/(.*)')
     def is_member(request):
         urlinfo = urlparse(request.url)
         group, uid = member_regex.match(urlinfo.path).group(1, 2)
@@ -160,6 +170,7 @@ async def test_group_whitelist(gitlab_client):
 async def test_project_id_whitelist(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
+    mock_api_version(client, '12.4.0-pre')
 
     user_projects = {
         '1231231': {
@@ -189,7 +200,7 @@ async def test_project_id_whitelist(gitlab_client):
     harry_user_model = user_model('harry', 3588674)
     sheila_user_model = user_model('sheila', 3588675)
 
-    member_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/(.*)')
+    member_regex = re.compile(API_ENDPOINT + r'/projects/(.*)/members/all/(.*)')
 
     def is_member(request):
         urlinfo = urlparse(request.url)

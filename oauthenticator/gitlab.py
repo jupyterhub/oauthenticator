@@ -8,6 +8,7 @@ based on the GitHub plugin by Kyle Kelley (@rgbkrk)
 
 import json
 import os
+import re
 import sys
 import warnings
 
@@ -87,6 +88,7 @@ class GitLabOAuthenticator(OAuthenticator):
         help="Automatically whitelist members with Developer access to selected project ids",
     )
 
+    gitlab_version = None
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -106,7 +108,6 @@ class GitLabOAuthenticator(OAuthenticator):
             redirect_uri=self.get_callback_url(handler),
         )
 
-
         validate_server_cert = self.validate_server_cert
 
         url = url_concat("%s/oauth/token" % GITLAB_URL,
@@ -123,6 +124,11 @@ class GitLabOAuthenticator(OAuthenticator):
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         access_token = resp_json['access_token']
+
+        # memoize gitlab version for class lifetime
+        if self.gitlab_version is None:
+            self.gitlab_version = await self._get_gitlab_version(access_token)
+            self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
 
         # Determine who the logged in user is
         req = HTTPRequest("%s/user" % GITLAB_API,
@@ -167,13 +173,25 @@ class GitLabOAuthenticator(OAuthenticator):
             self.log.warning("%s not in group or project whitelist", username)
             return None
 
+    async def _get_gitlab_version(self, access_token):
+        url = '%s/version' % GITLAB_API
+        req = HTTPRequest(url,
+                          method="GET",
+                          headers=_api_headers(access_token),
+                          validate_cert=self.validate_server_cert)
+        resp = await AsyncHTTPClient().fetch(req, raise_error=True)
+        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        version_strings = resp_json['version'].split('-')[0].split('.')[:3]
+        version_ints = list(map(int, version_strings))
+        return version_ints
+
 
     async def _check_group_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.gitlab_group_whitelist):
-            url = "%s/groups/%s/members/%d" % (GITLAB_API, group, user_id)
+            url = "%s/groups/%s/members/%s%d" % (GITLAB_API, group, self.member_api_variant, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
             if resp.code == 200:
@@ -186,7 +204,7 @@ class GitLabOAuthenticator(OAuthenticator):
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the whitelist
         for project in self.gitlab_project_id_whitelist:
-            url = "%s/projects/%s/members/%d" % (GITLAB_API, project, user_id)
+            url = "%s/projects/%s/members/%s%d" % (GITLAB_API, project, self.member_api_variant, user_id)
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
 

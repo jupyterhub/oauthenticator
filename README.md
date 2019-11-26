@@ -1,11 +1,15 @@
-# OAuthenticator
+# [OAuthenticator](https://github.com/jupyterhub/oauthenticator)
+
+[![PyPI](https://img.shields.io/pypi/v/oauthenticator.svg)](https://pypi.python.org/pypi/oauthenticator)
+[![Build Status](https://travis-ci.org/jupyterhub/oauthenticator.svg?branch=master)](https://travis-ci.org/jupyterhub/oauthenticator)
 
 OAuth + JupyterHub Authenticator = OAuthenticator
 
 OAuthenticator currently supports the following authentication services:
 
 - [Auth0](oauthenticator/auth0.py)
-- [Azure](#azure-setup)
+- [Azure AD](#azure-ad-setup)
+- [Azure AD B2C](#azure-ad-b2c-setup)
 - [Bitbucket](oauthenticator/bitbucket.py)
 - [CILogon](oauthenticator/cilogon.py)
 - [GitHub](#github-setup)
@@ -89,8 +93,7 @@ c.MyOAuthenticator.client_id = 'your-client-id'
 c.MyOAuthenticator.client_secret = 'your-client-secret'
 ```
 
-## Azure Setup
-
+## Azure AD Setup
 
 #### _Prereqs_:
 
@@ -106,7 +109,7 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 > export AAD_TENANT_ID='{AAD-TENANT-ID}'
 ```
 
-* Sample code is provided for you in `examples > azuread > sample_jupyter_config.py` 
+* Sample code is provided for you in `examples > azuread > sample_jupyter_config.py`
 * Just add the code below to your `jupyterhub_config.py` file
 * Making sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
 
@@ -115,7 +118,6 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 > CLIENT_ID === Azure `Application ID` - found in `Azure portal --> AD --> App Registrations --> App`
 
 > TENANT_ID === Azure `Directory ID` - found in `Azure portal --> AD --> Properties`
-
 
 
 **jupyterhub_config.py:**
@@ -145,6 +147,29 @@ sudo jupyterhub -f ./path/to/jupyterhub_config.py
 
 * [Source Code](oauthenticator/azuread.py)
 
+## Azure AD B2C Setup
+#### _Prereqs_:
+
+* Requires: **`PyJWT>=1.5.3`**
+
+```
+> pip3 install PyJWT
+```
+* BE SURE TO SET THE **`OAUTH_ACCESS_TOKEN_URL`, `OAUTH_AUTHORIZE_URL` and `OAUTH_SCOPE`** environment variables
+
+```
+> export OAUTH_ACCESS_TOKEN_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/token?p=YOUR_POLICY_NAME'
+> export OAUTH_AUTHORIZE_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/authorize?p=YOUR_POLICY_NAME'
+> export OAUTH_SCOPE='openid YOUR_RESOURCE'
+
+```
+#### Sample code
+The sample code can be found at [examples folder](./examples/azureadb2c/)
+* See `run.sh` for setting up environment variables. 
+* See `config.py` for setting up such as client id/secret and add_user_cmd.
+
+#### Source code 
+The source code can be found at [here](oauthenticator/azureadb2c.py).
 
 ## GitHub Setup
 
@@ -180,6 +205,16 @@ You can also use `LocalGitLabOAuthenticator` to map GitLab accounts onto local u
 
 You can use your own GitLab CE/EE instance by setting the `GITLAB_HOST` environment
 flag.
+
+You can restrict access to only accept members of certain projects or groups by setting
+```
+c.GitLabOAuthenticator.gitlab_project_id_whitelist = [ ... ]
+```
+and
+```
+c.GitLabOAuthenticator.gitlab_group_whitelist = [ ... ]
+```
+but be aware that each entry incurs a separate API call, increasing the risk of rate limiting and timeouts.
 
 ## Google Setup
 
@@ -384,3 +419,25 @@ c.GenericOAuthenticator.extra_params = {
 And set your environmental variable `OAUTH2_AUTHORIZE_URL` to:
 
 `http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`
+
+
+## Yandex Setup
+
+First visit [Yandex OAuth](https://oauth.yandex.com) to setup your app. 
+Ensure that __Web services__ is checked (in the __Platform__ section) 
+and make sure the __Callback URI #1__ looks like:
+
+   https://[your-host]/hub/oauth_callback
+
+Choose __Yandex.Passport API__ in Permissions and check these options:
+
+* Access to email address
+* Access to username, first name and surname
+
+Set the above settings in your `jupyterhub_config.py`:
+
+```python
+c.JupyterHub.authenticator_class = 'oauthenticator.yandex.YandexPassportOAuthenticator'
+c.YandexPassportOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
+c.YandexPassportOAuthenticator.client_id = '[your app ID]'
+c.YandexPassportOAuthenticator.client_secret = '[your app Password]'
