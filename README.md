@@ -8,7 +8,8 @@ OAuth + JupyterHub Authenticator = OAuthenticator
 OAuthenticator currently supports the following authentication services:
 
 - [Auth0](oauthenticator/auth0.py)
-- [Azure AD and AD B2C](#azure-setup)
+- [Azure AD](#azure-ad-setup)
+- [Azure AD B2C](#azure-ad-b2c-setup)
 - [Bitbucket](oauthenticator/bitbucket.py)
 - [CILogon](oauthenticator/cilogon.py)
 - [GitHub](#github-setup)
