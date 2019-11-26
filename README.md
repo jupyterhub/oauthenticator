@@ -419,3 +419,25 @@ c.GenericOAuthenticator.extra_params = {
 And set your environmental variable `OAUTH2_AUTHORIZE_URL` to:
 
 `http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`
+
+
+## Yandex Setup
+
+First visit [Yandex OAuth](https://oauth.yandex.com) to setup your app. 
+Ensure that __Web services__ is checked (in the __Platform__ section) 
+and make sure the __Callback URI #1__ looks like:
+
+   https://[your-host]/hub/oauth_callback
+
+Choose __Yandex.Passport API__ in Permissions and check these options:
+
+* Access to email address
+* Access to username, first name and surname
+
+Set the above settings in your `jupyterhub_config.py`:
+
+```python
+c.JupyterHub.authenticator_class = 'oauthenticator.yandex.YandexPassportOAuthenticator'
+c.YandexPassportOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
+c.YandexPassportOAuthenticator.client_id = '[your app ID]'
+c.YandexPassportOAuthenticator.client_secret = '[your app Password]'
