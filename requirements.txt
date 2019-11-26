@@ -1,2 +1,2 @@
 jupyterhub>=0.5
-pyjwt==1.7.1
+pyjwt
