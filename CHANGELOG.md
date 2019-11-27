@@ -8,14 +8,13 @@ command line for details.
 
 ## [Unreleased]
 
-- fix GitLab login for inherited group or project members. Requires GitLab 12.4 or newer, falls back to previous behavior for older versions.
-
 ## 0.10
 
-### [0.10.0] - 2019-??-??
+### [0.10.0] - 2019-11-27
 
 #### New
 
+* Add AzureAdB2COAuthenticator [#307](https://github.com/jupyterhub/oauthenticator/pull/307) ([@linkcd](https://github.com/linkcd))
 * Add support for `GenericOAuthenticator.username_key` to hold a callable value [#305](https://github.com/jupyterhub/oauthenticator/pull/305) ([@eslavich](https://github.com/eslavich))
 * Add `AzureAdOAuthenticator.username_claim` config field [#280](https://github.com/jupyterhub/oauthenticator/pull/280) ([@jeff-sternberg](https://github.com/jeff-sternberg))
 * Add `AWSCognitoAuthenticator` [#269](https://github.com/jupyterhub/oauthenticator/pull/269) ([@jmartinc89](https://github.com/jmartinc89))
@@ -24,10 +23,11 @@ command line for details.
 
 * mediawiki: utf-8 > binary strings, req. mwoauth>=0.3.7 [#297](https://github.com/jupyterhub/oauthenticator/pull/297) ([@consideRatio](https://github.com/consideRatio))
 * Fixed Globus Logout Handler, added test [#288](https://github.com/jupyterhub/oauthenticator/pull/288) ([@NickolausDS](https://github.com/NickolausDS))
-* Include inherited members in GitLab auth checks [#283](https://github.com/jupyterhub/oauthenticator/pull/283) ([@vindvaki](https://github.com/vindvaki))
+* Include inherited members in GitLab auth checks, requires GitLab 12.4 or newer, but will fall back to previous behavior for older GitLab versions. [#283](https://github.com/jupyterhub/oauthenticator/pull/283) ([@vindvaki](https://github.com/vindvaki))
 
 #### Maintenance
 
+* Fixed content index in readme, and fixed typo in comments [#310](https://github.com/jupyterhub/oauthenticator/pull/310) ([@linkcd](https://github.com/linkcd))
 * Add scopes documentation to auth0 example [#303](https://github.com/jupyterhub/oauthenticator/pull/303) ([@jbradenbrown](https://github.com/jbradenbrown))
 * Add py3.8 for CI testing [#302](https://github.com/jupyterhub/oauthenticator/pull/302) ([@consideRatio](https://github.com/consideRatio))
 * [MRG] Travis: Deploy releases to pypi [#301](https://github.com/jupyterhub/oauthenticator/pull/301) ([@manics](https://github.com/manics))
