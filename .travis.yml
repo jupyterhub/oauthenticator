@@ -42,3 +42,7 @@ jobs:
         user: __token__
         # password: see secret PYPI_PASSWORD variable
         distributions: sdist bdist_wheel
+        on:
+          # Without this we get the note about:
+          # Skipping a deployment with the pypi provider because this branch is not permitted: <tag>
+          tags: true
