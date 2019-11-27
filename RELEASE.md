@@ -67,6 +67,12 @@ For you to follow along according to these instructions, you need:
    commits on master.
 
    ```shell
+   # first push without tags to ensure the commits comes
+   # through, because a tag can otherwise be pushed all
+   # alone without company of rejected commits
+   git push $ORIGIN master
+
+   # if no rebasing etc was needed, push the tags on the master branch
    git push --follow-tags $ORIGIN master
    ```
 
