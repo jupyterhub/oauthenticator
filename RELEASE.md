@@ -30,12 +30,19 @@ For you to follow along according to these instructions, you need:
    utility.
 
 1. Set the `version_info` variable in [_version.py](oauthenticator/_version.py)
-   appropriately and make a commit with message `release <tag>`.
+   appropriately and make a commit.
+
+   ```
+   git add oauthenticator/_version.py
+   VERSION=...  # e.g. 1.2.3
+   git commit -m "release $VERSION"
+   ```
+
 
 1. Create a git tag for the commit.
 
    ```shell
-   git tag -a $TAG -m $TAG
+   git tag -a $VERSION -m $VERSION
    ```
 
 1. Package the release
@@ -49,8 +56,12 @@ For you to follow along according to these instructions, you need:
    ```
 
 1. Reset the `version_info` variable in
-   [_version.py](oauthenticator/_version.py) appropriately with a `dev` element
-   and make a commit with the message `back to dev`.
+   [_version.py](oauthenticator/_version.py) appropriately with an incremented
+   patch version and a `dev` element, then make a commit.
+   ```
+   git add oauthenticator/_version.py
+   git commit -m "back to dev"
+   ```
 
 1. Push your two commits to master along with the annotated tags referencing
    commits on master.
