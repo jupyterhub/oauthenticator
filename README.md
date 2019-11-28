@@ -464,3 +464,4 @@ c.JupyterHub.authenticator_class = 'oauthenticator.yandex.YandexPassportOAuthent
 c.YandexPassportOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
 c.YandexPassportOAuthenticator.client_id = '[your app ID]'
 c.YandexPassportOAuthenticator.client_secret = '[your app Password]'
+```
