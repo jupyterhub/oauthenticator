@@ -6,7 +6,11 @@ jobs:
     steps:
       - checkout
 
-      # Install documentation requirements
+      - run:
+          name: Install oauthenticator
+          command: |
+            sudo pip install .
+
       - run:
           name: Install docs dependencies
           command: |
