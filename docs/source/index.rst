@@ -36,8 +36,11 @@ but you can write your own OAuthenticator by subclassing :class:`oauthenticator.
    :caption: Contents:
 
    getting-started
-   api/index
+   github
+   gitlab
+   cilogon
    writing-an-oauthenticator
+   api/index
    changelog
 
 
