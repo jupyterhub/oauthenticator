@@ -3,14 +3,41 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to OAuthenticator's documentation!
-==========================================
+OAuthenticator = OAuth for JupyterHub
+=====================================
+
+This is the documentation for OAuthenticator |version|.
+
+OAuthenticator provides plugins for JupyterHub to use common OAuth providers,
+as well as base classes for writing your own Authenticators with any OAuth 2.0 provider.
+
+
+Install oauthenticator:
+
+.. sourcecode:: bash
+
+   python3 -m pip install oauthenticator
+   # or
+   conda install oauthenticator
+
+See :doc:`getting-started` for getting started with OAuthenticator.
+
+The OAuthenticator package is not accepting new OAuth providers,
+but you can write your own OAuthenticator by subclassing :class:`oauthenticator.oauth2.OAuthenticator`
+
+.. seealso::
+
+    :doc:`writing-an-oauthenticator`
+
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   api/index.rst
+   getting-started
+   api/index
+   writing-an-oauthenticator
 
 
 
