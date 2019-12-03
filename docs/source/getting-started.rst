@@ -31,7 +31,7 @@ OAuthenticator currently supports the following authentication services:
 -  `Okpy <#okpyauthenticator>`__
 -  `OpenShift <#openshift-setup>`__
 
-A :ref:`generic implementation <oauthenticator.generic.GenericOAuthenticator>`, which you can
+A `generic implementation <oauthenticator.generic.GenericOAuthenticator>`, which you can
 use with any provider, is also available.
 
 Examples
@@ -122,7 +122,7 @@ Azure AD Setup
 --------------
 
 *Prereqs*:
-^^^^^^^^^^
+~~~~~~~~~~
 
 -  Requires: **``PyJWT>=1.5.3``**
 
@@ -142,17 +142,15 @@ Azure AD Setup
 -  Making sure to replace the values in ``'{}'`` with your APP, TENANT,
    DOMAIN, etc. values
 
-..
 
-   **Follow this\ **\ `link to create an AAD
-   APP <https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/>`__
 
-   CLIENT_ID === Azure ``Application ID`` - found in
+Follow this `link to create an AAD
+APP <https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/>`__
+
+- CLIENT_ID === Azure ``Application ID`` - found in
    ``Azure portal --> AD --> App Registrations --> App``
 
-..
-
-   TENANT_ID === Azure ``Directory ID`` - found in
+- TENANT_ID === Azure ``Directory ID`` - found in
    ``Azure portal --> AD --> Properties``
 
 **jupyterhub_config.py:**
@@ -172,15 +170,13 @@ Azure AD Setup
    c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 
 *Run via*:
-^^^^^^^^^^
+~~~~~~~~~~
 
 ::
 
    sudo jupyterhub -f ./path/to/jupyterhub_config.py
 
-..
-
-   See ``run.sh`` for an `example <./examples/azuread/>`__
+See ``run.sh`` for an `example <./examples/azuread/>`__
 
 -  `Source Code <oauthenticator/azuread.py>`__
 
@@ -190,7 +186,7 @@ Azure AD B2C Setup
 .. _prereqs-1:
 
 *Prereqs*:
-^^^^^^^^^^
+~~~~~~~~~~
 
 -  Requires: **``PyJWT>=1.5.3``**
 
@@ -208,7 +204,7 @@ Azure AD B2C Setup
    > export OAUTH_SCOPE='openid YOUR_RESOURCE'
 
 Sample code
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 The sample code can be found at `examples
 folder <./examples/azureadb2c/>`__ \* See ``run.sh`` for setting up
@@ -216,7 +212,7 @@ environment variables. \* See ``config.py`` for setting up such as
 client id/secret and add_user_cmd.
 
 Source code
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 The source code can be found at `here <oauthenticator/azureadb2c.py>`__.
 
