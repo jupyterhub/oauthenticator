@@ -23,6 +23,81 @@ project = 'OAuthenticator'
 copyright = 'Jupyter Contributors'
 author = 'Jupyter Contributors'
 
+import oauthenticator
+
+# The short X.Y version.
+version = '%i.%i' % oauthenticator.version_info[:2]
+# The full version, including alpha/beta/rc tags.
+release = oauthenticator.__version__
+
+
+# -- generate autodoc classes from entrypoints
+
+from collections import defaultdict
+
+import entrypoints
+import jinja2
+
+
+def render_autodoc_modules():
+    authenticator_entrypoints = entrypoints.get_group_named(
+        "jupyterhub.authenticators"
+    ).values()
+
+    api = os.path.join(source, "api")
+    api_gen = os.path.join(api, "gen")
+
+    # modules is a dict of dicts of lists
+    # { '$module': { 'classes': [...], 'configurables': [...] } }
+
+    modules = defaultdict(lambda : defaultdict(list))
+
+    # pre-load base classes
+    modules['oauthenticator.oauth2'] = {
+        'classes': [
+            'OAuthLoginHandler',
+            'OAuthCallbackHandler',
+        ],
+        'configurables': [
+            'OAuthenticator',
+        ],
+    }
+
+    # load Authenticator classes from entrypoints
+    for ep in authenticator_entrypoints:
+        if ep.module_name and ep.module_name.startswith('oauthenticator.'):
+            modules[ep.module_name]['configurables'].append(ep.object_name)
+
+    with open(os.path.join(api, "authenticator.rst.tpl")) as f:
+        tpl = jinja2.Template(f.read())
+
+    try:
+        os.makedirs(os.path.join(api_gen))
+    except FileExistsError:
+        pass
+
+    for mod, mod_content in modules.items():
+        dest = os.path.join(api_gen, mod + ".rst")
+        print(
+            "Autogenerating module documentation in {} with classes: {}".format(
+                dest, mod_content
+            )
+        )
+
+        with open(dest, "w") as f:
+            f.write(tpl.render(module=mod, **mod_content))
+
+    # render the module index
+    with open(os.path.join(api, "index.rst.tpl")) as f:
+        index_tpl = jinja2.Template(f.read())
+
+    with open(os.path.join(api, "index.rst"), "w") as f:
+        f.write(index_tpl.render(modules=modules))
+
+
+render_autodoc_modules()
+
+autodoc_mock_imports = ["tornado", "jwt", "mwoauth", "globus_sdk"]
 
 # -- General configuration ---------------------------------------------------
 
@@ -31,6 +106,7 @@ author = 'Jupyter Contributors'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'autodoc_traits',
@@ -48,15 +124,15 @@ exclude_patterns = []
 
 import recommonmark
 from recommonmark.transform import AutoStructify
+from recommonmark.parser import CommonMarkParser
 
 
 def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
     app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
+    app.add_source_parser(CommonMarkParser)
 
-
-source_parsers = {'.md': 'recommonmark.parser.CommonMarkParser'}
 
 source_suffix = ['.rst', '.md']
 
