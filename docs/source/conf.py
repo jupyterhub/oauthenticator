@@ -124,16 +124,17 @@ exclude_patterns = []
 
 import recommonmark
 from recommonmark.transform import AutoStructify
-from recommonmark.parser import CommonMarkParser
 
 
 def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
     app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
-    app.add_source_parser(CommonMarkParser)
 
 
+source_parsers = {
+   '.md': 'recommonmark.parser.CommonMarkParser',
+}
 source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output -------------------------------------------------

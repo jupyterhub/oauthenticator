@@ -38,6 +38,7 @@ but you can write your own OAuthenticator by subclassing :class:`oauthenticator.
    getting-started
    api/index
    writing-an-oauthenticator
+   changelog
 
 
 
