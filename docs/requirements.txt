@@ -1,0 +1,8 @@
+# ReadTheDocs uses the `environment.yaml` so make sure to update that as well
+# if you change this file
+-r ../requirements.txt
+autodoc-traits
+git+https://github.com/pandas-dev/pandas-sphinx-theme.git@master
+recommonmark==0.6.0
+sphinx-copybutton
+sphinx>=1.7

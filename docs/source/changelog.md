@@ -30,7 +30,7 @@ command line for details.
 * Fixed content index in readme, and fixed typo in comments [#310](https://github.com/jupyterhub/oauthenticator/pull/310) ([@linkcd](https://github.com/linkcd))
 * Add scopes documentation to auth0 example [#303](https://github.com/jupyterhub/oauthenticator/pull/303) ([@jbradenbrown](https://github.com/jbradenbrown))
 * Add py3.8 for CI testing [#302](https://github.com/jupyterhub/oauthenticator/pull/302) ([@consideRatio](https://github.com/consideRatio))
-* [MRG] Travis: Deploy releases to pypi [#301](https://github.com/jupyterhub/oauthenticator/pull/301) ([@manics](https://github.com/manics))
+* Travis: Deploy releases to pypi [#301](https://github.com/jupyterhub/oauthenticator/pull/301) ([@manics](https://github.com/manics))
 * Disable MediaWiki's mwoauth==0.3.5 due to a regression [#295](https://github.com/jupyterhub/oauthenticator/pull/295) ([@consideRatio](https://github.com/consideRatio))
 * Add RELEASE.md [#294](https://github.com/jupyterhub/oauthenticator/pull/294) ([@consideRatio](https://github.com/consideRatio))
 * Add PyPI/Travis build badges to README.md [#293](https://github.com/jupyterhub/oauthenticator/pull/293) ([@consideRatio](https://github.com/consideRatio))
@@ -126,7 +126,7 @@ The same fix is backported to 0.6.2.
   ```
 
   auth_state can be passed to Spawners by defining a `.pre_spawn_start` method.
-  See [examples/auth_state](examples/auth_state) for an example.
+  See examples/auth_state for an example.
 - All OAuthenticators have a `.scope` trait, which is a list of string scopes to request.
   See your OAuth provider's documentation for what scopes you may want.
   This is useful in conjunction with `auth_state`, which may be used to pass access tokens

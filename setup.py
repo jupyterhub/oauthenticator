@@ -80,7 +80,6 @@ setup_args = dict(
             'local-google = oauthenticator.google:LocalGoogleOAuthenticator',
 
             'mediawiki = oauthenticator.mediawiki:MWOAuthenticator',
-            'local-mediawiki = oauthenticator.mediawiki:LocalMWOAuthenticator',
 
             'okpy = oauthenticator.okpy:OkpyOAuthenticator',
             'local-okpy = oauthenticator.okpy:LocalOkpyOAuthenticator',
