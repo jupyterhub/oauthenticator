@@ -18,7 +18,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode, Bool, List
+from traitlets import Unicode, Bool, List, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -67,6 +67,10 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     @property
     def _OAUTH_ACCESS_TOKEN_URL(self):
         return self.authenticator.access_token_url
+
+    @property
+    def _OAUTH_USERINFO_URL(self):
+        return self.authenticator.userdata_url
 
     def set_state_cookie(self, state):
         self.set_secure_cookie(STATE_COOKIE_NAME, state, expires_days=1, httponly=True)
@@ -223,15 +227,28 @@ class OAuthenticator(Authenticator):
     authenticate (method takes one arg - the request handler handling the oauth callback)
     """
 
-    authenticate_url = Unicode(
-        "must-be-set", config=True, help="""The authenticate url for initiating oauth"""
+    authorize_url = Unicode(
+        config=True, help="""The authenticate url for initiating oauth"""
     )
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return os.environ.get("OAUTH2_AUTHORIZE_URL", "")
 
     access_token_url = Unicode(
-        "must-be-set",
         config=True,
         help="""The url retrieving an access token at the completion of oauth""",
     )
+    @default("access_token_url")
+    def _access_token_url_default(self):
+        return os.environ.get("OAUTH2_TOKEN_URL", "")
+
+    userdata_url = Unicode(
+        config=True,
+        help="""The url for retrieving user data with a completed access token""",
+    )
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return os.environ.get("OAUTH2_USERDATA_URL", "")
 
     scope = List(
         Unicode(),
