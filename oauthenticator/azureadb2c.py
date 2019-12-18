@@ -1,1 +1,1 @@
-raise ImportError("Azure AD B2C can be configured via GenericOAuthenticator")
+raise ImportError("Azure AD B2C can be configured via AzureAdOAuthenticator")

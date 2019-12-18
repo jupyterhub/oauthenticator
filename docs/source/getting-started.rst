@@ -179,36 +179,6 @@ See ``run.sh`` for an `example <./examples/azuread/>`__
 
 -  `Source Code <oauthenticator/azuread.py>`__
 
-Azure AD B2C Setup
-------------------
-
-.. _prereqs-1:
-
-*Prereqs*:
-~~~~~~~~~~
-
--  Requires: **``PyJWT>=1.5.3``**
-
-::
-
-   > pip3 install PyJWT
-
--  BE SURE TO SET THE **``OAUTH_ACCESS_TOKEN_URL``,
-   ``OAUTH_AUTHORIZE_URL`` and ``OAUTH_SCOPE``** environment variables
-
-::
-
-   > export OAUTH_ACCESS_TOKEN_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/token?p=YOUR_POLICY_NAME'
-   > export OAUTH_AUTHORIZE_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/authorize?p=YOUR_POLICY_NAME'
-   > export OAUTH_SCOPE='openid YOUR_RESOURCE'
-
-Sample code
-~~~~~~~~~~~
-
-The sample code can be found at `examples
-folder <./examples/azureadb2c/>`__ \* See ``run.sh`` for setting up
-environment variables. \* See ``config.py`` for setting up such as
-client id/secret and add_user_cmd.
 
 Source code
 ~~~~~~~~~~~
