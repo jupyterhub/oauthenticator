@@ -4,39 +4,24 @@ from unittest.mock import Mock
 from pytest import fixture, mark, raises
 from tornado.web import Application, HTTPError
 
-from ..google import GoogleOAuthenticator, GoogleOAuthHandler
+from ..google import GoogleOAuthenticator
 
 from .mocks import setup_oauth_mock
 
 
 def user_model(email):
     """Return a user model"""
-    return {
-        'email': email,
-        'hd': email.split('@')[1],
-        'verified_email': True
-    }
+    return {'email': email, 'hd': email.split('@')[1], 'verified_email': True}
 
 
 @fixture
 def google_client(client):
-    setup_oauth_mock(client,
+    setup_oauth_mock(
+        client,
         host=['accounts.google.com', 'www.googleapis.com'],
         access_token_path=re.compile('^(/o/oauth2/token|/oauth2/v4/token)$'),
         user_path='/oauth2/v1/userinfo',
     )
-    original_handler_for_user = client.handler_for_user
-    # testing Google is harder because it invokes methods inherited from tornado
-    # classes
-    def handler_for_user(user):
-        mock_handler = original_handler_for_user(user)
-        mock_handler.request.connection = Mock()
-        real_handler = GoogleOAuthHandler(
-            application=Application(hub=mock_handler.hub),
-            request=mock_handler.request,
-        )
-        return real_handler
-    client.handler_for_user = handler_for_user
     return client
 
 
