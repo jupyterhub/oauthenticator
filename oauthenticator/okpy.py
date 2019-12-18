@@ -12,58 +12,62 @@ from traitlets import default
 
 from jupyterhub.auth import LocalAuthenticator
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
-
-OKPY_USER_URL = "https://okpy.org/api/v3/user"
-OKPY_ACCESS_TOKEN_URL = "https://okpy.org/oauth/token"
-OKPY_AUTHORIZE_URL =  "https://okpy.org/oauth/authorize"
-
-
-class OkpyMixin(OAuth2Mixin):
-    _OAUTH_ACCESS_TOKEN_URL = OKPY_ACCESS_TOKEN_URL
-    _OAUTH_AUTHORIZE_URL = OKPY_AUTHORIZE_URL
-
-
-class OkpyLoginHandler(OAuthLoginHandler, OkpyMixin):
-    pass
+from .oauth2 import OAuthenticator
 
 
 class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
-    login_service = "Okpy"
-    login_handler = OkpyLoginHandler
-    
+    login_service = "OK"
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://okpy.org/oauth/authorize"
+
+    @default("access_token_url")
+    def _access_token_url_default(self):
+        return "https://okpy.org/oauth/token"
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "https://okpy.org/api/v3/user"
+
     @default('scope')
     def _default_scope(self):
         return ['email']
 
     def get_auth_request(self, code):
         params = dict(
-            redirect_uri = self.oauth_callback_url,
-            code = code,
-            grant_type = 'authorization_code'
+            redirect_uri=self.oauth_callback_url,
+            code=code,
+            grant_type='authorization_code',
         )
-        b64key = a2b_base64("{}:{}".format(self.client_id, self.client_secret)).decode('ascii')
-        url = url_concat(OKPY_ACCESS_TOKEN_URL, params)
-        req = HTTPRequest(url,
-                method = "POST",
-                headers = { "Accept": "application/json",
-                            "User-Agent": "JupyterHub",
-                            "Authorization": "Basic {}".format(b64key),
-                          },
-                body = '' # Body is required for a POST...
+        b64key = a2b_base64("{}:{}".format(self.client_id, self.client_secret)).decode(
+            'ascii'
+        )
+        url = url_concat(self.access_token_url, params)
+        req = HTTPRequest(
+            url,
+            method="POST",
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "JupyterHub",
+                "Authorization": "Basic {}".format(b64key),
+            },
+            body='',  # Body is required for a POST...
         )
         return req
 
     def get_user_info_request(self, access_token):
-        headers = {"Accept": "application/json",
-                   "User-Agent": "JupyterHub",
-                   "Authorization": "Bearer {}".format(access_token)}
-        params = {"envelope" : "false"}
-        url = url_concat(OKPY_USER_URL, params)
-        req = HTTPRequest(url, method = "GET", headers = headers)
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "Bearer {}".format(access_token),
+        }
+        params = {"envelope": "false"}
+        url = url_concat(self.userdata_url, params)
+        req = HTTPRequest(url, method="GET", headers=headers)
         return req
 
-    async def authenticate(self, handler, data = None):
+    async def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
         if not code:
             raise web.HTTPError(400, "Authentication Cancelled.")
@@ -80,12 +84,11 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         # TODO: preserve state in auth_state when JupyterHub supports encrypted auth_state
         return {
             'name': user['email'],
-            'auth_state': {
-                'access_token': access_token,
-                'okpy_user': user,
-            }
+            'auth_state': {'access_token': access_token, 'okpy_user': user},
         }
+
 
 class LocalOkpyOAuthenticator(LocalAuthenticator, OkpyOAuthenticator):
     """A version that mixes in local system user creation"""
+
     pass
