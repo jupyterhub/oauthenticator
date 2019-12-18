@@ -50,8 +50,8 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return "%s/oauth/authorize" % self.openshift_auth_api_url
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "%s/oauth/token" % self.openshift_auth_api_url
 
     @default("userdata_url")
@@ -74,7 +74,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             code=code,
         )
 
-        url = url_concat(self.access_token_url, params)
+        url = url_concat(self.token_url, params)
 
         req = HTTPRequest(
             url,

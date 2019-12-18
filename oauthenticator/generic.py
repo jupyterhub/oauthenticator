@@ -26,15 +26,6 @@ class GenericOAuthenticator(OAuthenticator):
 
     login_service = Unicode("OAuth 2.0", config=True)
 
-    token_url = Unicode(config=True, help="DEPRECATED. Use access_token_url")
-
-    @observe("token_url")
-    def _token_url_changed(self, change):
-        self.log.warning(
-            "GenericOAuthenticator.token_url is deprecated. Use OAuthenticator.access_token_url"
-        )
-        self.access_token_url = change.new
-
     extra_params = Dict(help="Extra parameters for first POST request").tag(config=True)
 
     username_key = Union(
@@ -89,8 +80,8 @@ class GenericOAuthenticator(OAuthenticator):
         )
         params.update(self.extra_params)
 
-        if self.access_token_url:
-            url = self.access_token_url
+        if self.token_url:
+            url = self.token_url
         else:
             raise ValueError("Please set the $OAUTH2_TOKEN_URL environment variable")
 

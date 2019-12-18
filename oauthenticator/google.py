@@ -30,8 +30,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def _authorize_url_default(self):
         return "https://accounts.google.com/o/oauth2/v2/auth"
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "https://www.googleapis.com/oauth2/v4/token"
 
     user_info_url = Unicode(
@@ -87,7 +87,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         http_client = AsyncHTTPClient()
 
         response = await http_client.fetch(
-            self.access_token_url,
+            self.token_url,
             method="POST",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             body=body,

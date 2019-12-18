@@ -56,8 +56,8 @@ class CILogonOAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return "https://%s/authorize" % self.cilogon_host
 
-    @default("access_token_url")
-    def _access_token_url(self):
+    @default("token_url")
+    def _token_url(self):
         return "https://%s/oauth2/token" % self.cilogon_host
 
     scope = List(
@@ -147,7 +147,7 @@ class CILogonOAuthenticator(OAuthenticator):
             grant_type='authorization_code',
         )
 
-        url = url_concat(self.access_token_url, params)
+        url = url_concat(self.token_url, params)
 
         req = HTTPRequest(url, headers=headers, method="POST", body='')
 

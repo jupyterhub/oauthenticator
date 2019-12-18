@@ -22,8 +22,8 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
     def _authorize_url_default(self):
         return "https://okpy.org/oauth/authorize"
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "https://okpy.org/oauth/token"
 
     @default("userdata_url")
@@ -43,7 +43,7 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         b64key = a2b_base64("{}:{}".format(self.client_id, self.client_secret)).decode(
             'ascii'
         )
-        url = url_concat(self.access_token_url, params)
+        url = url_concat(self.token_url, params)
         req = HTTPRequest(
             url,
             method="POST",

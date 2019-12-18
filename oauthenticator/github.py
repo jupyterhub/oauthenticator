@@ -1,9 +1,5 @@
 """
-Custom Authenticator to use GitHub OAuth with JupyterHub
-
-Most of the code c/o Kyle Kelley (@rgbkrk)
-
-Extended use of GH attributes by Adam Thornton (athornton@lsst.org)
+Authenticator to use GitHub OAuth with JupyterHub
 """
 
 
@@ -92,8 +88,8 @@ class GitHubOAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return "%s/login/oauth/authorize" % (self.github_url)
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "%s/login/oauth/access_token" % (self.github_url)
 
     # deprecated names
@@ -133,7 +129,7 @@ class GitHubOAuthenticator(OAuthenticator):
             client_id=self.client_id, client_secret=self.client_secret, code=code
         )
 
-        url = url_concat(self.access_token_url, params)
+        url = url_concat(self.token_url, params)
 
         req = HTTPRequest(
             url,

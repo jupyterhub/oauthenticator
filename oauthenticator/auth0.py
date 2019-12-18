@@ -62,8 +62,8 @@ class Auth0OAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return "https://%s.auth0.com/authorize" % self.auth0_subdomain
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "https://%s.auth0.com/oauth/token" % self.auth0_subdomain
 
     async def authenticate(self, handler, data=None):
@@ -78,7 +78,7 @@ class Auth0OAuthenticator(OAuthenticator):
             'code': code,
             'redirect_uri': self.get_callback_url(handler),
         }
-        url = self.access_token_url
+        url = self.token_url
 
         req = HTTPRequest(
             url,

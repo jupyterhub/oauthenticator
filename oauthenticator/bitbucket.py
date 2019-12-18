@@ -36,8 +36,8 @@ class BitbucketOAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return "https://bitbucket.org/site/oauth2/authorize"
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "https://bitbucket.org/site/oauth2/access_token"
 
     team_whitelist = Set(

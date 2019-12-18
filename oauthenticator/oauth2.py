@@ -66,7 +66,7 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
 
     @property
     def _OAUTH_ACCESS_TOKEN_URL(self):
-        return self.authenticator.access_token_url
+        return self.authenticator.token_url
 
     @property
     def _OAUTH_USERINFO_URL(self):
@@ -234,12 +234,12 @@ class OAuthenticator(Authenticator):
     def _authorize_url_default(self):
         return os.environ.get("OAUTH2_AUTHORIZE_URL", "")
 
-    access_token_url = Unicode(
+    token_url = Unicode(
         config=True,
         help="""The url retrieving an access token at the completion of oauth""",
     )
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return os.environ.get("OAUTH2_TOKEN_URL", "")
 
     userdata_url = Unicode(

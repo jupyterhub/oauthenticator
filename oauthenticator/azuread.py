@@ -1,6 +1,5 @@
 """
 Custom Authenticator to use Azure AD with JupyterHub
-
 """
 
 import json
@@ -43,8 +42,8 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(self.tenant_id)
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(self.tenant_id)
 
     async def authenticate(self, handler, data=None):
@@ -62,7 +61,7 @@ class AzureAdOAuthenticator(OAuthenticator):
         data = urllib.parse.urlencode(
             params, doseq=True, encoding='utf-8', safe='=')
 
-        url = self.access_token_url
+        url = self.token_url
 
         headers = {
             'Content-Type':

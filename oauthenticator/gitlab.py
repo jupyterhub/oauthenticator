@@ -1,8 +1,5 @@
 """
 Custom Authenticator to use GitLab OAuth with JupyterHub
-
-Modified for GitLab by Laszlo Dobos (@dobos)
-based on the GitHub plugin by Kyle Kelley (@rgbkrk)
 """
 
 
@@ -91,8 +88,8 @@ class GitLabOAuthenticator(OAuthenticator):
     def _authorize_url_default(self):
         return "%s/oauth/authorize" % self.gitlab_url
 
-    @default("access_token_url")
-    def _access_token_url_default(self):
+    @default("token_url")
+    def _token_url_default(self):
         return "%s/oauth/access_token" % self.gitlab_url
 
     gitlab_group_whitelist = Set(
