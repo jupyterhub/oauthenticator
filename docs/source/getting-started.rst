@@ -19,7 +19,6 @@ OAuthenticator currently supports the following authentication services:
 
 -  `Auth0 <oauthenticator/auth0.py>`__
 -  `Azure AD <#azure-ad-setup>`__
--  `Azure AD B2C <#azure-ad-b2c-setup>`__
 -  `Bitbucket <oauthenticator/bitbucket.py>`__
 -  `CILogon <oauthenticator/cilogon.py>`__
 -  `GitHub <#github-setup>`__
@@ -507,8 +506,7 @@ Use the ``GenericOAuthenticator`` for Jupyterhub by editing your
 
 .. code:: python
 
-   from oauthenticator.generic import GenericOAuthenticator
-   c.JupyterHub.authenticator_class = GenericOAuthenticator
+   c.JupyterHub.authenticator_class = "generic"
 
    c.GenericOAuthenticator.oauth_callback_url = 'http://YOUR-JUPYTERHUB.com/hub/oauth_callback'
    c.GenericOAuthenticator.client_id = 'MOODLE-CLIENT-ID'
@@ -542,12 +540,18 @@ Choose **Yandex.Passport API** in Permissions and check these options:
 
 Set the above settings in your ``jupyterhub_config.py``:
 
-\```python c.JupyterHub.authenticator_class =
-‘oauthenticator.yandex.YandexPassportOAuthenticator’
-c.YandexPassportOAuthenticator.oauth_callback_url =
-‘https://[your-host]/hub/oauth_callback’
-c.YandexPassportOAuthenticator.client_id = ‘[your app ID]’
-c.YandexPassportOAuthenticator.client_secret = ‘[your app Password]’
+.. code:: python
+
+   c.JupyterHub.authenticator_class = "generic"
+   c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
+   c.OAuthenticator.client_id = "[your app ID]""
+   c.OAuthenticator.client_secret = "[your app Password]"
+
+   c.GenericOAuthenticator.login_service = "Yandex.Passport"
+   c.GenericOAuthenticator.username_key = "login"
+   c.GenericOAuthenticator.authorize_url = "https://oauth.yandex.ru/authorize"
+   c.GenericOAuthenticator.token_url = "https://oauth.yandex.ru/token"
+   c.GenericOAuthenticator.userdata_url = "https://login.yandex.ru/info"
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/oauthenticator.svg
    :target: https://pypi.python.org/pypi/oauthenticator
