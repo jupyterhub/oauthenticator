@@ -36,26 +36,35 @@ from tornado.auth import OAuth2Mixin
 from tornado import web
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
+from traitlets import Unicode, default
+
 from jupyterhub.auth import LocalAuthenticator
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
-
-AUTH0_SUBDOMAIN = os.getenv('AUTH0_SUBDOMAIN')
-
-class Auth0Mixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "https://%s.auth0.com/authorize" % AUTH0_SUBDOMAIN
-    _OAUTH_ACCESS_TOKEN_URL = "https://%s.auth0.com/oauth/token" % AUTH0_SUBDOMAIN
-
-
-class Auth0LoginHandler(OAuthLoginHandler, Auth0Mixin):
-    pass
 
 
 class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
 
-    login_handler = Auth0LoginHandler
+    auth0_subdomain = Unicode(config=True)
+
+    @default("auth0_subdomain")
+    def _auth0_subdomain_default(self):
+        subdomain = os.getenv("AUTH0_SUBDOMAIN")
+        if not subdomain:
+            raise ValueError(
+                "Please specify $AUTH0_SUBDOMAIN env or %s.auth0_subdomain config"
+                % self.__class__.__name__
+            )
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://%s.auth0.com/authorize" % self.auth0_subdomain
+
+    @default("access_token_url")
+    def _access_token_url_default(self):
+        return "https://%s.auth0.com/oauth/token" % self.auth0_subdomain
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -66,16 +75,17 @@ class Auth0OAuthenticator(OAuthenticator):
             'grant_type': 'authorization_code',
             'client_id': self.client_id,
             'client_secret': self.client_secret,
-            'code':code,
-            'redirect_uri': self.get_callback_url(handler)
+            'code': code,
+            'redirect_uri': self.get_callback_url(handler),
         }
-        url = "https://%s.auth0.com/oauth/token" % AUTH0_SUBDOMAIN
+        url = self.access_token_url
 
-        req = HTTPRequest(url,
-                          method="POST",
-                          headers={"Content-Type": "application/json"},
-                          body=json.dumps(params)
-                          )
+        req = HTTPRequest(
+            url,
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps(params),
+        )
 
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
@@ -83,28 +93,27 @@ class Auth0OAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
 
         # Determine who the logged in user is
-        headers={"Accept": "application/json",
-                 "User-Agent": "JupyterHub",
-                 "Authorization": "Bearer {}".format(access_token)
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "Bearer {}".format(access_token),
         }
-        req = HTTPRequest("https://%s.auth0.com/userinfo" % AUTH0_SUBDOMAIN,
-                          method="GET",
-                          headers=headers
-                          )
+        req = HTTPRequest(
+            "https://%s.auth0.com/userinfo" % self.auth0_subdomain,
+            method="GET",
+            headers=headers,
+        )
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         return {
             'name': resp_json["email"],
-            'auth_state': {
-                'access_token': access_token,
-                'auth0_user': resp_json,
-            }
+            'auth_state': {'access_token': access_token, 'auth0_user': resp_json},
         }
 
 
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):
 
     """A version that mixes in local system user creation"""
-    pass
 
+    pass
