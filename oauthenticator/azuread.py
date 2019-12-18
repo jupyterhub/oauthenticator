@@ -39,7 +39,11 @@ class AzureAdLoginHandler(OAuthLoginHandler, AzureAdMixin):
 
 
 class AzureAdOAuthenticator(OAuthenticator):
-    login_service = "Azure AD"
+    login_service = Unicode(
+		os.environ.get('LOGIN_SERVICE', 'Azure AD'),
+		config=True,
+		help="""Azure AD domain name string, e.g. My College"""
+	)
 
     login_handler = AzureAdLoginHandler
 
