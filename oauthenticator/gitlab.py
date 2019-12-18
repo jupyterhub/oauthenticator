@@ -21,51 +21,17 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Set
+from traitlets import Set, CUnicode, Unicode, default
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
-GITLAB_URL = os.getenv('GITLAB_URL')
-GITLAB_HOST = os.getenv('GITLAB_HOST')
-
-if not GITLAB_URL and GITLAB_HOST:
-    warnings.warn('Use of GITLAB_HOST might be deprecated in the future. '
-                  'Rename GITLAB_HOST environemnt variable to GITLAB_URL.',
-                  PendingDeprecationWarning)
-    if GITLAB_HOST.startswith('https://') or GITLAB_HOST.startswith('http://'):
-        GITLAB_URL = GITLAB_HOST
-    else:
-        # Hides common mistake of users which set the GITLAB_HOST
-        # without a protocol specification.
-        GITLAB_URL = 'https://{0}'.format(GITLAB_HOST)
-        warnings.warn('The https:// prefix has been added to GITLAB_HOST.'
-                      'Set GITLAB_URL="{0}" instead.'.format(GITLAB_URL))
-
-# Support gitlab.com and gitlab community edition installations
-if not GITLAB_URL:
-    GITLAB_URL = 'https://gitlab.com'
-
-# Use only GITLAB_URL in the code bellow.
-del GITLAB_HOST
-
-GITLAB_API_VERSION = os.environ.get('GITLAB_API_VERSION') or '4'
-GITLAB_API = '%s/api/v%s' % (GITLAB_URL, GITLAB_API_VERSION)
-
 
 def _api_headers(access_token):
-    return {"Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "Bearer {}".format(access_token)
-           }
-
-
-class GitLabMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_URL
-    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_URL
-
-
-class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
-    pass
+    return {
+        "Accept": "application/json",
+        "User-Agent": "JupyterHub",
+        "Authorization": "Bearer {}".format(access_token),
+    }
 
 
 class GitLabOAuthenticator(OAuthenticator):
@@ -77,11 +43,60 @@ class GitLabOAuthenticator(OAuthenticator):
 
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
-    login_handler = GitLabLoginHandler
+
+    gitlab_url = Unicode("https://gitlab.com", config=True)
+
+    @default("gitlab_url")
+    def _default_gitlab_url(self):
+        """get default gitlab url from env"""
+        gitlab_url = os.getenv('GITLAB_URL')
+        gitlab_host = os.getenv('GITLAB_HOST')
+
+        if not gitlab_url and gitlab_host:
+            warnings.warn(
+                'Use of GITLAB_HOST might be deprecated in the future. '
+                'Rename GITLAB_HOST environment variable to GITLAB_URL.',
+                PendingDeprecationWarning,
+            )
+            if gitlab_host.startswith(('https:', 'http:')):
+                gitlab_url = gitlab_host
+            else:
+                # Hides common mistake of users which set the GITLAB_HOST
+                # without a protocol specification.
+                gitlab_url = 'https://{0}'.format(gitlab_host)
+                warnings.warn(
+                    'The https:// prefix has been added to GITLAB_HOST.'
+                    'Set GITLAB_URL="{0}" instead.'.format(gitlab_host)
+                )
+
+        # default to gitlab.com
+        if not gitlab_url:
+            gitlab_url = 'https://gitlab.com'
+
+        return gitlab_url
+
+    gitlab_api_version = CUnicode('4', config=True)
+
+    @default('gitlab_api_version')
+    def _gitlab_api_version_default(self):
+        return os.environ.get('GITLAB_API_VERSION') or '4'
+
+    gitlab_api = Unicode(config=True)
+
+    @default("gitlab_api")
+    def _default_gitlab_api(self):
+        return '%s/api/v%s' % (self.gitlab_url, self.gitlab_api_version)
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "%s/oauth/authorize" % self.gitlab_url
+
+    @default("access_token_url")
+    def _access_token_url_default(self):
+        return "%s/oauth/access_token" % self.gitlab_url
 
     gitlab_group_whitelist = Set(
-        config=True,
-        help="Automatically whitelist members of selected groups",
+        config=True, help="Automatically whitelist members of selected groups"
     )
     gitlab_project_id_whitelist = Set(
         config=True,
@@ -110,15 +125,15 @@ class GitLabOAuthenticator(OAuthenticator):
 
         validate_server_cert = self.validate_server_cert
 
-        url = url_concat("%s/oauth/token" % GITLAB_URL,
-                         params)
+        url = url_concat("%s/oauth/token" % self.gitlab_url, params)
 
-        req = HTTPRequest(url,
-                          method="POST",
-                          headers={"Accept": "application/json"},
-                          validate_cert=validate_server_cert,
-                          body='' # Body is required for a POST...
-                          )
+        req = HTTPRequest(
+            url,
+            method="POST",
+            headers={"Accept": "application/json"},
+            validate_cert=validate_server_cert,
+            body='',  # Body is required for a POST...
+        )
 
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
@@ -131,11 +146,12 @@ class GitLabOAuthenticator(OAuthenticator):
             self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
 
         # Determine who the logged in user is
-        req = HTTPRequest("%s/user" % GITLAB_API,
-                          method="GET",
-                          validate_cert=validate_server_cert,
-                          headers=_api_headers(access_token)
-                          )
+        req = HTTPRequest(
+            "%s/user" % self.gitlab_api,
+            method="GET",
+            validate_cert=validate_server_cert,
+            headers=_api_headers(access_token),
+        )
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
@@ -155,56 +171,67 @@ class GitLabOAuthenticator(OAuthenticator):
         # We skip project_id check if user is in whitelisted group.
         if self.gitlab_project_id_whitelist and not user_in_group:
             is_project_id_specified = True
-            user_in_project = await self._check_project_id_whitelist(user_id, access_token)
+            user_in_project = await self._check_project_id_whitelist(
+                user_id, access_token
+            )
 
         no_config_specified = not (is_group_specified or is_project_id_specified)
 
-        if (is_group_specified and user_in_group) or \
-            (is_project_id_specified and user_in_project) or \
-                no_config_specified:
+        if (
+            (is_group_specified and user_in_group)
+            or (is_project_id_specified and user_in_project)
+            or no_config_specified
+        ):
             return {
                 'name': username,
-                'auth_state': {
-                    'access_token': access_token,
-                    'gitlab_user': resp_json,
-                }
+                'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
             }
         else:
             self.log.warning("%s not in group or project whitelist", username)
             return None
 
     async def _get_gitlab_version(self, access_token):
-        url = '%s/version' % GITLAB_API
-        req = HTTPRequest(url,
-                          method="GET",
-                          headers=_api_headers(access_token),
-                          validate_cert=self.validate_server_cert)
+        url = '%s/version' % self.gitlab_api
+        req = HTTPRequest(
+            url,
+            method="GET",
+            headers=_api_headers(access_token),
+            validate_cert=self.validate_server_cert,
+        )
         resp = await AsyncHTTPClient().fetch(req, raise_error=True)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
         version_strings = resp_json['version'].split('-')[0].split('.')[:3]
         version_ints = list(map(int, version_strings))
         return version_ints
 
-
     async def _check_group_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.gitlab_group_whitelist):
-            url = "%s/groups/%s/members/%s%d" % (GITLAB_API, group, self.member_api_variant, user_id)
+            url = "%s/groups/%s/members/%s%d" % (
+                self.gitlab_api,
+                group,
+                self.member_api_variant,
+                user_id,
+            )
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
             if resp.code == 200:
                 return True  # user _is_ in group
         return False
 
-
     async def _check_project_id_whitelist(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the whitelist
         for project in self.gitlab_project_id_whitelist:
-            url = "%s/projects/%s/members/%s%d" % (GITLAB_API, project, self.member_api_variant, user_id)
+            url = "%s/projects/%s/members/%s%d" % (
+                self.gitlab_api,
+                project,
+                self.member_api_variant,
+                user_id,
+            )
             req = HTTPRequest(url, method="GET", headers=headers)
             resp = await http_client.fetch(req, raise_error=False)
 
@@ -222,4 +249,5 @@ class GitLabOAuthenticator(OAuthenticator):
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
 
     """A version that mixes in local system user creation"""
+
     pass
