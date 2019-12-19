@@ -223,9 +223,10 @@ class OAuthenticator(Authenticator):
     Subclasses must override:
 
     login_service (string identifying the service provider)
-    login_handler (likely a subclass of OAuthLoginHandler)
     authenticate (method takes one arg - the request handler handling the oauth callback)
     """
+
+    login_handler = OAuthLoginHandler
 
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
