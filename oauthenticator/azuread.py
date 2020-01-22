@@ -19,13 +19,13 @@ from traitlets import Unicode, default
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-def azure_token_url_for(tentant):
-    return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(tentant)
+def azure_token_url_for(tenant):
+    return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(tenant)
 
 
-def azure_authorize_url_for(tentant):
+def azure_authorize_url_for(tenant):
     return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(
-        tentant)
+        tenant)
 
 
 class AzureAdMixin(OAuth2Mixin):
@@ -67,7 +67,6 @@ class AzureAdOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             grant_type='authorization_code',
             code=code,
-            resource=self.client_id,
             redirect_uri=self.get_callback_url(handler))
 
         data = urllib.parse.urlencode(
@@ -77,7 +76,7 @@ class AzureAdOAuthenticator(OAuthenticator):
 
         headers = {
             'Content-Type':
-            'application/x-www-form-urlencoded; ; charset=UTF-8"'
+            'application/x-www-form-urlencoded; charset=UTF-8'
         }
         req = HTTPRequest(
             url,
