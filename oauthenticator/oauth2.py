@@ -227,6 +227,7 @@ class OAuthenticator(Authenticator):
     """
 
     login_handler = OAuthLoginHandler
+    callback_handler = OAuthCallbackHandler
 
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
@@ -301,8 +302,6 @@ class OAuthenticator(Authenticator):
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
 
-    login_handler = "Specify login handler class in subclass"
-    callback_handler = OAuthCallbackHandler
 
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
