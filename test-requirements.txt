@@ -1,5 +1,4 @@
 -r ./requirements.txt
-.[globus]
 .[googlegroups]
 codecov
 flake8

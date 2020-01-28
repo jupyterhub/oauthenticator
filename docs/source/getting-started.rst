@@ -388,12 +388,11 @@ Set the above settings in your ``jupyterhub_config``:
 .. code:: python
 
    # Tell JupyterHub to create system accounts
-   from oauthenticator.globus import LocalGlobusOAuthenticator
-   c.JupyterHub.authenticator_class = LocalGlobusOAuthenticator
-   c.LocalGlobusOAuthenticator.enable_auth_state = True
-   c.LocalGlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
-   c.LocalGlobusOAuthenticator.client_id = '[your app client id]'
-   c.LocalGlobusOAuthenticator.client_secret = '[your app client secret]'
+   from oauthenticator.globus import GlobusOAuthenticator
+   c.JupyterHub.authenticator_class = GlobusOAuthenticator
+   c.GlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
+   c.GlobusOAuthenticator.client_id = '[your app client id]'
+   c.GlobusOAuthenticator.client_secret = '[your app client secret]'
 
 Alternatively you can set env variables for the following:
 ``OAUTH_CALLBACK_URL``, ``OAUTH_CLIENT_ID``, and
@@ -406,13 +405,6 @@ settings related to User Identity, Transfer, and additional security.
 User Identity
 ~~~~~~~~~~~~~
 
-By default, all users are restricted to their *Globus IDs*
-(example@globusid.org) with the default Jupyterhub config:
-
-.. code:: python
-
-   c.GlobusOAuthenticator.identity_provider = 'globusid.org'
-
 If you want to use a *Linked Identity* such as
 ``malcolm@universityofindependence.edu``, go to your `App Developer
 page <http://developers.globus.org>`__ and set *Required Identity
@@ -421,12 +413,22 @@ in the config:
 
 .. code:: python
 
-   c.GlobusOAuthenticator.identity_provider = 'universityofindependence.edu'
+   c.GlobusOAuthenticator.identity_provider = 'uchicago.edu'
+
+**Pitfall**: Don't set 'Required Identity Provider' on pre-existing apps!
+Previous user login consents will be tied to the identity users initially used
+to login, and will continue to be tied to that identity after changing this
+setting. Create a new Globus App with your preferred 'Required Identity Provider'
+to avoid this problem.
 
 Globus Scopes and Transfer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default configuration will automatically setup user environments
+The following shows how to get tokens into user Notebooks. `You can see how users
+use tokens here <https://github.com/globus/globus-jupyter-notebooks/blob/master/JupyterHub_Integration.ipynb>`__.
+If you want a demonstration, you can visit `The Jupyter Globus Demo Server <https://jupyter.demo.globus.org>`__.
+
+The default server configuration will automatically setup user environments
 with tokens, allowing them to start up python notebooks and initiate
 Globus Transfers. If you want to transfer data onto your JupyterHub
 server, it’s suggested you install `Globus Connect
@@ -436,21 +438,20 @@ other behavior, you can modify the defaults below:
 
 .. code:: python
 
-   # Allow Refresh Tokens in user notebooks. Disallow these for increased security,
-   # allow them for better usability.
-   c.LocalGlobusOAuthenticator.allow_refresh_tokens = True
+   # Allow saving user tokens to the database
+   c.GlobusOAuthenticator.enable_auth_state = True
    # Default scopes are below if unspecified. Add a custom transfer server if you have one.
-   c.LocalGlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
+   c.GlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
    # Default tokens excluded from being passed into the spawner environment
-   c.LocalGlobusOAuthenticator.exclude_tokens = ['auth.globus.org']
+   c.GlobusOAuthenticator.exclude_tokens = ['auth.globus.org']
    # If the JupyterHub server is an endpoint, for convenience the endpoint id can be
    # set here. It will show up in the notebook kernel for all users as 'GLOBUS_LOCAL_ENDPOINT'.
-   c.LocalGlobusOAuthenticator.globus_local_endpoint = '<Your Local JupyterHub UUID>'
+   c.GlobusOAuthenticator.globus_local_endpoint = '<Your Local JupyterHub UUID>'
    # Set a custom logout URL for your identity provider
-   c.LocalGlobusOAuthenticator.logout_redirect_url = 'https://auth.globus.org/v2/web/logout'
+   c.GlobusOAuthenticator.logout_redirect_url = 'https://globus.org/logout'
    # For added security, revoke all service tokens when users logout. (Note: users must start
    # a new server to get fresh tokens, logging out does not shut it down by default)
-   c.LocalGlobusOAuthenticator.revoke_tokens_on_logout = False
+   c.GlobusOAuthenticator.revoke_tokens_on_logout = False
 
 If you only want to authenticate users with their Globus IDs but don’t
 want to allow them to do transfers, you can remove
