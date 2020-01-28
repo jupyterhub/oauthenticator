@@ -9,11 +9,11 @@ from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from pytest import fixture, mark
 
-from ..gitlab import GitLabOAuthenticator, GITLAB_API_VERSION
+from ..gitlab import GitLabOAuthenticator
 
 from .mocks import setup_oauth_mock
 
-API_ENDPOINT = '/api/v%s' % (GITLAB_API_VERSION,)
+API_ENDPOINT = '/api/v%s' % (GitLabOAuthenticator().gitlab_api_version)
 
 
 def user_model(username, id=1, is_admin=False):

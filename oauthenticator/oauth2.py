@@ -11,24 +11,21 @@ from urllib.parse import quote, urlparse
 import uuid
 
 from tornado import web
+from tornado.auth import OAuth2Mixin
 from tornado.log import app_log
 
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode, Bool, List
+from traitlets import Unicode, Bool, List, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
     return '{proto}://{host}{path}'.format(
-        proto=protocol,
-        host=host,
-        path=url_path_join(
-            hub_server_url,
-            'oauth_callback'
-        )
+        proto=protocol, host=host, path=url_path_join(hub_server_url, 'oauth_callback')
     )
+
 
 STATE_COOKIE_NAME = 'oauthenticator-state'
 
@@ -36,9 +33,7 @@ STATE_COOKIE_NAME = 'oauthenticator-state'
 def _serialize_state(state):
     """Serialize OAuth state to a base64 string after passing through JSON"""
     json_state = json.dumps(state)
-    return base64.urlsafe_b64encode(
-        json_state.encode('utf8')
-    ).decode('ascii')
+    return base64.urlsafe_b64encode(json_state.encode('utf8')).decode('ascii')
 
 
 def _deserialize_state(b64_state):
@@ -57,18 +52,31 @@ def _deserialize_state(b64_state):
         return {}
 
 
-class OAuthLoginHandler(BaseHandler):
+class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     """Base class for OAuth login handler
 
     Typically subclasses will need
     """
 
+    # these URLs are part of the OAuth2Mixin API
+    # get them from the Authenticator object
+    @property
+    def _OAUTH_AUTHORIZE_URL(self):
+        return self.authenticator.authorize_url
+
+    @property
+    def _OAUTH_ACCESS_TOKEN_URL(self):
+        return self.authenticator.token_url
+
+    @property
+    def _OAUTH_USERINFO_URL(self):
+        return self.authenticator.userdata_url
+
     def set_state_cookie(self, state):
-        self.set_secure_cookie(STATE_COOKIE_NAME,
-            state, expires_days=1, httponly=True,
-        )
+        self.set_secure_cookie(STATE_COOKIE_NAME, state, expires_days=1, httponly=True)
 
     _state = None
+
     def get_state(self):
         next_url = original_next_url = self.get_argument('next', None)
         if next_url:
@@ -78,21 +86,16 @@ class OAuthLoginHandler(BaseHandler):
             # force absolute path redirect
             urlinfo = urlparse(next_url)
             next_url = urlinfo._replace(
-                scheme='',
-                netloc='',
-                path='/' + urlinfo.path.lstrip('/'),
+                scheme='', netloc='', path='/' + urlinfo.path.lstrip('/')
             ).geturl()
             if next_url != original_next_url:
                 self.log.warning(
-                    "Ignoring next_url %r, using %r",
-                    original_next_url,
-                    next_url,
+                    "Ignoring next_url %r, using %r", original_next_url, next_url
                 )
         if self._state is None:
-            self._state = _serialize_state({
-                'state_id': uuid.uuid4().hex,
-                'next_url': next_url,
-            })
+            self._state = _serialize_state(
+                {'state_id': uuid.uuid4().hex, 'next_url': next_url}
+            )
         return self._state
 
     def get(self):
@@ -105,7 +108,8 @@ class OAuthLoginHandler(BaseHandler):
             client_id=self.authenticator.client_id,
             scope=self.authenticator.scope,
             extra_params={'state': state},
-            response_type='code')
+            response_type='code',
+        )
 
 
 class OAuthCallbackHandler(BaseHandler):
@@ -119,7 +123,9 @@ class OAuthCallbackHandler(BaseHandler):
         To be compared with the value in redirect URL
         """
         if self._state_cookie is None:
-            self._state_cookie = (self.get_secure_cookie(STATE_COOKIE_NAME) or b'').decode('utf8', 'replace')
+            self._state_cookie = (
+                self.get_secure_cookie(STATE_COOKIE_NAME) or b''
+            ).decode('utf8', 'replace')
             self.clear_cookie(STATE_COOKIE_NAME)
         return self._state_cookie
 
@@ -217,15 +223,42 @@ class OAuthenticator(Authenticator):
     Subclasses must override:
 
     login_service (string identifying the service provider)
-    login_handler (likely a subclass of OAuthLoginHandler)
     authenticate (method takes one arg - the request handler handling the oauth callback)
     """
 
-    scope = List(Unicode(), config=True,
+    login_handler = OAuthLoginHandler
+    callback_handler = OAuthCallbackHandler
+
+    authorize_url = Unicode(
+        config=True, help="""The authenticate url for initiating oauth"""
+    )
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return os.environ.get("OAUTH2_AUTHORIZE_URL", "")
+
+    token_url = Unicode(
+        config=True,
+        help="""The url retrieving an access token at the completion of oauth""",
+    )
+    @default("token_url")
+    def _token_url_default(self):
+        return os.environ.get("OAUTH2_TOKEN_URL", "")
+
+    userdata_url = Unicode(
+        config=True,
+        help="""The url for retrieving user data with a completed access token""",
+    )
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return os.environ.get("OAUTH2_USERDATA_URL", "")
+
+    scope = List(
+        Unicode(),
+        config=True,
         help="""The OAuth scopes to request.
         See the OAuth documentation of your OAuth provider for options.
         For GitHub in particular, you can see github_scopes.md in this repo.
-        """
+        """,
     )
 
     login_service = 'override in subclass'
@@ -233,11 +266,12 @@ class OAuthenticator(Authenticator):
         os.getenv('OAUTH_CALLBACK_URL', ''),
         config=True,
         help="""Callback URL to use.
-        Typically `https://{host}/hub/oauth_callback`"""
+        Typically `https://{host}/hub/oauth_callback`""",
     )
 
     client_id_env = ''
     client_id = Unicode(config=True)
+
     def _client_id_default(self):
         if self.client_id_env:
             client_id = os.getenv(self.client_id_env, '')
@@ -247,6 +281,7 @@ class OAuthenticator(Authenticator):
 
     client_secret_env = ''
     client_secret = Unicode(config=True)
+
     def _client_secret_default(self):
         if self.client_secret_env:
             client_secret = os.getenv(self.client_secret_env, '')
@@ -256,6 +291,7 @@ class OAuthenticator(Authenticator):
 
     validate_server_cert_env = 'OAUTH_TLS_VERIFY'
     validate_server_cert = Bool(config=True)
+
     def _validate_server_cert_default(self):
         env_value = os.getenv(self.validate_server_cert_env, '')
         if env_value == '0':
@@ -266,9 +302,7 @@ class OAuthenticator(Authenticator):
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
 
-    login_handler = "Specify login handler class in subclass"
-    callback_handler = OAuthCallbackHandler
-    
+
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
         
@@ -280,10 +314,12 @@ class OAuthenticator(Authenticator):
             return guess_callback_uri(
                 handler.request.protocol,
                 handler.request.host,
-                handler.hub.server.base_url
+                handler.hub.server.base_url,
             )
         else:
-            raise ValueError("Specify callback oauth_callback_url or give me a handler to guess with")
+            raise ValueError(
+                "Specify callback oauth_callback_url or give me a handler to guess with"
+            )
 
     def get_handlers(self, app):
         return [
