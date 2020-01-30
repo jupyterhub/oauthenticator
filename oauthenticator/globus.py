@@ -9,27 +9,22 @@ from tornado import web
 from tornado.auth import OAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import List, Unicode, Bool
+from traitlets import List, Unicode, Bool, default
+
 from jupyterhub.handlers import LogoutHandler
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator
 
 
 try:
     import globus_sdk
 except:
-    raise ImportError('globus_sdk is not installed, please see '
-                      '"globus-requirements.txt" for using Globus oauth.')
-
-
-class GlobusMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = 'https://auth.globus.org/v2/oauth2/authorize'
-
-
-class GlobusLoginHandler(OAuthLoginHandler, GlobusMixin):
-    pass
+    raise ImportError(
+        'globus_sdk is not installed, please see '
+        '"globus-requirements.txt" for using Globus oauth.'
+    )
 
 
 class GlobusLogoutHandler(LogoutHandler):
@@ -39,6 +34,7 @@ class GlobusLogoutHandler(LogoutHandler):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
+
     async def get(self):
         if self.authenticator.logout_redirect_url:
             await self.default_handle_logout()
@@ -49,14 +45,17 @@ class GlobusLogoutHandler(LogoutHandler):
 
     async def handle_logout(self):
         if self.current_user and self.authenticator.revoke_tokens_on_logout:
-                await self.clear_tokens(self.current_user)
+            await self.clear_tokens(self.current_user)
 
     async def clear_tokens(self, user):
         state = await user.get_auth_state()
         if state:
             self.authenticator.revoke_service_tokens(state.get('tokens'))
-            self.log.info('Logout: Revoked tokens for user "{}" services: {}'
-                          .format(user.name, ','.join(state['tokens'].keys())))
+            self.log.info(
+                'Logout: Revoked tokens for user "{}" services: {}'.format(
+                    user.name, ','.join(state['tokens'].keys())
+                )
+            )
             state['tokens'] = ''
             await user.save_auth_state(state)
 
@@ -66,13 +65,18 @@ class GlobusOAuthenticator(OAuthenticator):
     transfer tokens to the spawner. """
 
     login_service = 'Globus'
-    login_handler = GlobusLoginHandler
     logout_handler = GlobusLogoutHandler
 
-    identity_provider = Unicode(help="""Restrict which institution a user
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://auth.globus.org/v2/oauth2/authorize"
+
+    identity_provider = Unicode(
+        help="""Restrict which institution a user
     can use to login (GlobusID, University of Hogwarts, etc.). This should
     be set in the app at developers.globus.org, but this acts as an additional
-    check to prevent unnecessary account creation.""").tag(config=True)
+    check to prevent unnecessary account creation."""
+    ).tag(config=True)
 
     def _identity_provider_default(self):
         return os.getenv('IDENTITY_PROVIDER', 'globusid.org')
@@ -89,7 +93,7 @@ class GlobusOAuthenticator(OAuthenticator):
         return [
             'openid',
             'profile',
-            'urn:globus:auth:scope:transfer.api.globus.org:all'
+            'urn:globus:auth:scope:transfer.api.globus.org:all',
         ]
 
     allow_refresh_tokens = Bool(
@@ -102,14 +106,15 @@ class GlobusOAuthenticator(OAuthenticator):
     def _allow_refresh_tokens_default(self):
         return True
 
-    globus_local_endpoint = Unicode(help="""If Jupyterhub is also a Globus
-    endpoint, its endpoint id can be specified here.""").tag(config=True)
+    globus_local_endpoint = Unicode(
+        help="""If Jupyterhub is also a Globus
+    endpoint, its endpoint id can be specified here."""
+    ).tag(config=True)
 
     def _globus_local_endpoint_default(self):
         return os.getenv('GLOBUS_LOCAL_ENDPOINT', '')
 
-    logout_redirect_url = \
-        Unicode(help="""URL for logging out.""").tag(config=True)
+    logout_redirect_url = Unicode(help="""URL for logging out.""").tag(config=True)
 
     def _logout_redirect_url_default(self):
         return os.getenv('LOGOUT_REDIRECT_URL', '')
@@ -128,19 +133,14 @@ class GlobusOAuthenticator(OAuthenticator):
         This will allow users to create a transfer client:
         globus-sdk-python.readthedocs.io/en/stable/tutorial/#tutorial-step4
         """
-        spawner.environment['GLOBUS_LOCAL_ENDPOINT'] = \
-            self.globus_local_endpoint
+        spawner.environment['GLOBUS_LOCAL_ENDPOINT'] = self.globus_local_endpoint
         state = await user.get_auth_state()
         if state:
-            globus_data = base64.b64encode(
-                pickle.dumps(state)
-            )
+            globus_data = base64.b64encode(pickle.dumps(state))
             spawner.environment['GLOBUS_DATA'] = globus_data.decode('utf-8')
 
     def globus_portal_client(self):
-        return globus_sdk.ConfidentialAppAuthClient(
-            self.client_id,
-            self.client_secret)
+        return globus_sdk.ConfidentialAppAuthClient(self.client_id, self.client_secret)
 
     async def authenticate(self, handler, data=None):
         """
@@ -155,7 +155,7 @@ class GlobusOAuthenticator(OAuthenticator):
         client.oauth2_start_flow(
             redirect_uri,
             requested_scopes=' '.join(self.scope),
-            refresh_tokens=self.allow_refresh_tokens
+            refresh_tokens=self.allow_refresh_tokens,
         )
         # Doing the code for token for id_token exchange
         tokens = client.oauth2_exchange_code_for_tokens(code)
@@ -171,18 +171,19 @@ class GlobusOAuthenticator(OAuthenticator):
                 ' account at {}.'.format(
                     self.identity_provider,
                     self.identity_provider,
-                    'globus.org/app/account'
-                    )
+                    'globus.org/app/account',
+                ),
             )
         return {
             'name': username,
             'auth_state': {
                 'client_id': self.client_id,
                 'tokens': {
-                    tok: v for tok, v in tokens.by_resource_server.items()
+                    tok: v
+                    for tok, v in tokens.by_resource_server.items()
                     if tok not in self.exclude_tokens
                 },
-            }
+            },
         }
 
     def revoke_service_tokens(self, services):
@@ -203,12 +204,13 @@ class GlobusOAuthenticator(OAuthenticator):
         Getting the configured callback url
         """
         if self.oauth_callback_url is None:
-            raise HTTPError(500,
-                            'No callback url provided. '
-                            'Please configure by adding '
-                            'c.GlobusOAuthenticator.oauth_callback_url '
-                            'to the config'
-                            )
+            raise HTTPError(
+                500,
+                'No callback url provided. '
+                'Please configure by adding '
+                'c.GlobusOAuthenticator.oauth_callback_url '
+                'to the config',
+            )
         return self.oauth_callback_url
 
     def logout_url(self, base_url):
@@ -220,4 +222,5 @@ class GlobusOAuthenticator(OAuthenticator):
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):
     """A version that mixes in local system user creation"""
+
     pass

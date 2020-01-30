@@ -19,7 +19,6 @@ OAuthenticator currently supports the following authentication services:
 
 -  `Auth0 <oauthenticator/auth0.py>`__
 -  `Azure AD <#azure-ad-setup>`__
--  `Azure AD B2C <#azure-ad-b2c-setup>`__
 -  `Bitbucket <oauthenticator/bitbucket.py>`__
 -  `CILogon <oauthenticator/cilogon.py>`__
 -  `GitHub <#github-setup>`__
@@ -180,36 +179,6 @@ See ``run.sh`` for an `example <./examples/azuread/>`__
 
 -  `Source Code <oauthenticator/azuread.py>`__
 
-Azure AD B2C Setup
-------------------
-
-.. _prereqs-1:
-
-*Prereqs*:
-~~~~~~~~~~
-
--  Requires: **``PyJWT>=1.5.3``**
-
-::
-
-   > pip3 install PyJWT
-
--  BE SURE TO SET THE **``OAUTH_ACCESS_TOKEN_URL``,
-   ``OAUTH_AUTHORIZE_URL`` and ``OAUTH_SCOPE``** environment variables
-
-::
-
-   > export OAUTH_ACCESS_TOKEN_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/token?p=YOUR_POLICY_NAME'
-   > export OAUTH_AUTHORIZE_URL='https://login.microsoftonline.com/YOUR_TENANT.onmicrosoft.com/oauth2/v2.0/authorize?p=YOUR_POLICY_NAME'
-   > export OAUTH_SCOPE='openid YOUR_RESOURCE'
-
-Sample code
-~~~~~~~~~~~
-
-The sample code can be found at `examples
-folder <./examples/azureadb2c/>`__ \* See ``run.sh`` for setting up
-environment variables. \* See ``config.py`` for setting up such as
-client id/secret and add_user_cmd.
 
 Source code
 ~~~~~~~~~~~
@@ -507,8 +476,7 @@ Use the ``GenericOAuthenticator`` for Jupyterhub by editing your
 
 .. code:: python
 
-   from oauthenticator.generic import GenericOAuthenticator
-   c.JupyterHub.authenticator_class = GenericOAuthenticator
+   c.JupyterHub.authenticator_class = "generic"
 
    c.GenericOAuthenticator.oauth_callback_url = 'http://YOUR-JUPYTERHUB.com/hub/oauth_callback'
    c.GenericOAuthenticator.client_id = 'MOODLE-CLIENT-ID'
@@ -542,12 +510,18 @@ Choose **Yandex.Passport API** in Permissions and check these options:
 
 Set the above settings in your ``jupyterhub_config.py``:
 
-\```python c.JupyterHub.authenticator_class =
-‘oauthenticator.yandex.YandexPassportOAuthenticator’
-c.YandexPassportOAuthenticator.oauth_callback_url =
-‘https://[your-host]/hub/oauth_callback’
-c.YandexPassportOAuthenticator.client_id = ‘[your app ID]’
-c.YandexPassportOAuthenticator.client_secret = ‘[your app Password]’
+.. code:: python
+
+   c.JupyterHub.authenticator_class = "generic"
+   c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
+   c.OAuthenticator.client_id = "[your app ID]""
+   c.OAuthenticator.client_secret = "[your app Password]"
+
+   c.GenericOAuthenticator.login_service = "Yandex.Passport"
+   c.GenericOAuthenticator.username_key = "login"
+   c.GenericOAuthenticator.authorize_url = "https://oauth.yandex.ru/authorize"
+   c.GenericOAuthenticator.token_url = "https://oauth.yandex.ru/token"
+   c.GenericOAuthenticator.userdata_url = "https://login.yandex.ru/info"
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/oauthenticator.svg
    :target: https://pypi.python.org/pypi/oauthenticator
