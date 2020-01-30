@@ -18,7 +18,6 @@ from traitlets import Unicode, default
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-
 class AzureAdOAuthenticator(OAuthenticator):
     login_service = Unicode(
 		os.environ.get('LOGIN_SERVICE', 'Azure AD'),
@@ -55,7 +54,6 @@ class AzureAdOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             grant_type='authorization_code',
             code=code,
-            resource=self.client_id,
             redirect_uri=self.get_callback_url(handler))
 
         data = urllib.parse.urlencode(
@@ -65,7 +63,7 @@ class AzureAdOAuthenticator(OAuthenticator):
 
         headers = {
             'Content-Type':
-            'application/x-www-form-urlencoded; ; charset=UTF-8"'
+            'application/x-www-form-urlencoded; charset=UTF-8'
         }
         req = HTTPRequest(
             url,
