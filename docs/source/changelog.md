@@ -15,14 +15,20 @@ command line for details.
 The main change in 0.11 is a refactoring of classes to remove mixins,
 reducing the amount of boilerplate needed.
 In addition, there are some fixes to the Azure AD Authenticator.
+This should be a fully backward-compatible change,
+except in cases where some subclasses were importing these now-unneeded mixin classes,
+such as GitHubLoginHandler, GitHubMixin, etc.
+
+All options should now be configurable via the standard jupyterhub config file.
+There should no longer be any options that are *only* configurable via environment variable.
 
 This release also *removes* the latest Authenticators added in 0.10
-(AzureAdB2COAuthenticator, AWSCognitoAuthenticator),
+(AzureAdB2COAuthenticator, AWSCognitoOAuthenticator, YandexOAuthenticator),
 which were released without being fully supported and
 which can be achieved through configuration of existing classes,
 such as `AzureAd` and `Generic`.
 
-Contributions of new providers will no longer be accepted if they can be achieved through customization or configuration of existing classes.
+We don't plan to accept further contributions of new providers if they can be achieved through customization or configuration of existing classes.
 Rather, contributors are encouraged to provide example documentation for using new providers,
 or pull requests addressing gaps necessary to do so with the GenericOAuthenticator.
 
