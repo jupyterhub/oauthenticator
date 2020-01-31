@@ -113,10 +113,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             raise HTTPError(403, "Google email {} not verified".format(user_email))
 
         if self.hosted_domain:
-            if (
-                user_email_domain not in self.hosted_domain
-                or bodyjs['hd'] not in self.hosted_domain
-            ):
+            if user_email_domain not in self.hosted_domain:
                 self.log.warning(
                     "Google OAuth unauthorized domain attempt: %s", user_email
                 )
