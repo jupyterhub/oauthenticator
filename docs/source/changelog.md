@@ -8,6 +8,47 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.11
+
+## [0.11.0] - 2020-01-30
+
+The main change in 0.11 is a refactoring of classes to remove mixins,
+reducing the amount of boilerplate needed.
+In addition, there are some fixes to the Azure AD Authenticator.
+This should be a fully backward-compatible change,
+except in cases where some subclasses were importing these now-unneeded mixin classes,
+such as GitHubLoginHandler, GitHubMixin, etc.
+
+All options should now be configurable via the standard jupyterhub config file.
+There should no longer be any options that are *only* configurable via environment variable.
+
+This release also *removes* the latest Authenticators added in 0.10
+(AzureAdB2COAuthenticator, AWSCognitoOAuthenticator, YandexOAuthenticator),
+which were released without being fully supported and
+which can be achieved through configuration of existing classes,
+such as `AzureAd` and `Generic`.
+
+We don't plan to accept further contributions of new providers if they can be achieved through customization or configuration of existing classes.
+Rather, contributors are encouraged to provide example documentation for using new providers,
+or pull requests addressing gaps necessary to do so with the GenericOAuthenticator.
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/0.10.0...ae199077a3a580cb849af17ceccfe8e498134ea3))
+
+
+## Merged PRs
+
+* [AzureAD] Don't pass resource when requesting a token [#328](https://github.com/jupyterhub/oauthenticator/pull/328) ([@craigminihan](https://github.com/craigminihan))
+* Remove mixins, per-Authenticator LoginHandler classes [#323](https://github.com/jupyterhub/oauthenticator/pull/323) ([@minrk](https://github.com/minrk))
+* [AzureAD] Add support for setting login_service [#319](https://github.com/jupyterhub/oauthenticator/pull/319) ([@zevaryx](https://github.com/zevaryx))
+* skeleton of sphinx docs [#316](https://github.com/jupyterhub/oauthenticator/pull/316) ([@minrk](https://github.com/minrk))
+
+## Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2019-11-27&to=2020-01-30&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2019-11-27..2020-01-30&type=Issues) | [@craigminihan](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Acraigminihan+updated%3A2019-11-27..2020-01-30&type=Issues) | [@Dmitry1987](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ADmitry1987+updated%3A2019-11-27..2020-01-30&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2019-11-27..2020-01-30&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2019-11-27..2020-01-30&type=Issues) | [@NickolausDS](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ANickolausDS+updated%3A2019-11-27..2020-01-30&type=Issues) | [@zevaryx](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Azevaryx+updated%3A2019-11-27..2020-01-30&type=Issues)
+
+
 ## 0.10
 
 ### [0.10.0] - 2019-11-27
