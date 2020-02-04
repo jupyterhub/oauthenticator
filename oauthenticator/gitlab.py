@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import warnings
+from urllib.parse import quote
 
 from tornado.auth import OAuth2Mixin
 from tornado import web
@@ -208,7 +209,7 @@ class GitLabOAuthenticator(OAuthenticator):
         for group in map(url_escape, self.gitlab_group_whitelist):
             url = "%s/groups/%s/members/%s%d" % (
                 self.gitlab_api,
-                group,
+                quote(group, safe=''),
                 self.member_api_variant,
                 user_id,
             )
