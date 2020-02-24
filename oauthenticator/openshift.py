@@ -13,37 +13,50 @@ from tornado import web
 
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from traitlets import Bool, Unicode, default
 
 from jupyterhub.auth import LocalAuthenticator
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
-
-OPENSHIFT_URL = os.environ.get('OPENSHIFT_URL') or 'https://localhost:8443'
-OPENSHIFT_AUTH_API_URL = os.environ.get('OPENSHIFT_AUTH_API_URL') or OPENSHIFT_URL
-OPENSHIFT_REST_API_URL = os.environ.get('OPENSHIFT_REST_API_URL') or OPENSHIFT_URL
-
-class OpenShiftMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % OPENSHIFT_AUTH_API_URL
-    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/token" % OPENSHIFT_AUTH_API_URL
-
-
-class OpenShiftLoginHandler(OAuthLoginHandler, OpenShiftMixin):
-    # This allows `Service Accounts as OAuth Clients` scenario
-    # https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#service-accounts-as-oauth-clients
-    @property
-    def scope(self):
-        return self.authenticator.scope
+from .oauth2 import OAuthenticator
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
 
     login_service = "OpenShift"
 
-    login_handler = OpenShiftLoginHandler
-
     scope = ['user:info']
 
-    users_rest_api_path = '/apis/user.openshift.io/v1/users/~'
+    openshift_url = Unicode(
+        os.environ.get('OPENSHIFT_URL') or 'https://localhost:8443', config=True
+    )
+
+    openshift_auth_api_url = Unicode(config=True)
+
+    validate_cert = Bool(
+        True, config=True, help="Set to False to disable certificate validation"
+    )
+
+    @default("openshift_auth_api_url")
+    def _openshift_auth_api_url_default(self):
+        return self.openshift_url
+
+    openshift_rest_api_url = Unicode(config=True)
+
+    @default("openshift_rest_api_url")
+    def _openshift_rest_api_url_default(self):
+        return self.openshift_url
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "%s/oauth/authorize" % self.openshift_auth_api_url
+
+    @default("token_url")
+    def _token_url_default(self):
+        return "%s/oauth/token" % self.openshift_auth_api_url
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "%s/apis/user.openshift.io/v1/users/~" % self.openshift_rest_api_url
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -58,17 +71,18 @@ class OpenShiftOAuthenticator(OAuthenticator):
             client_id=self.client_id,
             client_secret=self.client_secret,
             grant_type="authorization_code",
-            code=code
+            code=code,
         )
 
-        url = url_concat(self.login_handler._OAUTH_ACCESS_TOKEN_URL, params)
+        url = url_concat(self.token_url, params)
 
-        req = HTTPRequest(url,
-                          method="POST",
-                          validate_cert=False,
-                          headers={"Accept": "application/json"},
-                          body='' # Body is required for a POST...
-                          )
+        req = HTTPRequest(
+            url,
+            method="POST",
+            validate_cert=self.validate_cert,
+            headers={"Accept": "application/json"},
+            body='',  # Body is required for a POST...
+        )
 
         resp = await http_client.fetch(req)
 
@@ -77,29 +91,30 @@ class OpenShiftOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
 
         # Determine who the logged in user is
-        headers={"Accept": "application/json",
-                 "User-Agent": "JupyterHub",
-                 "Authorization": "Bearer {}".format(access_token)
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "Bearer {}".format(access_token),
         }
 
-        req = HTTPRequest("%s%s" % (OPENSHIFT_REST_API_URL, self.users_rest_api_path),
-                          method="GET",
-                          validate_cert=False,
-                          headers=headers)
+        req = HTTPRequest(
+            self.userdata_url,
+            method="GET",
+            validate_cert=self.validate_cert,
+            headers=headers,
+        )
 
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         return {
             'name': resp_json['metadata']['name'],
-            'auth_state': {
-                'access_token': access_token,
-                'openshift_user': resp_json,
-            }
+            'auth_state': {'access_token': access_token, 'openshift_user': resp_json},
         }
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
 
     """A version that mixes in local system user creation"""
+
     pass

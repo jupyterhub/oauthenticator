@@ -22,21 +22,14 @@ from tornado import web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from traitlets import Unicode, List, Bool, validate
+from traitlets import Unicode, List, Bool, default, validate
 
 from jupyterhub.auth import LocalAuthenticator
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
-CILOGON_HOST = os.environ.get('CILOGON_HOST') or 'cilogon.org'
 
-
-class CILogonMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % CILOGON_HOST
-    _OAUTH_TOKEN_URL = "https://%s/oauth2/token" % CILOGON_HOST
-
-
-class CILogonLoginHandler(OAuthLoginHandler, CILogonMixin):
+class CILogonLoginHandler(OAuthLoginHandler):
     """See http://www.cilogon.org/oidc for general information."""
 
     def authorize_redirect(self, *args, **kwargs):
@@ -57,14 +50,26 @@ class CILogonOAuthenticator(OAuthenticator):
     client_secret_env = 'CILOGON_CLIENT_SECRET'
     login_handler = CILogonLoginHandler
 
-    scope = List(Unicode(), default_value=['openid', 'email', 'org.cilogon.userinfo'],
-                 config=True,
-                 help="""The OAuth scopes to request.
+    cilogon_host = Unicode(os.environ.get("CILOGON_HOST") or "cilogon.org", config=True)
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://%s/authorize" % self.cilogon_host
+
+    @default("token_url")
+    def _token_url(self):
+        return "https://%s/oauth2/token" % self.cilogon_host
+
+    scope = List(
+        Unicode(),
+        default_value=['openid', 'email', 'org.cilogon.userinfo'],
+        config=True,
+        help="""The OAuth scopes to request.
 
         See cilogon_scope.md for details.
         At least 'openid' is required.
         """,
-                 )
+    )
 
     @validate('scope')
     def _validate_scope(self, proposal):
@@ -119,7 +124,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         This is useful for linked identities where not all of them return
         the primary username_claim.
-        """
+        """,
     )
 
     async def authenticate(self, handler, data=None):
@@ -132,10 +137,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         # Exchange the OAuth code for a CILogon Access Token
         # See: http://www.cilogon.org/oidc
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "JupyterHub",
-        }
+        headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
 
         params = dict(
             client_id=self.client_id,
@@ -145,13 +147,9 @@ class CILogonOAuthenticator(OAuthenticator):
             grant_type='authorization_code',
         )
 
-        url = url_concat("https://%s/oauth2/token" % CILOGON_HOST, params)
+        url = url_concat(self.token_url, params)
 
-        req = HTTPRequest(url,
-                          headers=headers,
-                          method="POST",
-                          body=''
-                          )
+        req = HTTPRequest(url, headers=headers, method="POST", body='')
 
         resp = await http_client.fetch(req)
         token_response = json.loads(resp.body.decode('utf8', 'replace'))
@@ -159,10 +157,10 @@ class CILogonOAuthenticator(OAuthenticator):
         self.log.info("Access token acquired.")
         # Determine who the logged in user is
         params = dict(access_token=access_token)
-        req = HTTPRequest(url_concat("https://%s/oauth2/userinfo" %
-                                     CILOGON_HOST, params),
-                          headers=headers
-                          )
+        req = HTTPRequest(
+            url_concat("https://%s/oauth2/userinfo" % self.cilogon_host, params),
+            headers=headers,
+        )
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
@@ -176,21 +174,26 @@ class CILogonOAuthenticator(OAuthenticator):
                 break
         if not username:
             if len(claimlist) < 2:
-                self.log.error("Username claim %s not found in response: %s",
-                               self.username_claim, sorted(resp_json.keys())
-                               )
+                self.log.error(
+                    "Username claim %s not found in response: %s",
+                    self.username_claim,
+                    sorted(resp_json.keys()),
+                )
             else:
-                self.log.error("No username claim from %r in response: %s",
-                               claimlist, sorted(resp_json.keys()))
+                self.log.error(
+                    "No username claim from %r in response: %s",
+                    claimlist,
+                    sorted(resp_json.keys()),
+                )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
         if self.idp_whitelist:
             gotten_name, gotten_idp = username.split('@')
             if gotten_idp not in self.idp_whitelist:
                 self.log.error(
-                    "Trying to login from not whitelisted domain %s", gotten_idp)
-                raise web.HTTPError(
-                    500, "Trying to login from not whitelisted domain")
+                    "Trying to login from not whitelisted domain %s", gotten_idp
+                )
+                raise web.HTTPError(500, "Trying to login from not whitelisted domain")
             if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
                 username = gotten_name
         userdict = {"name": username}
@@ -210,4 +213,5 @@ class CILogonOAuthenticator(OAuthenticator):
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
 
     """A version that mixes in local system user creation"""
+
     pass

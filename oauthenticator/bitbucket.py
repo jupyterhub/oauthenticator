@@ -13,25 +13,17 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Set
+from traitlets import Set, default
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
 def _api_headers(access_token):
-    return {"Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "Bearer {}".format(access_token)
-           }
-
-
-class BitbucketMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "https://bitbucket.org/site/oauth2/authorize"
-    _OAUTH_ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token"
-
-
-class BitbucketLoginHandler(OAuthLoginHandler, BitbucketMixin):
-    pass
+    return {
+        "Accept": "application/json",
+        "User-Agent": "JupyterHub",
+        "Authorization": "Bearer {}".format(access_token),
+    }
 
 
 class BitbucketOAuthenticator(OAuthenticator):
@@ -39,20 +31,26 @@ class BitbucketOAuthenticator(OAuthenticator):
     login_service = "Bitbucket"
     client_id_env = 'BITBUCKET_CLIENT_ID'
     client_secret_env = 'BITBUCKET_CLIENT_SECRET'
-    login_handler = BitbucketLoginHandler
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://bitbucket.org/site/oauth2/authorize"
+
+    @default("token_url")
+    def _token_url_default(self):
+        return "https://bitbucket.org/site/oauth2/access_token"
 
     team_whitelist = Set(
-        config=True,
-        help="Automatically whitelist members of selected teams",
+        config=True, help="Automatically whitelist members of selected teams"
     )
 
     bitbucket_team_whitelist = team_whitelist
 
-
-    headers = {"Accept": "application/json",
-               "User-Agent": "JupyterHub",
-               "Authorization": "Bearer {}"
-               }
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "JupyterHub",
+        "Authorization": "Bearer {}",
+    }
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -67,31 +65,29 @@ class BitbucketOAuthenticator(OAuthenticator):
             redirect_uri=self.get_callback_url(handler),
         )
 
-        url = url_concat(
-            "https://bitbucket.org/site/oauth2/access_token", params)
-        self.log.info(url)
+        url = url_concat("https://bitbucket.org/site/oauth2/access_token", params)
 
-        bb_header = {"Content-Type":
-                     "application/x-www-form-urlencoded;charset=utf-8"}
-        req = HTTPRequest(url,
-                          method="POST",
-                          auth_username=self.client_id,
-                          auth_password=self.client_secret,
-                          body=urllib.parse.urlencode(params).encode('utf-8'),
-                          headers=bb_header
-                          )
+        bb_header = {"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"}
+        req = HTTPRequest(
+            url,
+            method="POST",
+            auth_username=self.client_id,
+            auth_password=self.client_secret,
+            body=urllib.parse.urlencode(params).encode('utf-8'),
+            headers=bb_header,
+        )
 
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         access_token = resp_json['access_token']
 
-
         # Determine who the logged in user is
-        req = HTTPRequest("https://api.bitbucket.org/2.0/user",
-                          method="GET",
-                          headers=_api_headers(access_token)
-                          )
+        req = HTTPRequest(
+            "https://api.bitbucket.org/2.0/user",
+            method="GET",
+            headers=_api_headers(access_token),
+        )
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
@@ -107,10 +103,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         return {
             'name': username,
-            'auth_state': {
-                'access_token': access_token,
-                'bitbucket_user': resp_json,
-            }
+            'auth_state': {'access_token': access_token, 'bitbucket_user': resp_json},
         }
 
     async def _check_team_whitelist(self, username, access_token):
@@ -118,23 +111,23 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         headers = _api_headers(access_token)
         # We verify the team membership by calling teams endpoint.
-        next_page = url_concat("https://api.bitbucket.org/2.0/teams",
-                               {'role': 'member'})
+        next_page = url_concat(
+            "https://api.bitbucket.org/2.0/teams", {'role': 'member'}
+        )
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp = await http_client.fetch(req)
             resp_json = json.loads(resp.body.decode('utf8', 'replace'))
             next_page = resp_json.get('next', None)
 
-            user_teams = \
-                set([entry["username"] for entry in resp_json["values"]])
+            user_teams = set([entry["username"] for entry in resp_json["values"]])
             # check if any of the organizations seen thus far are in whitelist
             if len(self.bitbucket_team_whitelist & user_teams) > 0:
                 return True
         return False
 
 
-class LocalBitbucketOAuthenticator(LocalAuthenticator,
-                                   BitbucketOAuthenticator):
+class LocalBitbucketOAuthenticator(LocalAuthenticator, BitbucketOAuthenticator):
     """A version that mixes in local system user creation"""
+
     pass
