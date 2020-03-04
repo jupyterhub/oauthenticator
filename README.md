@@ -1,25 +1,55 @@
-# [OAuthenticator](https://github.com/jupyterhub/oauthenticator)
+# OAuth + JupyterHub Authenticator = OAuthenticator :heart:
 
-[![PyPI](https://img.shields.io/pypi/v/oauthenticator.svg)](https://pypi.python.org/pypi/oauthenticator)
-[![Build Status](https://travis-ci.org/jupyterhub/oauthenticator.svg?branch=master)](https://travis-ci.org/jupyterhub/oauthenticator)
+[![Documentation build status](https://img.shields.io/readthedocs/oauthenticator?logo=read-the-docs)](https://oauthenticator.readthedocs.org/en/latest)
+[![TravisCI (.org) build status](https://img.shields.io/travis/jupyterhub/oauthenticator/master?logo=travis)](https://travis-ci.org/jupyterhub/oauthenticator)
+[![Latest PyPI version](https://img.shields.io/pypi/v/oauthenticator?logo=pypi)](https://pypi.python.org/pypi/oauthenticator)
+[![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/oauthenticator/issues)
+[![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
+[![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
 
-OAuth + JupyterHub Authenticator = OAuthenticator
+OAuth is a token based login mechanism that doesn't rely on a username and password mapping.
+In order to use this login mechanism with JupyerHub the login handlers need to be overridden.
+OAuthenticator overrides these handlers for the common OAuth providers allowing them to be
+plugged in and used with JupyterHub.
 
-OAuthenticator currently supports the following authentication services:
+The following authentication services are supported through their own authenticator: [Auth0](oauthenticator/auth0.py),
+[Azure AD](oauthenticator/azuread.py), [Bitbucket](oauthenticator/bitbucket.py), [CILogon](oauthenticator/cilogon.py),
+[GitHub](oauthenticator/github.py), [GitLab](oauthenticator/gitlab.py), [Globus](oauthenticator/globus.py),
+[Google](oauthenticator/google.py), [MediaWiki](oauthenticator/mediawiki.py), [Okpy](oauthenticator/okpy.py),
+[OpenShift](oauthenticator/openshift.py).
 
-- [Auth0](oauthenticator/auth0.py)
-- [Azure AD](#azure-ad-setup)
-- [Azure AD B2C](#azure-ad-b2c-setup)
-- [Bitbucket](oauthenticator/bitbucket.py)
-- [CILogon](oauthenticator/cilogon.py)
-- [GitHub](#github-setup)
-- [GitLab](#gitlab-setup)
-- [Globus](#globus-setup)
-- [Google](#google-setup)
-- [MediaWiki](oauthenticator/mediawiki.py)
-- [Moodle](#moodle-setup)
-- [Okpy](#okpyauthenticator)
-- [OpenShift](#openshift-setup)
+There is also a [GenericAuthenticator](oauthenticator/generic.py)
+that can be used to write your own Authenticators with any OAuth 2.0 provider.
 
-A [generic implementation](oauthenticator/generic.py), which you can use with
-any provider, is also available.
+
+## Installation
+The installation guide can be found in the [docs](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#installation).
+
+The docs also provide example setups for different OAuth providers:
+
+* [General Setup](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#general-setup)
+* [Azure AD](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#azure-ad-setup)
+* [GitHub](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#github-setup)
+* [GitLab](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#gitlab-setup)
+* [Google](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#google-setup)
+* [OpenShift](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#openshift-setup)
+* [Okpy](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#okpyauthenticator)
+* [Globus](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#globus-setup)
+* [Moodle](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#moodle-setup)
+* [Yandex](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#yandex-setup)
+
+## Running tests
+To run the tests locally:
+
+```
+$ pip install --upgrade --pre -r test-requirements.txt
+```
+
+```
+$ pytest -v ./oauthenticator/tests/
+```
+Or you run a specific test file with:
+
+```
+$ pytest -v ./oauthenticator/tests/<test-file-name>
+```
