@@ -7,7 +7,7 @@
 [![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 [![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
 
-OAuth is a token based login mechanism that doesn't rely on a username and password mapping.
+[OAuth](https://en.wikipedia.org/wiki/OAuth) is a token based login mechanism that doesn't rely on a username and password mapping.
 In order to use this login mechanism with JupyerHub the login handlers need to be overridden.
 OAuthenticator overrides these handlers for the common OAuth providers allowing them to be
 plugged in and used with JupyterHub.
