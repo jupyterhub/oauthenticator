@@ -10,7 +10,7 @@
 
 [OAuth](https://en.wikipedia.org/wiki/OAuth) is a token based login mechanism that doesn't rely on a username and password mapping.
 In order to use this login mechanism with JupyerHub the login handlers need to be overridden.
-OAuthenticator overrides these handlers for the common OAuth providers allowing them to be
+OAuthenticator overrides these handlers for the common OAuth2 identity providers allowing them to be
 plugged in and used with JupyterHub.
 
 The following authentication services are supported through their own authenticator: [Auth0](oauthenticator/auth0.py),
@@ -20,13 +20,13 @@ The following authentication services are supported through their own authentica
 [OpenShift](oauthenticator/openshift.py).
 
 There is also a [GenericAuthenticator](oauthenticator/generic.py)
-that can be used to write your own Authenticators with any OAuth 2.0 provider.
-
+that can be configured with any OAuth 2.0 identity provider or can be used
+to create a new authenticator class when additional customization is needed.
 
 ## Installation
 The installation guide can be found in the [docs](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#installation).
 
-The docs also provide example setups for different OAuth providers:
+The docs also provide example setups for different OAuth2 identity providers:
 
 * [General Setup](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#general-setup)
 * [Azure AD](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#azure-ad-setup)

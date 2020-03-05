@@ -3,13 +3,14 @@ Get started
 
 The general steps to take when using OAuthenticator:
 
-1. pick your provider
-2. register with your provider
-3. configure JupyterHub (if supported, pick oauthenticator class, otherwise see :doc:`writing-an-oauthenticator`).
-4. common configuration (client_id, client_secret, callback_url, whitelist, etc.)
-5. specific configuration for your provider
+1. Pick your identity provider
+2. Register with the provider
+3. Choose an authenticator class, or use :class:`~.oauthenticator.generic.GenericOAuthenticator`
+   and configure JupyterHub to use it
+4. Configure the authenticator class (client_id, client_secret, callback_url, whitelist, etc.)
+5. Specific configuration for your identity provider
 
-OAuthenticator currently supports the following **authentication services**:
+OAuthenticator currently supports the following **identity providers**:
 
 - `Auth0 <oauthenticator/auth0.py>`__
 - `Azure AD <oauthenticator/azuread.py>`__
@@ -24,7 +25,7 @@ OAuthenticator currently supports the following **authentication services**:
 - `OpenShift <oauthenticator/openshift.py>`__
 
 A `generic implementation <oauthenticator.generic.GenericOAuthenticator>`__, which you can
-use with **any provider**, is also available.
+use with **any OAuth2 identity provider**, is also available.
 
 General setup
 -------------
