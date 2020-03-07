@@ -1,8 +1,6 @@
 """
 Custom Authenticator to use MediaWiki OAuth with JupyterHub
 
-Most of the code c/o Yuvi Panda (@yuvipanda)
-
 Requires `mwoauth` package.
 """
 

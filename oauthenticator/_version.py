@@ -5,7 +5,7 @@
 
 version_info = (
     0,
-    10,
+    11,
     1,
     'dev',  # comment-out this line for a release
 )

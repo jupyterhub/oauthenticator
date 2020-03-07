@@ -80,16 +80,12 @@ setup_args = dict(
             'local-google = oauthenticator.google:LocalGoogleOAuthenticator',
 
             'mediawiki = oauthenticator.mediawiki:MWOAuthenticator',
-            'local-mediawiki = oauthenticator.mediawiki:LocalMWOAuthenticator',
 
             'okpy = oauthenticator.okpy:OkpyOAuthenticator',
             'local-okpy = oauthenticator.okpy:LocalOkpyOAuthenticator',
 
             'openshift = oauthenticator.openshift:OpenShiftOAuthenticator',
             'local-openshift = oauthenticator.openshift:LocalOpenShiftOAuthenticator',
-
-            'awscognito = oauthenticator.awscognito:AWSCognitoAuthenticator',
-            'local-awscognito = oauthenticator.awscognito:LocalAWSCognitoAuthenticator',
         ],
     },
     classifiers         = [

@@ -6,8 +6,10 @@ Derived from the GitHub OAuth authenticator.
 
 import os
 import json
+import urllib.parse
 
 from tornado import gen
+from tornado.httpclient import AsyncHTTPClient
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
@@ -19,31 +21,27 @@ from jupyterhub.utils import url_path_join
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
-class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
-    '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
-       authorize_redirect.'''
-    @property
-    def scope(self):
-        return self.authenticator.scope
-
-
-class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
-    pass
-
-
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-
-    login_handler = GoogleLoginHandler
-    callback_handler = GoogleOAuthHandler
-
     @default('scope')
     def _scope_default(self):
         return ['openid', 'email']
 
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
+
+    @default("token_url")
+    def _token_url_default(self):
+        return "https://www.googleapis.com/oauth2/v4/token"
+
+    user_info_url = Unicode(
+        "https://www.googleapis.com/oauth2/v1/userinfo", config=True
+    )
+
     hosted_domain = List(
         Unicode(),
         config=True,
-        help="""List of domains used to restrict sign-in, e.g. mycollege.edu"""
+        help="""List of domains used to restrict sign-in, e.g. mycollege.edu""",
     )
 
     @default('hosted_domain')
@@ -71,25 +69,35 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Google'),
         config=True,
-        help="""Google Apps hosted domain string, e.g. My College"""
+        help="""Google Apps hosted domain string, e.g. My College""",
     )
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        handler.settings['google_oauth'] = {
-            'key': self.client_id,
-            'secret': self.client_secret,
-            'scope': self.scope,
-        }
-        user = await handler.get_authenticated_user(
-            redirect_uri=self.get_callback_url(handler),
-            code=code)
-        access_token = str(user['access_token'])
+        body = urllib.parse.urlencode(
+            dict(
+                code=code,
+                redirect_uri=self.get_callback_url(handler),
+                client_id=self.client_id,
+                client_secret=self.client_secret,
+                grant_type="authorization_code",
+            )
+        )
 
-        http_client = handler.get_auth_http_client()
+        http_client = AsyncHTTPClient()
 
         response = await http_client.fetch(
-            self._OAUTH_USERINFO_URL + '?access_token=' + access_token
+            self.token_url,
+            method="POST",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            body=body,
+        )
+
+        user = json.loads(response.body.decode("utf-8", "replace"))
+        access_token = str(user['access_token'])
+
+        response = await http_client.fetch(
+            self.user_info_url + '?access_token=' + access_token
         )
 
         if not response:
@@ -102,18 +110,18 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if not bodyjs['verified_email']:
             self.log.warning("Google OAuth unverified email attempt: %s", user_email)
-            raise HTTPError(403,
-                "Google email {} not verified".format(user_email)
-            )
+            raise HTTPError(403, "Google email {} not verified".format(user_email))
 
         if self.hosted_domain:
-            if (
-                user_email_domain not in self.hosted_domain or
-                bodyjs['hd'] not in self.hosted_domain
-            ):
-                self.log.warning("Google OAuth unauthorized domain attempt: %s", user_email)
-                raise HTTPError(403,
-                    "Google account domain @{} not authorized.".format(user_email_domain)
+            if user_email_domain not in self.hosted_domain:
+                self.log.warning(
+                    "Google OAuth unauthorized domain attempt: %s", user_email
+                )
+                raise HTTPError(
+                    403,
+                    "Google account domain @{} not authorized.".format(
+                        user_email_domain
+                    ),
                 )
             if len(self.hosted_domain) == 1:
                 # unambiguous domain, use only base name
@@ -121,12 +129,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return {
             'name': username,
-            'auth_state': {
-                'access_token': access_token,
-                'google_user': bodyjs,
-            }
+            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
         }
+
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
     """A version that mixes in local system user creation"""
+
     pass

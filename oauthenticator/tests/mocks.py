@@ -127,7 +127,7 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         Checks code and allocates a new token.
         Replies with JSON model for the token.
         """
-        assert request.method == 'POST'
+        assert request.method == 'POST', request.method
         if token_request_style == 'json':
             body = request.body.decode('utf8')
             try:
@@ -165,7 +165,7 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         }
 
     def get_user(request):
-        assert request.method == 'GET'
+        assert request.method == 'GET', request.method
         auth_header = request.headers.get('Authorization')
         if auth_header:
             token = auth_header.split(None, 1)[1]

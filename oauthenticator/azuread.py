@@ -1,6 +1,5 @@
 """
 Custom Authenticator to use Azure AD with JupyterHub
-
 """
 
 import json
@@ -19,40 +18,32 @@ from traitlets import Unicode, default
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-def azure_token_url_for(tentant):
-    return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(tentant)
-
-
-def azure_authorize_url_for(tentant):
-    return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(
-        tentant)
-
-
-class AzureAdMixin(OAuth2Mixin):
-    tenant_id = os.environ.get('AAD_TENANT_ID', '')
-    _OAUTH_ACCESS_TOKEN_URL = azure_token_url_for(tenant_id)
-    _OAUTH_AUTHORIZE_URL = azure_authorize_url_for(tenant_id)
-
-
-class AzureAdLoginHandler(OAuthLoginHandler, AzureAdMixin):
-    pass
-
-
 class AzureAdOAuthenticator(OAuthenticator):
-    login_service = "Azure AD"
+    login_service = Unicode(
+		os.environ.get('LOGIN_SERVICE', 'Azure AD'),
+		config=True,
+		help="""Azure AD domain name string, e.g. My College"""
+	)
 
-    login_handler = AzureAdLoginHandler
-
-    tenant_id = Unicode(config=True)
-    username_claim = Unicode(config=True)
+    tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
 
+    username_claim = Unicode(config=True)
+
     @default('username_claim')
     def _username_claim_default(self):
         return 'name'
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(self.tenant_id)
+
+    @default("token_url")
+    def _token_url_default(self):
+        return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(self.tenant_id)
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -63,17 +54,16 @@ class AzureAdOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             grant_type='authorization_code',
             code=code,
-            resource=self.client_id,
             redirect_uri=self.get_callback_url(handler))
 
         data = urllib.parse.urlencode(
             params, doseq=True, encoding='utf-8', safe='=')
 
-        url = azure_token_url_for(self.tenant_id)
+        url = self.token_url
 
         headers = {
             'Content-Type':
-            'application/x-www-form-urlencoded; ; charset=UTF-8"'
+            'application/x-www-form-urlencoded; charset=UTF-8'
         }
         req = HTTPRequest(
             url,
