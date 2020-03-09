@@ -36,14 +36,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth2/v4/token" % (self.google_api_base_url)
+        return "%s/oauth2/v4/token" % (google_api_base_url)
 
     google_group_whitelist = Set(
         config=True, help="Automatically whitelist members of selected groups"
     )
 
     user_info_url = Unicode(
-        "%s/oauth2/v1/userinfo" % (self.google_api_base_url), config=True
+        "%s/oauth2/v1/userinfo" % (google_api_base_url), config=True
     )
 
     hosted_domain = List(
