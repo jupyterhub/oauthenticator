@@ -22,7 +22,7 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-    google_api_base_url = "https://www.googleapis.com"
+    google_api_base_url = Unicode("https://www.googleapis.com", config=True)
 
     # add the following to your jupyterhub_config.py to check groups
     # c.GoogleOAuthenticator.scope = ['openid', 'email', 'https://www.googleapis.com/auth/admin.directory.group.readonly']
@@ -165,7 +165,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.google_group_whitelist):
             url = "%s/admin/directory/v1/groups/%s/members/%s" % (
-                self.google_api_base_url,
+                google_api_base_url,
                 "%s@%s" % (user_email, user_email_domain),
                 user_email,
             )
