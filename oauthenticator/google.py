@@ -22,6 +22,10 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
+    google_api_base_url = "https://www.googleapis.com"
+
+    # add the following to your jupyterhub_config.py to check groups
+    # c.GoogleOAuthenticator.scope = ['openid', 'email', 'https://www.googleapis.com/auth/admin.directory.group.readonly']
     @default('scope')
     def _scope_default(self):
         return ['openid', 'email']
@@ -32,10 +36,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://www.googleapis.com/oauth2/v4/token"
+        return "%s/oauth2/v4/token" % (self.google_api_base_url)
+
+    google_group_whitelist = Set(
+        config=True, help="Automatically whitelist members of selected groups"
+    )
 
     user_info_url = Unicode(
-        "https://www.googleapis.com/oauth2/v1/userinfo", config=True
+        "%s/oauth2/v1/userinfo" % (self.google_api_base_url), config=True
     )
 
     hosted_domain = List(
@@ -127,10 +135,45 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
-        return {
-            'name': username,
-            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-        }
+        # Check if user is a member of any whitelisted groups or projects.
+        # These checks are performed here, as it requires `access_token`.
+        user_in_group = False
+        is_group_specified = False
+
+        if self.google_group_whitelist:
+            is_group_specified = True
+            user_in_group = await self._check_group_whitelist(user_id, access_token)
+
+        no_config_specified = not is_group_specified
+
+        if (
+            (is_group_specified and user_in_group)
+            or no_config_specified
+        ):
+            return {
+                'name': username,
+                'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+            }
+        else:
+            self.log.warning("%s not in group or project whitelist", username)
+            return None
+
+
+    async def _check_group_whitelist(self, user_email, user_email_domain, access_token):
+        http_client = AsyncHTTPClient()
+        headers = _api_headers(access_token)
+        # Check if user is a member of any group in the whitelist
+        for group in map(url_escape, self.google_group_whitelist):
+            url = "%s/admin/directory/v1/groups/%s/members/%s" % (
+                self.google_api_base_url,
+                "%s@%s" % (user_email, user_email_domain),
+                user_email,
+            )
+            req = HTTPRequest(url, method="GET", headers=headers)
+            resp = await http_client.fetch(req, raise_error=False)
+            if resp.code == 200:
+                return True  # user _is_ in group
+        return False
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
