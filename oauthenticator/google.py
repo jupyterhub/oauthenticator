@@ -22,7 +22,18 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-    google_api_base_url = Unicode("https://www.googleapis.com", config=True)
+    google_api_url = Unicode("https://www.googleapis.com", config=True)
+
+    @default('google_api_base_url')
+    def _google_api_base_url(self)
+        """get default google apis url from env"""
+        google_api_url = os.getenv('GOOGLE_API_URL')
+
+        # default to gitlab.com
+        if not google_api_url:
+            google_api_url = 'https://www.googleapis.com'
+
+        return google_api_url
 
     # add the following to your jupyterhub_config.py to check groups
     # c.GoogleOAuthenticator.scope = ['openid', 'email', 'https://www.googleapis.com/auth/admin.directory.group.readonly']
@@ -36,14 +47,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth2/v4/token" % (google_api_base_url)
+        return "%s/oauth2/v4/token" % (self.google_api_url)
 
     google_group_whitelist = Set(
         config=True, help="Automatically whitelist members of selected groups"
     )
 
     user_info_url = Unicode(
-        "%s/oauth2/v1/userinfo" % (google_api_base_url), config=True
+        "%s/oauth2/v1/userinfo" % (self.google_api_url), config=True
     )
 
     hosted_domain = List(
@@ -165,7 +176,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # Check if user is a member of any group in the whitelist
         for group in map(url_escape, self.google_group_whitelist):
             url = "%s/admin/directory/v1/groups/%s/members/%s" % (
-                google_api_base_url,
+                self.google_api_base_url,
                 "%s@%s" % (user_email, user_email_domain),
                 user_email,
             )
