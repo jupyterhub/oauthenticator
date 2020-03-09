@@ -25,7 +25,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
     @default('google_api_base_url')
-    def _google_api_base_url(self)
+    def _default_google_api_base_url(self):
         """get default google apis url from env"""
         google_api_url = os.getenv('GOOGLE_API_URL')
 
@@ -53,9 +53,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True, help="Automatically whitelist members of selected groups"
     )
 
-    user_info_url = Unicode(
-        "%s/oauth2/v1/userinfo" % (self.google_api_url), config=True
-    )
+    user_info_url = Unicode(config=True)
+
+    @default('user_info_url')
+    def _user_info_url(self):
+        return "%s/oauth2/v1/userinfo" % (self.google_api_url)
 
     hosted_domain = List(
         Unicode(),
