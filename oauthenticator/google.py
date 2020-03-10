@@ -53,6 +53,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True, help="Automatically whitelist members of selected groups"
     )
 
+    admin_google_groups = Set(
+        config=True, help="Groups whose members should have Jupyterhub admin privileges"
+    )
+
     user_info_url = Unicode(
         "https://www.googleapis.com/oauth2/v1/userinfo", config=True
     )
@@ -146,6 +150,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
+        if self.admin_google_groups:
+            is_admin = await self._check_user_in_groups(self.admin_google_groups , user_email, user_email_domain, access_token)
+
         # Check if user is a member of any whitelisted groups or projects.
         # These checks are performed here, as it requires `access_token`.
         user_in_group = False
@@ -153,14 +160,22 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if self.google_group_whitelist:
             is_group_specified = True
-            user_in_group = await self._check_group_whitelist(user_email, user_email_domain, access_token)
+            user_in_group = await self._check_user_in_groups(self.google_group_whitelist , user_email, user_email_domain, access_token)
 
         no_config_specified = not is_group_specified
 
-        if (
+        if is_admin:
+            self.log.info("%s is in the admin group", username)
+            return {
+                'name': username,
+                'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+                'admin': is_admin,
+            }
+        elif (
             (is_group_specified and user_in_group)
             or no_config_specified
         ):
+            self.log.info("%s can login on this server", username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
@@ -170,10 +185,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             return None
 
 
-    async def _check_group_whitelist(self, user_email, user_email_domain, access_token):
+    async def _check_user_in_groups(self, groups, user_email, user_email_domain, access_token):
         http_client = AsyncHTTPClient()
         # Check if user is a member of any group in the whitelist
-        for group in self.google_group_whitelist:
+        for group in groups:
             url = "%s/admin/directory/v1/groups/%s/members/%s?access_token=%s" % (
                 self.google_api_url,
                 "%s@%s" % (group, user_email_domain),
