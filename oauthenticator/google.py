@@ -150,10 +150,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
+        # Check if user is a member of any admin groups.
+        # These checks are performed here, as it requires `access_token`.
+        is_admin = False
+        is_admin_group_specified = False
         if self.admin_google_groups:
+            is_admin_group_specified = True
             is_admin = await self._check_user_in_groups(self.admin_google_groups , user_email, user_email_domain, access_token)
 
-        # Check if user is a member of any whitelisted groups or projects.
+        # Check if user is a member of any whitelisted groups.
         # These checks are performed here, as it requires `access_token`.
         user_in_group = False
         is_group_specified = False
@@ -164,8 +169,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         no_config_specified = not is_group_specified
 
-        if is_admin:
+        if is_admin_group_specified and is_admin:
             self.log.info("%s is in the admin group", username)
+            return {
+                'name': username,
+                'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+                'admin': is_admin,
+            }
+        elif is_admin_group_specified and is_group_specified and user_in_group:
+            self.log.info("%s can login on this server", username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
