@@ -29,7 +29,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """get default google apis url from env"""
         google_api_url = os.getenv('GOOGLE_API_URL')
 
-        # default to gitlab.com
+        # default to googleapis.com
         if not google_api_url:
             google_api_url = 'https://www.googleapis.com'
 
@@ -170,14 +170,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         no_config_specified = not is_group_specified
 
         if is_admin_group_specified and is_admin:
-            self.log.info("%s is in the admin group", username)
+            self.log.debug("%s is in the admin group", username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
                 'admin': is_admin,
             }
         elif is_admin_group_specified and is_group_specified and user_in_group:
-            self.log.info("%s can login on this server", username)
+            self.log.debug"%s can login on this server", username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
@@ -187,7 +187,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             (is_group_specified and user_in_group)
             or no_config_specified
         ):
-            self.log.info("%s can login on this server", username)
+            self.log.debug("%s can login on this server", username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
