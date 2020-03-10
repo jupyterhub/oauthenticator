@@ -9,7 +9,7 @@ import json
 import urllib.parse
 
 from tornado import gen
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
@@ -24,8 +24,8 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
-    @default('google_api_base_url')
-    def _default_google_api_base_url(self):
+    @default('google_api_url')
+    def _google_api_url(self):
         """get default google apis url from env"""
         google_api_url = os.getenv('GOOGLE_API_URL')
 
@@ -53,11 +53,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True, help="Automatically whitelist members of selected groups"
     )
 
-    user_info_url = Unicode(config=True)
-
-    @default('user_info_url')
-    def _user_info_url(self):
-        return "%s/oauth2/v1/userinfo" % (self.google_api_url)
+    user_info_url = Unicode(
+        "https://www.googleapis.com/oauth2/v1/userinfo", config=True
+    )
 
     hosted_domain = List(
         Unicode(),
@@ -155,7 +153,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if self.google_group_whitelist:
             is_group_specified = True
-            user_in_group = await self._check_group_whitelist(user_id, access_token)
+            user_in_group = await self._check_group_whitelist(user_email, user_email_domain, access_token)
 
         no_config_specified = not is_group_specified
 
@@ -168,21 +166,21 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
             }
         else:
-            self.log.warning("%s not in group or project whitelist", username)
+            self.log.warning("%s not in group whitelist", username)
             return None
 
 
     async def _check_group_whitelist(self, user_email, user_email_domain, access_token):
         http_client = AsyncHTTPClient()
-        headers = _api_headers(access_token)
         # Check if user is a member of any group in the whitelist
-        for group in map(url_escape, self.google_group_whitelist):
-            url = "%s/admin/directory/v1/groups/%s/members/%s" % (
-                self.google_api_base_url,
-                "%s@%s" % (user_email, user_email_domain),
+        for group in self.google_group_whitelist:
+            url = "%s/admin/directory/v1/groups/%s/members/%s?access_token=%s" % (
+                self.google_api_url,
+                "%s@%s" % (group, user_email_domain),
                 user_email,
+                access_token,
             )
-            req = HTTPRequest(url, method="GET", headers=headers)
+            req = HTTPRequest(url, method="GET")
             resp = await http_client.fetch(req, raise_error=False)
             if resp.code == 200:
                 return True  # user _is_ in group
