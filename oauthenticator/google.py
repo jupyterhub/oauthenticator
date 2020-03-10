@@ -177,7 +177,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 'admin': is_admin,
             }
         elif is_admin_group_specified and is_group_specified and user_in_group:
-            self.log.debug"%s can login on this server", username)
+            self.log.debug("%s can login on this server", username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'google_user': bodyjs},
