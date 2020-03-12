@@ -7,14 +7,14 @@ If you'd like to rely on google groups for managing access to jupyterhub you'd h
 ## Install googlegroups `extra_requires`
 
 ```shell
-pip install oauthenticator[oauthenticator]
+pip install oauthenticator[googlegroups]
 ```
 
 ## Create a service account that only has read access to groups and users that can impersonate a G Suite admin user
 
-Google does not offer a way for letting using users check which groups they belong to via an API,
-because of this caveat the way to be able to check what groups an user belongs to we have user a service account
-and allow give it read only access to users and groups.
+Google does not offer a way for letting users check which groups they belong to via an API,
+because of this caveat the way to be able to check what groups an user belongs to we have use a service account
+and give it read only access to users and groups.
 
 ## Instructions
 
