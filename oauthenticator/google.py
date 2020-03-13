@@ -174,6 +174,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             groups_user_is_member_of = await self._google_groups_for_user(
                     user_email=user_email,
                     credentials=credentials)
+            bodyjs['google_groups'] = groups_user_is_member_of
 
         # Check if user is a member of any admin groups.
         is_admin = False
