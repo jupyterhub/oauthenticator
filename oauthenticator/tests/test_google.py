@@ -8,6 +8,7 @@ from ..google import GoogleOAuthenticator
 
 from .mocks import setup_oauth_mock
 
+
 def user_model(email):
     """Return a user model"""
     return {'email': email, 'hd': email.split('@')[1], 'verified_email': True}
