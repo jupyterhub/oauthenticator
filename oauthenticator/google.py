@@ -112,7 +112,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
-    async def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None, google_groups=None):
         code = handler.get_argument("code")
         body = urllib.parse.urlencode(
             dict(
@@ -167,38 +167,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
-        if self.admin_google_groups or self.google_group_whitelist:
-                credentials = await self._service_client_credentials(
-                        scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
-                        user_email_domain=user_email_domain)
-                google_groups = await self._google_groups_for_user(
-                        user_email=user_email,
-                        credentials=credentials)
-                bodyjs['google_groups'] = google_groups
+        user = await self._return(
+            username,
+            access_token,
+            bodyjs,
+            admin_google_groups=self.admin_google_groups,
+            google_group_whitelist=self.google_group_whitelist,
+            google_groups=google_groups)
 
-                # Check if user is a member of any admin groups.
-                is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
-                # Check if user is a member of any whitelisted groups.
-                user_in_group = check_user_in_groups(google_groups, self.google_group_whitelist[user_email_domain])
-
-                if self.admin_google_groups:
-                        return {
-                            'name': username,
-                            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-                            'admin': is_admin,
-                        }
-                elif self.google_group_whitelist:
-                    if user_in_group:
-                        return {
-                            'name': username,
-                            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-                        }
-                    return None
-
-        return {
-            'name': username,
-            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-        }
+        return user
 
     async def _service_client_credentials(self, scopes, user_email_domain):
         """
@@ -254,6 +231,36 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         results = [ g['email'].split('@')[0] for g in results.get('groups', [{'email': None}]) ]
         self.log.debug("user_email %s is a member of %s", user_email, results)
         return results
+
+    async def _return(self, username, access_token, bodyjs, admin_google_groups=None, google_group_whitelist=None, google_groups=None):
+        user = {
+            'name': username,
+            'auth_state': {'access_token': access_token, 'google_user': bodyjs}
+        }
+        if admin_google_groups or google_group_whitelist:
+            if google_groups is None:
+                credentials = await self._service_client_credentials(
+                        scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
+                        user_email_domain=bodyjs['hd'])
+                google_groups = await self._google_groups_for_user(
+                        user_email=bodyjs['email'],
+                        credentials=credentials)
+            user['auth_state']['google_user']['google_groups'] = google_groups
+
+            # Check if user is a member of any admin groups.
+            if admin_google_groups:
+                is_admin = check_user_in_groups(google_groups, admin_google_groups[bodyjs['hd']])
+            # Check if user is a member of any whitelisted groups.
+            user_in_group = check_user_in_groups(google_groups, google_group_whitelist[bodyjs['hd']])
+
+            if admin_google_groups and (is_admin or user_in_group):
+                user['admin'] = is_admin
+            elif user_in_group:
+                return user
+            else:
+                return None
+
+        return user
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):

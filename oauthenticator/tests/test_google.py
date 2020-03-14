@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from pytest import fixture, mark, raises
 from tornado.web import Application, HTTPError
 
-from ..google import GoogleOAuthenticator, check_user_in_groups
+from ..google import GoogleOAuthenticator
 
 from .mocks import setup_oauth_mock
 
@@ -71,33 +71,33 @@ async def test_multiple_hosted_domain(google_client):
 async def test_user_in_groups(google_client):
     authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
-        gsuite_administrator={'email.com': 'fake'},
         admin_google_groups={'email.com': ['fakeadmingroup']},
-        google_group_whitelist = {'email.com': ['fakegroup'] }
+        google_group_whitelist={'email.com': ['fakegroup']}
     )
-    admin_user = user_model('fakeadmin@email.com')
-    admin_user['google_groups'] = ['anotherone', 'fakeadmingroup']
-    user_is_admin = check_user_in_groups(
-        member_groups=admin_user['google_groups'],
-        allowed_groups=authenticator.admin_google_groups[admin_user['hd']]
-    )
+    admin_handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
+    admin_user_info = await authenticator.authenticate(admin_handler, google_groups=['anotherone', 'fakeadmingroup'])
+    user_is_admin = admin_user_info['admin']
     assert user_is_admin == True
-    whitelist_user = user_model('fakewhitelisted@email.com')
-    whitelist_user['google_groups'] = ['anotherone', 'fakegroup']
-    user_is_whitelisted = check_user_in_groups(
-        member_groups=whitelist_user['google_groups'],
-        allowed_groups=authenticator.google_group_whitelist[whitelist_user['hd']]
-    )
-    user_is_not_admin = check_user_in_groups(
-        member_groups=whitelist_user['google_groups'],
-        allowed_groups=authenticator.admin_google_groups[whitelist_user['hd']]
-    )
-    assert user_is_whitelisted == True
+    whitelist_handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
+    whitelist_user_info = await authenticator.authenticate(whitelist_handler, google_groups=['anotherone', 'fakegroup'])
+    user_is_whitelisted = whitelist_user_info['auth_state']['google_user']['google_groups']
+    user_is_not_admin = whitelist_user_info['admin']
+    assert 'fakegroup' in user_is_whitelisted
     assert user_is_not_admin == False
-    non_whitelist_user = user_model('fakenonwhitelisted@email.com')
-    non_whitelist_user['google_groups'] = ['anotherone', 'fakenonwhitelistedgroup']
-    user_is_not_whitelisted = check_user_in_groups(
-        member_groups=non_whitelist_user['google_groups'],
-        allowed_groups=authenticator.google_group_whitelist[non_whitelist_user['hd']]
+    non_whitelist_handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
+    non_whitelist_user_info = await authenticator.authenticate(non_whitelist_handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
+    assert non_whitelist_user_info is None
+    non_admin_authenticator = GoogleOAuthenticator(
+        hosted_domain=['email.com', 'mycollege.edu'],
+        google_group_whitelist={'email.com': ['fakegroup']}
     )
-    assert user_is_not_whitelisted == False
+    admin_handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
+    admin_user_info = await non_admin_authenticator.authenticate(admin_handler, google_groups=['anotherone', 'fakeadmingroup'])
+    assert admin_user_info is None
+    whitelist_handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
+    whitelist_user_info = await non_admin_authenticator.authenticate(whitelist_handler, google_groups=['anotherone', 'fakegroup'])
+    user_is_whitelisted = whitelist_user_info['auth_state']['google_user']['google_groups']
+    assert 'fakegroup' in user_is_whitelisted
+    non_whitelist_handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
+    non_whitelist_user_info = await non_admin_authenticator.authenticate(non_whitelist_handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
+    assert non_whitelist_user_info is None
