@@ -169,7 +169,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if self.admin_google_groups or self.google_group_whitelist:
                 credentials = await self._service_client_credentials(
-                        scopes=['https://www.googleapis.com/auth/admin.directory.group.readonly'],
+                        scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
                         user_email_domain=user_email_domain)
                 google_groups = await self._google_groups_for_user(
                         user_email=user_email,
