@@ -20,8 +20,8 @@ from jupyterhub.utils import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-async def check_user_in_groups(member_groups, allowed_groups):
-    # Check if user is a member of any group in the whitelist
+def check_user_in_groups(member_groups, allowed_groups):
+    # Check if user is a member of any group in the allowed groups
     if any(g in member_groups for g in allowed_groups):
         return True  # user _is_ in group
     else:
@@ -168,56 +168,37 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 username = user_email.split('@')[0]
 
         if self.admin_google_groups or self.google_group_whitelist:
-            credentials = await self._service_client_credentials(
-                    scopes=['https://www.googleapis.com/auth/admin.directory.group.readonly'],
-                    user_email_domain=user_email_domain)
-            groups_user_is_member_of = await self._google_groups_for_user(
-                    user_email=user_email,
-                    credentials=credentials)
-            bodyjs['google_groups'] = groups_user_is_member_of
+                credentials = await self._service_client_credentials(
+                        scopes=['https://www.googleapis.com/auth/admin.directory.group.readonly'],
+                        user_email_domain=user_email_domain)
+                google_groups = await self._google_groups_for_user(
+                        user_email=user_email,
+                        credentials=credentials)
+                bodyjs['google_groups'] = google_groups
 
-        # Check if user is a member of any admin groups.
-        is_admin = False
-        is_admin_group_specified = False
-        if self.admin_google_groups:
-            is_admin_group_specified = True
-            is_admin = await check_user_in_groups(member_groups=groups_user_is_member_of, allowed_groups=self.admin_google_groups[user_email_domain])
+                # Check if user is a member of any admin groups.
+                is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
+                # Check if user is a member of any whitelisted groups.
+                user_in_group = check_user_in_groups(google_groups, self.google_group_whitelist[user_email_domain])
 
-        # Check if user is a member of any whitelisted groups.
-        user_in_group = False
-        is_group_specified = False
-        if self.google_group_whitelist:
-            is_group_specified = True
-            user_in_group = await check_user_in_groups(member_groups=groups_user_is_member_of, allowed_groups=self.google_group_whitelist[user_email_domain])
+                if self.admin_google_groups:
+                        return {
+                            'name': username,
+                            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+                            'admin': is_admin,
+                        }
+                elif self.google_group_whitelist:
+                    if user_in_group:
+                        return {
+                            'name': username,
+                            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+                        }
+                    return None
 
-        no_config_specified = not is_group_specified
-
-        if is_admin_group_specified and is_admin:
-            self.log.debug("%s is in an admin group", username)
-            return {
-                'name': username,
-                'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-                'admin': is_admin,
-            }
-        elif is_admin_group_specified and is_group_specified and user_in_group:
-            self.log.debug("%s can login on this server", username)
-            return {
-                'name': username,
-                'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-                'admin': is_admin,
-            }
-        elif (
-            (is_group_specified and user_in_group)
-            or no_config_specified
-        ):
-            self.log.debug("%s can login on this server", username)
-            return {
-                'name': username,
-                'auth_state': {'access_token': access_token, 'google_user': bodyjs},
-            }
-        else:
-            self.log.warning("%s not in group whitelist", username)
-            return None
+        return {
+            'name': username,
+            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+        }
 
     async def _service_client_credentials(self, scopes, user_email_domain):
         """

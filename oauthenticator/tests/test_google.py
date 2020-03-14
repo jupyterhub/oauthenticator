@@ -77,18 +77,18 @@ async def test_user_in_groups(google_client):
     )
     admin_user = user_model('fakeadmin@email.com')
     admin_user['google_groups'] = ['anotherone', 'fakeadmingroup']
-    user_is_admin = await check_user_in_groups(
+    user_is_admin = check_user_in_groups(
         member_groups=admin_user['google_groups'],
         allowed_groups=authenticator.admin_google_groups[admin_user['hd']]
     )
     assert user_is_admin == True
     whitelist_user = user_model('fakewhitelisted@email.com')
     whitelist_user['google_groups'] = ['anotherone', 'fakegroup']
-    user_is_whitelisted = await check_user_in_groups(
+    user_is_whitelisted = check_user_in_groups(
         member_groups=whitelist_user['google_groups'],
         allowed_groups=authenticator.google_group_whitelist[whitelist_user['hd']]
     )
-    user_is_not_admin = await check_user_in_groups(
+    user_is_not_admin = check_user_in_groups(
         member_groups=whitelist_user['google_groups'],
         allowed_groups=authenticator.admin_google_groups[whitelist_user['hd']]
     )
@@ -96,7 +96,7 @@ async def test_user_in_groups(google_client):
     assert user_is_not_admin == False
     non_whitelist_user = user_model('fakenonwhitelisted@email.com')
     non_whitelist_user['google_groups'] = ['anotherone', 'fakenonwhitelistedgroup']
-    user_is_not_whitelisted = await check_user_in_groups(
+    user_is_not_whitelisted = check_user_in_groups(
         member_groups=non_whitelist_user['google_groups'],
         allowed_groups=authenticator.google_group_whitelist[non_whitelist_user['hd']]
     )
