@@ -167,25 +167,25 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
-        user = await self._return(
-            username,
-            access_token,
-            bodyjs,
-            admin_google_groups=self.admin_google_groups,
-            google_group_whitelist=self.google_group_whitelist,
-            google_groups=google_groups)
+        user_info = {
+            'name': username,
+            'auth_state': {'access_token': access_token, 'google_user': bodyjs}
+        }
 
-        return user
+        if self.admin_google_groups or self.google_group_whitelist:
+            user_info = await self._add_google_groups_info(user_info, google_groups)
 
-    async def _service_client_credentials(self, scopes, user_email_domain):
+        return user_info
+
+    def _service_client_credentials(self, scopes, user_email_domain):
         """
         Return a configured service client credentials for the API.
         """
         try:
             from google.oauth2 import service_account
         except:
-            self.log.warning("Could not import google.oauth2's service_account, you may need to run pip install oauthenticator[googlegroups] or not declare google groups")
-            raise HTTPError(403, "googlegroups dependencies not found")
+            self.log.error("Could not import google.oauth2's service_account, you may need to run pip install oauthenticator[googlegroups] or not declare google groups")
+            raise
 
         gsuite_administrator_email = "{}@{}".format(self.gsuite_administrator[user_email_domain], user_email_domain)
         self.log.debug("scopes are %s, user_email_domain is %s", scopes, user_email_domain)
@@ -198,15 +198,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return credentials
 
-    async def _service_client(self, service_name, service_version, credentials, http=None):
+    def _service_client(self, service_name, service_version, credentials, http=None):
         """
         Return a configured service client for the API.
         """
         try:
             from googleapiclient.discovery import build
         except:
-            self.log.warning("Could not import googleapiclient.discovery's build, you may need to run pip install oauthenticator[googlegroups] or not declare google groups")
-            raise HTTPError(403, "googlegroups dependencies not found")
+            self.log.error("Could not import googleapiclient.discovery's build, you may need to run pip install oauthenticator[googlegroups] or not declare google groups")
+            raise
 
         self.log.debug("service_name is %s, service_version is %s", service_name, service_version)
 
@@ -221,7 +221,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         Return google groups a given user is a member of
         """
-        service = await self._service_client(
+        service = self._service_client(
             service_name='admin',
             service_version='directory_v1',
             credentials=credentials,
@@ -232,35 +232,31 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         self.log.debug("user_email %s is a member of %s", user_email, results)
         return results
 
-    async def _return(self, username, access_token, bodyjs, admin_google_groups=None, google_group_whitelist=None, google_groups=None):
-        user = {
-            'name': username,
-            'auth_state': {'access_token': access_token, 'google_user': bodyjs}
-        }
-        if admin_google_groups or google_group_whitelist:
-            if google_groups is None:
-                credentials = await self._service_client_credentials(
-                        scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
-                        user_email_domain=bodyjs['hd'])
-                google_groups = await self._google_groups_for_user(
-                        user_email=bodyjs['email'],
-                        credentials=credentials)
-            user['auth_state']['google_user']['google_groups'] = google_groups
+    async def _add_google_groups_info(self, user_info, google_groups=None):
+        user_email_domain=user_info['auth_state']['google_user']['hd']
+        user_email=user_info['auth_state']['google_user']['email']
+        if google_groups is None:
+            credentials = self._service_client_credentials(
+                    scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
+                    user_email_domain=user_email_domain)
+            google_groups = await self._google_groups_for_user(
+                    user_email=user_email,
+                    credentials=credentials)
+        user_info['auth_state']['google_user']['google_groups'] = google_groups
 
-            # Check if user is a member of any admin groups.
-            if admin_google_groups:
-                is_admin = check_user_in_groups(google_groups, admin_google_groups[bodyjs['hd']])
-            # Check if user is a member of any whitelisted groups.
-            user_in_group = check_user_in_groups(google_groups, google_group_whitelist[bodyjs['hd']])
+        # Check if user is a member of any admin groups.
+        if self.admin_google_groups:
+            is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
+        # Check if user is a member of any whitelisted groups.
+        user_in_group = check_user_in_groups(google_groups, self.google_group_whitelist[user_email_domain])
 
-            if admin_google_groups and (is_admin or user_in_group):
-                user['admin'] = is_admin
-            elif user_in_group:
-                return user
-            else:
-                return None
-
-        return user
+        if self.admin_google_groups and (is_admin or user_in_group):
+            user_info['admin'] = is_admin
+            return user_info
+        elif user_in_group:
+            return user_info
+        else:
+            return None
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
