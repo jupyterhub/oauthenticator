@@ -68,38 +68,41 @@ async def test_multiple_hosted_domain(google_client):
     assert exc.value.status_code == 403
 
 
-async def test_user_in_groups(google_client):
+async def test_admin_google_groups(google_client):
     authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
         admin_google_groups={'email.com': ['fakeadmingroup']},
         google_group_whitelist={'email.com': ['fakegroup']}
     )
-    admin_handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    admin_user_info = await authenticator.authenticate(admin_handler, google_groups=['anotherone', 'fakeadmingroup'])
-    user_is_admin = admin_user_info['admin']
-    assert user_is_admin == True
-    whitelist_handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
-    whitelist_user_info = await authenticator.authenticate(whitelist_handler, google_groups=['anotherone', 'fakegroup'])
-    user_is_whitelisted = whitelist_user_info['auth_state']['google_user']['google_groups']
-    user_is_not_admin = whitelist_user_info['admin']
-    assert 'fakegroup' in user_is_whitelisted
-    assert user_is_not_admin == False
-    non_whitelist_handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
-    non_whitelist_user_info = await authenticator.authenticate(non_whitelist_handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
-    assert non_whitelist_user_info is None
-    non_admin_authenticator = GoogleOAuthenticator(
+    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
+    admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
+    admin_user = admin_user_info['admin']
+    assert admin_user == True
+    handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
+    whitelist_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
+    whitelisted_user_groups = whitelist_user_info['auth_state']['google_user']['google_groups']
+    admin_user = whitelist_user_info['admin']
+    assert 'fakegroup' in whitelisted_user_groups
+    assert admin_user == False
+    handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
+    whitelisted_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
+    assert whitelisted_user_groups is None
+
+
+async def test_whitelisted_google_groups(google_client):
+    authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
         google_group_whitelist={'email.com': ['fakegroup']}
     )
-    admin_handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    admin_user_info = await non_admin_authenticator.authenticate(admin_handler, google_groups=['anotherone', 'fakeadmingroup'])
+    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
+    admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
     assert admin_user_info is None
-    whitelist_handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
-    whitelist_user_info = await non_admin_authenticator.authenticate(whitelist_handler, google_groups=['anotherone', 'fakegroup'])
-    user_is_whitelisted = whitelist_user_info['auth_state']['google_user']['google_groups']
-    admin_field_does_not_exist = whitelist_user_info.get('admin')
-    assert 'fakegroup' in user_is_whitelisted
-    assert admin_field_does_not_exist is None
-    non_whitelist_handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
-    non_whitelist_user_info = await non_admin_authenticator.authenticate(non_whitelist_handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
-    assert non_whitelist_user_info is None
+    handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
+    whitelist_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
+    whitelisted_user_groups = whitelist_user_info['auth_state']['google_user']['google_groups']
+    admin_field = whitelist_user_info.get('admin')
+    assert 'fakegroup' in whitelisted_user_groups
+    assert admin_field is None
+    handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
+    whitelisted_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
+    assert whitelisted_user_groups is None
