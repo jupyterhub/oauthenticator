@@ -110,9 +110,25 @@ with open('requirements.txt') as f:
             continue
         install_requires.append(req)
 
-setup_args['extras_require'] = {
-    'googlegroups': ['google-api-python-client==1.7.11', 'google-auth-oauthlib==0.4.1']
-}
+
+setup_args['extras_require'] = install_extra_require = {}
+
+install_extra_require['googlegroups'] = []
+with open('googlegroups-requirements.txt') as f:
+    for line in f.readlines():
+        req = line.strip()
+        if not req or req.startswith(('-e', '#', '-r')):
+            continue
+        install_extra_require['googlegroups'].append(req)
+
+install_extra_require['globus'] = []
+with open('globus-requirements.txt') as f:
+    for line in f.readlines():
+        req = line.strip()
+        if not req or req.startswith(('-e', '#', '-r')):
+            continue
+        install_extra_require['globus'].append(req)
+
 
 def main():
     setup(**setup_args)

@@ -1,0 +1,4 @@
+# extra requirements for googlegroups
+-r ./requirements.txt
+google-api-python-client==1.7.11
+google-auth-oauthlib==0.4.1
