@@ -184,8 +184,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         try:
             from google.oauth2 import service_account
         except:
-            self.log.error("Could not import google.oauth2's service_account, you may need to run pip install oauthenticator[googlegroups] or not declare google groups")
-            raise
+            raise ImportError(
+                "Could not import google.oauth2's service_account,"
+                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+            )
 
         gsuite_administrator_email = "{}@{}".format(self.gsuite_administrator[user_email_domain], user_email_domain)
         self.log.debug("scopes are %s, user_email_domain is %s", scopes, user_email_domain)
@@ -205,8 +207,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         try:
             from googleapiclient.discovery import build
         except:
-            self.log.error("Could not import googleapiclient.discovery's build, you may need to run pip install oauthenticator[googlegroups] or not declare google groups")
-            raise
+            raise ImportError(
+                "Could not import googleapiclient.discovery's build,"
+                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+            )
 
         self.log.debug("service_name is %s, service_version is %s", service_name, service_version)
 
