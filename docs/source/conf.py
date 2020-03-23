@@ -126,25 +126,23 @@ exclude_patterns = []
 
 import recommonmark
 from recommonmark.transform import AutoStructify
+from recommonmark.parser import CommonMarkParser
 
 
 def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
     app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
-
-
-source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
-}
-source_suffix = ['.rst', '.md']
+    app.add_source_parser(CommonMarkParser)
+    app.add_source_suffix('.md', 'markdown')
+    app.add_source_suffix('.rst', 'restructuredtext')
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pandas_sphinx_theme'
+html_theme = 'pydata_sphinx_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
