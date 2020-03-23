@@ -1,6 +1,6 @@
 -r ./requirements.txt
--r ./globus-requirements.txt
--r ./googlegroups-requirements.txt
+.[globus]
+.[googlegroups]
 codecov
 flake8
 pyjwt
