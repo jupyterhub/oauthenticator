@@ -22,8 +22,8 @@ try:
     import globus_sdk
 except:
     raise ImportError(
-        'globus_sdk is not installed, please see '
-        '"globus-requirements.txt" for using Globus oauth.'
+        'globus_sdk is not installed, please run '
+        '`pip install oauthenticator[globus]` for using Globus oauth.'
     )
 
 
