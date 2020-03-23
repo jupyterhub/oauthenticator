@@ -113,6 +113,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'autodoc_traits',
     'sphinx_copybutton',
+    'recommonmark',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -126,16 +127,12 @@ exclude_patterns = []
 
 import recommonmark
 from recommonmark.transform import AutoStructify
-from recommonmark.parser import CommonMarkParser
 
 
 def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
     app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
-    app.add_source_parser(CommonMarkParser)
-    app.add_source_suffix('.md', 'markdown')
-    app.add_source_suffix('.rst', 'restructuredtext')
 
 # -- Options for HTML output -------------------------------------------------
 
