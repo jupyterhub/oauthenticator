@@ -9,19 +9,39 @@ import json
 import urllib.parse
 
 from tornado import gen
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import Unicode, List, default, validate
+from traitlets import Dict, Unicode, List, default, validate
 
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
+def check_user_in_groups(member_groups, allowed_groups):
+    # Check if user is a member of any group in the allowed groups
+    if any(g in member_groups for g in allowed_groups):
+        return True  # user _is_ in group
+    else:
+        return False
+
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
+    google_api_url = Unicode("https://www.googleapis.com", config=True)
+
+    @default('google_api_url')
+    def _google_api_url(self):
+        """get default google apis url from env"""
+        google_api_url = os.getenv('GOOGLE_API_URL')
+
+        # default to googleapis.com
+        if not google_api_url:
+            google_api_url = 'https://www.googleapis.com'
+
+        return google_api_url
+
     @default('scope')
     def _scope_default(self):
         return ['openid', 'email']
@@ -32,7 +52,27 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://www.googleapis.com/oauth2/v4/token"
+        return "%s/oauth2/v4/token" % (self.google_api_url)
+
+    google_service_account_keys = Dict(
+        Unicode(),
+        help="Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation"
+    ).tag(config=True)
+
+    gsuite_administrator = Dict(
+        Unicode(),
+        help="Username of a G Suite Administrator for the service account to act as"
+    ).tag(config=True)
+
+    google_group_whitelist = Dict(
+        List(Unicode()),
+        help="Automatically whitelist members of selected groups"
+    ).tag(config=True)
+
+    admin_google_groups = Dict(
+        List(Unicode()),
+        help="Groups whose members should have Jupyterhub admin privileges"
+    ).tag(config=True)
 
     user_info_url = Unicode(
         "https://www.googleapis.com/oauth2/v1/userinfo", config=True
@@ -72,7 +112,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
-    async def authenticate(self, handler, data=None):
+    async def authenticate(self, handler, data=None, google_groups=None):
         code = handler.get_argument("code")
         body = urllib.parse.urlencode(
             dict(
@@ -127,10 +167,100 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
-        return {
+        user_info = {
             'name': username,
-            'auth_state': {'access_token': access_token, 'google_user': bodyjs},
+            'auth_state': {'access_token': access_token, 'google_user': bodyjs}
         }
+
+        if self.admin_google_groups or self.google_group_whitelist:
+            user_info = await self._add_google_groups_info(user_info, google_groups)
+
+        return user_info
+
+    def _service_client_credentials(self, scopes, user_email_domain):
+        """
+        Return a configured service client credentials for the API.
+        """
+        try:
+            from google.oauth2 import service_account
+        except:
+            raise ImportError(
+                "Could not import google.oauth2's service_account,"
+                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+            )
+
+        gsuite_administrator_email = "{}@{}".format(self.gsuite_administrator[user_email_domain], user_email_domain)
+        self.log.debug("scopes are %s, user_email_domain is %s", scopes, user_email_domain)
+        credentials = service_account.Credentials.from_service_account_file(
+            self.google_service_account_keys[user_email_domain],
+            scopes=scopes
+        )
+
+        credentials = credentials.with_subject(gsuite_administrator_email)
+
+        return credentials
+
+    def _service_client(self, service_name, service_version, credentials, http=None):
+        """
+        Return a configured service client for the API.
+        """
+        try:
+            from googleapiclient.discovery import build
+        except:
+            raise ImportError(
+                "Could not import googleapiclient.discovery's build,"
+                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+            )
+
+        self.log.debug("service_name is %s, service_version is %s", service_name, service_version)
+
+        return build(
+            serviceName=service_name,
+            version=service_version,
+            credentials=credentials,
+            cache_discovery=False,
+            http=http)
+
+    async def _google_groups_for_user(self, user_email, credentials, http=None):
+        """
+        Return google groups a given user is a member of
+        """
+        service = self._service_client(
+            service_name='admin',
+            service_version='directory_v1',
+            credentials=credentials,
+            http=http)
+
+        results = service.groups().list(userKey=user_email).execute()
+        results = [ g['email'].split('@')[0] for g in results.get('groups', [{'email': None}]) ]
+        self.log.debug("user_email %s is a member of %s", user_email, results)
+        return results
+
+    async def _add_google_groups_info(self, user_info, google_groups=None):
+        user_email_domain=user_info['auth_state']['google_user']['hd']
+        user_email=user_info['auth_state']['google_user']['email']
+        if google_groups is None:
+            credentials = self._service_client_credentials(
+                    scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
+                    user_email_domain=user_email_domain)
+            google_groups = await self._google_groups_for_user(
+                    user_email=user_email,
+                    credentials=credentials)
+        user_info['auth_state']['google_user']['google_groups'] = google_groups
+
+        # Check if user is a member of any admin groups.
+        if self.admin_google_groups:
+            is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
+        # Check if user is a member of any whitelisted groups.
+        user_in_group = check_user_in_groups(google_groups, self.google_group_whitelist[user_email_domain])
+
+        if self.admin_google_groups and (is_admin or user_in_group):
+            user_info['admin'] = is_admin
+            return user_info
+        elif user_in_group:
+            return user_info
+        else:
+            return None
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
