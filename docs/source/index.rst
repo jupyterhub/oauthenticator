@@ -38,6 +38,7 @@ but you can write your own OAuthenticator by subclassing :class:`oauthenticator.
    getting-started
    github
    gitlab
+   google
    cilogon
    writing-an-oauthenticator
    api/index
