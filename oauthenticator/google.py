@@ -15,6 +15,7 @@ from tornado.web import HTTPError
 
 from traitlets import Dict, Unicode, List, default, validate
 
+from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
@@ -27,6 +28,16 @@ def check_user_in_groups(member_groups, allowed_groups):
     else:
         return False
 
+class GoogleLoginHandler(OAuthLoginHandler):
+    """See https://developers.google.com/identity/protocols/oauth2 for general information."""
+
+    def authorize_redirect(self, *args, **kwargs):
+        """Add `access_type`, `approval_prompt` to redirect params"""
+        extra_params = kwargs.setdefault('extra_params', {})
+        extra_params["access_type"] = 'offline'
+        extra_params["approval_prompt"] = 'force'
+
+        return super().authorize_redirect(*args, **kwargs)
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     google_api_url = Unicode("https://www.googleapis.com", config=True)
@@ -112,6 +123,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
+    login_handler = GoogleLoginHandler
+
     async def authenticate(self, handler, data=None, google_groups=None):
         code = handler.get_argument("code")
         body = urllib.parse.urlencode(
@@ -135,6 +148,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user = json.loads(response.body.decode("utf-8", "replace"))
         access_token = str(user['access_token'])
+        refresh_token = user.get('refresh_token', None)
 
         response = await http_client.fetch(
             self.user_info_url + '?access_token=' + access_token
@@ -167,9 +181,30 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
+        if refresh_token == None:
+            self.log.debug("Refresh token was empty, will try to pull refresh_token from previous auth_state")
+            user = handler.find_user(name=username)
+            encrypted = user.encrypted_auth_state
+
+            if encrypted:
+                self.log.debug("encrypted_auth_state was found, will try to decrypt and pull refresh_token from it")
+                try:
+                    auth_state = await decrypt(encrypted)
+                    refresh_token = auth_state.get('refresh_token')
+                except (ValueError, InvalidToken, EncryptionUnavailable) as e:
+                    self.log.warning(
+                        "Failed to retrieve encrypted auth_state for %s because %s",
+                        username,
+                        e,
+                    )
+
         user_info = {
             'name': username,
-            'auth_state': {'access_token': access_token, 'google_user': bodyjs}
+            'auth_state': {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'google_user': bodyjs
+            }
         }
 
         if self.admin_google_groups or self.google_group_whitelist:
