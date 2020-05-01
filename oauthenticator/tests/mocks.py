@@ -21,9 +21,9 @@ RegExpType = type(re.compile('.'))
 
 class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
     """A mock AsyncHTTPClient that allows registering handlers for mocked requests
-    
+
     Call .add_host to mock requests made to a given host.
-    
+
     """
     def initialize(self, *args, **kwargs):
         super().initialize(*args, **kwargs)
@@ -31,13 +31,13 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
 
     def add_host(self, host, paths):
         """Add a host whose requests should be mocked.
-        
+
         Args:
             host (str): the host to mock (e.g. 'api.github.com')
             paths (list(str|regex, callable)): a list of paths (or regexps for paths)
                 and callables to be called for those paths.
                 The mock handlers will receive the request as their only argument.
-        
+
         Mock handlers can return:
             - None
             - int (empty response with this status code)
@@ -46,7 +46,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
             - HTTPResponse (passed unmodified)
 
         Example::
-        
+
             client.add_host('api.github.com', [
                 ('/user': lambda request: {'login': 'name'})
             ])
@@ -97,21 +97,21 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         token_request_style='post',
     ):
     """setup the mock client for OAuth
-    
+
     generates and registers two handlers common to OAuthenticators:
-    
+
     - create the access token (POST access_token_path)
     - get the user info (GET user_path)
-    
-    
+
+
     and adds a method for creating a new mock handler to pass to .authenticate():
-    
+
     client.handler_for_user(user)
-    
+
     where user is the user-model to be returned by the user request.
-    
+
     Args:
-    
+
         host (str): the host to mock (e.g. api.github.com)
         access_token_path (str): The path for the access token request (e.g. /access_token)
         user_path (str): The path for requesting  (e.g. /user)
@@ -192,16 +192,17 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
             (access_token_path, access_token),
             (user_path, get_user),
         ])
-    
+
     def handler_for_user(user):
         """Return a new mock RequestHandler
-        
+
         user should be the JSONable model that will ultimately be returned
         from the get_user request.
         """
         code = uuid.uuid4().hex
         oauth_codes[code] = user
         handler = Mock(spec=web.RequestHandler)
+        handler.find_user = Mock(return_value=None)
         handler.get_argument = Mock(return_value=code)
         handler.request = HTTPServerRequest(
             method='GET',

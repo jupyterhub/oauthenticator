@@ -183,12 +183,12 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if refresh_token == None:
             self.log.debug("Refresh token was empty, will try to pull refresh_token from previous auth_state")
-            user = handler.find_user(name=username)
-            encrypted = user.encrypted_auth_state
+            user = handler.find_user(username)
 
-            if encrypted:
+            if user:
                 self.log.debug("encrypted_auth_state was found, will try to decrypt and pull refresh_token from it")
                 try:
+                    encrypted = user.encrypted_auth_state
                     auth_state = await decrypt(encrypted)
                     refresh_token = auth_state.get('refresh_token')
                 except (ValueError, InvalidToken, EncryptionUnavailable) as e:
