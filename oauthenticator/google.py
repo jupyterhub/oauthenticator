@@ -181,7 +181,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
-        if refresh_token == None:
+        if refresh_token is None:
             self.log.debug("Refresh token was empty, will try to pull refresh_token from previous auth_state")
             user = handler.find_user(username)
 
