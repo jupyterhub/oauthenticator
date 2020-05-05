@@ -74,3 +74,5 @@ c.JupyterHub.authenticator_class = GoogleOAuthenticator
 GoogleLoginHandler.extra_params = {'access_type': 'offline', 'approval_prompt': 'force'}
 c.GoogleOAuthenticator.login_handler = GoogleLoginHandler
 ```
+
+For more params you can use go [here](https://developers.google.com/identity/protocols/oauth2/web-server#creatingclient)
