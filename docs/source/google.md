@@ -71,6 +71,6 @@ In your `jupyterhub_config.py` do the following:
 ```python
 from oauthenticator.google import GoogleOAuthenticator, GoogleLoginHandler
 c.JupyterHub.authenticator_class = GoogleOAuthenticator
-GoogleLoginHandler.retrieve_all_scopes_at_once = True
+GoogleLoginHandler.extra_params = {'access_type': 'offline', 'approval_prompt': 'force'}
 c.GoogleOAuthenticator.login_handler = GoogleLoginHandler
 ```

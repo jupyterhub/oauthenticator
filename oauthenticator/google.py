@@ -13,7 +13,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import Bool, Dict, Unicode, List, default, validate
+from traitlets import Dict, Unicode, List, default, validate
 
 from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
@@ -31,17 +31,14 @@ def check_user_in_groups(member_groups, allowed_groups):
 class GoogleLoginHandler(OAuthLoginHandler):
     """See https://developers.google.com/identity/protocols/oauth2 for general information."""
 
-    retrieve_all_scopes_at_once = Bool(
-        os.environ.get('GOOGLE_LOGIN_ALL_SCOPES', 'False').lower() in {'true', '1'},
-        help="Set extra_params `access_type` to `offline` and `approval_prompt` to `force`"
+    extra_params = Dict(
+        Unicode(),
+        help="Add extra_params to authorize_redirect"
     ).tag(config=True)
 
     def authorize_redirect(self, *args, **kwargs):
-        """Add `access_type`, `approval_prompt` to redirect params"""
-        if self.retrieve_all_scopes_at_once:
-            extra_params = kwargs.setdefault('extra_params', {})
-            extra_params["access_type"] = 'offline'
-            extra_params["approval_prompt"] = 'force'
+        extra_params = kwargs.setdefault('extra_params', {})
+        extra_params.update(self.extra_params)
 
         return super().authorize_redirect(*args, **kwargs)
 
