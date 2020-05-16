@@ -136,7 +136,7 @@ class GitHubOAuthenticator(OAuthenticator):
             method="POST",
             headers={"Accept": "application/json"},
             body='',  # Body is required for a POST...
-            validate_cert=self.validate_server_cert
+            validate_cert=self.validate_server_cert,
         )
 
         resp = await http_client.fetch(req)
@@ -159,7 +159,7 @@ class GitHubOAuthenticator(OAuthenticator):
             self.github_api + "/user",
             method="GET",
             headers=_api_headers(access_token),
-            validate_cert=self.validate_server_cert
+            validate_cert=self.validate_server_cert,
         )
         resp = await http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
@@ -213,7 +213,8 @@ class GitHubOAuthenticator(OAuthenticator):
             check_membership_url,
             method="GET",
             headers=headers,
-            validate_cert=self.validate_server_cert)
+            validate_cert=self.validate_server_cert,
+        )
         self.log.debug(
             "Checking GitHub organization membership: %s in %s?", username, org
         )
