@@ -152,7 +152,7 @@ class GitHubOAuthenticator(OAuthenticator):
                 ),
             )
         else:
-            raise HTTPError(500, "Bad response: %s".format(resp))
+            raise HTTPError(500, "Bad response: {}".format(resp))
 
         # Determine who the logged in user is
         req = HTTPRequest(
