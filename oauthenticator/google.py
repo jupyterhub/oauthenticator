@@ -19,7 +19,7 @@ from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
-from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
+from .oauth2 import OAuthCallbackHandler, OAuthenticator
 
 def check_user_in_groups(member_groups, allowed_groups):
     # Check if user is a member of any group in the allowed groups
@@ -27,20 +27,6 @@ def check_user_in_groups(member_groups, allowed_groups):
         return True  # user _is_ in group
     else:
         return False
-
-class GoogleLoginHandler(OAuthLoginHandler):
-    """See https://developers.google.com/identity/protocols/oauth2 for general information."""
-
-    extra_params = Dict(
-        Unicode(),
-        help="Add extra_params to authorize_redirect"
-    ).tag(config=True)
-
-    def authorize_redirect(self, *args, **kwargs):
-        extra_params = kwargs.setdefault('extra_params', {})
-        extra_params.update(self.extra_params)
-
-        return super().authorize_redirect(*args, **kwargs)
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     google_api_url = Unicode("https://www.googleapis.com", config=True)
@@ -125,8 +111,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True,
         help="""Google Apps hosted domain string, e.g. My College""",
     )
-
-    login_handler = GoogleLoginHandler
 
     async def authenticate(self, handler, data=None, google_groups=None):
         code = handler.get_argument("code")

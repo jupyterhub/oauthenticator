@@ -69,10 +69,7 @@ c.GoogleOAuthenticator.google_group_whitelist = {'example.com': ['somegroupwitha
 In your `jupyterhub_config.py` do the following:
 
 ```python
-from oauthenticator.google import GoogleOAuthenticator, GoogleLoginHandler
-c.JupyterHub.authenticator_class = GoogleOAuthenticator
-GoogleLoginHandler.extra_params = {'access_type': 'offline', 'approval_prompt': 'force'}
-c.GoogleOAuthenticator.login_handler = GoogleLoginHandler
+c.JupyterHub.authenticator_class.extra_authorize_params = {'access_type': 'offline', 'approval_prompt': 'force'}
 ```
 
 For more params you can use go [here](https://developers.google.com/identity/protocols/oauth2/web-server#creatingclient)
