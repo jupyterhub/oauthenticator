@@ -72,10 +72,6 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     def _OAUTH_USERINFO_URL(self):
         return self.authenticator.userdata_url
 
-    @property
-    def _OAUTH_EXTRA_AUTHORIZE_PARAMS(self):
-        return self.authenticator.extra_authorize_params
-
     def set_state_cookie(self, state):
         self.set_secure_cookie(STATE_COOKIE_NAME, state, expires_days=1, httponly=True)
 
@@ -266,10 +262,6 @@ class OAuthenticator(Authenticator):
         For GitHub in particular, you can see github_scopes.md in this repo.
         """,
     )
-
-    @default("extra_authorize_params")
-    def _extra_authorize_params(self):
-        return os.environ.get("OAUTH2_EXTRA_AUTHORIZE_PARAMS", {})
 
     extra_authorize_params = Dict(
         config=True,
