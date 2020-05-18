@@ -19,7 +19,7 @@ from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
-from .oauth2 import OAuthCallbackHandler, OAuthenticator
+from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 def check_user_in_groups(member_groups, allowed_groups):
     # Check if user is a member of any group in the allowed groups
