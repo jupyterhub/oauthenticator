@@ -28,6 +28,7 @@ def check_user_in_groups(member_groups, allowed_groups):
     else:
         return False
 
+
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
