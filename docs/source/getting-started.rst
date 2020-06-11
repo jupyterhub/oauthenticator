@@ -472,7 +472,34 @@ And set your environmental variable ``OAUTH2_AUTHORIZE_URL`` to:
 
 ``http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code``
 
-.. _yandex-setup-label:
+
+Nextcloud Setup
+---------------
+
+Add a new OAuth2 Application in the Nextcloud Administrator
+Security Settings. You will get a client id and a secret key.
+
+Use the ``GenericOAuthenticator`` for Jupyterhub by editing your
+``jupyterhub_config.py`` accordingly:
+
+.. code:: python
+
+   from oauthenticator.generic import GenericOAuthenticator
+   c.JupyterHub.authenticator_class = GenericOAuthenticator
+
+   c.GenericOAuthenticator.client_id = 'NEXTCLOUD-CLIENT-ID'
+   c.GenericOAuthenticator.client_secret = 'NEXTCLOUD-CLIENT-SECRET-KEY'
+   c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE'  # name to be displayed at login
+   c.GenericOAuthenticator.username_key = lambda r: r.get('ocs', {}).get('data', {}).get('id')
+
+And set the following environmental variables:
+
+.. code:: shell
+
+   OAUTH2_AUTHORIZE_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/authorize
+   OAUTH2_TOKEN_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/api/v1/token
+   OAUTH2_USERDATA_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2.php/cloud/user?format=json
+
 
 Yandex Setup
 ------------
