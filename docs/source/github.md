@@ -1,13 +1,7 @@
 # GitHub-specific scopes
 
-[GitHub scopes](https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/) may
-be used to extend the GitHub OAuthenticator. By overriding the scope
-list in the authenticator, additional features can be enabled for
-specific deployment needs.
-
-## Example GitHub scopes
-
-The following GitHub scopes may be suitable for certain use cases:
+The following [GitHub scopes](https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/)
+may be suitable for certain use cases:
 
 `read:org` grants access to the users' organizations.  This is handy if
 you want to use GitHub organizations in your backend environment as Unix
@@ -40,7 +34,6 @@ We currently use the following fields:
 * `name` is the full name GitHub knows the user by.
 * `email` is the publicly visible email address (if any) for the user.
 * `access_token` is the token used to authenticate to GitHub.
-* ``
 
 To use this expanded user information, you will need to subclass your
 current spawner and modify the subclass to read these fields from

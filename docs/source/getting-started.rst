@@ -1,66 +1,31 @@
-Getting started with OAuthenticator
-===================================
+Get started
+===========
 
-TODO:
+The general steps to take when using OAuthenticator:
 
+1. Pick your identity provider
+2. Register with the provider
+3. Choose an authenticator class, or use :class:`~.oauthenticator.generic.GenericOAuthenticator`
+   and configure JupyterHub to use it
+4. Configure the authenticator class (client_id, client_secret, callback_url, whitelist, etc.)
+5. Specific configuration for your identity provider
 
-Steps
+OAuthenticator currently supports the following **identity providers**:
 
+- `Auth0 <oauthenticator/auth0.py>`__
+- `Azure AD <oauthenticator/azuread.py>`__
+- `Bitbucket <oauthenticator/bitbucket.py>`__
+- `CILogon <oauthenticator/cilogon.py>`__
+- `GitHub <oauthenticator/github.py>`__
+- `GitLab <oauthenticator/gitlab.py>`__
+- `Globus <oauthenticator/globus.py>`__
+- `Google <oauthenticator/google.py>`__
+- `MediaWiki <oauthenticator/mediawiki.py>`__
+- `Okpy <oauthenticator/okpy.py>`__
+- `OpenShift <oauthenticator/openshift.py>`__
 
-1. pick your provider
-2. register with your provider
-3. configure JupyterHub (if supported, pick oauthenticator class, otherwise see :doc:`writing-an-oauthenticator`).
-4. common configuration (client_id, client_secret, callback_url, whitelist, etc.)
-5. specific configuration for your provider
-
-OAuth + JupyterHub Authenticator = OAuthenticator
-
-OAuthenticator currently supports the following authentication services:
-
--  `Auth0 <oauthenticator/auth0.py>`__
--  `Azure AD <#azure-ad-setup>`__
--  `Bitbucket <oauthenticator/bitbucket.py>`__
--  `CILogon <oauthenticator/cilogon.py>`__
--  `GitHub <#github-setup>`__
--  `GitLab <#gitlab-setup>`__
--  `Globus <#globus-setup>`__
--  `Google <#google-setup>`__
--  `MediaWiki <oauthenticator/mediawiki.py>`__
--  `Moodle <#moodle-setup>`__
--  `Nextcloud <#nextcloud-setup>`__
--  `Okpy <#okpyauthenticator>`__
--  `OpenShift <#openshift-setup>`__
-
-A `generic implementation <oauthenticator.generic.GenericOAuthenticator>`, which you can
-use with any provider, is also available.
-
-Examples
---------
-
-For an example docker image using OAuthenticator, see the
-`examples <examples>`__ directory.
-
-`Another
-example <https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth>`__
-is using GitHub OAuth to spawn each user’s server in a separate docker
-container.
-
-Installation
-------------
-
-Install with pip:
-
-::
-
-   pip3 install oauthenticator
-
-Or clone the repo and do a dev install:
-
-::
-
-   git clone https://github.com/jupyterhub/oauthenticator.git
-   cd oauthenticator
-   pip3 install -e .
+A `generic implementation <oauthenticator.generic.GenericOAuthenticator>`__, which you can
+use with **any OAuth2 identity provider**, is also available.
 
 General setup
 -------------
@@ -118,44 +83,46 @@ You can also set these values in your **configuration file**,
    c.MyOAuthenticator.client_id = 'your-client-id'
    c.MyOAuthenticator.client_secret = 'your-client-secret'
 
+AWS Cognito Setup
+-----------------
+First visit
+`Getting Started with User Pools <https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-with-cognito-user-pools.html>`_
+for info on how to register and configure a cognito user pool and app.
+
+Set the above settings in your ``jupyterhub_config.py``:
+
+.. code:: python
+
+   c.JupyterHub.authenticator_class = "generic"
+   c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
+   c.OAuthenticator.client_id = "[your app ID]""
+   c.OAuthenticator.client_secret = "[your app Password]"
+
+   c.GenericOAuthenticator.login_service = "AWSCognito"
+   c.GenericOAuthenticator.username_key = "login"
+   c.GenericOAuthenticator.authorize_url = "https://your-AWSCognito-domain/oauth2/authorize"
+   c.GenericOAuthenticator.token_url = ""https://your-AWSCognito-domain/oauth2/token"
+   c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/userInfo"
+   c.GenericOAuthenticator.userdata_method = 'POST'
+
 Azure AD Setup
 --------------
 
-*Prereqs*:
-~~~~~~~~~~
-
--  Requires: **``PyJWT>=1.5.3``**
+-  Install ``PyJWT>=1.5.3``
 
 ::
 
    > pip3 install PyJWT
 
--  BE SURE TO SET THE **``AAD_TENANT_ID``** environment variable
+-  Set the ``AAD_TENANT_ID`` environment variable
 
 ::
 
    > export AAD_TENANT_ID='{AAD-TENANT-ID}'
 
--  Sample code is provided for you in
-   ``examples > azuread > sample_jupyter_config.py``
--  Just add the code below to your ``jupyterhub_config.py`` file
--  Making sure to replace the values in ``'{}'`` with your APP, TENANT,
-   DOMAIN, etc. values
+-  Add the code below to your ``jupyterhub_config.py`` file
 
-
-
-Follow this `link to create an AAD
-APP <https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/>`__
-
-- CLIENT_ID === Azure ``Application ID`` - found in
-   ``Azure portal --> AD --> App Registrations --> App``
-
-- TENANT_ID === Azure ``Directory ID`` - found in
-   ``Azure portal --> AD --> Properties``
-
-**jupyterhub_config.py:**
-
-::
+.. code:: python
 
    import os
    from oauthenticator.azuread import AzureAdOAuthenticator
@@ -169,22 +136,29 @@ APP <https://www.netiq.com/communities/cool-solutions/creating-application-clien
    c.AzureAdOAuthenticator.client_id = '{AAD-APP-CLIENT-ID}'
    c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 
-*Run via*:
-~~~~~~~~~~
+This sample code is provided for you in ``examples > azuread > sample_jupyter_config.py``
+
+-  Make sure to replace the values in ``'{}'`` with your APP, TENANT, DOMAIN, etc. values
+
+-  Follow this
+   `link to create an AAD APP <https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/>`__
+
+-  CLIENT_ID === *Azure Application ID*, found in:
+   ``Azure portal --> AD --> App Registrations --> App``
+
+-  TENANT_ID === *Azure Directory ID*, found in:
+   ``Azure portal --> AD --> Properties``
+
+-  Run via:
 
 ::
 
    sudo jupyterhub -f ./path/to/jupyterhub_config.py
 
-See ``run.sh`` for an `example <./examples/azuread/>`__
+-  See ``run.sh`` for an `example <./examples/azuread/>`__
 
--  `Source Code <oauthenticator/azuread.py>`__
+-  `Source Code <https://github.com/jupyterhub/oauthenticator/blob/master/oauthenticator/azuread.py>`__
 
-
-Source code
-~~~~~~~~~~~
-
-The source code can be found at `here <oauthenticator/azureadb2c.py>`__.
 
 GitHub Setup
 ------------
@@ -319,7 +293,7 @@ Service Accounts as OAuth Clients
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As a project member, you can use the `Service Accounts as OAuth
-Clients <https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#service-accounts-as-oauth-clients>`__
+Clients <https://docs.openshift.com/container-platform/latest/authentication/using-service-accounts-as-oauth-client.html>`__
 scenario. This gives you the possibility of defining clients associated
 with service accounts. You just need to create the service account with
 the proper annotations:
@@ -389,12 +363,11 @@ Set the above settings in your ``jupyterhub_config``:
 .. code:: python
 
    # Tell JupyterHub to create system accounts
-   from oauthenticator.globus import LocalGlobusOAuthenticator
-   c.JupyterHub.authenticator_class = LocalGlobusOAuthenticator
-   c.LocalGlobusOAuthenticator.enable_auth_state = True
-   c.LocalGlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
-   c.LocalGlobusOAuthenticator.client_id = '[your app client id]'
-   c.LocalGlobusOAuthenticator.client_secret = '[your app client secret]'
+   from oauthenticator.globus import GlobusOAuthenticator
+   c.JupyterHub.authenticator_class = GlobusOAuthenticator
+   c.GlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
+   c.GlobusOAuthenticator.client_id = '[your app client id]'
+   c.GlobusOAuthenticator.client_secret = '[your app client secret]'
 
 Alternatively you can set env variables for the following:
 ``OAUTH_CALLBACK_URL``, ``OAUTH_CLIENT_ID``, and
@@ -407,13 +380,6 @@ settings related to User Identity, Transfer, and additional security.
 User Identity
 ~~~~~~~~~~~~~
 
-By default, all users are restricted to their *Globus IDs*
-(example@globusid.org) with the default Jupyterhub config:
-
-.. code:: python
-
-   c.GlobusOAuthenticator.identity_provider = 'globusid.org'
-
 If you want to use a *Linked Identity* such as
 ``malcolm@universityofindependence.edu``, go to your `App Developer
 page <http://developers.globus.org>`__ and set *Required Identity
@@ -422,12 +388,22 @@ in the config:
 
 .. code:: python
 
-   c.GlobusOAuthenticator.identity_provider = 'universityofindependence.edu'
+   c.GlobusOAuthenticator.identity_provider = 'uchicago.edu'
+
+**Pitfall**: Don't set 'Required Identity Provider' on pre-existing apps!
+Previous user login consents will be tied to the identity users initially used
+to login, and will continue to be tied to that identity after changing this
+setting. Create a new Globus App with your preferred 'Required Identity Provider'
+to avoid this problem.
 
 Globus Scopes and Transfer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default configuration will automatically setup user environments
+The following shows how to get tokens into user Notebooks. `You can see how users
+use tokens here <https://github.com/globus/globus-jupyter-notebooks/blob/master/JupyterHub_Integration.ipynb>`__.
+If you want a demonstration, you can visit `The Jupyter Globus Demo Server <https://jupyter.demo.globus.org>`__.
+
+The default server configuration will automatically setup user environments
 with tokens, allowing them to start up python notebooks and initiate
 Globus Transfers. If you want to transfer data onto your JupyterHub
 server, it’s suggested you install `Globus Connect
@@ -437,21 +413,20 @@ other behavior, you can modify the defaults below:
 
 .. code:: python
 
-   # Allow Refresh Tokens in user notebooks. Disallow these for increased security,
-   # allow them for better usability.
-   c.LocalGlobusOAuthenticator.allow_refresh_tokens = True
+   # Allow saving user tokens to the database
+   c.GlobusOAuthenticator.enable_auth_state = True
    # Default scopes are below if unspecified. Add a custom transfer server if you have one.
-   c.LocalGlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
+   c.GlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
    # Default tokens excluded from being passed into the spawner environment
-   c.LocalGlobusOAuthenticator.exclude_tokens = ['auth.globus.org']
+   c.GlobusOAuthenticator.exclude_tokens = ['auth.globus.org']
    # If the JupyterHub server is an endpoint, for convenience the endpoint id can be
    # set here. It will show up in the notebook kernel for all users as 'GLOBUS_LOCAL_ENDPOINT'.
-   c.LocalGlobusOAuthenticator.globus_local_endpoint = '<Your Local JupyterHub UUID>'
+   c.GlobusOAuthenticator.globus_local_endpoint = '<Your Local JupyterHub UUID>'
    # Set a custom logout URL for your identity provider
-   c.LocalGlobusOAuthenticator.logout_redirect_url = 'https://auth.globus.org/v2/web/logout'
+   c.GlobusOAuthenticator.logout_redirect_url = 'https://globus.org/logout'
    # For added security, revoke all service tokens when users logout. (Note: users must start
    # a new server to get fresh tokens, logging out does not shut it down by default)
-   c.LocalGlobusOAuthenticator.revoke_tokens_on_logout = False
+   c.GlobusOAuthenticator.revoke_tokens_on_logout = False
 
 If you only want to authenticate users with their Globus IDs but don’t
 want to allow them to do transfers, you can remove
@@ -464,6 +439,8 @@ excluded but ``transfer.api.globus.org`` is allowed. If you want to
 disable transfers, modify ``c.GlobusOAuthenticator.scope`` instead of
 ``c.GlobusOAuthenticator.exclude`` to avoid procuring unnecessary
 tokens.
+
+.. _moodle-setup-label:
 
 Moodle Setup
 ------------
@@ -495,6 +472,7 @@ And set your environmental variable ``OAUTH2_AUTHORIZE_URL`` to:
 
 ``http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code``
 
+
 Nextcloud Setup
 ---------------
 
@@ -521,6 +499,7 @@ And set the following environmental variables:
    OAUTH2_AUTHORIZE_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/authorize
    OAUTH2_TOKEN_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/api/v1/token
    OAUTH2_USERDATA_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2.php/cloud/user?format=json
+
 
 Yandex Setup
 ------------
@@ -551,7 +530,13 @@ Set the above settings in your ``jupyterhub_config.py``:
    c.GenericOAuthenticator.token_url = "https://oauth.yandex.ru/token"
    c.GenericOAuthenticator.userdata_url = "https://login.yandex.ru/info"
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/oauthenticator.svg
-   :target: https://pypi.python.org/pypi/oauthenticator
-.. |Build Status| image:: https://travis-ci.org/jupyterhub/oauthenticator.svg?branch=master
-   :target: https://travis-ci.org/jupyterhub/oauthenticator
+Examples
+--------
+
+For an example docker image using OAuthenticator, see the
+`examples <https://github.com/jupyterhub/oauthenticator/tree/master/examples>`__ directory.
+
+`Another
+example <https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth>`__
+is using GitHub OAuth to spawn each user’s server in a separate docker
+container.

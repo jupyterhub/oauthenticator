@@ -18,7 +18,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode, Bool, List, default
+from traitlets import Unicode, Bool, List, Dict, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -100,14 +100,16 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
 
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
+        extra_params = self.authenticator.extra_authorize_params.copy()
         self.log.info('OAuth redirect: %r', redirect_uri)
         state = self.get_state()
         self.set_state_cookie(state)
+        extra_params['state'] = state
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=self.authenticator.scope,
-            extra_params={'state': state},
+            extra_params=extra_params,
             response_type='code',
         )
 
@@ -259,6 +261,12 @@ class OAuthenticator(Authenticator):
         See the OAuth documentation of your OAuth provider for options.
         For GitHub in particular, you can see github_scopes.md in this repo.
         """,
+    )
+
+    extra_authorize_params = Dict(
+        config=True,
+        help="""Extra GET params to send along with the initial OAuth request
+        to the OAuth provider.""",
     )
 
     login_service = 'override in subclass'
