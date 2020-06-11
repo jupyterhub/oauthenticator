@@ -63,3 +63,13 @@ c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/path/to/s
 c.GoogleOAuthenticator.google_group_whitelist = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
 ```
 ### You are done!
+
+## How to retrieve an `access_token` and `refresh_token` for all scopes at once
+
+In your `jupyterhub_config.py` do the following:
+
+```python
+c.OAuthenticator.extra_authorize_params = {'access_type': 'offline', 'approval_prompt': 'force'}
+```
+
+For more params you can use go [here](https://developers.google.com/identity/protocols/oauth2/web-server#creatingclient)

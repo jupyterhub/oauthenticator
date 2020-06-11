@@ -15,6 +15,7 @@ from tornado.web import HTTPError
 
 from traitlets import Dict, Unicode, List, default, validate
 
+from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 
@@ -135,6 +136,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user = json.loads(response.body.decode("utf-8", "replace"))
         access_token = str(user['access_token'])
+        refresh_token = user.get('refresh_token', None)
 
         response = await http_client.fetch(
             self.user_info_url + '?access_token=' + access_token
@@ -167,9 +169,30 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
+        if refresh_token is None:
+            self.log.debug("Refresh token was empty, will try to pull refresh_token from previous auth_state")
+            user = handler.find_user(username)
+
+            if user:
+                self.log.debug("encrypted_auth_state was found, will try to decrypt and pull refresh_token from it")
+                try:
+                    encrypted = user.encrypted_auth_state
+                    auth_state = await decrypt(encrypted)
+                    refresh_token = auth_state.get('refresh_token')
+                except (ValueError, InvalidToken, EncryptionUnavailable) as e:
+                    self.log.warning(
+                        "Failed to retrieve encrypted auth_state for %s because %s",
+                        username,
+                        e,
+                    )
+
         user_info = {
             'name': username,
-            'auth_state': {'access_token': access_token, 'google_user': bodyjs}
+            'auth_state': {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'google_user': bodyjs
+            }
         }
 
         if self.admin_google_groups or self.google_group_whitelist:
