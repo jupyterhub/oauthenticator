@@ -121,6 +121,19 @@ async def test_allowed_google_groups(google_client):
     assert allowed_user_groups is None
 
 
+async def test_admin_only_google_groups(google_client):
+    authenticator = GoogleOAuthenticator(
+        hosted_domain=['email.com', 'mycollege.edu'],
+        admin_google_groups={'email.com': ['fakeadmingroup']},
+    )
+    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
+    admin_user_info = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakeadmingroup']
+    )
+    admin_user = admin_user_info['admin']
+    assert admin_user is True
+
+
 def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GoogleOAuthenticator.google_group_whitelist = {'email.com': ['group']}

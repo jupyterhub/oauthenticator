@@ -288,8 +288,19 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # Check if user is a member of any admin groups.
         if self.admin_google_groups:
             is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
+
         # Check if user is a member of any allowed groups.
-        user_in_group = check_user_in_groups(google_groups, self.allowed_google_groups[user_email_domain])
+        allowed_groups = self.allowed_google_groups
+
+        if allowed_groups:
+            if user_email_domain in allowed_groups:
+                user_in_group = check_user_in_groups(
+                    google_groups, allowed_groups[user_email_domain]
+                )
+            else:
+                return None
+        else:
+            user_in_group = True
 
         if self.admin_google_groups and (is_admin or user_in_group):
             user_info['admin'] = is_admin
