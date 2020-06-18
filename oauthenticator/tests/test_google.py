@@ -105,7 +105,7 @@ async def test_admin_google_groups(google_client):
 async def test_allowed_google_groups(google_client):
     authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
-        allowed_google_groups={'email.com': ['fakegroup']}
+        allowed_google_groups={'email.com': ['fakegroup'], ',mycollege.edu': []},
     )
     handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
     admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
@@ -118,6 +118,11 @@ async def test_allowed_google_groups(google_client):
     assert admin_field is None
     handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
     allowed_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonallowedgroup'])
+    assert allowed_user_groups is None
+    handler = google_client.handler_for_user(user_model('fake@mycollege.edu'))
+    allowed_user_groups = await authenticator.authenticate(
+        handler, google_groups=['fakegroup']
+    )
     assert allowed_user_groups is None
 
 
