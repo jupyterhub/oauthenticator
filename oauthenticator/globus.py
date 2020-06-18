@@ -171,20 +171,7 @@ class GlobusOAuthenticator(OAuthenticator):
         user_headers['Authorization'] = 'Bearer {}'.format(token_json['access_token'])
         req = HTTPRequest(self.userdata_url, method='GET', headers=user_headers)
         user_resp = await http_client.fetch(req)
-        user_json = json.loads(user_resp.body.decode('utf8', 'replace'))
-        # It's possible for identity provider domains to be namespaced
-        # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username, domain = user_json.get('preferred_username').split('@', 1)
-        if self.identity_provider and domain != self.identity_provider:
-            raise HTTPError(
-                403,
-                'This site is restricted to {} accounts. Please link your {}'
-                ' account at {}.'.format(
-                    self.identity_provider,
-                    self.identity_provider,
-                    'globus.org/app/account',
-                ),
-            )
+        username = self.get_username(json.loads(user_resp.body.decode('utf8', 'replace')))
 
         # Each token should have these attributes. Resource server is optional,
         # and likely won't be present.
@@ -215,6 +202,22 @@ class GlobusOAuthenticator(OAuthenticator):
                 'tokens': by_resource_server,
             },
         }
+
+    def get_username(self, user_data):
+        # It's possible for identity provider domains to be namespaced
+        # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
+        username, domain = user_data.get('preferred_username').split('@', 1)
+        if self.identity_provider and domain != self.identity_provider:
+            raise HTTPError(
+                403,
+                'This site is restricted to {} accounts. Please link your {}'
+                ' account at {}.'.format(
+                    self.identity_provider,
+                    self.identity_provider,
+                    'globus.org/app/account',
+                ),
+            )
+        return username
 
     def get_default_headers(self):
         return {"Accept": "application/json", "User-Agent": "JupyterHub"}
