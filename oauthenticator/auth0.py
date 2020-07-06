@@ -5,6 +5,7 @@ Derived using the Github and Google OAuthenticator implementations as examples.
 
 The following environment variables may be used for configuration:
 
+    AUTH0_CUSTOM_DOMAIN- The custom domain created for your Auth0 account
     AUTH0_SUBDOMAIN - The subdomain for your Auth0 account
     OAUTH_CLIENT_ID - Your client id
     OAUTH_CLIENT_SECRET - Your client secret
@@ -47,34 +48,29 @@ class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
 
-    auth0_subdomain = Unicode(config=True)
-    auth0_custom_domain = Unicode(config=True)
-
-    @default("auth0_subdomain")
-    def _auth0_subdomain_default(self):
+    auth0_domain = Unicode(config=True)
+           
+    @default("auth0_domain")
+    def _generate_auth0_domain(self):
         subdomain = os.getenv("AUTH0_SUBDOMAIN")
-        if not subdomain:
-            raise ValueError(
-                "Please specify $AUTH0_SUBDOMAIN env or %s.auth0_subdomain config"
-                % self.__class__.__name__
-            )
-            
-    @default("auth0_custom_domain")
-    def _auth0_custom_domain_default(self):
         custom_domain = os.getenv("AUTH0_CUSTOM_DOMAIN")
-        if not custom_domain:
+        if subdomain and custom_domain:
             raise ValueError(
-                "Please specify $AUTH0_CUSTOM_DOMAIN env or %s.auth0_custom_domain config"
+                "Please speicify either auth0_subdomain or auth0_custom_domain, Both cannot be specified in config"
                 % self.__class__.__name__
             )
+        if self.auth0_subdomain:
+            auth0_domain = f"{self.auth0_subdomain}.auth0.com"
+        elif self.auth0_custom_domain:
+            auth0_domain = auth0_custom_domain
             
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "https://%s/authorize" % self.auth0_custom_domain
+        return "https://%s/authorize" % self.auth0_domain
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://%s/oauth/token" % self.auth0_custom_domain
+        return "https://%s/oauth/token" % self.auth0_domain
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -109,7 +105,7 @@ class Auth0OAuthenticator(OAuthenticator):
             "Authorization": "Bearer {}".format(access_token),
         }
         req = HTTPRequest(
-            "https://%s/userinfo" % self.auth0_custom_domain,
+            "https://%s/userinfo" % self.auth0_domain,
             method="GET",
             headers=headers,
         )
