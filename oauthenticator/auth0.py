@@ -59,10 +59,10 @@ class Auth0OAuthenticator(OAuthenticator):
                 "Please speicify either auth0_subdomain or auth0_custom_domain, Both cannot be specified in config"
                 % self.__class__.__name__
             )
-        if self.auth0_subdomain:
+        if subdomain:
             auth0_domain = f"{self.auth0_subdomain}.auth0.com"
-        elif self.auth0_custom_domain:
-            auth0_domain = auth0_custom_domain
+        elif custom_domain:
+            auth0_domain = custom_domain
             
     @default("authorize_url")
     def _authorize_url_default(self):
