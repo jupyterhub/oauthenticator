@@ -5,8 +5,7 @@ Derived using the Github and Google OAuthenticator implementations as examples.
 
 The following environment variables may be used for configuration:
 
-    AUTH0_CUSTOM_DOMAIN- The custom domain created for your Auth0 account
-    AUTH0_SUBDOMAIN - The subdomain for your Auth0 account
+    AUTH0_DOMAIN- Your domain_name, can be custom domain as well
     OAUTH_CLIENT_ID - Your client id
     OAUTH_CLIENT_SECRET - Your client secret
     OAUTH_CALLBACK_URL - Your callback handler URL
@@ -52,17 +51,14 @@ class Auth0OAuthenticator(OAuthenticator):
            
     @default("auth0_domain")
     def _generate_auth0_domain(self):
-        subdomain = os.getenv("AUTH0_SUBDOMAIN")
-        custom_domain = os.getenv("AUTH0_CUSTOM_DOMAIN")
-        if subdomain and custom_domain:
+        domain = os.getenv("AUTH0_DOMAIN")
+        if not domain:
             raise ValueError(
-                "Please speicify either auth0_subdomain or auth0_custom_domain, Both cannot be specified in config"
+                "Please specify $AUTH0_DOMAIN env or %s.auth0_domain config"
                 % self.__class__.__name__
             )
-        if subdomain:
-            auth0_domain = f"{self.auth0_subdomain}.auth0.com"
-        elif custom_domain:
-            auth0_domain = custom_domain
+        if not self.auth0_domain.endswith(".com"):
+            self.auth0_domain = f"{self.auth0_domain}.auth0.com"
             
     @default("authorize_url")
     def _authorize_url_default(self):
