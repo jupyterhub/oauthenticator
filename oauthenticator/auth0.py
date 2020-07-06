@@ -48,6 +48,7 @@ class Auth0OAuthenticator(OAuthenticator):
     login_service = "Auth0"
 
     auth0_subdomain = Unicode(config=True)
+    auth0_custom_domain = Unicode(config=True)
 
     @default("auth0_subdomain")
     def _auth0_subdomain_default(self):
@@ -57,14 +58,23 @@ class Auth0OAuthenticator(OAuthenticator):
                 "Please specify $AUTH0_SUBDOMAIN env or %s.auth0_subdomain config"
                 % self.__class__.__name__
             )
-
+            
+    @default("auth0_custom_domain")
+    def _auth0_custom_domain_default(self):
+        custom_domain = os.getenv("AUTH0_CUSTOM_DOMAIN")
+        if not custom_domain:
+            raise ValueError(
+                "Please specify $AUTH0_CUSTOM_DOMAIN env or %s.auth0_custom_domain config"
+                % self.__class__.__name__
+            )
+            
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "https://%s.auth0.com/authorize" % self.auth0_subdomain
+        return "https://%s/authorize" % self.auth0_custom_domain
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://%s.auth0.com/oauth/token" % self.auth0_subdomain
+        return "https://%s/oauth/token" % self.auth0_custom_domain
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -99,7 +109,7 @@ class Auth0OAuthenticator(OAuthenticator):
             "Authorization": "Bearer {}".format(access_token),
         }
         req = HTTPRequest(
-            "https://%s.auth0.com/userinfo" % self.auth0_subdomain,
+            "https://%s/userinfo" % self.auth0_custom_domain,
             method="GET",
             headers=headers,
         )
