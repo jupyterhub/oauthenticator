@@ -58,7 +58,7 @@ class Auth0OAuthenticator(OAuthenticator):
                 % self.__class__.__name__
             )
         if not self.auth0_domain.endswith(".com"):
-            self.auth0_domain = f"{self.auth0_domain}.auth0.com"
+            self.auth0_domain = "%s.auth0.com" % self.auth0_domain
             
     @default("authorize_url")
     def _authorize_url_default(self):
