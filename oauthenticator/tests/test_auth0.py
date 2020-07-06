@@ -6,7 +6,7 @@ from pytest import fixture, mark
 from ..auth0 import Auth0OAuthenticator
 from .mocks import setup_oauth_mock
 
-auth0_subdomain = "jupyterhub-test"
+auth0_domain = "jupyterhub-test"
 
 
 def user_model(username):
@@ -18,7 +18,7 @@ def user_model(username):
 def auth0_client(client):
     setup_oauth_mock(
         client,
-        host='%s.auth0.com' % auth0_subdomain,
+        host='%s.auth0.com' % auth0_domain,
         access_token_path='/oauth/token',
         user_path='/userinfo',
         token_request_style='json',
@@ -27,7 +27,7 @@ def auth0_client(client):
 
 
 async def test_auth0(auth0_client):
-    authenticator = Auth0OAuthenticator(auth0_subdomain=auth0_subdomain)
+    authenticator = Auth0OAuthenticator(auth0_domain=auth0_domain)
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
