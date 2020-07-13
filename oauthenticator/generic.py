@@ -68,6 +68,12 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable basic authentication for access token request",
     )
 
+    client_auth_method = Unicode(
+        os.environ.get('OAUTH2_AUTH_METHOD', 'client_secret_basic'),
+        config=True,
+        help="Authentication method to use. Supported methods: client_secret_basic, client_secret_post. Default: client_secret_basic",
+    )
+
     def http_client(self):
         return AsyncHTTPClient(force_instance=True, defaults=dict(validate_cert=self.tls_verify))
 
@@ -91,11 +97,13 @@ class GenericOAuthenticator(OAuthenticator):
 
         headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
 
-        if self.basic_auth:
+        if self.basic_auth and self.client_auth_method == "client_secret_basic":
             b64key = base64.b64encode(
                 bytes("{}:{}".format(self.client_id, self.client_secret), "utf8")
             )
             headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
+        elif self.client_auth_method == "client_secret_post":
+            params.update(dict(client_id=self.client_id, client_secret=self.client_secret))
 
         req = HTTPRequest(
             url,
