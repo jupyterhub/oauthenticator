@@ -380,6 +380,7 @@ settings related to User Identity, Transfer, and additional security.
 User Identity
 ~~~~~~~~~~~~~
 
+By default, ``identity_provider = ''`` will allow anyone to login.
 If you want to use a *Linked Identity* such as
 ``malcolm@universityofindependence.edu``, go to your `App Developer
 page <http://developers.globus.org>`__ and set *Required Identity
