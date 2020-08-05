@@ -7,12 +7,13 @@ Derived from the GitHub OAuth authenticator.
 
 import json
 import os
+import requests
 
 from tornado.auth import OAuth2Mixin
 from tornado import web
 
 from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPClient
 from traitlets import Bool, Unicode, default
 
 from jupyterhub.auth import LocalAuthenticator
@@ -27,20 +28,39 @@ class OpenShiftOAuthenticator(OAuthenticator):
     scope = ['user:info']
 
     openshift_url = Unicode(
-        os.environ.get('OPENSHIFT_URL') or 'https://localhost:8443', config=True
+        os.environ.get('OPENSHIFT_URL') or 'https://openshift.default.svc.cluster.local', config=True
     )
-
-    openshift_auth_api_url = Unicode(config=True)
 
     validate_cert = Bool(
         True, config=True, help="Set to False to disable certificate validation"
     )
 
+    ca_certs = Unicode(
+        config=True
+    )
+
+    @default("ca_certs")
+    def _ca_certs_default(self):
+        ca_cert_file = "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        if self.validate_cert and os.path.exists(ca_cert_file):
+            return ca_cert_file
+
+        return ''
+
+    openshift_auth_api_url = Unicode(config=True)
+
     @default("openshift_auth_api_url")
     def _openshift_auth_api_url_default(self):
-        return self.openshift_url
+        auth_info_url = '%s/.well-known/oauth-authorization-server' % self.openshift_url
 
-    openshift_rest_api_url = Unicode(config=True)
+        resp = requests.get(auth_info_url, verify=self.ca_certs or self.validate_cert)
+        resp_json = resp.json()
+
+        return resp_json.get('issuer')
+
+    openshift_rest_api_url = Unicode(
+        os.environ.get('OPENSHIFT_REST_API_URL') or 'https://openshift.default.svc.cluster.local', config=True
+    )
 
     @default("openshift_rest_api_url")
     def _openshift_rest_api_url_default(self):
@@ -80,6 +100,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             url,
             method="POST",
             validate_cert=self.validate_cert,
+            ca_certs=self.ca_certs,
             headers={"Accept": "application/json"},
             body='',  # Body is required for a POST...
         )
@@ -101,6 +122,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             self.userdata_url,
             method="GET",
             validate_cert=self.validate_cert,
+            ca_certs=self.ca_certs,
             headers=headers,
         )
 
