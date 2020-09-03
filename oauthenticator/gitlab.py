@@ -37,6 +37,15 @@ class GitLabOAuthenticator(OAuthenticator):
     # set scopes via config, e.g.
     # c.GitLabOAuthenticator.scope = ['read_user']
 
+    _deprecated_aliases = {
+        "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
+        "gitlab_project_id_whitelist": ("allowed_gitlab_project_ids", "0.12.0")
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        super()._deprecated_trait(change)
+
     login_service = "GitLab"
 
     client_id_env = 'GITLAB_CLIENT_ID'
@@ -93,12 +102,17 @@ class GitLabOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "%s/oauth/access_token" % self.gitlab_url
 
-    gitlab_group_whitelist = Set(
-        config=True, help="Automatically whitelist members of selected groups"
+    gitlab_group_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`", config=True,)
+
+    allowed_gitlab_groups = Set(
+        config=True, help="Automatically allow members of selected groups"
     )
-    gitlab_project_id_whitelist = Set(
+
+    gitlab_project_id_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_project_ids`", config=True,)
+
+    allowed_gitlab_project_ids = Set(
         config=True,
-        help="Automatically whitelist members with Developer access to selected project ids",
+        help="Automatically allow members with Developer access to selected project ids",
     )
 
     gitlab_version = None
@@ -157,19 +171,19 @@ class GitLabOAuthenticator(OAuthenticator):
         user_id = resp_json["id"]
         is_admin = resp_json.get("is_admin", False)
 
-        # Check if user is a member of any whitelisted groups or projects.
+        # Check if user is a member of any allowed groups or projects.
         # These checks are performed here, as it requires `access_token`.
         user_in_group = user_in_project = False
         is_group_specified = is_project_id_specified = False
 
-        if self.gitlab_group_whitelist:
+        if self.allowed_gitlab_groups:
             is_group_specified = True
-            user_in_group = await self._check_group_whitelist(user_id, access_token)
+            user_in_group = await self._check_membership_allowed_groups(user_id, access_token)
 
-        # We skip project_id check if user is in whitelisted group.
-        if self.gitlab_project_id_whitelist and not user_in_group:
+        # We skip project_id check if user is in allowed group.
+        if self.allowed_gitlab_project_ids and not user_in_group:
             is_project_id_specified = True
-            user_in_project = await self._check_project_id_whitelist(
+            user_in_project = await self._check_memebership_allowed_project_ids(
                 user_id, access_token
             )
 
@@ -185,7 +199,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
             }
         else:
-            self.log.warning("%s not in group or project whitelist", username)
+            self.log.warning("%s not in group or project allowed list", username)
             return None
 
     async def _get_gitlab_version(self, access_token):
@@ -202,11 +216,11 @@ class GitLabOAuthenticator(OAuthenticator):
         version_ints = list(map(int, version_strings))
         return version_ints
 
-    async def _check_group_whitelist(self, user_id, access_token):
+    async def _check_membership_allowed_groups(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        # Check if user is a member of any group in the whitelist
-        for group in map(url_escape, self.gitlab_group_whitelist):
+        # Check if user is a member of any group in the allowed list
+        for group in map(url_escape, self.allowed_gitlab_groups):
             url = "%s/groups/%s/members/%s%d" % (
                 self.gitlab_api,
                 quote(group, safe=''),
@@ -219,11 +233,11 @@ class GitLabOAuthenticator(OAuthenticator):
                 return True  # user _is_ in group
         return False
 
-    async def _check_project_id_whitelist(self, user_id, access_token):
+    async def _check_memebership_allowed_project_ids(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
-        # Check if user has developer access to any project in the whitelist
-        for project in self.gitlab_project_id_whitelist:
+        # Check if user has developer access to any project in the allowed list
+        for project in self.allowed_gitlab_project_ids:
             url = "%s/projects/%s/members/%s%d" % (
                 self.gitlab_api,
                 project,

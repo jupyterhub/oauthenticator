@@ -18,7 +18,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 
-from traitlets import Unicode, Bool, List, Dict, default
+from traitlets import Unicode, Bool, List, Dict, default, observe
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -337,3 +337,23 @@ class OAuthenticator(Authenticator):
 
     async def authenticate(self, handler, data=None):
         raise NotImplementedError()
+
+
+    def _deprecated_trait(self, change):
+        """observer for deprecated traits"""
+        old_attr = change.name
+        new_attr, version = self._deprecated_aliases.get(old_attr)
+        new_value = getattr(self, new_attr)
+        if new_value != change.new:
+            # only warn if different
+            # protects backward-compatible config from warnings
+            # if they set the same value under both names
+            self.log.warning(
+                "{cls}.{old} is deprecated in {cls} {version}, use {cls}.{new} instead".format(
+                    cls=self.__class__.__name__,
+                    old=old_attr,
+                    new=new_attr,
+                    version=version,
+                )
+            )
+            setattr(self, new_attr, change.new)

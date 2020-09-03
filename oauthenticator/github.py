@@ -17,7 +17,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import List, Set, Unicode, default
+from traitlets import List, Set, Unicode, default, observe
 
 from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
@@ -36,6 +36,14 @@ class GitHubOAuthenticator(OAuthenticator):
     # see github_scopes.md for details about scope config
     # set scopes via config, e.g.
     # c.GitHubOAuthenticator.scope = ['read:org']
+
+    _deprecated_aliases = {
+        "github_organization_whitelist": ("allowed_github_organizations", "0.12.0"),
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        super()._deprecated_trait(change)
 
     login_service = "GitHub"
 
@@ -108,8 +116,10 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
 
-    github_organization_whitelist = Set(
-        config=True, help="Automatically whitelist members of selected organizations"
+    github_organization_whitelist = Set(help="Deprecated, use `GitHubOAuthenticator.allowed_github_organizations`", config=True,)
+
+    allowed_github_organizations = Set(
+        config=True, help="Automatically allow members of selected organizations"
     )
 
     async def authenticate(self, handler, data=None):
@@ -168,17 +178,17 @@ class GitHubOAuthenticator(OAuthenticator):
         # username is now the GitHub userid.
         if not username:
             return None
-        # Check if user is a member of any whitelisted organizations.
+        # Check if user is a member of any allowed organizations.
         # This check is performed here, as it requires `access_token`.
-        if self.github_organization_whitelist:
-            for org in self.github_organization_whitelist:
-                user_in_org = await self._check_organization_whitelist(
+        if self.allowed_github_organizations:
+            for org in self.allowed_github_organizations:
+                user_in_org = await self._check_memebership_allowed_organizations(
                     org, username, access_token
                 )
                 if user_in_org:
                     break
             else:  # User not found in member list for any organisation
-                self.log.warning("User %s is not in org whitelist", username)
+                self.log.warning("User %s is not in allowed org list", username)
                 return None
         userdict = {"name": username}
         # Now we set up auth_state
@@ -197,7 +207,7 @@ class GitHubOAuthenticator(OAuthenticator):
 
         return userdict
 
-    async def _check_organization_whitelist(self, org, username, access_token):
+    async def _check_memebership_allowed_organizations(self, org, username, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)

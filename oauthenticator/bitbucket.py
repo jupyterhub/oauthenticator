@@ -28,6 +28,14 @@ def _api_headers(access_token):
 
 class BitbucketOAuthenticator(OAuthenticator):
 
+    _deprecated_aliases = {
+        "team_whitelist": ("allowed_teams", "0.12.0"),
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        super()._deprecated_trait(change)
+
     login_service = "Bitbucket"
     client_id_env = 'BITBUCKET_CLIENT_ID'
     client_secret_env = 'BITBUCKET_CLIENT_SECRET'
@@ -40,11 +48,13 @@ class BitbucketOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "https://bitbucket.org/site/oauth2/access_token"
 
-    team_whitelist = Set(
-        config=True, help="Automatically whitelist members of selected teams"
+    team_whitelist = Set(help="Deprecated, use `BitbucketOAuthenticator.allowed_teams`", config=True,)
+
+    allowed_teams = Set(
+        config=True, help="Automatically allow members of selected teams"
     )
 
-    bitbucket_team_whitelist = team_whitelist
+    bitbucket_allowed_teams = allowed_teams
 
     headers = {
         "Accept": "application/json",
@@ -93,12 +103,12 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         username = resp_json["username"]
 
-        # Check if user is a member of any whitelisted teams.
+        # Check if user is a member of any allowed teams.
         # This check is performed here, as the check requires `access_token`.
-        if self.bitbucket_team_whitelist:
-            user_in_team = await self._check_team_whitelist(username, access_token)
+        if self.bitbucket_allowed_teams:
+            user_in_team = await self._check_membership_allowed_teams(username, access_token)
             if not user_in_team:
-                self.log.warning("%s not in team whitelist", username)
+                self.log.warning("%s not in team allowed list of users", username)
                 return None
 
         return {
@@ -106,7 +116,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             'auth_state': {'access_token': access_token, 'bitbucket_user': resp_json},
         }
 
-    async def _check_team_whitelist(self, username, access_token):
+    async def _check_membership_allowed_teams(self, username, access_token):
         http_client = AsyncHTTPClient()
 
         headers = _api_headers(access_token)
@@ -121,8 +131,8 @@ class BitbucketOAuthenticator(OAuthenticator):
             next_page = resp_json.get('next', None)
 
             user_teams = set([entry["username"] for entry in resp_json["values"]])
-            # check if any of the organizations seen thus far are in whitelist
-            if len(self.bitbucket_team_whitelist & user_teams) > 0:
+            # check if any of the organizations seen thus far are in the allowed list
+            if len(self.bitbucket_allowed_teams & user_teams) > 0:
                 return True
         return False
 
