@@ -46,21 +46,21 @@ and give it read only access to users and groups.
 
 **Note:** if you remove a member from a google group you will have to force this user to login again in order for the change to take effect
 
-#### if you want to manage admin users and whitelisted via google groups
+#### if you want to manage admin users and allowed users via google groups
 
 ```python
 c.GoogleOAuthenticator.gsuite_administrator = {'example.com': 'someuser'}
 c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/path/to/service_account.json'}
 c.GoogleOAuthenticator.admin_google_groups = {'example.com': ['someadmingroup']}
-c.GoogleOAuthenticator.google_group_whitelist = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
+c.GoogleOAuthenticator.allowed_google_groups = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
 ```
 
-#### if you only want to whitelist users via google groups
+#### if you only want to allow users via google groups
 
 ```python
 c.GoogleOAuthenticator.gsuite_administrator = {'example.com': 'someuser'}
 c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/path/to/service_account.json'}
-c.GoogleOAuthenticator.google_group_whitelist = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
+c.GoogleOAuthenticator.allowed_google_groups = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
 ```
 ### You are done!
 
