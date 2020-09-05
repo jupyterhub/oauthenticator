@@ -13,7 +13,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import Dict, Unicode, List, default, validate
+from traitlets import Dict, Unicode, List, default, validate, observe
 
 from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator

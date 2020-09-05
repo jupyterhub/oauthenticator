@@ -5,8 +5,10 @@ import functools
 import collections
 from urllib.parse import urlparse, parse_qs
 
+import logging
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
+from traitlets.config import Config
 from pytest import fixture, mark
 
 from ..gitlab import GitLabOAuthenticator
@@ -64,7 +66,7 @@ def make_link_header(urlinfo, page):
                     .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
 
 
-async def test_group_whitelist(gitlab_client):
+async def test_allowed_groups(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
     mock_api_version(client, '12.4.0-ee')
@@ -132,7 +134,7 @@ async def test_group_whitelist(gitlab_client):
             (API_ENDPOINT + '/groups', functools.partial(groups, paginate))
         )
 
-        authenticator.gitlab_group_whitelist = ['blue']
+        authenticator.allowed_gitlab_groups = ['blue']
 
         handler = client.handler_for_user(group_user_model('caboose'))
         user_info = await authenticator.authenticate(handler)
@@ -153,7 +155,7 @@ async def test_group_whitelist(gitlab_client):
         assert name is None
 
         # reverse it, just to be safe
-        authenticator.gitlab_group_whitelist = ['red']
+        authenticator.allowed_gitlab_groups = ['red']
 
         handler = client.handler_for_user(group_user_model('caboose'))
         name = await authenticator.authenticate(handler)
@@ -167,7 +169,7 @@ async def test_group_whitelist(gitlab_client):
         client.hosts['gitlab.com'].pop()
 
 
-async def test_project_id_whitelist(gitlab_client):
+async def test_allowed_project_ids(gitlab_client):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
     mock_api_version(client, '12.4.0-pre')
@@ -221,7 +223,7 @@ async def test_project_id_whitelist(gitlab_client):
         (member_regex, is_member)
     )
 
-    authenticator.gitlab_project_id_whitelist = [1231231]
+    authenticator.allowed_gitlab_project_ids = [1231231]
 
     # Forbidden since John has guest access
     handler = client.handler_for_user(john_user_model)
@@ -239,17 +241,35 @@ async def test_project_id_whitelist(gitlab_client):
     user_info = await authenticator.authenticate(handler)
     assert user_info is None
 
-    authenticator.gitlab_project_id_whitelist = [123123152543]
+    authenticator.allowed_gitlab_project_ids = [123123152543]
 
     # Forbidden since the project does not exist.
     handler = client.handler_for_user(harry_user_model)
     user_info = await authenticator.authenticate(handler)
     assert user_info is None
 
-    authenticator.gitlab_project_id_whitelist = [123123152543, 1231231]
+    authenticator.allowed_gitlab_project_ids = [123123152543, 1231231]
 
     # Authenticated since Harry has developer access to one of the project in the list
     handler = client.handler_for_user(harry_user_model)
     user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'harry'
+
+
+def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.GitLabOAuthenticator.gitlab_group_whitelist = {'red'}
+
+    log = logging.getLogger("testlog")
+    authenticator = GitLabOAuthenticator(config=cfg, log=log)
+    assert caplog.record_tuples == [
+        (
+            log.name,
+            logging.WARNING,
+            'GitLabOAuthenticator.gitlab_group_whitelist is deprecated in GitLabOAuthenticator 0.12.0, use '
+            'GitLabOAuthenticator.allowed_gitlab_groups instead'
+        )
+    ]
+
+    assert authenticator.allowed_gitlab_groups == {'red'}

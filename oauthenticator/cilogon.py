@@ -22,7 +22,7 @@ from tornado import web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from traitlets import Unicode, List, Bool, default, validate
+from traitlets import Unicode, List, Bool, default, validate, observe
 
 from jupyterhub.auth import LocalAuthenticator
 

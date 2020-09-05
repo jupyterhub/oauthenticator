@@ -19,7 +19,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Set, CUnicode, Unicode, default
+from traitlets import Set, CUnicode, Unicode, default, observe
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 

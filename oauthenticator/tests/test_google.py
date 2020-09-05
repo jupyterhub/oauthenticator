@@ -1,8 +1,11 @@
 import re
 from unittest.mock import Mock
 
+import logging
 from pytest import fixture, mark, raises
 from tornado.web import Application, HTTPError
+from traitlets.config import Config
+
 
 from ..google import GoogleOAuthenticator
 
@@ -72,37 +75,55 @@ async def test_admin_google_groups(google_client):
     authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
         admin_google_groups={'email.com': ['fakeadmingroup']},
-        google_group_whitelist={'email.com': ['fakegroup']}
+        allowed_google_groups={'email.com': ['fakegroup']}
     )
     handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
     admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
     admin_user = admin_user_info['admin']
     assert admin_user == True
-    handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
-    whitelist_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
-    whitelisted_user_groups = whitelist_user_info['auth_state']['google_user']['google_groups']
-    admin_user = whitelist_user_info['admin']
-    assert 'fakegroup' in whitelisted_user_groups
+    handler = google_client.handler_for_user(user_model('fakealloweduser@email.com'))
+    allowed_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
+    allowed_user_groups = allowed_user_info['auth_state']['google_user']['google_groups']
+    admin_user = allowed_user_info['admin']
+    assert 'fakegroup' in allowed_user_groups
     assert admin_user == False
-    handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
-    whitelisted_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
-    assert whitelisted_user_groups is None
+    handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
+    allowed_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonallowedgroup'])
+    assert allowed_user_groups is None
 
 
-async def test_whitelisted_google_groups(google_client):
+async def test_allowed_google_groups(google_client):
     authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
-        google_group_whitelist={'email.com': ['fakegroup']}
+        allowed_google_groups={'email.com': ['fakegroup']}
     )
     handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
     admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
     assert admin_user_info is None
-    handler = google_client.handler_for_user(user_model('fakewhitelisted@email.com'))
-    whitelist_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
-    whitelisted_user_groups = whitelist_user_info['auth_state']['google_user']['google_groups']
-    admin_field = whitelist_user_info.get('admin')
-    assert 'fakegroup' in whitelisted_user_groups
+    handler = google_client.handler_for_user(user_model('fakealloweduser@email.com'))
+    allowed_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
+    allowed_user_groups = allowed_user_info['auth_state']['google_user']['google_groups']
+    admin_field = allowed_user_info.get('admin')
+    assert 'fakegroup' in allowed_user_groups
     assert admin_field is None
-    handler = google_client.handler_for_user(user_model('fakenonwhitelisted@email.com'))
-    whitelisted_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonwhitelistedgroup'])
-    assert whitelisted_user_groups is None
+    handler = google_client.handler_for_user(user_model('faallowedisted@email.com'))
+    allowed_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonallowedgroup'])
+    assert allowed_user_groups is None
+
+
+def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.GoogleOAuthenticator.google_group_whitelist = {'email.com': ['group']}
+
+    log = logging.getLogger("testlog")
+    authenticator = GoogleOAuthenticator(config=cfg, log=log)
+    assert caplog.record_tuples == [
+        (
+            log.name,
+            logging.WARNING,
+            'GoogleOAuthenticator.google_group_whitelist is deprecated in GoogleOAuthenticator 0.12.0, use '
+            'GoogleOAuthenticator.allowed_google_groups instead',
+        )
+    ]
+
+    assert authenticator.allowed_google_groups == {'email.com': ['group']}

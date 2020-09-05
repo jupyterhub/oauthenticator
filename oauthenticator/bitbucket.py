@@ -13,7 +13,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Set, default
+from traitlets import Set, default, observe
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 

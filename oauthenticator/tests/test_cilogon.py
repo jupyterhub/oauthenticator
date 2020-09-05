@@ -1,8 +1,9 @@
 import json
 
+import logging
 from pytest import fixture, mark, raises
-
 from tornado.web import HTTPError
+from traitlets.config import Config
 
 from ..cilogon import CILogonOAuthenticator
 
@@ -95,3 +96,21 @@ async def test_cilogon_missing_alternate_claim(cilogon_client):
         alternative_user_model('jtkirk@ufp.gov', 'uid'))
     with raises(HTTPError):
         user_info = await authenticator.authenticate(handler)
+
+
+def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.idp_whitelist = ['pink']
+
+    log = logging.getLogger("testlog")
+    authenticator = CILogonOAuthenticator(config=cfg, log=log)
+    assert caplog.record_tuples == [
+        (
+            log.name,
+            logging.WARNING,
+            'CILogonOAuthenticator.idp_whitelist is deprecated in CILogonOAuthenticator 0.12.0, use '
+            'CILogonOAuthenticator.allowed_idps instead',
+        )
+    ]
+
+    assert authenticator.allowed_idps == ['pink']
