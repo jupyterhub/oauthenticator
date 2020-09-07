@@ -39,7 +39,7 @@ class GitLabOAuthenticator(OAuthenticator):
 
     _deprecated_aliases = {
         "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
-        "gitlab_project_id_whitelist": ("allowed_gitlab_project_ids", "0.12.0")
+        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0")
     }
 
     @observe(*list(_deprecated_aliases))
