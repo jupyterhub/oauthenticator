@@ -207,7 +207,7 @@ class GitHubOAuthenticator(OAuthenticator):
 
         return userdict
 
-    async def _check_memebership_allowed_organizations(self, org, username, access_token):
+    async def _check_membership_allowed_organizations(self, org, username, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)
