@@ -106,7 +106,7 @@ async def test_allowed_google_groups(google_client):
     admin_field = allowed_user_info.get('admin')
     assert 'fakegroup' in allowed_user_groups
     assert admin_field is None
-    handler = google_client.handler_for_user(user_model('faallowedisted@email.com'))
+    handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
     allowed_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonallowedgroup'])
     assert allowed_user_groups is None
 
