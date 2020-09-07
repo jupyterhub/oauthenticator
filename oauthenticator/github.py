@@ -182,7 +182,7 @@ class GitHubOAuthenticator(OAuthenticator):
         # This check is performed here, as it requires `access_token`.
         if self.allowed_github_organizations:
             for org in self.allowed_github_organizations:
-                user_in_org = await self._check_memebership_allowed_organizations(
+                user_in_org = await self._check_membership_allowed_organizations(
                     org, username, access_token
                 )
                 if user_in_org:
