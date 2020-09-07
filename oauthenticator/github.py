@@ -180,8 +180,8 @@ class GitHubOAuthenticator(OAuthenticator):
             return None
         # Check if user is a member of any allowed organizations.
         # This check is performed here, as it requires `access_token`.
-        if self.allowed_github_organizations:
-            for org in self.allowed_github_organizations:
+        if self.allowed_organizations:
+            for org in self.allowed_organizations:
                 user_in_org = await self._check_membership_allowed_organizations(
                     org, username, access_token
                 )
