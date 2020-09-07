@@ -237,7 +237,7 @@ class GitLabOAuthenticator(OAuthenticator):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the allowed list
-        for project in self.allowed_gitlab_project_ids:
+        for project in self.allowed_project_ids:
             url = "%s/projects/%s/members/%s%d" % (
                 self.gitlab_api,
                 project,
