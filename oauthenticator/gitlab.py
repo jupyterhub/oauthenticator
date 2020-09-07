@@ -183,7 +183,7 @@ class GitLabOAuthenticator(OAuthenticator):
         # We skip project_id check if user is in allowed group.
         if self.allowed_gitlab_project_ids and not user_in_group:
             is_project_id_specified = True
-            user_in_project = await self._check_memebership_allowed_project_ids(
+            user_in_project = await self._check_membership_allowed_project_ids(
                 user_id, access_token
             )
 
