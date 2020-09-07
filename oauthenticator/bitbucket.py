@@ -54,7 +54,6 @@ class BitbucketOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected teams"
     )
 
-    bitbucket_allowed_teams = allowed_teams
 
     headers = {
         "Accept": "application/json",
