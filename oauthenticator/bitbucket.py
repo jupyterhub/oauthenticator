@@ -104,7 +104,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         # Check if user is a member of any allowed teams.
         # This check is performed here, as the check requires `access_token`.
-        if self.bitbucket_allowed_teams:
+        if self.allowed_teams:
             user_in_team = await self._check_membership_allowed_teams(username, access_token)
             if not user_in_team:
                 self.log.warning("%s not in team allowed list of users", username)
