@@ -131,7 +131,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
             user_teams = set([entry["username"] for entry in resp_json["values"]])
             # check if any of the organizations seen thus far are in the allowed list
-            if len(self.bitbucket_allowed_teams & user_teams) > 0:
+            if len(self.allowed_teams & user_teams) > 0:
                 return True
         return False
 
