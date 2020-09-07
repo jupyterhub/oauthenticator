@@ -108,9 +108,9 @@ class GitLabOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected groups"
     )
 
-    gitlab_project_id_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_project_ids`", config=True,)
+    gitlab_project_id_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`", config=True,)
 
-    allowed_gitlab_project_ids = Set(
+    allowed_project_ids = Set(
         config=True,
         help="Automatically allow members with Developer access to selected project ids",
     )
