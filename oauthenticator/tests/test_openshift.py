@@ -17,7 +17,7 @@ def user_model(username):
 @fixture
 def openshift_client(client):
     setup_oauth_mock(client,
-        host=['localhost'],
+        host=['openshift.default.svc.cluster.local'],
         access_token_path='/oauth/token',
         user_path='/apis/user.openshift.io/v1/users/~',
     )
@@ -26,6 +26,7 @@ def openshift_client(client):
 
 async def test_openshift(openshift_client):
     authenticator = OpenShiftOAuthenticator()
+    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
     handler = openshift_client.handler_for_user(user_model('wash'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
