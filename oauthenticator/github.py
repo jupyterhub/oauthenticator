@@ -118,7 +118,7 @@ class GitHubOAuthenticator(OAuthenticator):
 
     github_organization_whitelist = Set(help="Deprecated, use `GitHubOAuthenticator.allowed_github_organizations`", config=True,)
 
-    allowed_github_organizations = Set(
+    allowed_organizations = Set(
         config=True, help="Automatically allow members of selected organizations"
     )
 
