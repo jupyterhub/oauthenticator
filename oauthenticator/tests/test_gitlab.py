@@ -223,7 +223,7 @@ async def test_allowed_project_ids(gitlab_client):
         (member_regex, is_member)
     )
 
-    authenticator.allowed_gitlab_project_ids = [1231231]
+    authenticator.allowed_project_ids = [1231231]
 
     # Forbidden since John has guest access
     handler = client.handler_for_user(john_user_model)
@@ -241,14 +241,14 @@ async def test_allowed_project_ids(gitlab_client):
     user_info = await authenticator.authenticate(handler)
     assert user_info is None
 
-    authenticator.allowed_gitlab_project_ids = [123123152543]
+    authenticator.allowed_project_ids = [123123152543]
 
     # Forbidden since the project does not exist.
     handler = client.handler_for_user(harry_user_model)
     user_info = await authenticator.authenticate(handler)
     assert user_info is None
 
-    authenticator.allowed_gitlab_project_ids = [123123152543, 1231231]
+    authenticator.allowed_project_ids = [123123152543, 1231231]
 
     # Authenticated since Harry has developer access to one of the project in the list
     handler = client.handler_for_user(harry_user_model)

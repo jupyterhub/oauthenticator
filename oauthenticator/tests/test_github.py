@@ -129,7 +129,7 @@ async def test_allowed_org_membership(github_client):
         client_hosts.append((membership_regex, team_membership))
         client_hosts.append((member_regex, functools.partial(team_members, paginate)))
 
-        authenticator.allowed_github_organizations = ['blue']
+        authenticator.allowed_organizations = ['blue']
 
         handler = client.handler_for_user(user_model('caboose'))
         user = await authenticator.authenticate(handler)
@@ -140,7 +140,7 @@ async def test_allowed_org_membership(github_client):
         assert user is None
 
         # reverse it, just to be safe
-        authenticator.allowed_github_organizations = ['red']
+        authenticator.allowed_organizations = ['red']
 
         handler = client.handler_for_user(user_model('caboose'))
         user = await authenticator.authenticate(handler)
@@ -164,8 +164,8 @@ def test_deprecated_config(caplog):
             log.name,
             logging.WARNING,
             'GitHubOAuthenticator.github_organization_whitelist is deprecated in GitHubOAuthenticator 0.12.0, use '
-            'GitHubOAuthenticator.allowed_github_organizations instead',
+            'GitHubOAuthenticator.allowed_organizations instead',
         )
     ]
 
-    assert authenticator.allowed_github_organizations == {"jupy"}
+    assert authenticator.allowed_organizations == {"jupy"}

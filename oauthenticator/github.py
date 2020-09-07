@@ -38,7 +38,7 @@ class GitHubOAuthenticator(OAuthenticator):
     # c.GitHubOAuthenticator.scope = ['read:org']
 
     _deprecated_aliases = {
-        "github_organization_whitelist": ("allowed_github_organizations", "0.12.0"),
+        "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
     }
 
     @observe(*list(_deprecated_aliases))
@@ -116,7 +116,7 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
 
-    github_organization_whitelist = Set(help="Deprecated, use `GitHubOAuthenticator.allowed_github_organizations`", config=True,)
+    github_organization_whitelist = Set(help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`", config=True,)
 
     allowed_organizations = Set(
         config=True, help="Automatically allow members of selected organizations"
