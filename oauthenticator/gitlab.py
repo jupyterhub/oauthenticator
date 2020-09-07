@@ -233,7 +233,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 return True  # user _is_ in group
         return False
 
-    async def _check_memebership_allowed_project_ids(self, user_id, access_token):
+    async def _check_membership_allowed_project_ids(self, user_id, access_token):
         http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the allowed list
