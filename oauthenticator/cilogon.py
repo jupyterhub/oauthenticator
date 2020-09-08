@@ -4,7 +4,7 @@ Uses OAuth 2.0 with cilogon.org (override with CILOGON_HOST)
 
 Caveats:
 
-- For user whitelist/admin purposes, username will be the ePPN by default.
+- For allowed user list /admin purposes, username will be the ePPN by default.
   This is typically an email address and may not work as a Unix userid.
   Normalization may be required to turn the JupyterHub username into a Unix username.
 - Default username_claim of ePPN does not work for all providers,
@@ -22,7 +22,7 @@ from tornado import web
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from traitlets import Unicode, List, Bool, default, validate
+from traitlets import Unicode, List, Bool, default, validate, observe
 
 from jupyterhub.auth import LocalAuthenticator
 
@@ -44,6 +44,14 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 
 class CILogonOAuthenticator(OAuthenticator):
+    _deprecated_aliases = {
+        "idp_whitelist": ("allowed_idps", "0.12.0"),
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        super()._deprecated_trait(change)
+
     login_service = "CILogon"
 
     client_id_env = 'CILOGON_CLIENT_ID'
@@ -78,7 +86,8 @@ class CILogonOAuthenticator(OAuthenticator):
             return ['openid'] + proposal.value
         return proposal.value
 
-    idp_whitelist = List(
+    idp_whitelist = List(help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`", config=True,)
+    allowed_idps = List(
         config=True,
         help="""A list of IDP which can be stripped from the username after the @ sign.""",
     )
@@ -86,7 +95,7 @@ class CILogonOAuthenticator(OAuthenticator):
         False,
         config=True,
         help="""Remove the IDP domain from the username. Note that only domains which
-             appear in the `idp_whitelist` will be stripped.""",
+             appear in the `allowed_idps` will be stripped.""",
     )
     idp = Unicode(
         config=True,
@@ -187,14 +196,14 @@ class CILogonOAuthenticator(OAuthenticator):
                 )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-        if self.idp_whitelist:
+        if self.allowed_idps:
             gotten_name, gotten_idp = username.split('@')
-            if gotten_idp not in self.idp_whitelist:
+            if gotten_idp not in self.allowed_idps:
                 self.log.error(
-                    "Trying to login from not whitelisted domain %s", gotten_idp
+                    "Trying to login from not allowed domain %s", gotten_idp
                 )
-                raise web.HTTPError(500, "Trying to login from not whitelisted domain")
-            if len(self.idp_whitelist) == 1 and self.strip_idp_domain:
+                raise web.HTTPError(500, "Trying to login from a domain not allowed")
+            if len(self.allowed_idps) == 1 and self.strip_idp_domain:
                 username = gotten_name
         userdict = {"name": username}
         # Now we set up auth_state

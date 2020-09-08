@@ -89,7 +89,7 @@ class GitHubOAuthenticator(OAuthenticator):
             # and login has failed
             return None
 
-        # here we can add additional checks such as against team whitelists
+        # here we can add additional checks such as against team allowed lists
         # if the OAuth provider has such a concept
 
         # 'name' is the JupyterHub username

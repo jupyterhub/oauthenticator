@@ -1,7 +1,9 @@
 import os
 from unittest.mock import patch
 
+import logging
 from pytest import fixture, mark
+from traitlets.config import Config
 
 from ..bitbucket import BitbucketOAuthenticator
 
@@ -36,10 +38,10 @@ async def test_bitbucket(bitbucket_client):
     assert 'bitbucket_user' in auth_state
 
 
-async def test_team_whitelist(bitbucket_client):
+async def test_allowed_teams(bitbucket_client):
     client = bitbucket_client
     authenticator = BitbucketOAuthenticator()
-    authenticator.bitbucket_team_whitelist = ['blue']
+    authenticator.allowed_teams = ['blue']
 
     teams = {
         'red': ['grif', 'simmons', 'donut', 'sarge', 'lopez'],
@@ -70,7 +72,7 @@ async def test_team_whitelist(bitbucket_client):
     assert name is None
 
     # reverse it, just to be safe
-    authenticator.team_whitelist = ['red']
+    authenticator.allowed_teams = ['red']
 
     handler = client.handler_for_user(user_model('caboose'))
     name = await authenticator.authenticate(handler)
@@ -80,3 +82,20 @@ async def test_team_whitelist(bitbucket_client):
     user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'donut'
+
+def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.BitbucketOAuthenticator.team_whitelist = ['red']
+
+    log = logging.getLogger("testlog")
+    authenticator = BitbucketOAuthenticator(config=cfg, log=log)
+    assert caplog.record_tuples == [
+        (
+            log.name,
+            logging.WARNING,
+            'BitbucketOAuthenticator.team_whitelist is deprecated in BitbucketOAuthenticator 0.12.0, use '
+            'BitbucketOAuthenticator.allowed_teams instead',
+        )
+    ]
+
+    assert authenticator.allowed_teams == {"red"}

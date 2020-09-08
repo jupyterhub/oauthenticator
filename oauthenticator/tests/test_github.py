@@ -3,10 +3,12 @@ import functools
 import json
 from io import BytesIO
 
+import logging
 from pytest import fixture, mark
 from urllib.parse import urlparse, parse_qs
 from tornado.httpclient import HTTPRequest, HTTPResponse
 from tornado.httputil import HTTPHeaders
+from traitlets.config import Config
 
 from ..github import GitHubOAuthenticator
 
@@ -58,7 +60,7 @@ def make_link_header(urlinfo, page):
                     .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
 
 
-async def test_org_whitelist(github_client):
+async def test_allowed_org_membership(github_client):
     client = github_client
     authenticator = GitHubOAuthenticator()
 
@@ -127,7 +129,7 @@ async def test_org_whitelist(github_client):
         client_hosts.append((membership_regex, team_membership))
         client_hosts.append((member_regex, functools.partial(team_members, paginate)))
 
-        authenticator.github_organization_whitelist = ['blue']
+        authenticator.allowed_organizations = ['blue']
 
         handler = client.handler_for_user(user_model('caboose'))
         user = await authenticator.authenticate(handler)
@@ -138,7 +140,7 @@ async def test_org_whitelist(github_client):
         assert user is None
 
         # reverse it, just to be safe
-        authenticator.github_organization_whitelist = ['red']
+        authenticator.allowed_organizations = ['red']
 
         handler = client.handler_for_user(user_model('caboose'))
         user = await authenticator.authenticate(handler)
@@ -150,3 +152,20 @@ async def test_org_whitelist(github_client):
 
         client_hosts.pop()
         client_hosts.pop()
+
+def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.GitHubOAuthenticator.github_organization_whitelist = ["jupy"]
+
+    log = logging.getLogger("testlog")
+    authenticator = GitHubOAuthenticator(config=cfg, log=log)
+    assert caplog.record_tuples == [
+        (
+            log.name,
+            logging.WARNING,
+            'GitHubOAuthenticator.github_organization_whitelist is deprecated in GitHubOAuthenticator 0.12.0, use '
+            'GitHubOAuthenticator.allowed_organizations instead',
+        )
+    ]
+
+    assert authenticator.allowed_organizations == {"jupy"}

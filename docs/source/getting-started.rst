@@ -7,7 +7,7 @@ The general steps to take when using OAuthenticator:
 2. Register with the provider
 3. Choose an authenticator class, or use :class:`~.oauthenticator.generic.GenericOAuthenticator`
    and configure JupyterHub to use it
-4. Configure the authenticator class (client_id, client_secret, callback_url, whitelist, etc.)
+4. Configure the authenticator class (client_id, client_secret, callback_url, allowed_users, etc.)
 5. Specific configuration for your identity provider
 
 OAuthenticator currently supports the following **identity providers**:
@@ -209,13 +209,13 @@ groups by setting
 
 ::
 
-   c.GitLabOAuthenticator.gitlab_project_id_whitelist = [ ... ]
+   c.GitLabOAuthenticator.allowed_gitlab_project_ids = [ ... ]
 
 and
 
 ::
 
-   c.GitLabOAuthenticator.gitlab_group_whitelist = [ ... ]
+   c.GitLabOAuthenticator.allowed_gitlab_groups = [ ... ]
 
 but be aware that each entry incurs a separate API call, increasing the
 risk of rate limiting and timeouts.

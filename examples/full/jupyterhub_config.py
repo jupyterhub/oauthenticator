@@ -8,7 +8,7 @@ c.JupyterHub.authenticator_class = LocalGitHubOAuthenticator
 
 c.LocalGitHubOAuthenticator.create_system_users = True
 
-c.Authenticator.whitelist = whitelist = set()
+c.Authenticator.allowed_users = allowed_users = set()
 c.JupyterHub.admin_users = admin = set()
 
 import os
@@ -26,7 +26,7 @@ with open(join(root, 'userlist')) as f:
             continue
         parts = line.split()
         name = parts[0]
-        whitelist.add(name)
+        allowed_users.add(name)
         if len(parts) > 1 and parts[1] == 'admin':
             admin.add(name)
 

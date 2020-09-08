@@ -13,7 +13,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
 
-from traitlets import Dict, Unicode, List, default, validate
+from traitlets import Dict, Unicode, List, default, validate, observe
 
 from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
@@ -30,6 +30,14 @@ def check_user_in_groups(member_groups, allowed_groups):
 
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
+    _deprecated_aliases = {
+        "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        super()._deprecated_trait(change)
+
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
     @default('google_api_url')
@@ -65,9 +73,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="Username of a G Suite Administrator for the service account to act as"
     ).tag(config=True)
 
-    google_group_whitelist = Dict(
+    google_group_whitelist = Dict(help="Deprecated, use `GoogleOAuthenticator.allowed_google_groups`", config=True,)
+
+    allowed_google_groups = Dict(
         List(Unicode()),
-        help="Automatically whitelist members of selected groups"
+        help="Automatically allow members of selected groups"
     ).tag(config=True)
 
     admin_google_groups = Dict(
@@ -195,7 +205,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             }
         }
 
-        if self.admin_google_groups or self.google_group_whitelist:
+        if self.admin_google_groups or self.allowed_google_groups:
             user_info = await self._add_google_groups_info(user_info, google_groups)
 
         return user_info
@@ -274,8 +284,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # Check if user is a member of any admin groups.
         if self.admin_google_groups:
             is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
-        # Check if user is a member of any whitelisted groups.
-        user_in_group = check_user_in_groups(google_groups, self.google_group_whitelist[user_email_domain])
+        # Check if user is a member of any allowed groups.
+        user_in_group = check_user_in_groups(google_groups, self.allowed_google_groups[user_email_domain])
 
         if self.admin_google_groups and (is_admin or user_in_group):
             user_info['admin'] = is_admin
