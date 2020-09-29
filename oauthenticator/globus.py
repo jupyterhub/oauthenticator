@@ -206,17 +206,25 @@ class GlobusOAuthenticator(OAuthenticator):
     def get_username(self, user_data):
         # It's possible for identity provider domains to be namespaced
         # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username, domain = user_data.get('preferred_username').split('@', 1)
-        if self.identity_provider and domain != self.identity_provider:
-            raise HTTPError(
-                403,
-                'This site is restricted to {} accounts. Please link your {}'
-                ' account at {}.'.format(
+        if not self.identity_provider:
+            username, domain = user_data.get('preferred_username').split('@', 1)
+        else:
+            has_restricted_idp = False
+            for identity in user_data.get('identity_set'):
+                username, domain = identity.get('username').split('@', 1)
+                if domain == self.identity_provider:
+                    has_restricted_idp = True
+                    break
+            if not has_restricted_idp:
+                raise HTTPError(
+                    403,
+                    'This site is restricted to {} accounts. Please link your {}'
+                    ' account at {}.'.format(
                     self.identity_provider,
                     self.identity_provider,
                     'globus.org/app/account',
-                ),
-            )
+                    ),
+                )
         return username
 
     def get_default_headers(self):

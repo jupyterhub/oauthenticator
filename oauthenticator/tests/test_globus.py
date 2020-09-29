@@ -13,12 +13,14 @@ from ..globus import GlobusOAuthenticator, GlobusLogoutHandler
 from .mocks import setup_oauth_mock, mock_handler
 
 
-def user_model(username):
+def user_model(username, id_set_username='zoe@example.edu'):
     """Return a user model"""
     return {
         'preferred_username': username,
-    }
-
+        'identity_set': [{
+                'username': id_set_username
+            }]
+        }
 
 def revoke_token_request_handler(request):
     assert request.method == 'POST', request.method
@@ -160,6 +162,12 @@ async def test_restricted_domain(globus_client):
         await authenticator.authenticate(handler)
     assert exc.value.status_code == 403
 
+async def test_restricted_domain_identity_set(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.identity_provider = 'example.edu'
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'zoe'
 
 async def test_namespaced_domain(globus_client):
     authenticator = GlobusOAuthenticator()
