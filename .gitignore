@@ -68,3 +68,5 @@ jupyterhub_cookie_secret
 
 .vscode/
 .idea/
+
+Pipfile*
