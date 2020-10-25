@@ -61,12 +61,6 @@ class GenericOAuthenticator(OAuthenticator):
         help="Userdata params to get user data login information"
     ).tag(config=True)
 
-    userdata_method = Unicode(
-        os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
-        config=True,
-        help="Userdata method to get user data login information",
-    )
-
     userdata_token_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_REQUEST_TYPE', 'header'),
         config=True,
@@ -131,11 +125,7 @@ class GenericOAuthenticator(OAuthenticator):
         if self.userdata_token_method == "url":
             url = url_concat(self.userdata_url, dict(access_token=access_token))
 
-        req = HTTPRequest(
-            url,
-            method=self.userdata_method,
-            headers=headers,
-        )
+        req = HTTPRequest(url, headers=headers)
         return self.fetch(req, "fetching user data")
 
     @staticmethod
