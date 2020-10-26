@@ -1,7 +1,11 @@
 language: python
-sudo: false
-cache: pip
-dist: xenial
+dist: bionic
+
+stages:
+  - name: test
+    if: tag IS NOT present
+  - name: publish
+    if: tag IS present
 
 install:
   - pip install --upgrade pip
@@ -33,10 +37,12 @@ jobs:
     - python: 3.6
     - python: 3.5
     - python: nightly
-    # Only deploy if all test jobs passed
-    - stage: deploy
-      python: 3.7
-      if: tag IS present
+
+    - stage: publish
+      script:
+        - echo "Required dummy override of default 'script' in .travis.yml."
+      after_success:
+        - echo "Required dummy override of default 'after_success' in .travis.yml."
       deploy:
         provider: pypi
         user: __token__
