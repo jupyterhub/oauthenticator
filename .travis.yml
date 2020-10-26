@@ -1,5 +1,8 @@
-language: python
+os: linux
 dist: bionic
+language: python
+python:
+  - 3.8
 
 stages:
   - name: test
@@ -7,13 +10,18 @@ stages:
   - name: publish
     if: tag IS present
 
+before_install:
+  # Exit immediately if a command exits with a non-zero status.
+  - set -e
+
 install:
   - pip install --upgrade pip
   - pip install --upgrade --pre -r test-requirements.txt .
   - pip freeze
+
 env:
-  OAUTH2_TOKEN_URL="token_url"
-  OAUTH2_USERDATA_URL="userdata_url"
+  - OAUTH2_TOKEN_URL="token_url" OAUTH2_USERDATA_URL="userdata_url"
+
 script:
   - |
     if [[ "$TEST_LINT" = 1 ]]; then
@@ -21,6 +29,7 @@ script:
     else
       py.test --cov oauthenticator oauthenticator
     fi
+
 after_success:
   - codecov
 
