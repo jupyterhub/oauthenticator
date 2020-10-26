@@ -8,9 +8,45 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.12
+
+### [0.12.0] - UNRELEASED
+
+#### Enhancements made
+* [OpenShift] Enable cert verification for self-signed certs and auto-load auth api URL [#363](https://github.com/jupyterhub/oauthenticator/pull/363) ([@vpavlin](https://github.com/vpavlin))
+* [Globus] Support custom username handling [#357](https://github.com/jupyterhub/oauthenticator/pull/357) ([@NickolausDS](https://github.com/NickolausDS))
+* [Google] Adding refresh_token [#350](https://github.com/jupyterhub/oauthenticator/pull/350) ([@missingcharacter](https://github.com/missingcharacter))
+* [Google] Added optional support for google groups [#341](https://github.com/jupyterhub/oauthenticator/pull/341) ([@missingcharacter](https://github.com/missingcharacter))
+* [All] Added extra_authorize_params to pass extra params in the initial request to the identity provider [#338](https://github.com/jupyterhub/oauthenticator/pull/338) ([@NickolausDS](https://github.com/NickolausDS))
+* [GitLab] Improve subgroup support [#333](https://github.com/jupyterhub/oauthenticator/pull/333) ([@akhmerov](https://github.com/akhmerov))
+
+#### Bugs fixed
+* [GitHub] Respect validate_server_cert attribute [#354](https://github.com/jupyterhub/oauthenticator/pull/354) ([@nvs-abhilash](https://github.com/nvs-abhilash))
+* [Generic] tls verify not being honored at the httprequest level when internal_ssl is enabled [#326](https://github.com/jupyterhub/oauthenticator/pull/326) ([@sstarcher](https://github.com/sstarcher))
+
+#### Maintenance and upkeep improvements
+* Rename OAuthenticator.whitelist to allow [#366](https://github.com/jupyterhub/oauthenticator/pull/366) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+* Python package extra dependencies updated [#343](https://github.com/jupyterhub/oauthenticator/pull/343) ([@missingcharacter](https://github.com/missingcharacter))
+* [Generic] Fix failing GenericOAuthenticator tests [#339](https://github.com/jupyterhub/oauthenticator/pull/339) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+* [Globus] Remove the need for globus_sdk as a python dependency [#337](https://github.com/jupyterhub/oauthenticator/pull/337) ([@NickolausDS](https://github.com/NickolausDS))
+
+#### Documentation improvements
+* [Globus] Docs: explain identity_provider better [#362](https://github.com/jupyterhub/oauthenticator/pull/362) ([@NickolausDS](https://github.com/NickolausDS))
+* [OpenShift] Docs: fix broken link for OpenShift OAuth service accounts [#352](https://github.com/jupyterhub/oauthenticator/pull/352) ([@nscozzaro](https://github.com/nscozzaro))
+* Docs: Updating sphinx and pandas_sphinx_theme references [#345](https://github.com/jupyterhub/oauthenticator/pull/345) ([@missingcharacter](https://github.com/missingcharacter))
+* [Google] Added optional support for google groups [#341](https://github.com/jupyterhub/oauthenticator/pull/341) ([@missingcharacter](https://github.com/missingcharacter))
+* [Globus] Remove the need for globus_sdk as a python dependency [#337](https://github.com/jupyterhub/oauthenticator/pull/337) ([@NickolausDS](https://github.com/NickolausDS))
+* Update docs [#336](https://github.com/jupyterhub/oauthenticator/pull/336) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+* [Generic] Usage example for Nextcloud [#268](https://github.com/jupyterhub/oauthenticator/pull/268) ([@arneki](https://github.com/arneki))
+
+#### Contributors to this release
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2020-01-31&to=2020-10-26&type=c))
+
+[@ablekh](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aablekh+updated%3A2020-01-31..2020-10-26&type=Issues) | [@akhmerov](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aakhmerov+updated%3A2020-01-31..2020-10-26&type=Issues) | [@Analect](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AAnalect+updated%3A2020-01-31..2020-10-26&type=Issues) | [@arneki](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aarneki+updated%3A2020-01-31..2020-10-26&type=Issues) | [@bellackn](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abellackn+updated%3A2020-01-31..2020-10-26&type=Issues) | [@betatim](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abetatim+updated%3A2020-01-31..2020-10-26&type=Issues) | [@CJCShadowsan](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ACJCShadowsan+updated%3A2020-01-31..2020-10-26&type=Issues) | [@cmseal](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Acmseal+updated%3A2020-01-31..2020-10-26&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2020-01-31..2020-10-26&type=Issues) | [@d0m84](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ad0m84+updated%3A2020-01-31..2020-10-26&type=Issues) | [@daniel-ciocirlan](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adaniel-ciocirlan+updated%3A2020-01-31..2020-10-26&type=Issues) | [@dmpe](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Admpe+updated%3A2020-01-31..2020-10-26&type=Issues) | [@dmvieira](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Admvieira+updated%3A2020-01-31..2020-10-26&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2020-01-31..2020-10-26&type=Issues) | [@ghezalsherdil](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aghezalsherdil+updated%3A2020-01-31..2020-10-26&type=Issues) | [@guimou](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aguimou+updated%3A2020-01-31..2020-10-26&type=Issues) | [@gweis](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Agweis+updated%3A2020-01-31..2020-10-26&type=Issues) | [@hardik42](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ahardik42+updated%3A2020-01-31..2020-10-26&type=Issues) | [@hbuttguavus](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ahbuttguavus+updated%3A2020-01-31..2020-10-26&type=Issues) | [@jamescross91](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajamescross91+updated%3A2020-01-31..2020-10-26&type=Issues) | [@linkcd](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Alinkcd+updated%3A2020-01-31..2020-10-26&type=Issues) | [@louis-she](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Alouis-she+updated%3A2020-01-31..2020-10-26&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2020-01-31..2020-10-26&type=Issues) | [@meeseeksmachine](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ameeseeksmachine+updated%3A2020-01-31..2020-10-26&type=Issues) | [@michec81](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amichec81+updated%3A2020-01-31..2020-10-26&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2020-01-31..2020-10-26&type=Issues) | [@missingcharacter](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amissingcharacter+updated%3A2020-01-31..2020-10-26&type=Issues) | [@mransley](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amransley+updated%3A2020-01-31..2020-10-26&type=Issues) | [@NickolausDS](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ANickolausDS+updated%3A2020-01-31..2020-10-26&type=Issues) | [@nscozzaro](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Anscozzaro+updated%3A2020-01-31..2020-10-26&type=Issues) | [@nvs-abhilash](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Anvs-abhilash+updated%3A2020-01-31..2020-10-26&type=Issues) | [@patback66](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Apatback66+updated%3A2020-01-31..2020-10-26&type=Issues) | [@PaulMazzuca](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3APaulMazzuca+updated%3A2020-01-31..2020-10-26&type=Issues) | [@RAbraham](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ARAbraham+updated%3A2020-01-31..2020-10-26&type=Issues) | [@sampathkethineedi](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asampathkethineedi+updated%3A2020-01-31..2020-10-26&type=Issues) | [@saurav-bhagat](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asaurav-bhagat+updated%3A2020-01-31..2020-10-26&type=Issues) | [@shivan10](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ashivan10+updated%3A2020-01-31..2020-10-26&type=Issues) | [@SolarisYan](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ASolarisYan+updated%3A2020-01-31..2020-10-26&type=Issues) | [@sstarcher](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asstarcher+updated%3A2020-01-31..2020-10-26&type=Issues) | [@support](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asupport+updated%3A2020-01-31..2020-10-26&type=Issues) | [@umar-sik](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aumar-sik+updated%3A2020-01-31..2020-10-26&type=Issues) | [@vpavlin](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Avpavlin+updated%3A2020-01-31..2020-10-26&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awelcome+updated%3A2020-01-31..2020-10-26&type=Issues) | [@willingc](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awillingc+updated%3A2020-01-31..2020-10-26&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2020-01-31..2020-10-26&type=Issues) | [@zhiyuli](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Azhiyuli+updated%3A2020-01-31..2020-10-26&type=Issues)
+
 ## 0.11
 
-## [0.11.0] - 2020-01-30
+### [0.11.0] - 2020-01-30
 
 The main change in 0.11 is a refactoring of classes to remove mixins,
 reducing the amount of boilerplate needed.
@@ -35,14 +71,14 @@ or pull requests addressing gaps necessary to do so with the GenericOAuthenticat
 ([full changelog](https://github.com/jupyterhub/oauthenticator/compare/0.10.0...ae199077a3a580cb849af17ceccfe8e498134ea3))
 
 
-## Merged PRs
+#### Merged PRs
 
 * [AzureAD] Don't pass resource when requesting a token [#328](https://github.com/jupyterhub/oauthenticator/pull/328) ([@craigminihan](https://github.com/craigminihan))
 * Remove mixins, per-Authenticator LoginHandler classes [#323](https://github.com/jupyterhub/oauthenticator/pull/323) ([@minrk](https://github.com/minrk))
 * [AzureAD] Add support for setting login_service [#319](https://github.com/jupyterhub/oauthenticator/pull/319) ([@zevaryx](https://github.com/zevaryx))
 * skeleton of sphinx docs [#316](https://github.com/jupyterhub/oauthenticator/pull/316) ([@minrk](https://github.com/minrk))
 
-## Contributors to this release
+#### Contributors to this release
 
 ([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2019-11-27&to=2020-01-30&type=c))
 
