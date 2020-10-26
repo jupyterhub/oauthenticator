@@ -10,7 +10,7 @@ command line for details.
 
 ## 0.12
 
-### [0.12.0] - UNRELEASED
+### [0.12.0] - 2020-10-26
 
 #### Enhancements made
 * [OpenShift] Enable cert verification for self-signed certs and auto-load auth api URL [#363](https://github.com/jupyterhub/oauthenticator/pull/363) ([@vpavlin](https://github.com/vpavlin))
