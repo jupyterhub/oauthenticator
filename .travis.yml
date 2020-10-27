@@ -1,15 +1,27 @@
+os: linux
+dist: bionic
 language: python
-sudo: false
-cache: pip
-dist: xenial
+python:
+  - 3.8
+
+stages:
+  - name: test
+    if: tag IS NOT present
+  - name: publish
+    if: tag IS present
+
+before_install:
+  # Exit immediately if a command exits with a non-zero status.
+  - set -e
 
 install:
   - pip install --upgrade pip
   - pip install --upgrade --pre -r test-requirements.txt .
   - pip freeze
+
 env:
-  OAUTH2_TOKEN_URL="token_url"
-  OAUTH2_USERDATA_URL="userdata_url"
+  - OAUTH2_TOKEN_URL="token_url" OAUTH2_USERDATA_URL="userdata_url"
+
 script:
   - |
     if [[ "$TEST_LINT" = 1 ]]; then
@@ -17,6 +29,7 @@ script:
     else
       py.test --cov oauthenticator oauthenticator
     fi
+
 after_success:
   - codecov
 
@@ -31,12 +44,13 @@ jobs:
     - python: 3.8
     - python: 3.7
     - python: 3.6
-    - python: 3.5
     - python: nightly
-    # Only deploy if all test jobs passed
-    - stage: deploy
-      python: 3.7
-      if: tag IS present
+
+    - stage: publish
+      script:
+        - echo "Required dummy override of default 'script' in .travis.yml."
+      after_success:
+        - echo "Required dummy override of default 'after_success' in .travis.yml."
       deploy:
         provider: pypi
         user: __token__
