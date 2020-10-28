@@ -1,7 +1,7 @@
 # OAuth + JupyterHub Authenticator = OAuthenticator :heart:
 
 [![Documentation build status](https://img.shields.io/readthedocs/oauthenticator?logo=read-the-docs)](https://oauthenticator.readthedocs.org/en/latest)
-[![TravisCI (.org) build status](https://img.shields.io/travis/jupyterhub/oauthenticator/master?logo=travis)](https://travis-ci.org/jupyterhub/oauthenticator)
+[![TravisCI build status](https://img.shields.io/travis/com/jupyterhub/oauthenticator?logo=travis)](https://travis-ci.com/jupyterhub/oauthenticator)
 [![Latest PyPI version](https://img.shields.io/pypi/v/oauthenticator?logo=pypi)](https://pypi.python.org/pypi/oauthenticator)
 [![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/oauthenticator?logo=conda-forge)](https://anaconda.org/conda-forge/oauthenticator)
 [![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/oauthenticator/issues)
