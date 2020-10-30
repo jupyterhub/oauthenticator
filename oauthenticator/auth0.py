@@ -92,6 +92,9 @@ class Auth0OAuthenticator(OAuthenticator):
 
         access_token = resp_json['access_token']
 
+        refresh_token = resp_json.get('refresh_token')
+        id_token = resp_json.get('id_token')
+
         # Determine who the logged in user is
         headers = {
             "Accept": "application/json",
@@ -108,7 +111,12 @@ class Auth0OAuthenticator(OAuthenticator):
 
         return {
             'name': resp_json["email"],
-            'auth_state': {'access_token': access_token, 'auth0_user': resp_json},
+            'auth_state': {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'id_token': id_token,
+                'auth0_user': resp_json
+            },
         }
 
 
