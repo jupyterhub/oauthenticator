@@ -105,6 +105,13 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
         state = self.get_state()
         self.set_state_cookie(state)
         extra_params['state'] = state
+        extra_params.update(
+            {
+                k[len("extra_param_") :]: ''.join([v_.decode('utf-8') for v_ in v])
+                for k, v in self.request.arguments.items()
+                if k.startswith("extra_param_")
+            }
+        )
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
