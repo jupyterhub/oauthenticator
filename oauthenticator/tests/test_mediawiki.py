@@ -27,7 +27,7 @@ def mediawiki():
                         'iss': 'https://meta.wikimedia.org',
                         'iat': time.time(),
                         'nonce': request_nonce,
-                    }, 'client_secret')
+                    }, 'client_secret').encode("utf8")
 
     with requests_mock.Mocker() as mock:
         mock.post('/w/index.php?title=Special%3AOAuth%2Finitiate',
