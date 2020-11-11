@@ -1,0 +1,97 @@
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions
+#
+name: Tests
+
+on:
+  pull_request:
+  push:
+
+defaults:
+  run:
+    # Declare bash be used by default in this workflow's "run" steps.
+    #
+    # NOTE: bash will by default run with:
+    #   --noprofile: Ignore ~/.profile etc.
+    #   --norc:      Ignore ~/.bashrc etc.
+    #   -e:          Exit directly on errors
+    #   -o pipefail: Don't mask errors from a command piped into another command
+    shell: bash
+
+env:
+  OAUTH2_TOKEN_URL: "token_url"
+  OAUTH2_USERDATA_URL: "userdata_url"
+
+jobs:
+  # Run "linter"
+  lint:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 2
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: install linter
+        run: |
+          pip install --upgrade pip
+          pip install flake8
+          pip freeze
+
+      - name: run lint check
+        run: |
+          flake8 oauthenticator
+
+  # Run tests
+  test:
+
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+
+    strategy:
+      # Keep running even if one variation of the job fail
+      fail-fast: false
+      matrix:
+        python:
+          - "3.5"
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      # preserve pip cache to speed up installation
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --upgrade --pre -r test-requirements.txt .
+          pip freeze
+
+      - name: Run tests
+        # FIXME: --color=yes explicitly set because:
+        #        https://github.com/actions/runner/issues/241
+        run: |
+          pytest -v --color=yes --cov=oauthenticator oauthenticator
+
+      - name: Submit codecov report
+        run: |
+          codecov
