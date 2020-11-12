@@ -49,7 +49,7 @@ setup_args = dict(
     license             = "BSD",
     platforms           = "Linux, Mac OS X",
     keywords            = ['Interactive', 'Interpreter', 'Shell', 'Web'],
-    python_requires     = ">=3.5",
+    python_requires     = ">=3.6",
     entry_points={
         'jupyterhub.authenticators': [
             'auth0 = oauthenticator.auth0:Auth0OAuthenticator',
