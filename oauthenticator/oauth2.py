@@ -178,6 +178,15 @@ class OAuthCallbackHandler(BaseHandler):
         self.check_code()
         self.check_state()
 
+    def append_query_parameters(self, url, exclude=None):
+        """JupyterHub 1.2 appends query parameters by default in get_next_url
+
+        This is not appropriate for oauth callback handlers, where params are oauth state, code, etc.
+
+        Override the method used to append parameters to next_url to not preserve any parameters
+        """
+        return url
+
     def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
         state = self.get_state_url()
