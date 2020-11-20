@@ -10,6 +10,24 @@ command line for details.
 
 ## 0.12
 
+### [0.12.1] - 2020-11-18
+
+#### Bugs fixed
+
+* Avoid appending code, state parameters to `next_url` [#386](https://github.com/jupyterhub/oauthenticator/pull/386) ([@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+* Remove support for python 3.5 [#384](https://github.com/jupyterhub/oauthenticator/pull/384) ([@consideRatio](https://github.com/consideRatio))
+* migrate from travis to github actions [#383](https://github.com/jupyterhub/oauthenticator/pull/383) ([@minrk](https://github.com/minrk))
+* CI: Stop testing py35 and don't test on tagged commits [#379](https://github.com/jupyterhub/oauthenticator/pull/379) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2020-10-26&to=2020-11-18&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2020-10-26..2020-11-18&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2020-10-26..2020-11-18&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2020-10-26..2020-11-18&type=Issues)
+
 ### [0.12.0] - 2020-10-26
 
 #### Enhancements made
