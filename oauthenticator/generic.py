@@ -81,7 +81,7 @@ class GenericOAuthenticator(OAuthenticator):
             headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
         return headers
 
-    def _get_token(self, http_client, headers, params):
+    async def _get_token(self, http_client, headers, params):
         if self.token_url:
             url = self.token_url
         else:
@@ -97,7 +97,7 @@ class GenericOAuthenticator(OAuthenticator):
         resp = await http_client.fetch(req)
         return json.loads(resp.body.decode('utf8', 'replace'))
 
-    def _get_user_data(self, http_client, token_response):
+    async def _get_user_data(self, http_client, token_response):
         access_token = token_response['access_token']
         token_type = token_response['token_type']
 
@@ -125,17 +125,16 @@ class GenericOAuthenticator(OAuthenticator):
         return json.loads(resp.body.decode('utf8', 'replace'))
 
     def _create_auth_state(self, token_response, user_data_response):
-        access_token = token_resp_json['access_token']
-        refresh_token = token_resp_json.get('refresh_token', None)
-        token_type = token_resp_json['token_type']
-        scope = token_resp_json.get('scope', '')
+        access_token = token_response['access_token']
+        refresh_token = token_response.get('refresh_token', None)
+        scope = token_response.get('scope', '')
         if isinstance(scope, str):
             scope = scope.split(' ')
 
         return {
             'access_token': access_token,
             'refresh_token': refresh_token,
-            'oauth_user': user_data_resp_json,
+            'oauth_user': user_data_response,
             'scope': scope,
         }
 
@@ -153,9 +152,9 @@ class GenericOAuthenticator(OAuthenticator):
 
         headers = self._get_headers()
 
-        token_resp_json = self._get_token(http_client, headers, params)
+        token_resp_json = await self._get_token(http_client, headers, params)
 
-        user_data_resp_json = _get_user_data(http_client, token_resp_json)
+        user_data_resp_json = await self._get_user_data(http_client, token_resp_json)
 
         if callable(self.username_key):
             name = self.username_key(user_data_resp_json)
