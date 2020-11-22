@@ -71,24 +71,7 @@ class GenericOAuthenticator(OAuthenticator):
     def http_client(self):
         return AsyncHTTPClient(force_instance=True, defaults=dict(validate_cert=self.tls_verify))
 
-
-    async def authenticate(self, handler, data=None):
-        code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = self.http_client()
-
-        params = dict(
-            redirect_uri=self.get_callback_url(handler),
-            code=code,
-            grant_type='authorization_code',
-        )
-        params.update(self.extra_params)
-
-        if self.token_url:
-            url = self.token_url
-        else:
-            raise ValueError("Please set the $OAUTH2_TOKEN_URL environment variable")
-
+    def _get_headers(self):
         headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
 
         if self.basic_auth:
@@ -96,6 +79,13 @@ class GenericOAuthenticator(OAuthenticator):
                 bytes("{}:{}".format(self.client_id, self.client_secret), "utf8")
             )
             headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
+        return headers
+
+    async def _get_token(self, http_client, headers, params):
+        if self.token_url:
+            url = self.token_url
+        else:
+            raise ValueError("Please set the $OAUTH2_TOKEN_URL environment variable")
 
         req = HTTPRequest(
             url,
@@ -105,15 +95,11 @@ class GenericOAuthenticator(OAuthenticator):
         )
 
         resp = await http_client.fetch(req)
+        return json.loads(resp.body.decode('utf8', 'replace'))
 
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-
-        access_token = resp_json['access_token']
-        refresh_token = resp_json.get('refresh_token', None)
-        token_type = resp_json['token_type']
-        scope = resp_json.get('scope', '')
-        if isinstance(scope, str):
-            scope = scope.split(' ')
+    async def _get_user_data(self, http_client, token_response):
+        access_token = token_response['access_token']
+        token_type = token_response['token_type']
 
         # Determine who the logged in user is
         headers = {
@@ -135,26 +121,54 @@ class GenericOAuthenticator(OAuthenticator):
             headers=headers,
         )
         resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        
+        return json.loads(resp.body.decode('utf8', 'replace'))
+
+    def _create_auth_state(self, token_response, user_data_response):
+        access_token = token_response['access_token']
+        refresh_token = token_response.get('refresh_token', None)
+        scope = token_response.get('scope', '')
+        if isinstance(scope, str):
+            scope = scope.split(' ')
+
+        return {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'oauth_user': user_data_response,
+            'scope': scope,
+        }
+
+    async def authenticate(self, handler, data=None):
+        code = handler.get_argument("code")
+        # TODO: Configure the curl_httpclient for tornado
+        http_client = self.http_client()
+
+        params = dict(
+            redirect_uri=self.get_callback_url(handler),
+            code=code,
+            grant_type='authorization_code',
+        )
+        params.update(self.extra_params)
+
+        headers = self._get_headers()
+
+        token_resp_json = await self._get_token(http_client, headers, params)
+
+        user_data_resp_json = await self._get_user_data(http_client, token_resp_json)
 
         if callable(self.username_key):
-            name = self.username_key(resp_json)
+            name = self.username_key(user_data_resp_json)
         else:
-            name = resp_json.get(self.username_key)
+            name = user_data_resp_json.get(self.username_key)
             if not name:
                 self.log.error(
-                    "OAuth user contains no key %s: %s", self.username_key, resp_json
+                    "OAuth user contains no key %s: %s", self.username_key, user_data_resp_json
                 )
                 return
 
         return {
             'name': name,
-            'auth_state': {
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'oauth_user': resp_json,
-                'scope': scope,
-            },
+            'auth_state': self._create_auth_state(token_resp_json, user_data_resp_json)
         }
 
 
