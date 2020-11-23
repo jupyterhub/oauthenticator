@@ -110,6 +110,10 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
                 k[len("extra_param_") :]: ''.join([v_.decode('utf-8') for v_ in v])
                 for k, v in self.request.arguments.items()
                 if k.startswith("extra_param_")
+                and v
+                in self.authenticator.extra_authorize_params_allowed_arguments.get(
+                    k[len("extra_param_") :], []
+                )
             }
         )
         self.authorize_redirect(
@@ -274,6 +278,22 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""Extra GET params to send along with the initial OAuth request
         to the OAuth provider.""",
+    )
+
+    extra_authorize_params_allowed_arguments = Dict(
+        config=True,
+        default_value={},
+        help="""Allowed extra GET params to send along with the initial OAuth request
+        to the OAuth provider.
+        Usage: GET to localhost:8000/hub/oauth_login?extra_param_<key>=<value>
+        This argument defines the allowed keys and values.
+        Example:
+        ```
+        {
+            "key": ["value1", "value2"],
+            "uy_select_authn": ["specificAuthenticator"]
+        }
+        ```""",
     )
 
     login_service = 'override in subclass'
