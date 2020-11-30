@@ -19,15 +19,17 @@ MW_URL = 'https://meta.wikimedia.org/w/index.php'
 def mediawiki():
     def post_token(request, context):
         authorization_header = request.headers['Authorization'].decode('utf8')
-        request_nonce = re.search(r'oauth_nonce="(.*?)"',
-                                  authorization_header).group(1)
-        return jwt.encode({
-                        'username': 'wash',
-                        'aud': 'client_id',
-                        'iss': 'https://meta.wikimedia.org',
-                        'iat': time.time(),
-                        'nonce': request_nonce,
-                    }, 'client_secret').encode("utf8")
+        request_nonce = re.search(r'oauth_nonce="(.*?)"', authorization_header).group(1)
+        return jwt.encode(
+            {
+                'username': 'wash',
+                'aud': 'client_id',
+                'iss': 'https://meta.wikimedia.org',
+                'iat': time.time(),
+                'nonce': request_nonce,
+            },
+            'client_secret',
+        )
 
     with requests_mock.Mocker() as mock:
         mock.post('/w/index.php?title=Special%3AOAuth%2Finitiate',
