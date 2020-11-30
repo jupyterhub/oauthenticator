@@ -260,7 +260,7 @@ async def test_allowed_project_ids(gitlab_client):
 def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GitLabOAuthenticator.gitlab_group_whitelist = {'red'}
-    cfg.BitbucketOAuthenticator.whitelist = {"blue"}
+    cfg.GitLabOAuthenticator.whitelist = {"blue"}
 
     log = logging.getLogger("testlog")
     authenticator = GitLabOAuthenticator(config=cfg, log=log)
