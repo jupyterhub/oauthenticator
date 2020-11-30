@@ -37,14 +37,11 @@ class GitLabOAuthenticator(OAuthenticator):
     # set scopes via config, e.g.
     # c.GitLabOAuthenticator.scope = ['read_user']
 
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
-        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0")
+        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     login_service = "GitLab"
 

@@ -44,13 +44,10 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 
 class CILogonOAuthenticator(OAuthenticator):
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "idp_whitelist": ("allowed_idps", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     login_service = "CILogon"
 

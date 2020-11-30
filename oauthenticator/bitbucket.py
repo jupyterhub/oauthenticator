@@ -28,13 +28,10 @@ def _api_headers(access_token):
 
 class BitbucketOAuthenticator(OAuthenticator):
 
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "team_whitelist": ("allowed_teams", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     login_service = "Bitbucket"
     client_id_env = 'BITBUCKET_CLIENT_ID'

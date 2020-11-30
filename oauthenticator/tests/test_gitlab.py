@@ -260,16 +260,16 @@ async def test_allowed_project_ids(gitlab_client):
 def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GitLabOAuthenticator.gitlab_group_whitelist = {'red'}
+    cfg.GitLabOAuthenticator.whitelist = {"blue"}
 
     log = logging.getLogger("testlog")
     authenticator = GitLabOAuthenticator(config=cfg, log=log)
-    assert caplog.record_tuples == [
-        (
-            log.name,
-            logging.WARNING,
-            'GitLabOAuthenticator.gitlab_group_whitelist is deprecated in GitLabOAuthenticator 0.12.0, use '
-            'GitLabOAuthenticator.allowed_gitlab_groups instead'
-        )
-    ]
+    assert (
+        log.name,
+        logging.WARNING,
+        'GitLabOAuthenticator.gitlab_group_whitelist is deprecated in GitLabOAuthenticator 0.12.0, use '
+        'GitLabOAuthenticator.allowed_gitlab_groups instead',
+    ) in caplog.record_tuples
 
     assert authenticator.allowed_gitlab_groups == {'red'}
+    assert authenticator.allowed_users == {"blue"}

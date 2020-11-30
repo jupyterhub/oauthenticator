@@ -114,16 +114,16 @@ async def test_allowed_google_groups(google_client):
 def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GoogleOAuthenticator.google_group_whitelist = {'email.com': ['group']}
+    cfg.Authenticator.whitelist = {"user1"}
 
     log = logging.getLogger("testlog")
     authenticator = GoogleOAuthenticator(config=cfg, log=log)
-    assert caplog.record_tuples == [
-        (
-            log.name,
-            logging.WARNING,
-            'GoogleOAuthenticator.google_group_whitelist is deprecated in GoogleOAuthenticator 0.12.0, use '
-            'GoogleOAuthenticator.allowed_google_groups instead',
-        )
-    ]
+    assert (
+        log.name,
+        logging.WARNING,
+        'GoogleOAuthenticator.google_group_whitelist is deprecated in GoogleOAuthenticator 0.12.0, use '
+        'GoogleOAuthenticator.allowed_google_groups instead',
+    ) in caplog.record_tuples
 
     assert authenticator.allowed_google_groups == {'email.com': ['group']}
+    assert authenticator.allowed_users == {"user1"}
