@@ -2,7 +2,7 @@
 .[googlegroups]
 codecov
 flake8
-pyjwt
+pyjwt>=1.7,<2.0
 mwoauth >= 0.3.7
 pytest >= 2.8
 pytest-cov
