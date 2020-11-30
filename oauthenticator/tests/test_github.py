@@ -156,16 +156,16 @@ async def test_allowed_org_membership(github_client):
 def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GitHubOAuthenticator.github_organization_whitelist = ["jupy"]
+    cfg.Authenticator.whitelist = {"user1"}
 
     log = logging.getLogger("testlog")
     authenticator = GitHubOAuthenticator(config=cfg, log=log)
-    assert caplog.record_tuples == [
-        (
-            log.name,
-            logging.WARNING,
-            'GitHubOAuthenticator.github_organization_whitelist is deprecated in GitHubOAuthenticator 0.12.0, use '
-            'GitHubOAuthenticator.allowed_organizations instead',
-        )
-    ]
+    assert (
+        log.name,
+        logging.WARNING,
+        'GitHubOAuthenticator.github_organization_whitelist is deprecated in GitHubOAuthenticator 0.12.0, use '
+        'GitHubOAuthenticator.allowed_organizations instead',
+    ) in caplog.record_tuples
 
     assert authenticator.allowed_organizations == {"jupy"}
+    assert authenticator.allowed_users == {"user1"}
