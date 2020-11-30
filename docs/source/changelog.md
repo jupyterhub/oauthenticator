@@ -10,6 +10,10 @@ command line for details.
 
 ## 0.12
 
+### [0.12.2] - 2020-11-30
+
+Security fix for GHSA-384w-5v3f-q499: Deprecated `c.Authenticator.whitelist` configuration was ignored instead of mapped to newer `c.Authenticator.allowed_users` when used with JupyterHub 1.2 and OAuthenticator 0.12.0-0.12.1.
+
 ### [0.12.1] - 2020-11-20
 
 #### Bugs fixed
