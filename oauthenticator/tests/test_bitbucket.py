@@ -86,16 +86,16 @@ async def test_allowed_teams(bitbucket_client):
 def test_deprecated_config(caplog):
     cfg = Config()
     cfg.BitbucketOAuthenticator.team_whitelist = ['red']
+    cfg.BitbucketOAuthenticator.whitelist = {"blue"}
 
     log = logging.getLogger("testlog")
     authenticator = BitbucketOAuthenticator(config=cfg, log=log)
-    assert caplog.record_tuples == [
-        (
-            log.name,
-            logging.WARNING,
-            'BitbucketOAuthenticator.team_whitelist is deprecated in BitbucketOAuthenticator 0.12.0, use '
-            'BitbucketOAuthenticator.allowed_teams instead',
-        )
-    ]
+    assert (
+        log.name,
+        logging.WARNING,
+        'BitbucketOAuthenticator.team_whitelist is deprecated in BitbucketOAuthenticator 0.12.0, use '
+        'BitbucketOAuthenticator.allowed_teams instead',
+    ) in caplog.record_tuples
 
     assert authenticator.allowed_teams == {"red"}
+    assert authenticator.allowed_users == {"blue"}
