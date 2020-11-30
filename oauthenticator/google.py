@@ -30,13 +30,10 @@ def check_user_in_groups(member_groups, allowed_groups):
 
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
