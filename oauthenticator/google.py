@@ -180,7 +180,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             self.log.debug("Refresh token was empty, will try to pull refresh_token from previous auth_state")
             user = handler.find_user(username)
 
-            if user:
+            if user and user.encrypted_auth_state:
                 self.log.debug("encrypted_auth_state was found, will try to decrypt and pull refresh_token from it")
                 try:
                     encrypted = user.encrypted_auth_state
