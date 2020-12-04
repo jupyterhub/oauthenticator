@@ -10,6 +10,22 @@ command line for details.
 
 ## 0.12
 
+### [0.12.3] - 2020-12-04
+
+#### Bugs fixed
+
+* Fix exception when enable_auth_state is enabled but user.encrypted_auth_state is None [#391](https://github.com/jupyterhub/oauthenticator/pull/391) ([@rkevin-arch](https://github.com/rkevin-arch))
+
+#### Maintenance and upkeep improvements
+
+* typos in test_mediawiki.py [#390](https://github.com/jupyterhub/oauthenticator/pull/390) ([@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2020-11-30&to=2020-12-04&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2020-11-30..2020-12-04&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2020-11-30..2020-12-04&type=Issues) | [@rkevin-arch](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Arkevin-arch+updated%3A2020-11-30..2020-12-04&type=Issues) | [@snickell](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asnickell+updated%3A2020-11-30..2020-12-04&type=Issues)
+
 ### [0.12.2] - 2020-11-30
 
 Security fix for GHSA-384w-5v3f-q499: Deprecated `c.Authenticator.whitelist` configuration was ignored instead of mapped to newer `c.Authenticator.allowed_users` when used with JupyterHub 1.2 and OAuthenticator 0.12.0-0.12.1.
