@@ -7,7 +7,7 @@ from tornado.httpclient import HTTPResponse
 
 from unittest.mock import Mock
 
-
+from ..oauth2 import STATE_COOKIE_NAME
 from ..globus import GlobusOAuthenticator, GlobusLogoutHandler
 
 from .mocks import setup_oauth_mock, mock_handler
@@ -225,6 +225,7 @@ async def test_custom_logout(monkeypatch, mock_globus_user):
                                   authenticator=authenticator)
     monkeypatch.setattr(web.RequestHandler, 'redirect', Mock())
     logout_handler.clear_login_cookie = Mock()
+    logout_handler.clear_cookie = Mock()
     logout_handler.get_current_user = Mock(return_value=mock_globus_user)
     logout_handler._jupyterhub_user = mock_globus_user
     monkeypatch.setitem(logout_handler.settings, 'statsd', Mock())
@@ -239,6 +240,7 @@ async def test_custom_logout(monkeypatch, mock_globus_user):
     await logout_handler.get()
     logout_handler.redirect.assert_called_once_with(custom_logout_url)
     assert logout_handler.clear_login_cookie.called
+    logout_handler.clear_cookie.assert_called_once_with(STATE_COOKIE_NAME)
 
 
 async def test_logout_revokes_tokens(globus_client, monkeypatch, mock_globus_user):

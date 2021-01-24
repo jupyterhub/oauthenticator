@@ -16,10 +16,10 @@ from jupyterhub.handlers import LogoutHandler
 from jupyterhub.utils import url_path_join
 from jupyterhub.auth import LocalAuthenticator
 
-from .oauth2 import OAuthenticator
+from .oauth2 import OAuthenticator, OAuthLogoutHandler
 
 
-class GlobusLogoutHandler(LogoutHandler):
+class GlobusLogoutHandler(OAuthLogoutHandler):
     """
     Handle custom logout URLs and token revocation. If a custom logout url
     is specified, the 'logout' button will log the user out of that identity
@@ -44,6 +44,8 @@ class GlobusLogoutHandler(LogoutHandler):
     async def handle_logout(self):
         """Overridden method for custom logout functionality. Should be called by
         Jupyterhub on logout just before destroying the users session to log them out."""
+        await super().handle_logout()
+
         if self.current_user and self.authenticator.revoke_tokens_on_logout:
             await self.clear_tokens(self.current_user)
 
@@ -249,12 +251,6 @@ class GlobusOAuthenticator(OAuthenticator):
                               body=urllib.parse.urlencode({'token': token}),
                               )
             await http_client.fetch(req)
-
-    def logout_url(self, base_url):
-        return url_path_join(base_url, 'logout')
-
-    def get_handlers(self, app):
-        return super().get_handlers(app) + [(r'/logout', self.logout_handler)]
 
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):
