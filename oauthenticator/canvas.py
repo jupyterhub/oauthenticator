@@ -2,6 +2,7 @@ import json
 import urllib
 
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPClientError
+from tornado.httputil import url_concat
 from traitlets import List, Unicode, Set, Bool
 from jupyterhub.utils import maybe_future, url_path_join
 from jupyterhub.auth import LocalAuthenticator
@@ -105,15 +106,12 @@ class CanvasOAuthenticator(GenericOAuthenticator):
         Get list of courses enrolled by the current user
         """
         headers = dict(Authorization = f"Bearer {token}")
-        url = url_path_join(self.canvas_url, '/api/v1/courses')
-        data = []
-
-        req = HTTPRequest(
-            url,
-            method='GET',
-            headers=headers,
-            body=urllib.parse.urlencode(self.extra_params)
+        url = url_concat(
+            url_path_join(self.canvas_url, '/api/v1/courses'),
+            self.extra_params
         )
+
+        req = HTTPRequest(url, headers=headers)
 
         http_client = self.http_client()
 
