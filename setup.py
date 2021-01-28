@@ -86,6 +86,9 @@ setup_args = dict(
 
             'openshift = oauthenticator.openshift:OpenShiftOAuthenticator',
             'local-openshift = oauthenticator.openshift:LocalOpenShiftOAuthenticator',
+
+            'canvas = oauthenticator.canvas:CanvasOAuthenticator',
+            'localcanvas = oauthenticator.canvas:LocalCanvasOAuthenticator',
         ],
     },
     classifiers         = [
