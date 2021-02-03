@@ -12,7 +12,7 @@ from __future__ import print_function
 import os
 import sys
 
-from setuptools import setup
+from setuptools import find_packages, setup
 from setuptools.command.bdist_egg import bdist_egg
 
 class bdist_egg_disabled(bdist_egg):
@@ -38,7 +38,7 @@ with open(pjoin(here, 'oauthenticator', '_version.py')) as f:
 
 setup_args = dict(
     name                = 'oauthenticator',
-    packages            = ['oauthenticator', 'oauthenticator.tests'],
+    packages            = find_packages(),
     version             = version_ns['__version__'],
     description         = "OAuthenticator: Authenticate JupyterHub users with common OAuth providers",
     long_description    = open("README.md").read(),
