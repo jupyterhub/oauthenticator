@@ -8,6 +8,25 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.13
+
+### [0.13.0] - 2021-02-04
+
+#### Enhancements made
+
+* Ensure oauthenticator.tests is packaged [#407](https://github.com/jupyterhub/oauthenticator/pull/407) ([@manics](https://github.com/manics))
+* Auth0: Add refresh and id tokens to auth_state [#393](https://github.com/jupyterhub/oauthenticator/pull/393) ([@biomath-vlad](https://github.com/biomath-vlad))
+
+#### Bugs fixed
+
+* PyJWT 2.0 compliant [#402](https://github.com/jupyterhub/oauthenticator/pull/402) ([@rragundez](https://github.com/rragundez))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2020-12-04&to=2021-02-04&type=c))
+
+[@biomath-vlad](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abiomath-vlad+updated%3A2020-12-04..2021-02-04&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2020-12-04..2021-02-04&type=Issues) | [@kianaf](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Akianaf+updated%3A2020-12-04..2021-02-04&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2020-12-04..2021-02-04&type=Issues) | [@rragundez](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Arragundez+updated%3A2020-12-04..2021-02-04&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2020-12-04..2021-02-04&type=Issues)
+
 ## 0.12
 
 ### [0.12.3] - 2020-12-04
