@@ -209,7 +209,7 @@ groups by setting
 
 ::
 
-   c.GitLabOAuthenticator.allowed_gitlab_project_ids = [ ... ]
+   c.GitLabOAuthenticator.allowed_project_ids = [ ... ]
 
 and
 
