@@ -138,18 +138,16 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         username = ocp_user['metadata']['name']
 
-        auth_data = {
-            'name': username,
-            'auth_state': {'access_token': access_token, 'openshift_user': ocp_user},
-        }
-
         if self.allowed_groups:
             if not any(set(ocp_user['groups']).intersection(set(self.allowed_groups))):
                 msg = "username:{username} User not in any of the allowed groups"
                 self.log.warning(msg.format(username=username))
                 return None
 
-        return auth_data
+        return {
+            'name': username,
+            'auth_state': {'access_token': access_token, 'openshift_user': ocp_user},
+        }
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
