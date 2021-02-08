@@ -28,18 +28,21 @@ class OpenShiftOAuthenticator(OAuthenticator):
     scope = ['user:info']
 
     openshift_url = Unicode(
-        os.environ.get('OPENSHIFT_URL') or 'https://openshift.default.svc.cluster.local', config=True
+        os.environ.get('OPENSHIFT_URL')
+        or 'https://openshift.default.svc.cluster.local',
+        config=True,
     )
 
     validate_cert = Bool(
         True, config=True, help="Set to False to disable certificate validation"
     )
 
-    ca_certs = Unicode(
-        config=True
-    )
+    ca_certs = Unicode(config=True)
 
-    allowed_groups = List(config=True, help="List of OpenShift groups that should be allowed to access the hub.")
+    allowed_groups = List(
+        config=True,
+        help="List of OpenShift groups that should be allowed to access the hub.",
+    )
 
     @default("ca_certs")
     def _ca_certs_default(self):
@@ -61,7 +64,9 @@ class OpenShiftOAuthenticator(OAuthenticator):
         return resp_json.get('issuer')
 
     openshift_rest_api_url = Unicode(
-        os.environ.get('OPENSHIFT_REST_API_URL') or 'https://openshift.default.svc.cluster.local', config=True
+        os.environ.get('OPENSHIFT_REST_API_URL')
+        or 'https://openshift.default.svc.cluster.local',
+        config=True,
     )
 
     @default("openshift_rest_api_url")
@@ -138,13 +143,11 @@ class OpenShiftOAuthenticator(OAuthenticator):
             'auth_state': {'access_token': access_token, 'openshift_user': ocp_user},
         }
 
-
         if self.allowed_groups:
             if not any(set(ocp_user['groups']).intersection(set(self.allowed_groups))):
                 msg = "username:{username} User not in any of the allowed groups"
                 self.log.warning(msg.format(username=username))
                 return None
-
 
         return auth_data
 
