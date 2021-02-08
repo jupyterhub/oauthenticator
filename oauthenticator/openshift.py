@@ -14,7 +14,7 @@ from tornado import web
 
 from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPClient
-from traitlets import Bool, Unicode, default
+from traitlets import Bool, Unicode, List, default
 
 from jupyterhub.auth import LocalAuthenticator
 
@@ -38,6 +38,8 @@ class OpenShiftOAuthenticator(OAuthenticator):
     ca_certs = Unicode(
         config=True
     )
+
+    allowed_groups = List(config=True, help="List of OpenShift groups that should be allowed to access the hub.")
 
     @default("ca_certs")
     def _ca_certs_default(self):
@@ -127,12 +129,24 @@ class OpenShiftOAuthenticator(OAuthenticator):
         )
 
         resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        ocp_user = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return {
-            'name': resp_json['metadata']['name'],
-            'auth_state': {'access_token': access_token, 'openshift_user': resp_json},
+        username = ocp_user['metadata']['name']
+
+        auth_data = {
+            'name': username,
+            'auth_state': {'access_token': access_token, 'openshift_user': ocp_user},
         }
+
+
+        if self.allowed_groups:
+            if not any(set(ocp_user['groups']).intersection(set(self.allowed_groups))):
+                msg = "username:{username} User not in any of the allowed groups"
+                self.log.warning(msg.format(username=username))
+                return None
+
+
+        return auth_data
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
