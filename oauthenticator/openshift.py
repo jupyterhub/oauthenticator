@@ -7,7 +7,6 @@ Derived from the GitHub OAuth authenticator.
 
 import json
 import os
-import warnings
 
 import requests
 from jupyterhub.auth import LocalAuthenticator
@@ -18,12 +17,6 @@ from tornado.httputil import url_concat
 
 from oauthenticator.oauth2 import OAuthenticator
 from traitlets import Bool, Set, Unicode, default
-
-try:
-    import pycurl
-    AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
-except ModuleNotFoundError:
-    warnings.warn('pycurl not installed. defaulting to simple_httpclient')
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
