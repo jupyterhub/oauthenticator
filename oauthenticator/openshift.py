@@ -162,6 +162,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
         is authenticated based on groups, an admin, or both.
         """
         user_groups = set(user_info['auth_state']['openshift_user']['groups'])
+        username = user_info['name']
 
         if self.admin_groups:
             is_admin = self.user_in_groups(user_groups, self.admin_groups)
@@ -175,7 +176,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             return user_info
         else:
             msg = f"username:{username} User not in any of the allowed/admin groups"
-            self.log.warning(msg.format(username=user_info['name']))
+            self.log.warning(msg)
             return None
 
 
