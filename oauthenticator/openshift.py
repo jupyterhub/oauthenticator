@@ -174,7 +174,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
         elif user_in_allowed_group:
             return user_info
         else:
-            msg = "username:{username} User not in any of the allowed/admin groups"
+            msg = f"username:{username} User not in any of the allowed/admin groups"
             self.log.warning(msg.format(username=user_info['name']))
             return None
 
