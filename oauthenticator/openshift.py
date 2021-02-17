@@ -7,18 +7,16 @@ Derived from the GitHub OAuth authenticator.
 
 import json
 import os
+
 import requests
-
-from tornado.auth import OAuth2Mixin
-from tornado import web
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPClient
-from traitlets import Bool, Unicode, default
-
 from jupyterhub.auth import LocalAuthenticator
+from tornado import web
+from tornado.auth import OAuth2Mixin
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
+from tornado.httputil import url_concat
 
-from .oauth2 import OAuthenticator
+from oauthenticator.oauth2 import OAuthenticator
+from traitlets import Bool, Set, Unicode, default
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
@@ -28,15 +26,25 @@ class OpenShiftOAuthenticator(OAuthenticator):
     scope = ['user:info']
 
     openshift_url = Unicode(
-        os.environ.get('OPENSHIFT_URL') or 'https://openshift.default.svc.cluster.local', config=True
+        os.environ.get('OPENSHIFT_URL')
+        or 'https://openshift.default.svc.cluster.local',
+        config=True,
     )
 
     validate_cert = Bool(
         True, config=True, help="Set to False to disable certificate validation"
     )
 
-    ca_certs = Unicode(
-        config=True
+    ca_certs = Unicode(config=True)
+
+    allowed_groups = Set(
+        config=True,
+        help="Set of OpenShift groups that should be allowed to access the hub.",
+    )
+
+    admin_groups = Set(
+        config=True,
+        help="Set of OpenShift groups that should be given admin access to the hub.",
     )
 
     @default("ca_certs")
@@ -59,7 +67,9 @@ class OpenShiftOAuthenticator(OAuthenticator):
         return resp_json.get('issuer')
 
     openshift_rest_api_url = Unicode(
-        os.environ.get('OPENSHIFT_REST_API_URL') or 'https://openshift.default.svc.cluster.local', config=True
+        os.environ.get('OPENSHIFT_REST_API_URL')
+        or 'https://openshift.default.svc.cluster.local',
+        config=True,
     )
 
     @default("openshift_rest_api_url")
@@ -78,9 +88,14 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return "%s/apis/user.openshift.io/v1/users/~" % self.openshift_rest_api_url
 
+    @staticmethod
+    def user_in_groups(user_groups: set, allowed_groups: set):
+        return any(user_groups.intersection(allowed_groups))
+
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
+
         http_client = AsyncHTTPClient()
 
         # Exchange the OAuth code for a OpenShift Access Token
@@ -127,12 +142,42 @@ class OpenShiftOAuthenticator(OAuthenticator):
         )
 
         resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        ocp_user = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return {
-            'name': resp_json['metadata']['name'],
-            'auth_state': {'access_token': access_token, 'openshift_user': resp_json},
+        username = ocp_user['metadata']['name']
+
+        user_info = {
+            'name': username,
+            'auth_state': {'access_token': access_token, 'openshift_user': ocp_user},
         }
+
+        if self.allowed_groups or self.admin_groups:
+            user_info = await self._add_openshift_group_info(user_info)
+
+        return user_info
+
+    async def _add_openshift_group_info(self, user_info: dict):
+        """
+        Use the group info stored on the OpenShift User object to determine if a user
+        is authenticated based on groups, an admin, or both.
+        """
+        user_groups = set(user_info['auth_state']['openshift_user']['groups'])
+        username = user_info['name']
+
+        if self.admin_groups:
+            is_admin = self.user_in_groups(user_groups, self.admin_groups)
+
+        user_in_allowed_group = self.user_in_groups(user_groups, self.allowed_groups)
+
+        if self.admin_groups and (is_admin or user_in_allowed_group):
+            user_info['admin'] = is_admin
+            return user_info
+        elif user_in_allowed_group:
+            return user_info
+        else:
+            msg = f"username:{username} User not in any of the allowed/admin groups"
+            self.log.warning(msg)
+            return None
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
