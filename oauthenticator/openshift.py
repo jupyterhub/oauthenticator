@@ -4,19 +4,15 @@ Custom Authenticator to use OpenShift OAuth with JupyterHub.
 Derived from the GitHub OAuth authenticator.
 """
 
-
-import json
 import os
 
 import requests
 from jupyterhub.auth import LocalAuthenticator
-from tornado import web
-from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
+from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
+from traitlets import Bool, Set, Unicode, default
 
 from oauthenticator.oauth2 import OAuthenticator
-from traitlets import Bool, Set, Unicode, default
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
@@ -94,9 +90,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-
-        http_client = AsyncHTTPClient()
 
         # Exchange the OAuth code for a OpenShift Access Token
         #
@@ -120,10 +113,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             body='',  # Body is required for a POST...
         )
 
-        resp = await http_client.fetch(req)
-
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-
+        resp_json = await self.fetch(req)
         access_token = resp_json['access_token']
 
         # Determine who the logged in user is
@@ -141,8 +131,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             headers=headers,
         )
 
-        resp = await http_client.fetch(req)
-        ocp_user = json.loads(resp.body.decode('utf8', 'replace'))
+        ocp_user = await self.fetch(req)
 
         username = ocp_user['metadata']['name']
 

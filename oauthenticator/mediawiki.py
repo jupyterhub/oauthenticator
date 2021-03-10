@@ -4,24 +4,18 @@ Custom Authenticator to use MediaWiki OAuth with JupyterHub
 Requires `mwoauth` package.
 """
 
-import os
 import json
+import os
 from asyncio import wrap_future
 from concurrent.futures import ThreadPoolExecutor
 
-from tornado import web
-
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
-from jupyterhub import orm
-
 from mwoauth import ConsumerToken, Handshaker
 from mwoauth.tokens import RequestToken
-
 from traitlets import Any, Integer, Unicode
 
-from oauthenticator import OAuthenticator, OAuthCallbackHandler
-
+from oauthenticator import OAuthCallbackHandler, OAuthenticator
 
 # Name of cookie used to pass auth token between the oauth
 # login and authentication phase
@@ -141,4 +135,3 @@ class MWOAuthenticator(OAuthenticator):
             }
         else:
             self.log.error("No username found in %s", identity)
-

@@ -5,21 +5,18 @@ Derived from the GitHub OAuth authenticator.
 """
 
 import os
-import json
 import urllib.parse
 
-from tornado import gen
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-from tornado.auth import GoogleOAuth2Mixin
-from tornado.web import HTTPError
-
-from traitlets import Dict, Unicode, List, default, validate, observe
-
-from jupyterhub.crypto import decrypt, EncryptionUnavailable, InvalidToken
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.utils import url_path_join
+from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
+from tornado.auth import GoogleOAuth2Mixin
+from tornado.httpclient import HTTPRequest
+from tornado.httputil import url_concat
+from tornado.web import HTTPError
+from traitlets import Dict, List, Unicode, default, validate
 
-from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
+from .oauth2 import OAuthenticator
+
 
 def check_user_in_groups(member_groups, allowed_groups):
     # Check if user is a member of any group in the allowed groups
@@ -132,28 +129,23 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             )
         )
 
-        http_client = AsyncHTTPClient()
-
-        response = await http_client.fetch(
+        req = HTTPRequest(
             self.token_url,
             method="POST",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             body=body,
         )
-
-        user = json.loads(response.body.decode("utf-8", "replace"))
+        user = await self.fetch(req, "completing oauth")
         access_token = str(user['access_token'])
         refresh_token = user.get('refresh_token', None)
 
-        response = await http_client.fetch(
-            self.user_info_url + '?access_token=' + access_token
+        req = HTTPRequest(
+            url_concat(
+                self.user_info_url,
+                {'access_token': access_token},
+            )
         )
-
-        if not response:
-            handler.clear_all_cookies()
-            raise HTTPError(500, 'Google authentication failed')
-
-        bodyjs = json.loads(response.body.decode())
+        bodyjs = await self.fetch(req, "fetching user info")
         user_email = username = bodyjs['email']
         user_email_domain = user_email.split('@')[1]
 

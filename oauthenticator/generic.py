@@ -2,20 +2,17 @@
 Custom Authenticator to use generic OAuth2 with JupyterHub
 """
 
-import json
-import os
 import base64
-import urllib
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+import os
+from urllib.parse import urlencode
 
 from jupyterhub.auth import LocalAuthenticator
-
-from traitlets import Unicode, Dict, Bool, Union, List
-from .traitlets import Callable
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httputil import url_concat
+from traitlets import Bool, Dict, List, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
+from .traitlets import Callable
 
 
 class GenericOAuthenticator(OAuthenticator):
@@ -88,7 +85,8 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable basic authentication for access token request",
     )
 
-    def http_client(self):
+    @default("http_client")
+    def _default_http_client(self):
         return AsyncHTTPClient(force_instance=True, defaults=dict(validate_cert=self.tls_verify))
 
     def _get_headers(self):
@@ -101,7 +99,7 @@ class GenericOAuthenticator(OAuthenticator):
             headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
         return headers
 
-    async def _get_token(self, http_client, headers, params):
+    def _get_token(self, headers, params):
         if self.token_url:
             url = self.token_url
         else:
@@ -111,13 +109,11 @@ class GenericOAuthenticator(OAuthenticator):
             url,
             method="POST",
             headers=headers,
-            body=urllib.parse.urlencode(params),
+            body=urlencode(params),
         )
+        return self.fetch(req, "fetching access token")
 
-        resp = await http_client.fetch(req)
-        return json.loads(resp.body.decode('utf8', 'replace'))
-
-    async def _get_user_data(self, http_client, token_response):
+    def _get_user_data(self, token_response):
         access_token = token_response['access_token']
         token_type = token_response['token_type']
 
@@ -140,9 +136,7 @@ class GenericOAuthenticator(OAuthenticator):
             method=self.userdata_method,
             headers=headers,
         )
-        resp = await http_client.fetch(req)
-
-        return json.loads(resp.body.decode('utf8', 'replace'))
+        return self.fetch(req, "fetching user data")
 
     @staticmethod
     def _create_auth_state(token_response, user_data_response):
@@ -165,8 +159,6 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = self.http_client()
 
         params = dict(
             redirect_uri=self.get_callback_url(handler),
@@ -177,9 +169,9 @@ class GenericOAuthenticator(OAuthenticator):
 
         headers = self._get_headers()
 
-        token_resp_json = await self._get_token(http_client, headers, params)
+        token_resp_json = await self._get_token(headers, params)
 
-        user_data_resp_json = await self._get_user_data(http_client, token_resp_json)
+        user_data_resp_json = await self._get_user_data(token_resp_json)
 
         if callable(self.username_key):
             name = self.username_key(user_data_resp_json)
@@ -197,7 +189,6 @@ class GenericOAuthenticator(OAuthenticator):
         }
 
         if self.allowed_groups:
-
             self.log.info('Validating if user claim groups match any of {}'.format(self.allowed_groups))
 
             if callable(self.claim_groups_key):
@@ -223,5 +214,4 @@ class GenericOAuthenticator(OAuthenticator):
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
     """A version that mixes in local system user creation"""
-
     pass
