@@ -60,6 +60,9 @@ jobs:
           - "3.7"
           - "3.8"
           - "3.9"
+        include:
+          - python: "3.9"
+            oldest_dependencies: oldest_dependencies
 
     steps:
       - uses: actions/checkout@v2
@@ -82,7 +85,14 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install --upgrade --pre -r test-requirements.txt .
+          pip install --upgrade . -r test-requirements.txt
+          if [ "${{ matrix.oldest_dependencies }}" != "" ]; then
+            # take any dependencies in requirements.txt such as jupyterhub>=1.2
+            # and transform them to jupyterhub==1.2 so we can run tests with the
+            # earliest-supported versions
+            cat requirements.txt | grep '>=' | sed -e 's@>=@==@g' > oldest-requirements.txt
+            pip install -r oldest-requirements.txt
+          fi
           pip freeze
 
       - name: Run tests
