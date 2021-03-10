@@ -1,16 +1,15 @@
 """
 Custom Authenticator to use okpy OAuth with JupyterHub
 """
-import json
+
 from binascii import a2b_base64
 
-from tornado.auth import OAuth2Mixin
+from jupyterhub.auth import LocalAuthenticator
 from tornado import web
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from tornado.auth import OAuth2Mixin
+from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
 from traitlets import default
-
-from jupyterhub.auth import LocalAuthenticator
 
 from .oauth2 import OAuthenticator
 
@@ -71,17 +70,13 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
         code = handler.get_argument("code", False)
         if not code:
             raise web.HTTPError(400, "Authentication Cancelled.")
-        http_client = AsyncHTTPClient()
         auth_request = self.get_auth_request(code)
-        response = await http_client.fetch(auth_request)
-        if not response:
+        state = await self.fetch(auth_request)
+        if not state:
             raise web.HTTPError(500, 'Authentication Failed: Token Not Acquired')
-        state = json.loads(response.body.decode('utf8', 'replace'))
         access_token = state['access_token']
         info_request = self.get_user_info_request(access_token)
-        response = await http_client.fetch(info_request)
-        user = json.loads(response.body.decode('utf8', 'replace'))
-        # TODO: preserve state in auth_state when JupyterHub supports encrypted auth_state
+        user = await self.fetch(info_request)
         return {
             'name': user['email'],
             'auth_state': {'access_token': access_token, 'okpy_user': user},
