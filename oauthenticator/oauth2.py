@@ -7,18 +7,17 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 import base64
 import json
 import os
-from urllib.parse import quote, urlparse
 import uuid
+from urllib.parse import quote, urlparse, urlunparse
 
+from jupyterhub.auth import Authenticator
+from jupyterhub.handlers import BaseHandler, LogoutHandler
+from jupyterhub.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
+from tornado.httpclient import AsyncHTTPClient, HTTPClientError
 from tornado.log import app_log
-
-from jupyterhub.handlers import BaseHandler, LogoutHandler
-from jupyterhub.auth import Authenticator
-from jupyterhub.utils import url_path_join
-
-from traitlets import Unicode, Bool, List, Dict, default, observe
+from traitlets import Any, Bool, Dict, List, Unicode, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -322,12 +321,65 @@ class OAuthenticator(Authenticator):
         else:
             return True
 
+    http_client = Any()
+
+    @default("http_client")
+    def _default_http_client(self):
+        return AsyncHTTPClient()
+
+    async def fetch(self, req, label="fetching", parse_json=True, **kwargs):
+        """Wrapper for http requests
+
+        logs error responses, parses successful JSON responses
+
+        Args:
+            req: tornado HTTPRequest
+            label (str): label describing what is happening,
+                used in log message when the request fails.
+            **kwargs: remaining keyword args
+                passed to underlying `client.fetch(req, **kwargs)`
+        Returns:
+            r: parsed JSON response
+        """
+        try:
+            resp = await self.http_client.fetch(req, **kwargs)
+        except HTTPClientError as e:
+            if e.response:
+                # Log failed response message for debugging purposes
+                message = e.response.body.decode("utf8", "replace")
+                try:
+                    # guess json, reformat for readability
+                    json_message = json.loads(message)
+                except ValueError:
+                    # not json
+                    pass
+                else:
+                    # reformat json log message for readability
+                    message = json.dumps(json_message, sort_keys=True, indent=1)
+            else:
+                # didn't get a response, e.g. connection error
+                message = str(e)
+
+            # log url without query params
+            url = urlunparse(urlparse(req.url)._replace(query=""))
+            app_log.error(f"Error {label} {e.code} {req.method} {url}: {message}")
+            raise e
+        else:
+            if parse_json:
+                if resp.body:
+                    return json.loads(resp.body.decode('utf8', 'replace'))
+                else:
+                    # empty body is None
+                    return None
+            else:
+                return resp
+
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
 
     def logout_url(self, base_url):
         return url_path_join(base_url, 'logout')
-
+  
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
         

@@ -13,20 +13,15 @@ Caveats:
   email instead of ePPN as the JupyterHub username.
 """
 
-import json
 import os
 
-from tornado.auth import OAuth2Mixin
-from tornado import web
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
-from traitlets import Unicode, List, Bool, default, validate, observe
-
 from jupyterhub.auth import LocalAuthenticator
+from tornado import web
+from tornado.httpclient import HTTPRequest
+from tornado.httputil import url_concat
+from traitlets import Bool, List, Unicode, default, validate
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator, OAuthLoginHandler
 
 
 class CILogonLoginHandler(OAuthLoginHandler):
@@ -138,8 +133,6 @@ class CILogonOAuthenticator(OAuthenticator):
         receive it.
         """
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
 
         # Exchange the OAuth code for a CILogon Access Token
         # See: http://www.cilogon.org/oidc
@@ -157,18 +150,15 @@ class CILogonOAuthenticator(OAuthenticator):
 
         req = HTTPRequest(url, headers=headers, method="POST", body='')
 
-        resp = await http_client.fetch(req)
-        token_response = json.loads(resp.body.decode('utf8', 'replace'))
+        token_response = await self.fetch(req)
         access_token = token_response['access_token']
-        self.log.info("Access token acquired.")
         # Determine who the logged in user is
         params = dict(access_token=access_token)
         req = HTTPRequest(
             url_concat("https://%s/oauth2/userinfo" % self.cilogon_host, params),
             headers=headers,
         )
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
 
         claimlist = [self.username_claim]
         if self.additional_username_claims:

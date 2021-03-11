@@ -2,31 +2,47 @@
 Custom Authenticator to use generic OAuth2 with JupyterHub
 """
 
-
-import json
-import os
 import base64
-import urllib
-
-from tornado.auth import OAuth2Mixin
-from tornado import web
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+import os
+from urllib.parse import urlencode
 
 from jupyterhub.auth import LocalAuthenticator
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httputil import url_concat
+from traitlets import Bool, Dict, List, Unicode, Union, default
 
-from traitlets import Unicode, Dict, Bool, Union, default, observe
+from .oauth2 import OAuthenticator
 from .traitlets import Callable
-
-from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
 class GenericOAuthenticator(OAuthenticator):
-
     login_service = Unicode("OAuth 2.0", config=True)
 
     extra_params = Dict(help="Extra parameters for first POST request").tag(config=True)
+
+    claim_groups_key = Union(
+        [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],
+        config=True,
+        help="""
+        Userdata groups claim key from returned json for USERDATA_URL.
+
+        Can be a string key name or a callable that accepts the returned
+        json (as a dict) and returns the groups list. The callable is useful
+        e.g. for extracting the groups from a nested object in the response.
+        """,
+    )
+
+    allowed_groups = List(
+        Unicode(),
+        config=True,
+        help="Automatically allow members of selected groups",
+    )
+
+    admin_groups = List(
+        Unicode(),
+        config=True,
+        help="Groups whose members should have Jupyterhub admin privileges",
+    )
 
     username_key = Union(
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
@@ -50,6 +66,7 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata method to get user data login information",
     )
+
     userdata_token_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_REQUEST_TYPE', 'header'),
         config=True,
@@ -68,7 +85,8 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable basic authentication for access token request",
     )
 
-    def http_client(self):
+    @default("http_client")
+    def _default_http_client(self):
         return AsyncHTTPClient(force_instance=True, defaults=dict(validate_cert=self.tls_verify))
 
     def _get_headers(self):
@@ -81,7 +99,7 @@ class GenericOAuthenticator(OAuthenticator):
             headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
         return headers
 
-    async def _get_token(self, http_client, headers, params):
+    def _get_token(self, headers, params):
         if self.token_url:
             url = self.token_url
         else:
@@ -91,13 +109,11 @@ class GenericOAuthenticator(OAuthenticator):
             url,
             method="POST",
             headers=headers,
-            body=urllib.parse.urlencode(params),
+            body=urlencode(params),
         )
+        return self.fetch(req, "fetching access token")
 
-        resp = await http_client.fetch(req)
-        return json.loads(resp.body.decode('utf8', 'replace'))
-
-    async def _get_user_data(self, http_client, token_response):
+    def _get_user_data(self, token_response):
         access_token = token_response['access_token']
         token_type = token_response['token_type']
 
@@ -120,11 +136,10 @@ class GenericOAuthenticator(OAuthenticator):
             method=self.userdata_method,
             headers=headers,
         )
-        resp = await http_client.fetch(req)
-        
-        return json.loads(resp.body.decode('utf8', 'replace'))
+        return self.fetch(req, "fetching user data")
 
-    def _create_auth_state(self, token_response, user_data_response):
+    @staticmethod
+    def _create_auth_state(token_response, user_data_response):
         access_token = token_response['access_token']
         refresh_token = token_response.get('refresh_token', None)
         scope = token_response.get('scope', '')
@@ -138,10 +153,12 @@ class GenericOAuthenticator(OAuthenticator):
             'scope': scope,
         }
 
+    @staticmethod
+    def check_user_in_groups(member_groups, allowed_groups):
+        return bool(set(member_groups) & set(allowed_groups))
+
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = self.http_client()
 
         params = dict(
             redirect_uri=self.get_callback_url(handler),
@@ -152,9 +169,9 @@ class GenericOAuthenticator(OAuthenticator):
 
         headers = self._get_headers()
 
-        token_resp_json = await self._get_token(http_client, headers, params)
+        token_resp_json = await self._get_token(headers, params)
 
-        user_data_resp_json = await self._get_user_data(http_client, token_resp_json)
+        user_data_resp_json = await self._get_user_data(token_resp_json)
 
         if callable(self.username_key):
             name = self.username_key(user_data_resp_json)
@@ -166,14 +183,35 @@ class GenericOAuthenticator(OAuthenticator):
                 )
                 return
 
-        return {
+        user_info = {
             'name': name,
             'auth_state': self._create_auth_state(token_resp_json, user_data_resp_json)
         }
 
+        if self.allowed_groups:
+            self.log.info('Validating if user claim groups match any of {}'.format(self.allowed_groups))
+
+            if callable(self.claim_groups_key):
+                groups = self.claim_groups_key(user_data_resp_json)
+            else:
+                groups = user_data_resp_json.get(self.claim_groups_key)
+
+            if not groups:
+                self.log.error(
+                    "No claim groups found for user! Something wrong with the `claim_groups_key` {}? {}".format(
+                        self.claim_groups_key, user_data_resp_json
+                    )
+                )
+                groups = []
+
+            if self.check_user_in_groups(groups, self.allowed_groups):
+                user_info['admin'] = self.check_user_in_groups(groups, self.admin_groups)
+            else:
+                user_info = None
+
+        return user_info
+
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
-
     """A version that mixes in local system user creation"""
-
     pass

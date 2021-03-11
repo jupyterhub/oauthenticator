@@ -1,20 +1,17 @@
 """
 Custom Authenticator to use Globus OAuth2 with JupyterHub
 """
+import base64
 import os
 import pickle
-import json
-import base64
 import urllib
 
-from tornado.web import HTTPError
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
-from traitlets import List, Unicode, Bool, default
-
+from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.handlers import LogoutHandler
 from jupyterhub.utils import url_path_join
-from jupyterhub.auth import LocalAuthenticator
+from tornado.httpclient import HTTPRequest
+from tornado.web import HTTPError
+from traitlets import Bool, List, Unicode, default
 
 from .oauth2 import OAuthenticator, OAuthLogoutHandler
 
@@ -155,7 +152,6 @@ class GlobusOAuthenticator(OAuthenticator):
         will have the 'foouser' account in Jupyterhub.
         """
         # Complete login and exchange the code for tokens.
-        http_client = AsyncHTTPClient()
         params = dict(
             redirect_uri=self.get_callback_url(handler),
             code=handler.get_argument("code"),
@@ -165,15 +161,14 @@ class GlobusOAuthenticator(OAuthenticator):
             headers=self.get_client_credential_headers(),
             body=urllib.parse.urlencode(params),
         )
-        token_response = await http_client.fetch(req)
-        token_json = json.loads(token_response.body.decode('utf8', 'replace'))
+        token_json = await self.fetch(req)
 
         # Fetch user info at Globus's oauth2/userinfo/ HTTP endpoint to get the username
         user_headers = self.get_default_headers()
         user_headers['Authorization'] = 'Bearer {}'.format(token_json['access_token'])
         req = HTTPRequest(self.userdata_url, method='GET', headers=user_headers)
-        user_resp = await http_client.fetch(req)
-        username = self.get_username(json.loads(user_resp.body.decode('utf8', 'replace')))
+        user_resp = await self.fetch(req)
+        username = self.get_username(user_resp)
 
         # Each token should have these attributes. Resource server is optional,
         # and likely won't be present.
@@ -243,14 +238,14 @@ class GlobusOAuthenticator(OAuthenticator):
         access_tokens = [token_dict.get('access_token') for token_dict in services.values()]
         refresh_tokens = [token_dict.get('refresh_token') for token_dict in services.values()]
         all_tokens = [tok for tok in access_tokens + refresh_tokens if tok is not None]
-        http_client = AsyncHTTPClient()
+
         for token in all_tokens:
             req = HTTPRequest(self.revocation_url,
                               method="POST",
                               headers=self.get_client_credential_headers(),
                               body=urllib.parse.urlencode({'token': token}),
                               )
-            await http_client.fetch(req)
+            await self.fetch(req)
 
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):
