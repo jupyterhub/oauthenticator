@@ -1,3 +1,4 @@
+import hashlib
 import re
 from unittest.mock import Mock
 
@@ -14,7 +15,7 @@ from .mocks import setup_oauth_mock
 
 def user_model(email):
     """Return a user model"""
-    return {'email': email, 'hd': email.split('@')[1], 'verified_email': True}
+    return {'sub': hashlib.md5(email.encode()).hexdigest(), 'email': email, 'hd': email.split('@')[1], 'verified_email': True}
 
 
 @fixture
@@ -38,6 +39,15 @@ async def test_google(google_client):
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'google_user' in auth_state
+
+
+async def test_google_username_claim(google_client):
+    authenticator = GoogleOAuthenticator(username_claim="sub")
+    handler = google_client.handler_for_user(user_model('fake@email.com'))
+    user_info = await authenticator.authenticate(handler)
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
+    assert name == '724f95667e2fbe903ee1b4cffcae3b25'
 
 
 async def test_hosted_domain(google_client):

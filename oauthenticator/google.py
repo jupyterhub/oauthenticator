@@ -117,6 +117,20 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
+    username_claim = Unicode(
+        "email",
+        help="""Field in userinfo reply to use for username
+
+        Default: 'email'
+        Also reasonable: 'sub' for the opaque unique id
+        """,
+        config=True,
+    )
+
+    @default('username_claim')
+    def _username_claim_default(self):
+        return 'email'
+
     async def authenticate(self, handler, data=None, google_groups=None):
         code = handler.get_argument("code")
         body = urllib.parse.urlencode(
@@ -146,8 +160,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             )
         )
         bodyjs = await self.fetch(req, "fetching user info")
-        user_email = username = bodyjs['email']
+        user_email = bodyjs['email']
         user_email_domain = user_email.split('@')[1]
+        username = bodyjs[self.username_claim]
 
         if not bodyjs['verified_email']:
             self.log.warning("Google OAuth unverified email attempt: %s", user_email)
@@ -164,7 +179,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                         user_email_domain
                     ),
                 )
-            if len(self.hosted_domain) == 1:
+            if len(self.hosted_domain) == 1 and user_email == username:
                 # unambiguous domain, use only base name
                 username = user_email.split('@')[0]
 
