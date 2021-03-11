@@ -103,7 +103,6 @@ Set the above settings in your ``jupyterhub_config.py``:
    c.GenericOAuthenticator.authorize_url = "https://your-AWSCognito-domain/oauth2/authorize"
    c.GenericOAuthenticator.token_url = ""https://your-AWSCognito-domain/oauth2/token"
    c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/userInfo"
-   c.GenericOAuthenticator.userdata_method = 'POST'
 
 Azure AD Setup
 --------------
@@ -463,11 +462,11 @@ Use the ``GenericOAuthenticator`` for Jupyterhub by editing your
    c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE'
    c.GenericOAuthenticator.userdata_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/user_info.php'
    c.GenericOAuthenticator.token_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/token.php'
-   c.GenericOAuthenticator.userdata_method = 'POST'
    c.GenericOAuthenticator.extra_params = {
        'scope': 'user_info',
        'client_id': 'MOODLE-CLIENT-ID',
-       'client_secret': 'MOODLE-CLIENT-SECRET-KEY'}
+       'client_secret': 'MOODLE-CLIENT-SECRET-KEY',
+   }
 
 And set your environmental variable ``OAUTH2_AUTHORIZE_URL`` to:
 
