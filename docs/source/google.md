@@ -62,6 +62,15 @@ c.GoogleOAuthenticator.gsuite_administrator = {'example.com': 'someuser'}
 c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/path/to/service_account.json'}
 c.GoogleOAuthenticator.allowed_google_groups = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
 ```
+
+#### if you want to manage admin users via google groups
+
+```python
+c.GoogleOAuthenticator.gsuite_administrator = {'example.com': 'someuser'}
+c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/path/to/service_account.json'}
+c.GoogleOAuthenticator.admin_google_groups = {'example.com': ['someadmingroup']}
+```
+
 ### You are done!
 
 ## How to retrieve an `access_token` and `refresh_token` for all scopes at once
