@@ -11,7 +11,7 @@ import uuid
 from urllib.parse import quote, urlparse, urlunparse
 
 from jupyterhub.auth import Authenticator
-from jupyterhub.handlers import BaseHandler
+from jupyterhub.handlers import BaseHandler, LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
@@ -227,6 +227,11 @@ class OAuthCallbackHandler(BaseHandler):
         self.redirect(self.get_next_url(user))
 
 
+class OAuthLogoutHandler(LogoutHandler):
+    async def handle_logout(self):
+        self.clear_cookie(STATE_COOKIE_NAME)
+
+
 class OAuthenticator(Authenticator):
     """Base class for OAuthenticators
 
@@ -238,6 +243,7 @@ class OAuthenticator(Authenticator):
 
     login_handler = OAuthLoginHandler
     callback_handler = OAuthCallbackHandler
+    logout_handler = OAuthLogoutHandler
 
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
@@ -371,6 +377,9 @@ class OAuthenticator(Authenticator):
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
 
+    def logout_url(self, base_url):
+        return url_path_join(base_url, 'logout')
+  
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
         
@@ -393,6 +402,7 @@ class OAuthenticator(Authenticator):
         return [
             (r'/oauth_login', self.login_handler),
             (r'/oauth_callback', self.callback_handler),
+            (r'/logout', self.logout_handler),
         ]
 
     async def authenticate(self, handler, data=None):
