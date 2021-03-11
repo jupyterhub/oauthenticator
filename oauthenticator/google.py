@@ -117,7 +117,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
-    username_claim = Unicode(config=True)
+    username_claim = Unicode(
+        "email",
+        help="""Field in userinfo reply to use for username
+
+        Default: 'email'
+        Also reasonable: 'sub' for the opaque unique id
+        """,
+        config=True,
+    )
 
     @default('username_claim')
     def _username_claim_default(self):
