@@ -30,7 +30,6 @@ c.GenericOAuthenticator.client_id = 'client-id'
 c.GenericOAuthenticator.client_secret = 'some-long-secret-hash'
 c.GenericOAuthenticator.token_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/token'
 c.GenericOAuthenticator.userdata_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/userinfo'
-c.GenericOAuthenticator.userdata_method = 'GET'
 c.GenericOAuthenticator.userdata_params = {'state': 'state'}
 # the next can be a callable as well, e.g.: lambda t: t.get('complex').get('structure').get('username')
 c.GenericOAuthenticator.username_key = 'preferred_username'
@@ -52,7 +51,6 @@ c.GenericOAuthenticator.client_id = 'client-id'
 c.GenericOAuthenticator.client_secret = 'some-long-secret-hash'
 c.GenericOAuthenticator.token_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/token'
 c.GenericOAuthenticator.userdata_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/userinfo'
-c.GenericOAuthenticator.userdata_method = 'GET'
 c.GenericOAuthenticator.userdata_params = {'state': 'state'}
 # the next can be a callable as well, e.g.: lambda t: t.get('complex').get('structure').get('username')
 c.GenericOAuthenticator.username_key = 'preferred_username'
