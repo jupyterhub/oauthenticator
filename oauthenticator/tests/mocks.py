@@ -92,10 +92,14 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         response_callback(response)
 
 
-def setup_oauth_mock(client, host, access_token_path, user_path,
-        token_type='Bearer',
-        token_request_style='post',
-    ):
+def setup_oauth_mock(
+    client,
+    host,
+    access_token_path,
+    user_path=None,
+    token_type='Bearer',
+    token_request_style='post',
+):
     """setup the mock client for OAuth
 
     generates and registers two handlers common to OAuthenticators:
@@ -117,6 +121,9 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         user_path (str): The path for requesting  (e.g. /user)
         token_type (str): the token_type field for the provider
     """
+
+    if user_path is None and token_request_style != "jwt":
+        raise TypeError("user_path is required unless token_request_style is jwt")
 
     client.oauth_codes = oauth_codes = {}
     client.access_tokens = access_tokens = {}
@@ -159,10 +166,13 @@ def setup_oauth_mock(client, host, access_token_path, user_path,
         token = uuid.uuid4().hex
         user = oauth_codes.pop(code)
         access_tokens[token] = user
-        return {
+        model = {
             'access_token': token,
             'token_type': token_type,
         }
+        if token_request_style == 'jwt':
+            model['id_token'] = user['id_token']
+        return model
 
     def get_user(request):
         assert request.method == 'GET', request.method
@@ -249,4 +259,3 @@ async def no_code_test(authenticator):
     with pytest.raises(web.HTTPError) as exc:
         name = await authenticator.authenticate(handler)
     assert exc.value.status_code == 400
-
