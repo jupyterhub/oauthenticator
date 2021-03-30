@@ -68,7 +68,11 @@ async def test_allowed_org_membership(github_client):
 
     orgs = {
         'red': ['grif', 'simmons', 'donut', 'sarge', 'lopez'],
-        'blue': ['tucker', 'caboose', 'burns', 'sheila', 'texas'],
+        'blue': ['tucker', 'caboose', 'burns', 'sheila', 'texas']
+    }
+
+    org_teams = {
+        'blue': {'alpha': ['tucker', 'caboose', 'burns']}
     }
 
     member_regex = re.compile(r'/orgs/(.*)/members')
@@ -104,7 +108,6 @@ async def test_allowed_org_membership(github_client):
                         headers=HTTPHeaders(headers),
                         buffer=BytesIO(json.dumps(ret).encode('utf-8')))
 
-
     org_membership_regex = re.compile(r'/orgs/(.*)/members/(.*)')
 
     def org_membership(request):
@@ -121,11 +124,31 @@ async def test_allowed_org_membership(github_client):
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
 
+    team_membership_regex = re.compile(r'/orgs/(.*)/teams/(.*)/members/(.*)')
+
+    def team_membership(request):
+        urlinfo = urlparse(request.url)
+        urlmatch = team_membership_regex.match(urlinfo.path)
+        org = urlmatch.group(1)
+        team = urlmatch.group(2)
+        username = urlmatch.group(3)
+        print('Request org = %s, team = %s username = %s' % (org, team, username))
+        if org not in orgs:
+            print('Org not found: org = %s' %(org))
+            return HTTPResponse(request, 404)
+        if team not in org_teams[org]:
+            print('Team not found in org: team = %s, org = %s' %(team, org))
+            return HTTPResponse(request, 404)
+        if username not in org_teams[org][team]:
+            print('Member not found: org = %s, team = %s, username = %s' %(org, team, username))
+            return HTTPResponse(request, 404)
+        return HTTPResponse(request, 204)
 
     ## Perform tests
 
     for paginate in (False, True):
         client_hosts = client.hosts['api.github.com']
+        client_hosts.append((team_membership_regex, team_membership))
         client_hosts.append((org_membership_regex, org_membership))
         client_hosts.append((member_regex, functools.partial(org_members, paginate)))
 
@@ -149,6 +172,22 @@ async def test_allowed_org_membership(github_client):
         handler = client.handler_for_user(user_model('donut'))
         user = await authenticator.authenticate(handler)
         assert user['name'] == 'donut'
+
+        # test team membership
+        authenticator.allowed_organizations = ['blue:alpha', 'red']
+
+        handler = client.handler_for_user(user_model('tucker'))
+        user = await authenticator.authenticate(handler)
+        assert user['name'] == 'tucker'
+
+        handler = client.handler_for_user(user_model('grif'))
+        user = await authenticator.authenticate(handler)
+        assert user['name'] == 'grif'
+
+        handler = client.handler_for_user(user_model('texas'))
+        user = await authenticator.authenticate(handler)
+        assert user is None
+
 
         client_hosts.pop()
         client_hosts.pop()
