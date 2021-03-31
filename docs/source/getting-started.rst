@@ -219,6 +219,9 @@ and
 but be aware that each entry incurs a separate API call, increasing the
 risk of rate limiting and timeouts.
 
+Note: if restriction to projects or groups does not work, you might not be using jupyterHub 1.2. In that case you can still you use whitelists as noted in this 
+`comment <https://github.com/jupyterhub/oauthenticator/pull/366#pullrequestreview-483095919>`__.
+
 Google Setup
 ------------
 
