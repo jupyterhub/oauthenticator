@@ -8,7 +8,9 @@ command line for details.
 
 ## [Unreleased]
 
-## 14.0 - 2021-04-09
+## 14.0
+
+### [14.0.0] - 2021-04-09
 
 ([full changelog](https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0))
 
@@ -376,6 +378,14 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 
 [Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.9.0...HEAD
+
+[14.0.0]: https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0
+[0.13.0]: https://github.com/jupyterhub/oauthenticator/compare/0.12.2...0.13.0
+[0.12.2]: https://github.com/jupyterhub/oauthenticator/compare/0.12.1...0.12.2
+[0.12.1]: https://github.com/jupyterhub/oauthenticator/compare/0.12.0...0.12.1
+[0.12.0]: https://github.com/jupyterhub/oauthenticator/compare/0.11.0...0.12.0
+[0.11.0]: https://github.com/jupyterhub/oauthenticator/compare/0.10.0...0.11.0
+[0.10.0]: https://github.com/jupyterhub/oauthenticator/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/jupyterhub/oauthenticator/compare/0.8.2...0.9.0
 [0.8.2]: https://github.com/jupyterhub/oauthenticator/compare/0.8.1...0.8.2
 [0.8.1]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...0.8.1
