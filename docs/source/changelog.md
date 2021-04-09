@@ -8,6 +8,43 @@ command line for details.
 
 ## [Unreleased]
 
+## 14.0 - 2021-04-09
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0))
+
+#### New features added
+
+- Support username_claim in Google OAuth [#401](https://github.com/jupyterhub/oauthenticator/pull/401) ([@dtaniwaki](https://github.com/dtaniwaki))
+- added allowed_groups and admin_groups to generic.py [#395](https://github.com/jupyterhub/oauthenticator/pull/395) ([@mcmartins](https://github.com/mcmartins))
+- [Google] Allow for checking of google_groups for admin only [#358](https://github.com/jupyterhub/oauthenticator/pull/358) ([@dwilliams782](https://github.com/dwilliams782))
+
+#### Enhancements made
+
+- Add `.fetch(req)` method to base OAuthenticator [#415](https://github.com/jupyterhub/oauthenticator/pull/415) ([@minrk](https://github.com/minrk))
+- [OpenShift] add allowed_groups and admin_groups [#410](https://github.com/jupyterhub/oauthenticator/pull/410) ([@wseaton](https://github.com/wseaton))
+- Clear cookie on logout [#404](https://github.com/jupyterhub/oauthenticator/pull/404) ([@dtaniwaki](https://github.com/dtaniwaki))
+
+#### Bugs fixed
+
+- [azuread] pyjwt 1+2 compatibility, azuread test coverage [#420](https://github.com/jupyterhub/oauthenticator/pull/420) ([@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+- Test oldest dependencies and bump jupyterhub required to 1.2 [#413](https://github.com/jupyterhub/oauthenticator/pull/413) ([@consideRatio](https://github.com/consideRatio))
+- [Generic] Remove userdata_method configuration supposedly not relevant [#376](https://github.com/jupyterhub/oauthenticator/pull/376) ([@consideRatio](https://github.com/consideRatio))
+
+#### Documentation improvements
+
+- docs: cleanup userdata_method from docs [#416](https://github.com/jupyterhub/oauthenticator/pull/416) ([@consideRatio](https://github.com/consideRatio))
+- allowed_project_ids is the valid name [#409](https://github.com/jupyterhub/oauthenticator/pull/409) ([@manning-ncsa](https://github.com/manning-ncsa))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2021-02-04&to=2021-04-09&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2021-02-04..2021-04-09&type=Issues) | [@dhirschfeld](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adhirschfeld+updated%3A2021-02-04..2021-04-09&type=Issues) | [@dtaniwaki](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adtaniwaki+updated%3A2021-02-04..2021-04-09&type=Issues) | [@dwilliams782](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adwilliams782+updated%3A2021-02-04..2021-04-09&type=Issues) | [@holdenk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aholdenk+updated%3A2021-02-04..2021-04-09&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2021-02-04..2021-04-09&type=Issues) | [@manning-ncsa](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanning-ncsa+updated%3A2021-02-04..2021-04-09&type=Issues) | [@mcmartins](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amcmartins+updated%3A2021-02-04..2021-04-09&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2021-02-04..2021-04-09&type=Issues) | [@support](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asupport+updated%3A2021-02-04..2021-04-09&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awelcome+updated%3A2021-02-04..2021-04-09&type=Issues) | [@wseaton](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awseaton+updated%3A2021-02-04..2021-04-09&type=Issues)
+
+
 ## 0.13
 
 ### [0.13.0] - 2021-02-04
