@@ -119,6 +119,6 @@ class FeiShuOAuthenticator(OAuthenticator):
         return user_info
 
 
-class LocalFSOAuthenticator(LocalAuthenticator, FeiShuOAuthenticator):
+class LocalFeiShuOAuthenticator(LocalAuthenticator, FeiShuOAuthenticator):
     """A version that mixes in local system user creation"""
     pass
