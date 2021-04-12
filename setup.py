@@ -63,6 +63,9 @@ setup_args = dict(
 
             'cilogon = oauthenticator.cilogon:CILogonOAuthenticator',
             'local-cilogon = oauthenticator.cilogon:LocalCILogonOAuthenticator',
+            
+            'feishu-oauth = oauthenticator.feishu:FeiShuOAuthenticator',
+            'local-feishu-oauth = oauthenticator.feishu:LocalFeiShuOAuthenticator',
 
             'generic-oauth = oauthenticator.generic:GenericOAuthenticator',
             'local-generic-oauth = oauthenticator.generic:LocalGenericOAuthenticator',
