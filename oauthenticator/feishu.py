@@ -1,5 +1,6 @@
 """
 Custom Authenticator to use FeiShu OAuth with JupyterHub
+Developed by Yuandong Yang and Qiang Ju from Tezign.com
 """
 import os
 from jupyterhub.auth import LocalAuthenticator
