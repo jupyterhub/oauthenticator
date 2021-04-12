@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Feishu OAuth with JupyterHub
+Custom Authenticator to use FeiShu OAuth with JupyterHub
 """
 import os
 from jupyterhub.auth import LocalAuthenticator
@@ -12,7 +12,7 @@ import json
 
 class FSOAuthenticator(OAuthenticator):
 
-    login_service = 'Feishu'
+    login_service = 'FeiShu'
 
     tls_verify = Bool(
         os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
