@@ -11,7 +11,7 @@ from .oauth2 import OAuthenticator
 import json
 
 
-class FSOAuthenticator(OAuthenticator):
+class FeiShuOAuthenticator(OAuthenticator):
 
     login_service = 'FeiShu'
 
@@ -119,6 +119,6 @@ class FSOAuthenticator(OAuthenticator):
         return user_info
 
 
-class LocalFSOAuthenticator(LocalAuthenticator, FSOAuthenticator):
+class LocalFSOAuthenticator(LocalAuthenticator, FeiShuOAuthenticator):
     """A version that mixes in local system user creation"""
     pass
