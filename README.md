@@ -14,7 +14,7 @@ OAuthenticator overrides these handlers for the common OAuth2 identity providers
 plugged in and used with JupyterHub.
 
 The following authentication services are supported through their own authenticator: [Auth0](oauthenticator/auth0.py),
-[Azure AD](oauthenticator/azuread.py), [Bitbucket](oauthenticator/bitbucket.py), [CILogon](oauthenticator/cilogon.py),
+[Azure AD](oauthenticator/azuread.py), [Bitbucket](oauthenticator/bitbucket.py), [CILogon](oauthenticator/cilogon.py), [FeiShu](oauthenticator/feishu.py),
 [GitHub](oauthenticator/github.py), [GitLab](oauthenticator/gitlab.py), [Globus](oauthenticator/globus.py),
 [Google](oauthenticator/google.py), [MediaWiki](oauthenticator/mediawiki.py), [Okpy](oauthenticator/okpy.py),
 [OpenShift](oauthenticator/openshift.py).
