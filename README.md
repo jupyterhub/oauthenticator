@@ -30,6 +30,7 @@ The docs also provide example setups for different OAuth2 identity providers:
 
 * [General Setup](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#general-setup)
 * [Azure AD](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#azure-ad-setup)
+* [FeiShu](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#feishu-setup)
 * [GitHub](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#github-setup)
 * [GitLab](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#gitlab-setup)
 * [Google](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#google-setup)
