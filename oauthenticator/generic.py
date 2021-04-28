@@ -22,11 +22,49 @@ from .traitlets import Callable
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
+class GenericLoginHandler(OAuthLoginHandler):
+    def authorize_redirect(self, *args, **kwargs):
+        extra_params = kwargs.setdefault("extra_params", {})
+        if self.authenticator.extra_params_allowed_runtime:
+            if callable(self.authenticator.extra_params_allowed_runtime):
+                extra_params_allowed = self.authenticator.extra_params_allowed_runtime()
+            else:
+                extra_params_allowed = self.authenticator.extra_params_allowed_runtime
+            extra_params.update(
+                {
+                    k[len("extra_param_") :]: "&".join([x.decode("utf-8") for x in v])
+                    for k, v in self.request.arguments.items()
+                    if k.startswith("extra_param_")
+                    and set([x.decode("utf-8") for x in v]).issubset(
+                        extra_params_allowed.get(k[len("extra_param_") :], [])
+                    )
+                }
+            )
+        return super().authorize_redirect(*args, **kwargs)
+
+
 class GenericOAuthenticator(OAuthenticator):
 
     login_service = Unicode("OAuth 2.0", config=True)
 
     extra_params = Dict(help="Extra parameters for first POST request").tag(config=True)
+
+    extra_params_allowed_runtime = Union(
+        [Dict(), Callable()],
+        config=True,
+        help="""Allowed extra GET params to send along with the initial OAuth request
+        to the OAuth provider.
+        Usage: GET to localhost:8000/hub/oauth_login?extra_param_<key>=<value>
+        This argument defines the allowed keys and values.
+        Example:
+        ```
+        {
+            "key": ["value1", "value2"],
+        }
+        ```
+        All accepted extra params will be forwarded without the `extra_param_` prefix.
+        """,
+    )
 
     username_key = Union(
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
