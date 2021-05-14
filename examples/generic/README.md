@@ -4,8 +4,8 @@ Example of `GenericOAuthenticator` using an IDM - identity and access management
 
 ## Keycloak
 
-`Keycloak` is an open source IDM solution. 
-In `Keycloak` one can map user roles or policies from a source, 
+`Keycloak` is an open source IDM solution.
+In `Keycloak` one can map user roles or policies from a source,
 e.g. Active Directory, configure the client scopes to include this information
 within the id token and access token as claims.
 
@@ -18,7 +18,7 @@ This functionality is supported by all major IDM tools, e.g. Auth0, Okta etc.
 
 The `GenericOAuthenticator` can be configured to provide authorization as well.
 
-### Example configuration 
+### Example configuration
 
 ```python
 from oauthenticator.generic import GenericOAuthenticator

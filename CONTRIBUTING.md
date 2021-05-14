@@ -36,7 +36,7 @@ To set up a development environment for this repository:
    pytest
    ```
 
-Note: OAuthenticator *is not* accepting pull requests adding new OAuth providers.
+Note: OAuthenticator _is not_ accepting pull requests adding new OAuth providers.
 See the documentation for how to use GenericOAuthenticator with your provider
 or to write your own OAuthenticator class for your provider.
 
