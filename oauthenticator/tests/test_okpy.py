@@ -14,7 +14,8 @@ def user_model(email):
 
 @fixture
 def okpy_client(client):
-    setup_oauth_mock(client,
+    setup_oauth_mock(
+        client,
         host=['okpy.org'],
         access_token_path='/oauth/token',
         user_path='/api/v3/user',

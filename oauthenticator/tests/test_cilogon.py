@@ -26,12 +26,13 @@ def alternative_user_model(username, claimname):
 
 @fixture
 def cilogon_client(client):
-    setup_oauth_mock(client,
-                     host='cilogon.org',
-                     access_token_path='/oauth2/token',
-                     user_path='/oauth2/userinfo',
-                     token_type='token',
-                     )
+    setup_oauth_mock(
+        client,
+        host='cilogon.org',
+        access_token_path='/oauth2/token',
+        user_path='/oauth2/userinfo',
+        token_type='token',
+    )
     return client
 
 
@@ -55,7 +56,8 @@ async def test_cilogon(cilogon_client):
 async def test_cilogon_alternate_claim(cilogon_client):
     authenticator = CILogonOAuthenticator(username_claim='uid')
     handler = cilogon_client.handler_for_user(
-        alternative_user_model('jtkirk@ufp.gov', 'uid'))
+        alternative_user_model('jtkirk@ufp.gov', 'uid')
+    )
     user_info = await authenticator.authenticate(handler)
     print(json.dumps(user_info, sort_keys=True, indent=4))
     name = user_info['name']
@@ -65,8 +67,7 @@ async def test_cilogon_alternate_claim(cilogon_client):
     assert 'token_response' in auth_state
     assert auth_state == {
         'access_token': auth_state['access_token'],
-        'cilogon_user': alternative_user_model('jtkirk@ufp.gov',
-                                               'uid'),
+        'cilogon_user': alternative_user_model('jtkirk@ufp.gov', 'uid'),
         'token_response': auth_state['token_response'],
     }
 
@@ -74,7 +75,8 @@ async def test_cilogon_alternate_claim(cilogon_client):
 async def test_cilogon_additional_claim(cilogon_client):
     authenticator = CILogonOAuthenticator(additional_username_claims=['uid'])
     handler = cilogon_client.handler_for_user(
-        alternative_user_model('jtkirk@ufp.gov', 'uid'))
+        alternative_user_model('jtkirk@ufp.gov', 'uid')
+    )
     user_info = await authenticator.authenticate(handler)
     print(json.dumps(user_info, sort_keys=True, indent=4))
     name = user_info['name']
@@ -84,8 +86,7 @@ async def test_cilogon_additional_claim(cilogon_client):
     assert 'token_response' in auth_state
     assert auth_state == {
         'access_token': auth_state['access_token'],
-        'cilogon_user': alternative_user_model('jtkirk@ufp.gov',
-                                               'uid'),
+        'cilogon_user': alternative_user_model('jtkirk@ufp.gov', 'uid'),
         'token_response': auth_state['token_response'],
     }
 
@@ -93,7 +94,8 @@ async def test_cilogon_additional_claim(cilogon_client):
 async def test_cilogon_missing_alternate_claim(cilogon_client):
     authenticator = CILogonOAuthenticator()
     handler = cilogon_client.handler_for_user(
-        alternative_user_model('jtkirk@ufp.gov', 'uid'))
+        alternative_user_model('jtkirk@ufp.gov', 'uid')
+    )
     with raises(HTTPError):
         user_info = await authenticator.authenticate(handler)
 

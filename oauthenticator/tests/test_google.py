@@ -15,7 +15,12 @@ from .mocks import setup_oauth_mock
 
 def user_model(email):
     """Return a user model"""
-    return {'sub': hashlib.md5(email.encode()).hexdigest(), 'email': email, 'hd': email.split('@')[1], 'verified_email': True}
+    return {
+        'sub': hashlib.md5(email.encode()).hexdigest(),
+        'email': email,
+        'hd': email.split('@')[1],
+        'verified_email': True,
+    }
 
 
 @fixture
@@ -85,20 +90,28 @@ async def test_admin_google_groups(google_client):
     authenticator = GoogleOAuthenticator(
         hosted_domain=['email.com', 'mycollege.edu'],
         admin_google_groups={'email.com': ['fakeadmingroup']},
-        allowed_google_groups={'email.com': ['fakegroup']}
+        allowed_google_groups={'email.com': ['fakegroup']},
     )
     handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
+    admin_user_info = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakeadmingroup']
+    )
     admin_user = admin_user_info['admin']
     assert admin_user == True
     handler = google_client.handler_for_user(user_model('fakealloweduser@email.com'))
-    allowed_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
-    allowed_user_groups = allowed_user_info['auth_state']['google_user']['google_groups']
+    allowed_user_info = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakegroup']
+    )
+    allowed_user_groups = allowed_user_info['auth_state']['google_user'][
+        'google_groups'
+    ]
     admin_user = allowed_user_info['admin']
     assert 'fakegroup' in allowed_user_groups
     assert admin_user == False
     handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
-    allowed_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonallowedgroup'])
+    allowed_user_groups = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakenonallowedgroup']
+    )
     assert allowed_user_groups is None
 
 
@@ -108,16 +121,24 @@ async def test_allowed_google_groups(google_client):
         allowed_google_groups={'email.com': ['fakegroup'], ',mycollege.edu': []},
     )
     handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    admin_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakeadmingroup'])
+    admin_user_info = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakeadmingroup']
+    )
     assert admin_user_info is None
     handler = google_client.handler_for_user(user_model('fakealloweduser@email.com'))
-    allowed_user_info = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakegroup'])
-    allowed_user_groups = allowed_user_info['auth_state']['google_user']['google_groups']
+    allowed_user_info = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakegroup']
+    )
+    allowed_user_groups = allowed_user_info['auth_state']['google_user'][
+        'google_groups'
+    ]
     admin_field = allowed_user_info.get('admin')
     assert 'fakegroup' in allowed_user_groups
     assert admin_field is None
     handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
-    allowed_user_groups = await authenticator.authenticate(handler, google_groups=['anotherone', 'fakenonallowedgroup'])
+    allowed_user_groups = await authenticator.authenticate(
+        handler, google_groups=['anotherone', 'fakenonallowedgroup']
+    )
     assert allowed_user_groups is None
     handler = google_client.handler_for_user(user_model('fake@mycollege.edu'))
     allowed_user_groups = await authenticator.authenticate(

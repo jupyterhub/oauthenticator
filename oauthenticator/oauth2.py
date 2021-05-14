@@ -248,6 +248,7 @@ class OAuthenticator(Authenticator):
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
     )
+
     @default("authorize_url")
     def _authorize_url_default(self):
         return os.environ.get("OAUTH2_AUTHORIZE_URL", "")
@@ -256,6 +257,7 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""The url retrieving an access token at the completion of oauth""",
     )
+
     @default("token_url")
     def _token_url_default(self):
         return os.environ.get("OAUTH2_TOKEN_URL", "")
@@ -264,6 +266,7 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""The url for retrieving user data with a completed access token""",
     )
+
     @default("userdata_url")
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
@@ -379,10 +382,10 @@ class OAuthenticator(Authenticator):
 
     def logout_url(self, base_url):
         return url_path_join(base_url, 'logout')
-  
+
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
-        
+
         Either from config or guess based on the current request.
         """
         if self.oauth_callback_url:

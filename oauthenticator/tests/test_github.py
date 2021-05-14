@@ -24,9 +24,11 @@ def user_model(username):
         'name': 'Hoban Washburn',
     }
 
+
 @fixture
 def github_client(client):
-    setup_oauth_mock(client,
+    setup_oauth_mock(
+        client,
         host=['github.com', 'api.github.com'],
         access_token_path='/login/oauth/access_token',
         user_path='/user',
@@ -51,13 +53,16 @@ async def test_github(github_client):
             'id': 5,
             'login': name,
             'name': 'Hoban Washburn',
-        }
+        },
     }
 
 
 def make_link_header(urlinfo, page):
-    return {'Link': '<{}://{}{}?page={}>;rel="next"'
-                    .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
+    return {
+        'Link': '<{}://{}{}?page={}>;rel="next"'.format(
+            urlinfo.scheme, urlinfo.netloc, urlinfo.path, page
+        )
+    }
 
 
 async def test_allowed_org_membership(github_client):
@@ -86,7 +91,8 @@ async def test_allowed_org_membership(github_client):
             page = parse_qs(urlinfo.query).get('page', ['1'])
             page = int(page[0])
             return team_members_paginated(
-                team, page, urlinfo, functools.partial(HTTPResponse, request))
+                team, page, urlinfo, functools.partial(HTTPResponse, request)
+            )
 
     def team_members_paginated(team, page, urlinfo, response):
         if page < len(teams[team]):
@@ -100,10 +106,11 @@ async def test_allowed_org_membership(github_client):
 
         ret = [user_model(teams[team][page - 1])]
 
-        return response(200,
-                        headers=HTTPHeaders(headers),
-                        buffer=BytesIO(json.dumps(ret).encode('utf-8')))
-
+        return response(
+            200,
+            headers=HTTPHeaders(headers),
+            buffer=BytesIO(json.dumps(ret).encode('utf-8')),
+        )
 
     membership_regex = re.compile(r'/orgs/(.*)/members/(.*)')
 
@@ -114,13 +121,12 @@ async def test_allowed_org_membership(github_client):
         username = urlmatch.group(2)
         print('Request team = %s, username = %s' % (team, username))
         if team not in teams:
-            print('Team not found: team = %s' %(team))
+            print('Team not found: team = %s' % (team))
             return HTTPResponse(request, 404)
         if username not in teams[team]:
-            print('Member not found: team = %s, username = %s' %(team, username))
+            print('Member not found: team = %s, username = %s' % (team, username))
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
-
 
     ## Perform tests
 
@@ -152,6 +158,7 @@ async def test_allowed_org_membership(github_client):
 
         client_hosts.pop()
         client_hosts.pop()
+
 
 def test_deprecated_config(caplog):
     cfg = Config()

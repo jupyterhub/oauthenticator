@@ -107,7 +107,7 @@ class Auth0OAuthenticator(OAuthenticator):
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'id_token': id_token,
-                'auth0_user': resp_json
+                'auth0_user': resp_json,
             },
         }
 

@@ -81,7 +81,9 @@ class GenericOAuthenticator(OAuthenticator):
 
     @default("http_client")
     def _default_http_client(self):
-        return AsyncHTTPClient(force_instance=True, defaults=dict(validate_cert=self.tls_verify))
+        return AsyncHTTPClient(
+            force_instance=True, defaults=dict(validate_cert=self.tls_verify)
+        )
 
     def _get_headers(self):
         headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
@@ -169,17 +171,23 @@ class GenericOAuthenticator(OAuthenticator):
             name = user_data_resp_json.get(self.username_key)
             if not name:
                 self.log.error(
-                    "OAuth user contains no key %s: %s", self.username_key, user_data_resp_json
+                    "OAuth user contains no key %s: %s",
+                    self.username_key,
+                    user_data_resp_json,
                 )
                 return
 
         user_info = {
             'name': name,
-            'auth_state': self._create_auth_state(token_resp_json, user_data_resp_json)
+            'auth_state': self._create_auth_state(token_resp_json, user_data_resp_json),
         }
 
         if self.allowed_groups:
-            self.log.info('Validating if user claim groups match any of {}'.format(self.allowed_groups))
+            self.log.info(
+                'Validating if user claim groups match any of {}'.format(
+                    self.allowed_groups
+                )
+            )
 
             if callable(self.claim_groups_key):
                 groups = self.claim_groups_key(user_data_resp_json)
@@ -195,7 +203,9 @@ class GenericOAuthenticator(OAuthenticator):
                 groups = []
 
             if self.check_user_in_groups(groups, self.allowed_groups):
-                user_info['admin'] = self.check_user_in_groups(groups, self.admin_groups)
+                user_info['admin'] = self.check_user_in_groups(
+                    groups, self.admin_groups
+                )
             else:
                 user_info = None
 
@@ -204,4 +214,5 @@ class GenericOAuthenticator(OAuthenticator):
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
     """A version that mixes in local system user creation"""
+
     pass

@@ -78,7 +78,10 @@ class CILogonOAuthenticator(OAuthenticator):
             return ['openid'] + proposal.value
         return proposal.value
 
-    idp_whitelist = List(help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`", config=True,)
+    idp_whitelist = List(
+        help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`",
+        config=True,
+    )
     allowed_idps = List(
         config=True,
         help="""A list of IDP which can be stripped from the username after the @ sign.""",
@@ -186,9 +189,7 @@ class CILogonOAuthenticator(OAuthenticator):
         if self.allowed_idps:
             gotten_name, gotten_idp = username.split('@')
             if gotten_idp not in self.allowed_idps:
-                self.log.error(
-                    "Trying to login from not allowed domain %s", gotten_idp
-                )
+                self.log.error("Trying to login from not allowed domain %s", gotten_idp)
                 raise web.HTTPError(500, "Trying to login from a domain not allowed")
             if len(self.allowed_idps) == 1 and self.strip_idp_domain:
                 username = gotten_name

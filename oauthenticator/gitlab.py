@@ -92,13 +92,19 @@ class GitLabOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "%s/oauth/access_token" % self.gitlab_url
 
-    gitlab_group_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`", config=True,)
+    gitlab_group_whitelist = Set(
+        help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
+        config=True,
+    )
 
     allowed_gitlab_groups = Set(
         config=True, help="Automatically allow members of selected groups"
     )
 
-    gitlab_project_id_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`", config=True,)
+    gitlab_project_id_whitelist = Set(
+        help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`",
+        config=True,
+    )
 
     allowed_project_ids = Set(
         config=True,
@@ -163,7 +169,9 @@ class GitLabOAuthenticator(OAuthenticator):
 
         if self.allowed_gitlab_groups:
             is_group_specified = True
-            user_in_group = await self._check_membership_allowed_groups(user_id, access_token)
+            user_in_group = await self._check_membership_allowed_groups(
+                user_id, access_token
+            )
 
         # We skip project_id check if user is in allowed group.
         if self.allowed_project_ids and not user_in_group:

@@ -1,5 +1,6 @@
 import os
 from oauthenticator.azuread import AzureAdOAuthenticator
+
 c.JupyterHub.authenticator_class = AzureAdOAuthenticator
 
 c.Application.log_level = 'DEBUG'
@@ -13,4 +14,4 @@ c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 # if the user's name returned by Azure isn't acceptable to JupyterHub then we can use an alternate field,
 # uncomment the line below to use 'unique_name' rather than the default 'name'. Consult the Azure
 # documentation for other field names.
-#c.AzureAdOAuthenticator.username_claim = 'unique_name'
+# c.AzureAdOAuthenticator.username_claim = 'unique_name'

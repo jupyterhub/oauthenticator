@@ -21,10 +21,10 @@ PYJWT_2 = V(jwt.__version__) >= V("2.0")
 
 class AzureAdOAuthenticator(OAuthenticator):
     login_service = Unicode(
-		os.environ.get('LOGIN_SERVICE', 'Azure AD'),
-		config=True,
-		help="""Azure AD domain name string, e.g. My College"""
-	)
+        os.environ.get('LOGIN_SERVICE', 'Azure AD'),
+        config=True,
+        help="""Azure AD domain name string, e.g. My College""",
+    )
 
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
@@ -40,11 +40,15 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(self.tenant_id)
+        return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(
+            self.tenant_id
+        )
 
     @default("token_url")
     def _token_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(self.tenant_id)
+        return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(
+            self.tenant_id
+        )
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -54,22 +58,19 @@ class AzureAdOAuthenticator(OAuthenticator):
             client_secret=self.client_secret,
             grant_type='authorization_code',
             code=code,
-            redirect_uri=self.get_callback_url(handler))
+            redirect_uri=self.get_callback_url(handler),
+        )
 
-        data = urllib.parse.urlencode(
-            params, doseq=True, encoding='utf-8', safe='=')
+        data = urllib.parse.urlencode(params, doseq=True, encoding='utf-8', safe='=')
 
         url = self.token_url
 
-        headers = {
-            'Content-Type':
-            'application/x-www-form-urlencoded; charset=UTF-8'
-        }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
         req = HTTPRequest(
             url,
             method="POST",
             headers=headers,
-            body=data  # Body is required for a POST...
+            body=data,  # Body is required for a POST...
         )
 
         resp_json = await self.fetch(req)
@@ -98,4 +99,5 @@ class AzureAdOAuthenticator(OAuthenticator):
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
     """A version that mixes in local system user creation"""
+
     pass

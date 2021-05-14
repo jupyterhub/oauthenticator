@@ -52,7 +52,7 @@ def render_autodoc_modules():
     # modules is a dict of dicts of lists
     # { '$module': { 'classes': [...], 'configurables': [...] } }
 
-    modules = defaultdict(lambda : defaultdict(list))
+    modules = defaultdict(lambda: defaultdict(list))
 
     # pre-load base classes
     modules['oauthenticator.oauth2'] = {
@@ -133,6 +133,7 @@ def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
     app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
+
 
 # -- Options for HTML output -------------------------------------------------
 

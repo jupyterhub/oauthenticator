@@ -59,24 +59,26 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     google_service_account_keys = Dict(
         Unicode(),
-        help="Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation"
+        help="Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation",
     ).tag(config=True)
 
     gsuite_administrator = Dict(
         Unicode(),
-        help="Username of a G Suite Administrator for the service account to act as"
+        help="Username of a G Suite Administrator for the service account to act as",
     ).tag(config=True)
 
-    google_group_whitelist = Dict(help="Deprecated, use `GoogleOAuthenticator.allowed_google_groups`", config=True,)
+    google_group_whitelist = Dict(
+        help="Deprecated, use `GoogleOAuthenticator.allowed_google_groups`",
+        config=True,
+    )
 
     allowed_google_groups = Dict(
-        List(Unicode()),
-        help="Automatically allow members of selected groups"
+        List(Unicode()), help="Automatically allow members of selected groups"
     ).tag(config=True)
 
     admin_google_groups = Dict(
         List(Unicode()),
-        help="Groups whose members should have Jupyterhub admin privileges"
+        help="Groups whose members should have Jupyterhub admin privileges",
     ).tag(config=True)
 
     user_info_url = Unicode(
@@ -184,11 +186,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 username = user_email.split('@')[0]
 
         if refresh_token is None:
-            self.log.debug("Refresh token was empty, will try to pull refresh_token from previous auth_state")
+            self.log.debug(
+                "Refresh token was empty, will try to pull refresh_token from previous auth_state"
+            )
             user = handler.find_user(username)
 
             if user and user.encrypted_auth_state:
-                self.log.debug("encrypted_auth_state was found, will try to decrypt and pull refresh_token from it")
+                self.log.debug(
+                    "encrypted_auth_state was found, will try to decrypt and pull refresh_token from it"
+                )
                 try:
                     encrypted = user.encrypted_auth_state
                     auth_state = await decrypt(encrypted)
@@ -205,8 +211,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             'auth_state': {
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-                'google_user': bodyjs
-            }
+                'google_user': bodyjs,
+            },
         }
 
         if self.admin_google_groups or self.allowed_google_groups:
@@ -226,11 +232,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
             )
 
-        gsuite_administrator_email = "{}@{}".format(self.gsuite_administrator[user_email_domain], user_email_domain)
-        self.log.debug("scopes are %s, user_email_domain is %s", scopes, user_email_domain)
+        gsuite_administrator_email = "{}@{}".format(
+            self.gsuite_administrator[user_email_domain], user_email_domain
+        )
+        self.log.debug(
+            "scopes are %s, user_email_domain is %s", scopes, user_email_domain
+        )
         credentials = service_account.Credentials.from_service_account_file(
-            self.google_service_account_keys[user_email_domain],
-            scopes=scopes
+            self.google_service_account_keys[user_email_domain], scopes=scopes
         )
 
         credentials = credentials.with_subject(gsuite_administrator_email)
@@ -249,14 +258,17 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
             )
 
-        self.log.debug("service_name is %s, service_version is %s", service_name, service_version)
+        self.log.debug(
+            "service_name is %s, service_version is %s", service_name, service_version
+        )
 
         return build(
             serviceName=service_name,
             version=service_version,
             credentials=credentials,
             cache_discovery=False,
-            http=http)
+            http=http,
+        )
 
     async def _google_groups_for_user(self, user_email, credentials, http=None):
         """
@@ -266,28 +278,36 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             service_name='admin',
             service_version='directory_v1',
             credentials=credentials,
-            http=http)
+            http=http,
+        )
 
         results = service.groups().list(userKey=user_email).execute()
-        results = [ g['email'].split('@')[0] for g in results.get('groups', [{'email': None}]) ]
+        results = [
+            g['email'].split('@')[0] for g in results.get('groups', [{'email': None}])
+        ]
         self.log.debug("user_email %s is a member of %s", user_email, results)
         return results
 
     async def _add_google_groups_info(self, user_info, google_groups=None):
-        user_email_domain=user_info['auth_state']['google_user']['hd']
-        user_email=user_info['auth_state']['google_user']['email']
+        user_email_domain = user_info['auth_state']['google_user']['hd']
+        user_email = user_info['auth_state']['google_user']['email']
         if google_groups is None:
             credentials = self._service_client_credentials(
-                    scopes=['%s/auth/admin.directory.group.readonly' % (self.google_api_url)],
-                    user_email_domain=user_email_domain)
+                scopes=[
+                    '%s/auth/admin.directory.group.readonly' % (self.google_api_url)
+                ],
+                user_email_domain=user_email_domain,
+            )
             google_groups = await self._google_groups_for_user(
-                    user_email=user_email,
-                    credentials=credentials)
+                user_email=user_email, credentials=credentials
+            )
         user_info['auth_state']['google_user']['google_groups'] = google_groups
 
         # Check if user is a member of any admin groups.
         if self.admin_google_groups:
-            is_admin = check_user_in_groups(google_groups, self.admin_google_groups[user_email_domain])
+            is_admin = check_user_in_groups(
+                google_groups, self.admin_google_groups[user_email_domain]
+            )
 
         # Check if user is a member of any allowed groups.
         allowed_groups = self.allowed_google_groups
