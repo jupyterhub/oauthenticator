@@ -1,11 +1,10 @@
 """Py.Test fixtures"""
-
 import inspect
 
-from tornado.httpclient import AsyncHTTPClient
-from tornado import ioloop
-from tornado.platform.asyncio import AsyncIOMainLoop
 from pytest import fixture
+from tornado import ioloop
+from tornado.httpclient import AsyncHTTPClient
+from tornado.platform.asyncio import AsyncIOMainLoop
 
 from .mocks import MockAsyncHTTPClient
 

@@ -11,9 +11,13 @@ from jupyterhub.handlers import LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import HTTPRequest
 from tornado.web import HTTPError
-from traitlets import Bool, List, Unicode, default
+from traitlets import Bool
+from traitlets import default
+from traitlets import List
+from traitlets import Unicode
 
-from .oauth2 import OAuthenticator, OAuthLogoutHandler
+from .oauth2 import OAuthenticator
+from .oauth2 import OAuthLogoutHandler
 
 
 class GlobusLogoutHandler(OAuthLogoutHandler):

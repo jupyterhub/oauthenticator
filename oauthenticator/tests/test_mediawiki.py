@@ -3,14 +3,15 @@ import re
 import time
 from unittest.mock import Mock
 
-from pytest import fixture, mark
-from tornado import web
-import requests_mock
-
-from ..mediawiki import MWOAuthenticator, AUTH_REQUEST_COOKIE_NAME
-
-from .mocks import mock_handler
 import jwt
+import requests_mock
+from pytest import fixture
+from pytest import mark
+from tornado import web
+
+from ..mediawiki import AUTH_REQUEST_COOKIE_NAME
+from ..mediawiki import MWOAuthenticator
+from .mocks import mock_handler
 
 MW_URL = 'https://meta.wikimedia.org/w/index.php'
 

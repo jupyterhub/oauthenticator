@@ -1,18 +1,19 @@
-import re
-import json
-from io import BytesIO
-import functools
 import collections
-from urllib.parse import urlparse, parse_qs
-
+import functools
+import json
 import logging
+import re
+from io import BytesIO
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
+
+from pytest import fixture
+from pytest import mark
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
-from pytest import fixture, mark
 
 from ..gitlab import GitLabOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 API_ENDPOINT = '/api/v%s' % (GitLabOAuthenticator().gitlab_api_version)

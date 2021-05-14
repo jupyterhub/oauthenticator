@@ -1,7 +1,6 @@
 """
 Custom Authenticator to use okpy OAuth with JupyterHub
 """
-
 from binascii import a2b_base64
 
 from jupyterhub.auth import LocalAuthenticator

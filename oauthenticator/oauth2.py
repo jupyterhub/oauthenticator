@@ -3,21 +3,29 @@ Base classes for Custom Authenticator to use OAuth with JupyterHub
 
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
-
 import base64
 import json
 import os
 import uuid
-from urllib.parse import quote, urlparse, urlunparse
+from urllib.parse import quote
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 from jupyterhub.auth import Authenticator
-from jupyterhub.handlers import BaseHandler, LogoutHandler
+from jupyterhub.handlers import BaseHandler
+from jupyterhub.handlers import LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient, HTTPClientError
+from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPClientError
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default
+from traitlets import Any
+from traitlets import Bool
+from traitlets import default
+from traitlets import Dict
+from traitlets import List
+from traitlets import Unicode
 
 
 def guess_callback_uri(protocol, host, hub_server_url):

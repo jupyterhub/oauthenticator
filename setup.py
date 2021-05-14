@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-
 # -----------------------------------------------------------------------------
 # Minimal Python version sanity check (from IPython/Jupyterhub)
 # -----------------------------------------------------------------------------
@@ -12,7 +10,8 @@ from __future__ import print_function
 import os
 import sys
 
-from setuptools import find_packages, setup
+from setuptools import find_packages
+from setuptools import setup
 from setuptools.command.bdist_egg import bdist_egg
 
 

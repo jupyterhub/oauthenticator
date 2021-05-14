@@ -1,12 +1,13 @@
 import json
-
 import logging
-from pytest import fixture, mark, raises
+
+from pytest import fixture
+from pytest import mark
+from pytest import raises
 from tornado.web import HTTPError
 from traitlets.config import Config
 
 from ..cilogon import CILogonOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 

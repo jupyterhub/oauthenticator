@@ -1,14 +1,11 @@
 import uuid
-
 from unittest.mock import Mock
 
-from ..oauth2 import (
-    _serialize_state,
-    _deserialize_state,
-    OAuthenticator,
-    OAuthLogoutHandler,
-    STATE_COOKIE_NAME,
-)
+from ..oauth2 import _deserialize_state
+from ..oauth2 import _serialize_state
+from ..oauth2 import OAuthenticator
+from ..oauth2 import OAuthLogoutHandler
+from ..oauth2 import STATE_COOKIE_NAME
 from .mocks import mock_handler
 
 

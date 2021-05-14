@@ -1,7 +1,8 @@
 import os
 from unittest.mock import patch
 
-from pytest import fixture, mark
+from pytest import fixture
+from pytest import mark
 
 from ..auth0 import Auth0OAuthenticator
 from .mocks import setup_oauth_mock

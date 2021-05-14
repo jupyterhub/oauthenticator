@@ -1,8 +1,6 @@
 """
 Authenticator to use GitHub OAuth with JupyterHub
 """
-
-
 import json
 import os
 import warnings
@@ -11,7 +9,9 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Set, Unicode, default
+from traitlets import default
+from traitlets import Set
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
 

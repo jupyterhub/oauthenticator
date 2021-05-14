@@ -1,8 +1,9 @@
-from pytest import fixture, mark
+from pytest import fixture
+from pytest import mark
 
 from ..okpy import OkpyOAuthenticator
-
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(email):

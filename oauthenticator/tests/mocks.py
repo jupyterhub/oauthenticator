@@ -1,20 +1,19 @@
 """Mocking utilities for testing"""
-
-from io import BytesIO
 import json
 import os
 import re
-from unittest.mock import Mock
-from urllib.parse import urlparse, parse_qs
 import uuid
+from io import BytesIO
+from unittest.mock import Mock
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
 
 import pytest
-
+from tornado import web
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPServerRequest
 from tornado.log import app_log
 from tornado.simple_httpclient import SimpleAsyncHTTPClient
-from tornado import web
 
 RegExpType = type(re.compile('.'))
 

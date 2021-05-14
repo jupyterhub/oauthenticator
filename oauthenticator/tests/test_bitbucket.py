@@ -1,12 +1,12 @@
+import logging
 import os
 from unittest.mock import patch
 
-import logging
-from pytest import fixture, mark
+from pytest import fixture
+from pytest import mark
 from traitlets.config import Config
 
 from ..bitbucket import BitbucketOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 

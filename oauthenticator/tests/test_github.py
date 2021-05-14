@@ -1,17 +1,19 @@
-import re
 import functools
 import json
-from io import BytesIO
-
 import logging
-from pytest import fixture, mark
-from urllib.parse import urlparse, parse_qs
-from tornado.httpclient import HTTPRequest, HTTPResponse
+import re
+from io import BytesIO
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
+
+from pytest import fixture
+from pytest import mark
+from tornado.httpclient import HTTPRequest
+from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
 
 from ..github import GitHubOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 

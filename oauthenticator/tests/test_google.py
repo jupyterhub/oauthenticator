@@ -1,15 +1,16 @@
 import hashlib
+import logging
 import re
 from unittest.mock import Mock
 
-import logging
-from pytest import fixture, mark, raises
-from tornado.web import Application, HTTPError
+from pytest import fixture
+from pytest import mark
+from pytest import raises
+from tornado.web import Application
+from tornado.web import HTTPError
 from traitlets.config import Config
 
-
 from ..google import GoogleOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 

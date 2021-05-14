@@ -5,12 +5,12 @@ JupyterHub config file enabling gist-access via environment variables
 2. pass select auth_state to Spawner via environment variables
 3. enable auth_state via `JUPYTERHUB_CRYPT_KEY` and `enable_auth_state = True`
 """
-
 import os
 import warnings
 
-from oauthenticator.github import GitHubOAuthenticator
 from tornado import gen
+
+from oauthenticator.github import GitHubOAuthenticator
 
 # define our OAuthenticator with `.pre_spawn_start`
 # for passing auth_state into the user environment

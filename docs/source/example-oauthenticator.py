@@ -1,15 +1,17 @@
 """
 Example OAuthenticator to use with My Service
 """
-
-
 import json
 
 from jupyterhub.auth import LocalAuthenticator
-from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 from tornado.auth import OAuth2Mixin
+from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPError
+from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
+
+from oauthenticator.oauth2 import OAuthenticator
+from oauthenticator.oauth2 import OAuthLoginHandler
 
 
 class MyServiceMixin(OAuth2Mixin):

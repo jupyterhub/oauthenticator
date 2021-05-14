@@ -1,7 +1,6 @@
 """
 Custom Authenticator to use Azure AD with JupyterHub
 """
-
 import os
 import urllib
 from distutils.version import LooseVersion as V
@@ -9,7 +8,8 @@ from distutils.version import LooseVersion as V
 import jwt
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
-from traitlets import Unicode, default
+from traitlets import default
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
 

@@ -1,16 +1,18 @@
-from io import BytesIO
 import json
+from io import BytesIO
+from unittest.mock import Mock
 from urllib.parse import parse_qs
-from pytest import fixture, raises
+
+from pytest import fixture
+from pytest import raises
 from tornado import web
 from tornado.httpclient import HTTPResponse
 
-from unittest.mock import Mock
-
+from ..globus import GlobusLogoutHandler
+from ..globus import GlobusOAuthenticator
 from ..oauth2 import STATE_COOKIE_NAME
-from ..globus import GlobusOAuthenticator, GlobusLogoutHandler
-
-from .mocks import setup_oauth_mock, mock_handler
+from .mocks import mock_handler
+from .mocks import setup_oauth_mock
 
 
 def user_model(username):

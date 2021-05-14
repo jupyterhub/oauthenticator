@@ -1,4 +1,5 @@
 import os
+
 from oauthenticator.azuread import AzureAdOAuthenticator
 
 c.JupyterHub.authenticator_class = AzureAdOAuthenticator

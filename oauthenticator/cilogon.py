@@ -12,16 +12,20 @@ Caveats:
   Use `c.CILogonOAuthenticator.username_claim = 'email'` to use
   email instead of ePPN as the JupyterHub username.
 """
-
 import os
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Bool, List, Unicode, default, validate
+from traitlets import Bool
+from traitlets import default
+from traitlets import List
+from traitlets import Unicode
+from traitlets import validate
 
-from .oauth2 import OAuthenticator, OAuthLoginHandler
+from .oauth2 import OAuthenticator
+from .oauth2 import OAuthLoginHandler
 
 
 class CILogonLoginHandler(OAuthLoginHandler):
