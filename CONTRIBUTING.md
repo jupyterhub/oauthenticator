@@ -7,15 +7,37 @@ To set up a development environment for this repository:
 
 1. Clone this repository:
 
-        git clone https://github.com/jupyterhub/oauthenticator
+   ```
+   git clone https://github.com/jupyterhub/oauthenticator
+   ```
 
 2. Do a development install with pip:
 
-        cd oauthenticator
-        pip install -e .
+   ```
+   cd oauthenticator
+   pip install -e .
+   ```
 
+3. Install test dependencies
+
+   ```
+   pip install -r test-requirements.txt
+   ```
+
+4. Install pre-commit hooks that checks formatting before commits are made.
+
+   ```
+   pre-commit install
+   ```
+
+5. Run tests
+
+   ```
+   pytest
+   ```
 
 Note: OAuthenticator *is not* accepting pull requests adding new OAuth providers.
 See the documentation for how to use GenericOAuthenticator with your provider
 or to write your own OAuthenticator class for your provider.
+
 Feel free to ask for help [on the Jupyter forum](https://discourse.jupyter.org)
