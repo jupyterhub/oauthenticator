@@ -1,7 +1,7 @@
 -r ./requirements.txt
 .[googlegroups]
 codecov
-flake8
+pre-commit
 pyjwt
 mwoauth >= 0.3.7
 pytest >= 2.8
