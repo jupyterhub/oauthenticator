@@ -7,8 +7,6 @@ import pickle
 import urllib
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.handlers import LogoutHandler
-from jupyterhub.utils import url_path_join
 from tornado.httpclient import HTTPRequest
 from tornado.web import HTTPError
 from traitlets import Bool

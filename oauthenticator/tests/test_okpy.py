@@ -1,5 +1,4 @@
 from pytest import fixture
-from pytest import mark
 
 from ..okpy import OkpyOAuthenticator
 from .mocks import no_code_test

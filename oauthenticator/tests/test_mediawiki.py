@@ -6,7 +6,6 @@ from unittest.mock import Mock
 import jwt
 import requests_mock
 from pytest import fixture
-from pytest import mark
 from tornado import web
 
 from ..mediawiki import AUTH_REQUEST_COOKIE_NAME

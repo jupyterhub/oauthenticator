@@ -1,12 +1,9 @@
 import hashlib
 import logging
 import re
-from unittest.mock import Mock
 
 from pytest import fixture
-from pytest import mark
 from pytest import raises
-from tornado.web import Application
 from tornado.web import HTTPError
 from traitlets.config import Config
 

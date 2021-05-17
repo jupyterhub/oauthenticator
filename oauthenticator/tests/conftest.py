@@ -2,7 +2,6 @@
 import inspect
 
 from pytest import fixture
-from tornado import ioloop
 from tornado.httpclient import AsyncHTTPClient
 from tornado.platform.asyncio import AsyncIOMainLoop
 
