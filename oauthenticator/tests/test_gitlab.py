@@ -8,7 +8,6 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from pytest import fixture
-from pytest import mark
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config

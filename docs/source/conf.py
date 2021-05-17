@@ -10,7 +10,6 @@
 #
 import os
 import sys
-from subprocess import check_call
 
 source = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath('..'))
@@ -123,7 +122,6 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 
-import recommonmark
 from recommonmark.transform import AutoStructify
 
 

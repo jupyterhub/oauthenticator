@@ -2,7 +2,6 @@ import json
 import logging
 
 from pytest import fixture
-from pytest import mark
 from pytest import raises
 from tornado.web import HTTPError
 from traitlets.config import Config

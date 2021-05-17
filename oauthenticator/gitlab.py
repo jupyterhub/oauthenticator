@@ -1,7 +1,6 @@
 """
 Custom Authenticator to use GitLab OAuth with JupyterHub
 """
-import json
 import os
 import warnings
 from urllib.parse import quote
