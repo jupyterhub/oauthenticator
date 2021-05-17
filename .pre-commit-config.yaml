@@ -10,8 +10,8 @@
 #
 repos:
   # Autoformat: Python code
-  - repo: https://github.com/ambv/black
-    rev: stable
+  - repo: https://github.com/psf/black
+    rev: 21.5b1
     hooks:
       - id: black
 
