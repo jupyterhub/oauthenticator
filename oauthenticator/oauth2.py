@@ -3,21 +3,29 @@ Base classes for Custom Authenticator to use OAuth with JupyterHub
 
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
-
 import base64
 import json
 import os
 import uuid
-from urllib.parse import quote, urlparse, urlunparse
+from urllib.parse import quote
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 from jupyterhub.auth import Authenticator
-from jupyterhub.handlers import BaseHandler, LogoutHandler
+from jupyterhub.handlers import BaseHandler
+from jupyterhub.handlers import LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient, HTTPClientError
+from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPClientError
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default
+from traitlets import Any
+from traitlets import Bool
+from traitlets import default
+from traitlets import Dict
+from traitlets import List
+from traitlets import Unicode
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -248,6 +256,7 @@ class OAuthenticator(Authenticator):
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
     )
+
     @default("authorize_url")
     def _authorize_url_default(self):
         return os.environ.get("OAUTH2_AUTHORIZE_URL", "")
@@ -256,6 +265,7 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""The url retrieving an access token at the completion of oauth""",
     )
+
     @default("token_url")
     def _token_url_default(self):
         return os.environ.get("OAUTH2_TOKEN_URL", "")
@@ -264,6 +274,7 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""The url for retrieving user data with a completed access token""",
     )
+
     @default("userdata_url")
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
@@ -379,10 +390,10 @@ class OAuthenticator(Authenticator):
 
     def logout_url(self, base_url):
         return url_path_join(base_url, 'logout')
-  
+
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
-        
+
         Either from config or guess based on the current request.
         """
         if self.oauth_callback_url:

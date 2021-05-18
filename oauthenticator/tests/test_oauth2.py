@@ -1,9 +1,13 @@
 import uuid
-
 from unittest.mock import Mock
 
-from ..oauth2 import _serialize_state, _deserialize_state, OAuthenticator, OAuthLogoutHandler, STATE_COOKIE_NAME
+from ..oauth2 import _deserialize_state
+from ..oauth2 import _serialize_state
+from ..oauth2 import OAuthenticator
+from ..oauth2 import OAuthLogoutHandler
+from ..oauth2 import STATE_COOKIE_NAME
 from .mocks import mock_handler
+
 
 def test_serialize_state():
     state1 = {
@@ -19,9 +23,9 @@ def test_serialize_state():
 async def test_custom_logout(monkeypatch):
     login_url = "http://myhost/login"
     authenticator = OAuthenticator()
-    logout_handler = mock_handler(OAuthLogoutHandler,
-                                  authenticator=authenticator,
-                                  login_url=login_url)
+    logout_handler = mock_handler(
+        OAuthLogoutHandler, authenticator=authenticator, login_url=login_url
+    )
     logout_handler.clear_login_cookie = Mock()
     logout_handler.clear_cookie = Mock()
     logout_handler._jupyterhub_user = Mock()

@@ -3,7 +3,6 @@ Custom Authenticator to use MediaWiki OAuth with JupyterHub
 
 Requires `mwoauth` package.
 """
-
 import json
 import os
 from asyncio import wrap_future
@@ -11,11 +10,15 @@ from concurrent.futures import ThreadPoolExecutor
 
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
-from mwoauth import ConsumerToken, Handshaker
+from mwoauth import ConsumerToken
+from mwoauth import Handshaker
 from mwoauth.tokens import RequestToken
-from traitlets import Any, Integer, Unicode
+from traitlets import Any
+from traitlets import Integer
+from traitlets import Unicode
 
-from oauthenticator import OAuthCallbackHandler, OAuthenticator
+from oauthenticator import OAuthCallbackHandler
+from oauthenticator import OAuthenticator
 
 # Name of cookie used to pass auth token between the oauth
 # login and authentication phase
@@ -24,10 +27,12 @@ AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v2'
 # Helpers to jsonify/de-jsonify request_token
 # It is a named tuple with bytestrings, json.dumps balks
 def jsonify(request_token):
-    return json.dumps([
-        request_token.key,
-        request_token.secret,
-    ])
+    return json.dumps(
+        [
+            request_token.key,
+            request_token.secret,
+        ]
+    )
 
 
 def dejsonify(js):
@@ -42,9 +47,7 @@ class MWLoginHandler(BaseHandler):
             self.authenticator.client_secret,
         )
 
-        handshaker = Handshaker(
-            self.authenticator.mw_index_url, consumer_token
-        )
+        handshaker = Handshaker(self.authenticator.mw_index_url, consumer_token)
 
         redirect, request_token = await wrap_future(
             self.authenticator.executor.submit(handshaker.initiate)
@@ -55,7 +58,8 @@ class MWLoginHandler(BaseHandler):
             jsonify(request_token),
             expires_days=1,
             path=url_path_join(self.base_url, 'hub', 'oauth_callback'),
-            httponly=True)
+            httponly=True,
+        )
         self.log.info('oauth redirect: %r', redirect)
 
         self.redirect(redirect)
@@ -83,10 +87,11 @@ class MWOAuthenticator(OAuthenticator):
     mw_index_url = Unicode(
         os.environ.get('MW_INDEX_URL', 'https://meta.wikimedia.org/w/index.php'),
         config=True,
-        help='Full path to index.php of the MW instance to use to log in'
+        help='Full path to index.php of the MW instance to use to log in',
     )
 
-    executor_threads = Integer(12,
+    executor_threads = Integer(
+        12,
         help="""Number of executor threads.
 
         MediaWiki OAuth requests happen in this thread,
@@ -111,16 +116,18 @@ class MWOAuthenticator(OAuthenticator):
             self.client_secret,
         )
 
-        handshaker = Handshaker(
-            self.mw_index_url, consumer_token
-        )
+        handshaker = Handshaker(self.mw_index_url, consumer_token)
         request_token = dejsonify(handler.get_secure_cookie(AUTH_REQUEST_COOKIE_NAME))
         handler.clear_cookie(AUTH_REQUEST_COOKIE_NAME)
-        access_token = await wrap_future(self.executor.submit(
-            handshaker.complete, request_token, handler.request.query
-        ))
+        access_token = await wrap_future(
+            self.executor.submit(
+                handshaker.complete, request_token, handler.request.query
+            )
+        )
 
-        identity = await wrap_future(self.executor.submit(handshaker.identify, access_token))
+        identity = await wrap_future(
+            self.executor.submit(handshaker.identify, access_token)
+        )
         if identity and 'username' in identity:
             # this shouldn't be necessary anymore,
             # but keep for backward-compatibility
@@ -130,8 +137,7 @@ class MWOAuthenticator(OAuthenticator):
                     'ACCESS_TOKEN_KEY': access_token.key,
                     'ACCESS_TOKEN_SECRET': access_token.secret,
                     'MEDIAWIKI_USER_IDENTITY': identity,
-
-                }
+                },
             }
         else:
             self.log.error("No username found in %s", identity)

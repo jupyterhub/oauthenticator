@@ -1,7 +1,6 @@
-from pytest import fixture, mark
+from pytest import fixture
 
 from ..openshift import OpenShiftOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 

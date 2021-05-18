@@ -28,13 +28,13 @@ jupyterhub_config.py :
   c.JupyterHub.authenticator_class = 'oauthenticator.auth0.Auth0OAuthenticator'
 
 """
-
 import json
 import os
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
-from traitlets import Unicode, default
+from traitlets import default
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
 
@@ -107,7 +107,7 @@ class Auth0OAuthenticator(OAuthenticator):
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'id_token': id_token,
-                'auth0_user': resp_json
+                'auth0_user': resp_json,
             },
         }
 

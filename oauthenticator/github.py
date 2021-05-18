@@ -1,8 +1,6 @@
 """
 Authenticator to use GitHub OAuth with JupyterHub
 """
-
-
 import json
 import os
 import warnings
@@ -11,7 +9,9 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Set, Unicode, default
+from traitlets import default
+from traitlets import Set
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
 
@@ -106,7 +106,10 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
 
-    github_organization_whitelist = Set(help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`", config=True,)
+    github_organization_whitelist = Set(
+        help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`",
+        config=True,
+    )
 
     allowed_organizations = Set(
         config=True, help="Automatically allow members of selected organizations"
@@ -193,7 +196,9 @@ class GitHubOAuthenticator(OAuthenticator):
 
         return userdict
 
-    async def _check_membership_allowed_organizations(self, org, username, access_token):
+    async def _check_membership_allowed_organizations(
+        self, org, username, access_token
+    ):
         headers = _api_headers(access_token)
         # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)
         # With empty scope (even if authenticated by an org member), this

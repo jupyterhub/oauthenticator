@@ -27,7 +27,7 @@ and give it read only access to users and groups.
 5. n the side panel that appears, select the format for your key: **JSON**
 6. Click **Create**. Your new public/private key pair is generated and downloaded to your machine; it serves as the only copy of this key. For information on how to store it securely, see [Managing service account keys](https://cloud.google.com/iam/docs/understanding-service-accounts#managing_service_account_keys).
 7. Click **Close** on the **Private key saved to your computer** dialog, then click **Done** to return to the table of your service accounts.
-8. Locate the newly-created service account in the table. Under `Actions`, click  then **Edit**.
+8. Locate the newly-created service account in the table. Under `Actions`, click then **Edit**.
 9. In the service account details, click 🔽 **Show domain-wide delegation**, then ensure the **Enable G Suite Domain-wide Delegation** checkbox is checked.
 10. If you haven't yet configured your app's OAuth consent screen, you must do so before you can enable domain-wide delegation. Follow the on-screen instructions to configure the OAuth consent screen, then repeat the above steps and re-check the checkbox.
 11. Click **Save** to update the service account, and return to the table of service accounts. A new column, **Domain-wide delegation**, can be seen. Click **View Client ID**, to obtain and make a note of the client ID.

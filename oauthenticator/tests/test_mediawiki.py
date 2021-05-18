@@ -3,14 +3,14 @@ import re
 import time
 from unittest.mock import Mock
 
-from pytest import fixture, mark
-from tornado import web
-import requests_mock
-
-from ..mediawiki import MWOAuthenticator, AUTH_REQUEST_COOKIE_NAME
-
-from .mocks import mock_handler
 import jwt
+import requests_mock
+from pytest import fixture
+from tornado import web
+
+from ..mediawiki import AUTH_REQUEST_COOKIE_NAME
+from ..mediawiki import MWOAuthenticator
+from .mocks import mock_handler
 
 MW_URL = 'https://meta.wikimedia.org/w/index.php'
 
@@ -32,13 +32,15 @@ def mediawiki():
         )
 
     with requests_mock.Mocker() as mock:
-        mock.post('/w/index.php?title=Special%3AOAuth%2Finitiate',
+        mock.post(
+            '/w/index.php?title=Special%3AOAuth%2Finitiate',
             text='oauth_token=key&oauth_token_secret=secret',
         )
-        mock.post('/w/index.php?title=Special%3AOAuth%2Ftoken',
-            text='oauth_token=key&oauth_token_secret=secret')
-        mock.post('/w/index.php?title=Special%3AOAuth%2Fidentify',
-            content=post_token)
+        mock.post(
+            '/w/index.php?title=Special%3AOAuth%2Ftoken',
+            text='oauth_token=key&oauth_token_secret=secret',
+        )
+        mock.post('/w/index.php?title=Special%3AOAuth%2Fidentify', content=post_token)
         yield mock
 
 
@@ -51,15 +53,10 @@ def new_authenticator():
 
 async def test_mediawiki(mediawiki):
     authenticator = new_authenticator()
-    handler = Mock(spec=web.RequestHandler,
-        get_secure_cookie=Mock(
-            return_value=json.dumps(
-                ['key', 'secret']
-            )
-        ),
-        request=Mock(
-            query='oauth_token=key&oauth_verifier=me'
-        )
+    handler = Mock(
+        spec=web.RequestHandler,
+        get_secure_cookie=Mock(return_value=json.dumps(['key', 'secret'])),
+        request=Mock(query='oauth_token=key&oauth_verifier=me'),
     )
     user = await authenticator.authenticate(handler, None)
     assert user['name'] == 'wash'
@@ -73,10 +70,11 @@ async def test_mediawiki(mediawiki):
 async def test_login_redirect(mediawiki):
     authenticator = new_authenticator()
     record = []
-    handler = mock_handler(authenticator.login_handler,
+    handler = mock_handler(
+        authenticator.login_handler,
         'https://hub.example.com/hub/login',
         authenticator=authenticator,
-        )
+    )
     handler.write = lambda buf: record.append(buf)
     await handler.get()
     assert handler.get_status() == 302

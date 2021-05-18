@@ -3,14 +3,16 @@ Custom Authenticator to use OpenShift OAuth with JupyterHub.
 
 Derived from the GitHub OAuth authenticator.
 """
-
 import os
 
 import requests
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Bool, Set, Unicode, default
+from traitlets import Bool
+from traitlets import default
+from traitlets import Set
+from traitlets import Unicode
 
 from oauthenticator.oauth2 import OAuthenticator
 

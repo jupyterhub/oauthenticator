@@ -7,13 +7,15 @@ import pickle
 import urllib
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.handlers import LogoutHandler
-from jupyterhub.utils import url_path_join
 from tornado.httpclient import HTTPRequest
 from tornado.web import HTTPError
-from traitlets import Bool, List, Unicode, default
+from traitlets import Bool
+from traitlets import default
+from traitlets import List
+from traitlets import Unicode
 
-from .oauth2 import OAuthenticator, OAuthLogoutHandler
+from .oauth2 import OAuthenticator
+from .oauth2 import OAuthLogoutHandler
 
 
 class GlobusLogoutHandler(OAuthLogoutHandler):
@@ -62,7 +64,7 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
 
 class GlobusOAuthenticator(OAuthenticator):
     """The Globus OAuthenticator handles both authorization and passing
-    transfer tokens to the spawner. """
+    transfer tokens to the spawner."""
 
     login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
@@ -79,9 +81,7 @@ class GlobusOAuthenticator(OAuthenticator):
     def _revocation_url_default(self):
         return "https://auth.globus.org/v2/oauth2/token/revoke"
 
-    revocation_url = Unicode(
-        help="Globus URL to revoke live tokens."
-    ).tag(config=True)
+    revocation_url = Unicode(help="Globus URL to revoke live tokens.").tag(config=True)
 
     @default("token_url")
     def _token_url_default(self):
@@ -157,7 +157,9 @@ class GlobusOAuthenticator(OAuthenticator):
             code=handler.get_argument("code"),
             grant_type='authorization_code',
         )
-        req = HTTPRequest(self.token_url, method="POST",
+        req = HTTPRequest(
+            self.token_url,
+            method="POST",
             headers=self.get_client_credential_headers(),
             body=urllib.parse.urlencode(params),
         )
@@ -172,26 +174,36 @@ class GlobusOAuthenticator(OAuthenticator):
 
         # Each token should have these attributes. Resource server is optional,
         # and likely won't be present.
-        token_attrs = ['expires_in', 'resource_server', 'scope',
-                       'token_type', 'refresh_token', 'access_token']
+        token_attrs = [
+            'expires_in',
+            'resource_server',
+            'scope',
+            'token_type',
+            'refresh_token',
+            'access_token',
+        ]
         # The Auth Token is a bit special, it comes back at the top level with the
         # id token. The id token has some useful information in it, but nothing that
         # can't be retrieved with an Auth token.
         # Repackage the Auth token into a dict that looks like the other tokens
-        auth_token_dict = {attr_name: token_json.get(attr_name) for attr_name in token_attrs}
+        auth_token_dict = {
+            attr_name: token_json.get(attr_name) for attr_name in token_attrs
+        }
         # Make sure only the essentials make it into tokens. Other items, such as 'state' are
         # not needed after authentication and can be discarded.
-        other_tokens = [{attr_name: token_dict.get(attr_name) for attr_name in token_attrs}
-                        for token_dict in token_json['other_tokens']]
+        other_tokens = [
+            {attr_name: token_dict.get(attr_name) for attr_name in token_attrs}
+            for token_dict in token_json['other_tokens']
+        ]
         tokens = other_tokens + [auth_token_dict]
         # historically, tokens have been organized by resource server for convenience.
         # If multiple scopes are requested from the same resource server, they will be
         # combined into a single token from Globus Auth.
         by_resource_server = {
-                    token_dict['resource_server']: token_dict
-                    for token_dict in tokens
-                    if token_dict['resource_server'] not in self.exclude_tokens
-                }
+            token_dict['resource_server']: token_dict
+            for token_dict in tokens
+            if token_dict['resource_server'] not in self.exclude_tokens
+        }
         return {
             'name': username,
             'auth_state': {
@@ -235,16 +247,21 @@ class GlobusOAuthenticator(OAuthenticator):
             <Additional services>...
         }
         """
-        access_tokens = [token_dict.get('access_token') for token_dict in services.values()]
-        refresh_tokens = [token_dict.get('refresh_token') for token_dict in services.values()]
+        access_tokens = [
+            token_dict.get('access_token') for token_dict in services.values()
+        ]
+        refresh_tokens = [
+            token_dict.get('refresh_token') for token_dict in services.values()
+        ]
         all_tokens = [tok for tok in access_tokens + refresh_tokens if tok is not None]
 
         for token in all_tokens:
-            req = HTTPRequest(self.revocation_url,
-                              method="POST",
-                              headers=self.get_client_credential_headers(),
-                              body=urllib.parse.urlencode({'token': token}),
-                              )
+            req = HTTPRequest(
+                self.revocation_url,
+                method="POST",
+                headers=self.get_client_credential_headers(),
+                body=urllib.parse.urlencode({'token': token}),
+            )
             await self.fetch(req)
 
 

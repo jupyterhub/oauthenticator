@@ -1,18 +1,18 @@
-import re
-import json
-from io import BytesIO
-import functools
 import collections
-from urllib.parse import urlparse, parse_qs
-
+import functools
+import json
 import logging
+import re
+from io import BytesIO
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
+
+from pytest import fixture
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
-from pytest import fixture, mark
 
 from ..gitlab import GitLabOAuthenticator
-
 from .mocks import setup_oauth_mock
 
 API_ENDPOINT = '/api/v%s' % (GitLabOAuthenticator().gitlab_api_version)
@@ -25,28 +25,36 @@ def user_model(username, id=1, is_admin=False):
         'id': id,
     }
     if is_admin:
-      # Some versions of the API do not return the is_admin property
+        # Some versions of the API do not return the is_admin property
         # for non-admin users (See #115).
         user['is_admin'] = True
     return user
 
+
 @fixture
 def gitlab_client(client):
-    setup_oauth_mock(client,
+    setup_oauth_mock(
+        client,
         host='gitlab.com',
         access_token_path='/oauth/token',
         user_path=API_ENDPOINT + '/user',
     )
     return client
 
+
 def mock_api_version(client, version):
     def mock_version_response(request):
-        ret = { 'version': version, 'revision': "f79c1794977" }
-        return HTTPResponse(request, 200,
-                            headers={'Content-Type': 'application/json'},
-                            buffer=BytesIO(json.dumps(ret).encode('utf-8')))
+        ret = {'version': version, 'revision': "f79c1794977"}
+        return HTTPResponse(
+            request,
+            200,
+            headers={'Content-Type': 'application/json'},
+            buffer=BytesIO(json.dumps(ret).encode('utf-8')),
+        )
+
     regex = re.compile(API_ENDPOINT + '/version')
     client.hosts['gitlab.com'].append((regex, mock_version_response))
+
 
 async def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
@@ -62,8 +70,11 @@ async def test_gitlab(gitlab_client):
 
 
 def make_link_header(urlinfo, page):
-    return {'Link': '<{}://{}{}?page={}>;rel="next"'
-                    .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
+    return {
+        'Link': '<{}://{}{}?page={}>;rel="next"'.format(
+            urlinfo.scheme, urlinfo.netloc, urlinfo.path, page
+        )
+    }
 
 
 async def test_allowed_groups(gitlab_client):
@@ -73,20 +84,22 @@ async def test_allowed_groups(gitlab_client):
 
     ## set up fake Gitlab API
 
-    user_groups = collections.OrderedDict({
-        'grif': ['red', 'yellow'],
-        'simmons': ['red', 'yellow'],
-        'caboose': ['blue', 'yellow'],
-        'burns': ['blue', 'yellow'],
-    })
+    user_groups = collections.OrderedDict(
+        {
+            'grif': ['red', 'yellow'],
+            'simmons': ['red', 'yellow'],
+            'caboose': ['blue', 'yellow'],
+            'burns': ['blue', 'yellow'],
+        }
+    )
 
     def group_user_model(username, is_admin=False):
-        return user_model(username,
-                          list(user_groups.keys()).index(username) + 1,
-                          is_admin)
-
+        return user_model(
+            username, list(user_groups.keys()).index(username) + 1, is_admin
+        )
 
     member_regex = re.compile(API_ENDPOINT + r'/groups/(.*)/members/all/(.*)')
+
     def is_member(request):
         urlinfo = urlparse(request.url)
         group, uid = member_regex.match(urlinfo.path).group(1, 2)
@@ -105,8 +118,9 @@ async def test_allowed_groups(gitlab_client):
         else:
             page = parse_qs(urlinfo.query).get('page', ['1'])
             page = int(page[0])
-            return groups_paginated(user, page, urlinfo,
-                                    functools.partial(HTTPResponse, request))
+            return groups_paginated(
+                user, page, urlinfo, functools.partial(HTTPResponse, request)
+            )
 
     def groups_paginated(user, page, urlinfo, response):
         if page < len(user_groups[user]):
@@ -120,12 +134,13 @@ async def test_allowed_groups(gitlab_client):
 
         ret = [{'path': user_groups[user][page - 1]}]
 
-        return response(200, headers=HTTPHeaders(headers),
-                        buffer=BytesIO(json.dumps(ret).encode('utf-8')))
+        return response(
+            200,
+            headers=HTTPHeaders(headers),
+            buffer=BytesIO(json.dumps(ret).encode('utf-8')),
+        )
 
-    client.hosts['gitlab.com'].append(
-        (member_regex, is_member)
-    )
+    client.hosts['gitlab.com'].append((member_regex, is_member))
 
     ## actual tests
 
@@ -184,7 +199,7 @@ async def test_allowed_project_ids(gitlab_client):
                 'avatar_url': 'https://secure.gravatar.com/avatar/382a6b306679b2d97b547bfff3d73242?s=80&d=identicon',
                 'web_url': 'https://gitlab.com/john',
                 'access_level': 10,  # Guest
-                'expires_at': '2030-02-23'
+                'expires_at': '2030-02-23',
             },
             '3588674': {
                 'id': 3588674,
@@ -194,8 +209,8 @@ async def test_allowed_project_ids(gitlab_client):
                 'avatar_url': 'https://secure.gravatar.com/avatar/382a6b306679b2d97b547bfff3d73242?s=80&d=identicon',
                 'web_url': 'https://gitlab.com/harry',
                 'access_level': 30,  # Developer
-                'expires_at': '2030-02-23'
-            }
+                'expires_at': '2030-02-23',
+            },
         }
     }
     john_user_model = user_model('john', 3588673)
@@ -210,18 +225,18 @@ async def test_allowed_project_ids(gitlab_client):
 
         if user_projects.get(project_id) and user_projects.get(project_id).get(uid):
             res = user_projects.get(project_id).get(uid)
-            return HTTPResponse(request=request, code=200,
+            return HTTPResponse(
+                request=request,
+                code=200,
                 buffer=BytesIO(json.dumps(res).encode('utf8')),
                 headers={'Content-Type': 'application/json'},
             )
         else:
-            return HTTPResponse(request=request, code=404,
-                buffer=BytesIO(''.encode('utf8'))
+            return HTTPResponse(
+                request=request, code=404, buffer=BytesIO(''.encode('utf8'))
             )
 
-    client.hosts['gitlab.com'].append(
-        (member_regex, is_member)
-    )
+    client.hosts['gitlab.com'].append((member_regex, is_member))
 
     authenticator.allowed_project_ids = [1231231]
 

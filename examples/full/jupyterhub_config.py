@@ -4,6 +4,7 @@ c = get_config()
 
 c.JupyterHub.log_level = 10
 from oauthenticator.github import LocalGitHubOAuthenticator
+
 c.JupyterHub.authenticator_class = LocalGitHubOAuthenticator
 
 c.LocalGitHubOAuthenticator.create_system_users = True
