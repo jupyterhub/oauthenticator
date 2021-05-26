@@ -6,9 +6,8 @@ JupyterHub config file enabling gist-access via environment variables
 3. enable auth_state via `JUPYTERHUB_CRYPT_KEY` and `enable_auth_state = True`
 """
 import os
+import pprint
 import warnings
-
-from tornado import gen
 
 from oauthenticator.github import GitHubOAuthenticator
 
@@ -17,15 +16,14 @@ from oauthenticator.github import GitHubOAuthenticator
 
 
 class GitHubEnvAuthenticator(GitHubOAuthenticator):
-    @gen.coroutine
-    def pre_spawn_start(self, user, spawner):
-        auth_state = yield user.get_auth_state()
-        import pprint
-
+    async def pre_spawn_start(self, user, spawner):
+        auth_state = await user.get_auth_state()
         pprint.pprint(auth_state)
+
         if not auth_state:
             # user has no auth state
             return
+
         # define some environment variables from auth_state
         spawner.environment['GITHUB_TOKEN'] = auth_state['access_token']
         spawner.environment['GITHUB_USER'] = auth_state['github_user']['login']
