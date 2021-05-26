@@ -58,12 +58,6 @@ class Auth0OAuthenticator(OAuthenticator):
 
     auth0_subdomain = Unicode(config=True)
 
-    return_to_login = Bool(
-        False,
-        help="""Whether or not to return to the hub main page after auth0 logout endpoint redirect.""",
-        config=True,
-    )
-
     logout_redirect_url = Unicode(help="""URL for logging out of Auth0""", config=True)
 
     @default("auth0_subdomain")
