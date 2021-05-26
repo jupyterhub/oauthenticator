@@ -1,11 +1,12 @@
-from pytest import fixture
-from tornado import web
 from unittest.mock import Mock
 
-from ..auth0 import Auth0OAuthenticator
+from pytest import fixture
+from tornado import web
+
 from ..auth0 import Auth0LogoutHandler
-from .mocks import setup_oauth_mock
+from ..auth0 import Auth0OAuthenticator
 from .mocks import mock_handler
+from .mocks import setup_oauth_mock
 
 auth0_subdomain = "jupyterhub-test"
 

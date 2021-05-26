@@ -35,7 +35,6 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
 from traitlets import Unicode
-from traitlets import Bool
 
 from .oauth2 import OAuthenticator
 from .oauth2 import OAuthLogoutHandler
