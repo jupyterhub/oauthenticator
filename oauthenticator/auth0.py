@@ -35,15 +35,36 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
 from traitlets import Unicode
+from traitlets import Bool
 
 from .oauth2 import OAuthenticator
+from .oauth2 import OAuthLogoutHandler
+
+
+class Auth0LogoutHandler(OAuthLogoutHandler):
+    async def render_logout_page(self):
+        if self.authenticator.logout_redirect_url:
+            self.redirect(self.authenticator.logout_redirect_url)
+            return
+
+        super().render_logout_page()
 
 
 class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
 
+    logout_handler = Auth0LogoutHandler
+
     auth0_subdomain = Unicode(config=True)
+
+    return_to_login = Bool(
+        False,
+        help="""Whether or not to return to the hub main page after auth0 logout endpoint redirect.""",
+        config=True,
+    )
+
+    logout_redirect_url = Unicode(help="""URL for logging out of Auth0""", config=True)
 
     @default("auth0_subdomain")
     def _auth0_subdomain_default(self):
@@ -59,6 +80,10 @@ class Auth0OAuthenticator(OAuthenticator):
         config=True,
         help="Userdata username key from returned json with user data login information",
     )
+
+    @default("logout_redirect_url")
+    def _logout_redirect_url_default(self):
+        return os.getenv('LOGOUT_REDIRECT_URL', '')
 
     @default("authorize_url")
     def _authorize_url_default(self):
