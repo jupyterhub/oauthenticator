@@ -76,7 +76,7 @@ class Auth0OAuthenticator(OAuthenticator):
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
-        return os.getenv('LOGOUT_REDIRECT_URL', '')
+        return 'https://%s.auth0.com/v2/logout' % self.auth0_subdomain
 
     @default("authorize_url")
     def _authorize_url_default(self):

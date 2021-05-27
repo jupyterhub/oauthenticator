@@ -54,7 +54,7 @@ async def test_username_key(auth0_client):
 
 
 async def test_custom_logout(monkeypatch):
-    custom_logout_url = 'https://auth0-domain.org/logout'
+    auth0_subdomain = 'auth0-domain.org'
     authenticator = Auth0OAuthenticator()
     logout_handler = mock_handler(Auth0LogoutHandler, authenticator=authenticator)
     monkeypatch.setattr(web.RequestHandler, 'redirect', Mock())
@@ -70,6 +70,7 @@ async def test_custom_logout(monkeypatch):
     assert authenticator.logout_url('http://myhost') == 'http://myhost/logout'
 
     # Check redirection to the custom logout url
-    authenticator.logout_redirect_url = custom_logout_url
+    authenticator.auth0_subdomain = auth0_subdomain
     await logout_handler.get()
+    custom_logout_url = f'https://{auth0_subdomain}.auth0.com/v2/logout'
     logout_handler.redirect.assert_called_with(custom_logout_url)
