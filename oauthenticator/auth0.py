@@ -57,8 +57,6 @@ class Auth0OAuthenticator(OAuthenticator):
 
     auth0_subdomain = Unicode(config=True)
 
-    logout_redirect_url = Unicode(help="""URL for logging out of Auth0""", config=True)
-
     @default("auth0_subdomain")
     def _auth0_subdomain_default(self):
         subdomain = os.getenv("AUTH0_SUBDOMAIN")
