@@ -120,11 +120,6 @@ class GlobusOAuthenticator(OAuthenticator):
     def _globus_local_endpoint_default(self):
         return os.getenv('GLOBUS_LOCAL_ENDPOINT', '')
 
-    logout_redirect_url = Unicode(help="""URL for logging out.""").tag(config=True)
-
-    def _logout_redirect_url_default(self):
-        return os.getenv('LOGOUT_REDIRECT_URL', '')
-
     revoke_tokens_on_logout = Bool(
         help="""Revoke tokens so they cannot be used again. Single-user servers
         MUST be restarted after logout in order to get a fresh working set of

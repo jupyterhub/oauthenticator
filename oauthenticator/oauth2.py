@@ -279,6 +279,13 @@ class OAuthenticator(Authenticator):
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
 
+
+    logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
+
+    @default("logout_redirect_url")
+    def _logout_redirect_url_default(self):
+        return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
+
     scope = List(
         Unicode(),
         config=True,
