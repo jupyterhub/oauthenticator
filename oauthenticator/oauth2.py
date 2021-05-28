@@ -239,12 +239,12 @@ class OAuthLogoutHandler(LogoutHandler):
     async def handle_logout(self):
         self.clear_cookie(STATE_COOKIE_NAME)
 
-    def render_logout_page(self):
+    async def render_logout_page(self):
         if self.authenticator.logout_redirect_url:
             self.redirect(self.authenticator.logout_redirect_url)
             return
 
-        return super().render_logout_page()
+        return await super().render_logout_page()
 
 
 class OAuthenticator(Authenticator):
