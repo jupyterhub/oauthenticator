@@ -54,6 +54,12 @@ class Auth0OAuthenticator(OAuthenticator):
                 % self.__class__.__name__
             )
 
+    username_key = Unicode(
+        os.environ.get("OAUTH2_USERNAME_KEY", "email"),
+        config=True,
+        help="Userdata username key from returned json with user data login information",
+    )
+
     @default("authorize_url")
     def _authorize_url_default(self):
         return "https://%s.auth0.com/authorize" % self.auth0_subdomain
@@ -101,8 +107,15 @@ class Auth0OAuthenticator(OAuthenticator):
         )
         resp_json = await self.fetch(req)
 
+        name = resp_json.get(self.username_key)
+        if not name:
+            self.log.error(
+                "Auth0 user contains no key %s: %s", self.username_key, resp_json
+            )
+            return
+
         return {
-            'name': resp_json["email"],
+            'name': name,
             'auth_state': {
                 'access_token': access_token,
                 'refresh_token': refresh_token,
