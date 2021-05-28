@@ -3,10 +3,10 @@ from unittest.mock import Mock
 from pytest import fixture
 from tornado import web
 
-from ..auth0 import Auth0LogoutHandler
 from ..auth0 import Auth0OAuthenticator
 from .mocks import mock_handler
 from .mocks import setup_oauth_mock
+from ..oauth2 import OAuthLogoutHandler
 
 auth0_subdomain = "jupyterhub-test"
 
@@ -56,7 +56,7 @@ async def test_username_key(auth0_client):
 async def test_custom_logout(monkeypatch):
     auth0_subdomain = 'auth0-domain.org'
     authenticator = Auth0OAuthenticator()
-    logout_handler = mock_handler(Auth0LogoutHandler, authenticator=authenticator)
+    logout_handler = mock_handler(OAuthLogoutHandler, authenticator=authenticator)
     monkeypatch.setattr(web.RequestHandler, 'redirect', Mock())
 
     logout_handler.clear_login_cookie = Mock()
@@ -66,7 +66,7 @@ async def test_custom_logout(monkeypatch):
 
     # Sanity check: Ensure the logout handler and url are set on the hub
     handlers = [handler for _, handler in authenticator.get_handlers(None)]
-    assert any([h == Auth0LogoutHandler for h in handlers])
+    assert any([h == OAuthLogoutHandler for h in handlers])
     assert authenticator.logout_url('http://myhost') == 'http://myhost/logout'
 
     # Check redirection to the custom logout url

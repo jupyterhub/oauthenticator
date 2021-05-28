@@ -37,23 +37,11 @@ from traitlets import default
 from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
-from .oauth2 import OAuthLogoutHandler
-
-
-class Auth0LogoutHandler(OAuthLogoutHandler):
-    async def render_logout_page(self):
-        if self.authenticator.logout_redirect_url:
-            self.redirect(self.authenticator.logout_redirect_url)
-            return
-
-        super().render_logout_page()
 
 
 class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
-
-    logout_handler = Auth0LogoutHandler
 
     auth0_subdomain = Unicode(config=True)
 
