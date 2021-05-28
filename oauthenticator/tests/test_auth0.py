@@ -4,9 +4,9 @@ from pytest import fixture
 from tornado import web
 
 from ..auth0 import Auth0OAuthenticator
+from ..oauth2 import OAuthLogoutHandler
 from .mocks import mock_handler
 from .mocks import setup_oauth_mock
-from ..oauth2 import OAuthLogoutHandler
 
 auth0_subdomain = "jupyterhub-test"
 
