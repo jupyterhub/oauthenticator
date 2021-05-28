@@ -239,6 +239,13 @@ class OAuthLogoutHandler(LogoutHandler):
     async def handle_logout(self):
         self.clear_cookie(STATE_COOKIE_NAME)
 
+    async def render_logout_page(self):
+        if self.authenticator.logout_redirect_url:
+            self.redirect(self.authenticator.logout_redirect_url)
+            return
+
+        return await super().render_logout_page()
+
 
 class OAuthenticator(Authenticator):
     """Base class for OAuthenticators
@@ -278,6 +285,12 @@ class OAuthenticator(Authenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
+
+    logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
+
+    @default("logout_redirect_url")
+    def _logout_redirect_url_default(self):
+        return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
     scope = List(
         Unicode(),
