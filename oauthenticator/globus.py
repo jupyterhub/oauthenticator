@@ -12,6 +12,7 @@ from tornado.web import HTTPError
 from traitlets import Bool
 from traitlets import default
 from traitlets import List
+from traitlets import Set
 from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
@@ -87,6 +88,14 @@ class GlobusOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "https://auth.globus.org/v2/oauth2/token"
 
+    globus_groups_url = Unicode(help="Globus URL to get list of user's Groups.").tag(
+        config=True
+    )
+
+    @default("globus_groups_url")
+    def _globus_groups_url_default(self):
+        return "https://groups.api.globus.org/v2/groups/my_groups"
+
     identity_provider = Unicode(
         help="""Restrict which institution a user
     can use to login (GlobusID, University of Hogwarts, etc.). This should
@@ -103,14 +112,23 @@ class GlobusOAuthenticator(OAuthenticator):
     ).tag(config=True)
 
     def _exclude_tokens_default(self):
-        return ['auth.globus.org']
+        return ['auth.globus.org', 'groups.api.globus.org']
 
     def _scope_default(self):
-        return [
+        scopes = [
             'openid',
             'profile',
             'urn:globus:auth:scope:transfer.api.globus.org:all',
         ]
+        if (
+            self.allowed_globus_groups
+            or self.blocked_globus_groups
+            or self.admin_globus_groups
+        ):
+            scopes.append(
+                'urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships'
+            )
+        return scopes
 
     globus_local_endpoint = Unicode(
         help="""If Jupyterhub is also a Globus
@@ -128,6 +146,24 @@ class GlobusOAuthenticator(OAuthenticator):
 
     def _revoke_tokens_on_logout_default(self):
         return False
+
+    blocked_globus_groups = Set(
+        help="""Automatically block members of defined Globus Groups. Takes precedence
+        over allowed and admin user groups. Groups are specified with their UUIDs. Setting this will
+        add the Globus Groups scope."""
+    ).tag(config=True)
+
+    allowed_globus_groups = Set(
+        help="""Allow members of defined Globus Groups to access JupyterHub. Users in an
+        admin Globus Group are also automatically allowed. Groups are specified with their UUIDs. Setting this will
+        add the Globus Groups scope."""
+    ).tag(config=True)
+
+    admin_globus_groups = Set(
+        help="""Set members of defined Globus Groups as JupyterHub admin users.
+        These users are automatically allowed to login to JupyterHub. Groups are specified with
+        their UUIDs. Setting this will add the Globus Groups scope."""
+    ).tag(config=True)
 
     async def pre_spawn_start(self, user, spawner):
         """Add tokens to the spawner whenever the spawner starts a notebook.
@@ -199,13 +235,69 @@ class GlobusOAuthenticator(OAuthenticator):
             for token_dict in tokens
             if token_dict['resource_server'] not in self.exclude_tokens
         }
-        return {
+
+        user_info = {
             'name': username,
             'auth_state': {
                 'client_id': self.client_id,
                 'tokens': by_resource_server,
             },
         }
+        use_globus_groups = False
+        user_allowed = False
+        if (
+            self.allowed_globus_groups
+            or self.blocked_globus_groups
+            or self.admin_globus_groups
+        ):
+            # If any of these configurations are set, user must be in the allowed or admin Globus Group
+            use_globus_groups = True
+            user_group_ids = set()
+            # Groups user is an admin or manager of
+            user_admin_groups = set()
+            # Get Groups access token, may not be in dict headed to auth state
+            for token_dict in tokens:
+                if token_dict['resource_server'] == 'groups.api.globus.org':
+                    groups_token = token_dict['access_token']
+            # Get list of user's Groups
+            groups_headers = self.get_default_headers()
+            groups_headers['Authorization'] = 'Bearer {}'.format(groups_token)
+            req = HTTPRequest(
+                self.globus_groups_url, method='GET', headers=groups_headers
+            )
+            groups_resp = await self.fetch(req)
+            # Build set of Group IDs
+            for group in groups_resp:
+                user_group_ids.add(group['id'])
+                for membership in group['my_memberships']:
+                    if membership['role'] == 'admin' or membership['role'] == 'manager':
+                        user_admin_groups.add(group['id'])
+            # Check blocked users
+            blocked_groups_membership = user_group_ids & self.blocked_globus_groups
+            if (
+                blocked_groups_membership
+                and
+                # Do not block admins or managers of blocked Groups
+                not (blocked_groups_membership <= user_admin_groups)
+            ):
+                self.log.warning('{} in a blocked Globus Group'.format(username))
+                return None
+            else:
+                if user_group_ids & self.allowed_globus_groups:
+                    user_allowed = True
+                if self.admin_globus_groups:
+                    # Admin users are being managed via Globus Groups
+                    # Default to False
+                    user_info['admin'] = False
+                    if user_group_ids & self.admin_globus_groups:
+                        # User is an admin, admins allowed by default
+                        user_allowed = user_info['admin'] = True
+
+        if user_allowed or not use_globus_groups:
+            return user_info
+        else:
+            self.log.warning('{} not in an allowed Globus Group'.format(username))
+            return None
 
     def get_username(self, user_data):
         # It's possible for identity provider domains to be namespaced

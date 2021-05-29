@@ -56,10 +56,46 @@ def mock_globus_token_response():
                 'token_type': 'Bearer',
                 'state': '5a5929fa3c0210042c2fbb455e1e39d0',
                 'scope': 'urn:globus:auth:scope:transfer.api.globus.org:all',
-            }
+            },
+            {
+                'access_token': '309f9e6367d1ffffae0da625cb87b9ac543ee72a',
+                'expires_in': 172800,
+                'resource_server': 'groups.api.globus.org',
+                'token_type': 'Bearer',
+                'scope': 'urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships',
+            },
         ],
         'scope': 'profile openid',
     }
+
+
+def get_groups_request_handler(request):
+    mock_globus_groups_response = [
+        {
+            'id': '21c6bc5d-fc12-4f60-b999-76766cd596c2',
+            'my_memberships': [{'role': 'manager'}],
+        },
+        {
+            'id': '915dcd61-c842-4ea4-97c6-57396b936016',
+            'my_memberships': [{'role': 'member'}],
+        },
+        {
+            'id': 'd11abe71-5132-4c04-a4ad-50926885dc8c',
+            'my_memberships': [
+                {
+                    'role': 'member',
+                }
+            ],
+        },
+    ]
+    assert request.method == 'GET', request.method
+    resp = BytesIO(json.dumps(mock_globus_groups_response).encode('utf-8'))
+    return HTTPResponse(
+        request=request,
+        code=200,
+        headers={'Content-Type': 'application/json'},
+        buffer=resp,
+    )
 
 
 @fixture
@@ -123,6 +159,12 @@ def globus_client(client, mock_globus_token_response):
     )
     set_extended_token_response(
         client, 'auth.globus.org', '/v2/oauth2/token', mock_globus_token_response
+    )
+    client.add_host(
+        'groups.api.globus.org',
+        [
+            ('/v2/groups/my_groups', get_groups_request_handler),
+        ],
     )
     return client
 
@@ -198,7 +240,11 @@ async def test_namespaced_domain(globus_client):
 
 async def test_token_exclusion(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.exclude_tokens = ['transfer.api.globus.org', 'auth.globus.org']
+    authenticator.exclude_tokens = [
+        'transfer.api.globus.org',
+        'auth.globus.org',
+        'groups.api.globus.org',
+    ]
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     data = await authenticator.authenticate(handler)
     assert data['name'] == 'wash'
@@ -286,3 +332,86 @@ async def test_logout_revokes_tokens(globus_client, monkeypatch, mock_globus_use
     await logout_handler.get()
     auth_state = await mock_globus_user.get_auth_state()
     assert auth_state == {'tokens': {}}
+
+
+async def test_group_scope_added(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    assert authenticator.scope == [
+        'openid',
+        'profile',
+        'urn:globus:auth:scope:transfer.api.globus.org:all',
+        'urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships',
+    ]
+
+
+async def test_user_in_allowed_group(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+
+
+async def test_user_not_allowed(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data == None
+
+
+async def test_user_is_admin(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.admin_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+    assert data['admin'] == True
+
+
+async def test_user_allowed_not_admin(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.admin_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+    assert data['admin'] == False
+
+
+async def test_user_blocked_globus_group_member(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.blocked_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data == None
+
+
+async def test_user_not_blocked_globus_group_admin(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c'})
+    authenticator.blocked_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+
+
+async def test_user_blocked_globus_group_precedent(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c'})
+    authenticator.blocked_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data == None
+
+
+async def test_user_blocked_globus_group_membership_precedent(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c'})
+    authenticator.blocked_globus_groups = set(
+        {'21c6bc5d-fc12-4f60-b999-76766cd596c2', '915dcd61-c842-4ea4-97c6-57396b936016'}
+    )
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    data = await authenticator.authenticate(handler)
+    assert data == None
