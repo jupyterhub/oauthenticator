@@ -399,6 +399,18 @@ to login, and will continue to be tied to that identity after changing this
 setting. Create a new Globus App with your preferred 'Required Identity Provider'
 to avoid this problem.
 
+Username from Email Address
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, the JupyterHub ``username`` will be taken from the OIDC
+``preferred_username`` claim. In many cases, this is the same as the email
+address. However, some identity providers use an opaque string, e.g.,
+``046f34a240f0615e01420b3ff4350922@ucsd.edu``. You may set
+``username_from_email = True`` to get it from the user's email address. Setting
+this will automatically add ``email`` to the list of scopes. When
+``identity_provider`` is set, the email address domain must still match the
+identity provider domain.
+
 Globus Scopes and Transfer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
