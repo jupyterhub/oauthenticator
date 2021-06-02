@@ -120,11 +120,7 @@ class GlobusOAuthenticator(OAuthenticator):
             'profile',
             'urn:globus:auth:scope:transfer.api.globus.org:all',
         ]
-        if (
-            self.allowed_globus_groups
-            or self.blocked_globus_groups
-            or self.admin_globus_groups
-        ):
+        if self.allowed_globus_groups or self.admin_globus_groups:
             scopes.append(
                 'urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships'
             )
@@ -146,12 +142,6 @@ class GlobusOAuthenticator(OAuthenticator):
 
     def _revoke_tokens_on_logout_default(self):
         return False
-
-    blocked_globus_groups = Set(
-        help="""Automatically block members of defined Globus Groups. Takes precedence
-        over allowed and admin user groups. Groups are specified with their UUIDs. Setting this will
-        add the Globus Groups scope."""
-    ).tag(config=True)
 
     allowed_globus_groups = Set(
         help="""Allow members of defined Globus Groups to access JupyterHub. Users in an
@@ -245,11 +235,7 @@ class GlobusOAuthenticator(OAuthenticator):
         }
         use_globus_groups = False
         user_allowed = False
-        if (
-            self.allowed_globus_groups
-            or self.blocked_globus_groups
-            or self.admin_globus_groups
-        ):
+        if self.allowed_globus_groups or self.admin_globus_groups:
             # If any of these configurations are set, user must be in the allowed or admin Globus Group
             use_globus_groups = True
             user_group_ids = set()
@@ -269,29 +255,15 @@ class GlobusOAuthenticator(OAuthenticator):
             # Build set of Group IDs
             for group in groups_resp:
                 user_group_ids.add(group['id'])
-                for membership in group['my_memberships']:
-                    if membership['role'] == 'admin' or membership['role'] == 'manager':
-                        user_admin_groups.add(group['id'])
-            # Check blocked users
-            blocked_groups_membership = user_group_ids & self.blocked_globus_groups
-            if (
-                blocked_groups_membership
-                and
-                # Do not block admins or managers of blocked Groups
-                not (blocked_groups_membership <= user_admin_groups)
-            ):
-                self.log.warning('{} in a blocked Globus Group'.format(username))
-                return None
-            else:
-                if user_group_ids & self.allowed_globus_groups:
-                    user_allowed = True
-                if self.admin_globus_groups:
-                    # Admin users are being managed via Globus Groups
-                    # Default to False
-                    user_info['admin'] = False
-                    if user_group_ids & self.admin_globus_groups:
-                        # User is an admin, admins allowed by default
-                        user_allowed = user_info['admin'] = True
+            if user_group_ids & self.allowed_globus_groups:
+                user_allowed = True
+            if self.admin_globus_groups:
+                # Admin users are being managed via Globus Groups
+                # Default to False
+                user_info['admin'] = False
+                if user_group_ids & self.admin_globus_groups:
+                    # User is an admin, admins allowed by default
+                    user_allowed = user_info['admin'] = True
 
         if user_allowed or not use_globus_groups:
             return user_info

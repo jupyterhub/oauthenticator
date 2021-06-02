@@ -446,14 +446,14 @@ tokens.
 Group Management
 ~~~~~~~~~~~~~~~
 
-Allowed, blocked, and admin users can be managed through `Globus
+Allowed and admin users can be managed through `Globus
 Groups <https://docs.globus.org/how-to/managing-groups/>`__.  Globus
 Groups are identified using a UUID and multiple groups can be used for
 each of these configuration settings. The lets JuptyerHub admininstators
 choose whether to manage memership in the groups, or use groups
 managed by others. For example, researchers could manage groups of
-collaborators, or a security could add users to blocked groups. Each
-of these settings can contain multiple Globus Groups.
+collaborators. Each of these settings can contain multiple Globus
+Groups.
 
 .. code:: python
 
@@ -461,34 +461,20 @@ of these settings can contain multiple Globus Groups.
    c.GlobusOAuthenticator.allowed_globus_groups = set
    authenticator.allowed_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c',
                                                                            '21c6bc5d-fc12-4f60-b999-76766cd596c2'})
-   # Blocked Groups
-   authenticator.blocked_globus_groups = set({'915dcd61-c842-4ea4-97c6-57396b936016'})
    # Admin users
    authenticator.admin_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
 
 When any of these are set, the Globus Groups API scope will be
-included in the default list of scopes.
+included in the default list of scopes. When
+``c.GlobusOAuthenticator.admin_globus_groups`` is set, only members of
+those groups will be JupyterHub admins.
 
-The blocked users Groups have precedence, i.e., having a ``member``
-role in a blocked Group will deny access to the hub, regardless of
-membership in an allowed or admin Group. Also, users may still be
-blocked using their ``username`` in
-``c.Authenticator.blocked_users``. This ensures that system
-administrators can still block users at the system level. The
-exception to this is for managers or administrators of the blocked
-Globus Groups: if the JupyterHub user has either a ``manager`` or 
-``admin`` role on the blocked Groups, they will allowed.
+To block users, the ```c.Authenticator.blocked_users``
+<https://jupyterhub.readthedocs.io/en/stable/api/auth.html#jupyterhub.auth.Authenticator.blocked_users>`__
+configuration can be used. Or, users can be removed from the allowed
+Globus Groups, and the Group set require approval, so the user cannot
+rejoin it without action by an administrator.
 
-For example, Jordan and Sean are members of the allowed users
-groups ``21c6bc5d-fc12-4f60-b999-76766cd596c2`` configured
-above. Jordan is also a member of the blocked users group
-``915dcd61-c842-4ea4-97c6-57396b936016``, with a ``manager``
-role. Jordan adds Sean as a member to
-``915dcd61-c842-4ea4-97c6-57396b936016``. With this configuration,
-Jordan may still log in, but Sean will be blocked.
-
-When ``c.GlobusOAuthenticator.admin_globus_groups`` is set, only
-members of those groups will be JupyterHub admins. 
 
 .. _moodle-setup-label:
 
