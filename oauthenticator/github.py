@@ -155,6 +155,8 @@ class GitHubOAuthenticator(OAuthenticator):
         else:
             raise web.HTTPError(500, "Bad response: {}".format(resp_json))
 
+        scopes = resp_json['scope'].split(',')
+
         # Determine who the logged-in user is
         req = HTTPRequest(
             self.github_api + "/user",
@@ -195,7 +197,9 @@ class GitHubOAuthenticator(OAuthenticator):
         # If a public email is not available, an extra API call has to be made
         # to a secondary endpoint using the access token.
         # see https://github.com/jupyterhub/oauthenticator/issues/438
-        if not auth_state['github_user']['email']:
+        if not auth_state['github_user']['email'] and (
+            'user' in scopes or 'user:email' in scopes
+        ):
             req = HTTPRequest(
                 self.github_api + "/user/emails",
                 method="GET",
