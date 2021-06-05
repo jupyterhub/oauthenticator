@@ -195,8 +195,9 @@ class GitHubOAuthenticator(OAuthenticator):
         # store the whole user model in auth_state.github_user
         auth_state['github_user'] = resp_json
         # If a public email is not available, an extra API call has to be made
-        # to a secondary endpoint using the access token.
-        # see https://github.com/jupyterhub/oauthenticator/issues/438
+        # to a /user/emails using the access token to retrieve emails. The
+        # scopes relevant for this are checked based on this documentation:
+        # https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#normalized-scopes
         if not auth_state['github_user']['email'] and (
             'user' in scopes or 'user:email' in scopes
         ):
