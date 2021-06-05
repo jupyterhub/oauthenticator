@@ -7,6 +7,7 @@ import warnings
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado import web
+from tornado.httpclient import HTTPClientError
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
 from traitlets import default
@@ -193,17 +194,20 @@ class GitHubOAuthenticator(OAuthenticator):
         auth_state['github_user'] = resp_json
         # To retrieve emails an extra call has to be made to a secondary endpoint
         # using the access token. see https://github.com/jupyterhub/oauthenticator/issues/438
-        if 'user:email' in self.scope:
-            req = HTTPRequest(
-                      self.github_api + "/user/emails",
-                      method="GET",
-                      headers=_api_headers(access_token),
-                      validate_cert=self.validate_server_cert,
-                 )
+        req = HTTPRequest(
+            self.github_api + "/user/emails",
+            method="GET",
+            headers=_api_headers(access_token),
+            validate_cert=self.validate_server_cert,
+        )
+        try:
             resp_json = await self.fetch(req, "fetching user emails")
+        except HTTPClientError:
+            pass
+        else:
             for val in resp_json:
-              if val["primary"]:
-                  auth_state['github_user']['email'] = val['email']
+                if val["primary"]:
+                    auth_state['github_user']['email'] = val['email']
 
         return userdict
 
