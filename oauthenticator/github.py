@@ -192,22 +192,24 @@ class GitHubOAuthenticator(OAuthenticator):
         auth_state['access_token'] = access_token
         # store the whole user model in auth_state.github_user
         auth_state['github_user'] = resp_json
-        # To retrieve emails an extra call has to be made to a secondary endpoint
-        # using the access token. see https://github.com/jupyterhub/oauthenticator/issues/438
-        req = HTTPRequest(
-            self.github_api + "/user/emails",
-            method="GET",
-            headers=_api_headers(access_token),
-            validate_cert=self.validate_server_cert,
-        )
-        try:
-            resp_json = await self.fetch(req, "fetching user emails")
-        except HTTPClientError:
-            pass
-        else:
-            for val in resp_json:
-                if val["primary"]:
-                    auth_state['github_user']['email'] = val['email']
+        # If a public email is not available, an extra API call has to be made
+        # to a secondary endpoint using the access token.
+        # see https://github.com/jupyterhub/oauthenticator/issues/438
+        if not auth_state['github_user']['email']:
+            req = HTTPRequest(
+                self.github_api + "/user/emails",
+                method="GET",
+                headers=_api_headers(access_token),
+                validate_cert=self.validate_server_cert,
+            )
+            try:
+                resp_json = await self.fetch(req, "fetching user emails")
+            except HTTPClientError:
+                pass
+            else:
+                for val in resp_json:
+                    if val["primary"]:
+                        auth_state['github_user']['email'] = val['email']
 
         return userdict
 
