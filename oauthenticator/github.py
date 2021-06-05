@@ -7,7 +7,6 @@ import warnings
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado import web
-from tornado.httpclient import HTTPClientError
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
 from traitlets import default
@@ -155,7 +154,7 @@ class GitHubOAuthenticator(OAuthenticator):
         else:
             raise web.HTTPError(500, "Bad response: {}".format(resp_json))
 
-        scopes = resp_json['scope'].split(',')
+        granted_scopes = resp_json['scope'].split(',')
 
         # Determine who the logged-in user is
         req = HTTPRequest(
@@ -199,7 +198,7 @@ class GitHubOAuthenticator(OAuthenticator):
         # scopes relevant for this are checked based on this documentation:
         # https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#normalized-scopes
         if not auth_state['github_user']['email'] and (
-            'user' in scopes or 'user:email' in scopes
+            'user' in granted_scopes or 'user:email' in granted_scopes
         ):
             req = HTTPRequest(
                 self.github_api + "/user/emails",
@@ -207,14 +206,10 @@ class GitHubOAuthenticator(OAuthenticator):
                 headers=_api_headers(access_token),
                 validate_cert=self.validate_server_cert,
             )
-            try:
-                resp_json = await self.fetch(req, "fetching user emails")
-            except HTTPClientError:
-                pass
-            else:
-                for val in resp_json:
-                    if val["primary"]:
-                        auth_state['github_user']['email'] = val['email']
+            resp_json = await self.fetch(req, "fetching user emails")
+            for val in resp_json:
+                if val["primary"]:
+                    auth_state['github_user']['email'] = val['email']
 
         return userdict
 
