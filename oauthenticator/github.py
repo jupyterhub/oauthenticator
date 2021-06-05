@@ -154,7 +154,9 @@ class GitHubOAuthenticator(OAuthenticator):
         else:
             raise web.HTTPError(500, "Bad response: {}".format(resp_json))
 
-        granted_scopes = resp_json['scope'].split(',')
+        granted_scopes = []
+        if resp_json.get("scope"):
+            granted_scopes = resp_json["scope"].split(",")
 
         # Determine who the logged-in user is
         req = HTTPRequest(
