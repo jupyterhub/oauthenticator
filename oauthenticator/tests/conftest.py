@@ -1,11 +1,9 @@
 """Py.Test fixtures"""
-
 import inspect
 
-from tornado.httpclient import AsyncHTTPClient
-from tornado import ioloop
-from tornado.platform.asyncio import AsyncIOMainLoop
 from pytest import fixture
+from tornado.httpclient import AsyncHTTPClient
+from tornado.platform.asyncio import AsyncIOMainLoop
 
 from .mocks import MockAsyncHTTPClient
 
@@ -37,7 +35,7 @@ def client(io_loop, request):
     """Return mocked AsyncHTTPClient"""
     before = AsyncHTTPClient.configured_class()
     AsyncHTTPClient.configure(MockAsyncHTTPClient)
-    request.addfinalizer(lambda : AsyncHTTPClient.configure(before))
+    request.addfinalizer(lambda: AsyncHTTPClient.configure(before))
     c = AsyncHTTPClient()
     assert isinstance(c, MockAsyncHTTPClient)
     return c

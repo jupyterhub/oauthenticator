@@ -1,21 +1,15 @@
 """
 Custom Authenticator to use Bitbucket OAuth with JupyterHub
 """
-
-import json
 import urllib
 
-from tornado.auth import OAuth2Mixin
-from tornado import web
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
 from jupyterhub.auth import LocalAuthenticator
+from tornado.httpclient import HTTPRequest
+from tornado.httputil import url_concat
+from traitlets import default
+from traitlets import Set
 
-from traitlets import Set, default, observe
-
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator
 
 
 def _api_headers(access_token):
@@ -28,13 +22,10 @@ def _api_headers(access_token):
 
 class BitbucketOAuthenticator(OAuthenticator):
 
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "team_whitelist": ("allowed_teams", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     login_service = "Bitbucket"
     client_id_env = 'BITBUCKET_CLIENT_ID'
@@ -48,12 +39,14 @@ class BitbucketOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "https://bitbucket.org/site/oauth2/access_token"
 
-    team_whitelist = Set(help="Deprecated, use `BitbucketOAuthenticator.allowed_teams`", config=True,)
+    team_whitelist = Set(
+        help="Deprecated, use `BitbucketOAuthenticator.allowed_teams`",
+        config=True,
+    )
 
     allowed_teams = Set(
         config=True, help="Automatically allow members of selected teams"
     )
-
 
     headers = {
         "Accept": "application/json",
@@ -63,8 +56,6 @@ class BitbucketOAuthenticator(OAuthenticator):
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
 
         params = dict(
             client_id=self.client_id,
@@ -86,8 +77,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             headers=bb_header,
         )
 
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
 
         access_token = resp_json['access_token']
 
@@ -97,15 +87,16 @@ class BitbucketOAuthenticator(OAuthenticator):
             method="GET",
             headers=_api_headers(access_token),
         )
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
 
         username = resp_json["username"]
 
         # Check if user is a member of any allowed teams.
         # This check is performed here, as the check requires `access_token`.
         if self.allowed_teams:
-            user_in_team = await self._check_membership_allowed_teams(username, access_token)
+            user_in_team = await self._check_membership_allowed_teams(
+                username, access_token
+            )
             if not user_in_team:
                 self.log.warning("%s not in team allowed list of users", username)
                 return None
@@ -116,7 +107,6 @@ class BitbucketOAuthenticator(OAuthenticator):
         }
 
     async def _check_membership_allowed_teams(self, username, access_token):
-        http_client = AsyncHTTPClient()
 
         headers = _api_headers(access_token)
         # We verify the team membership by calling teams endpoint.
@@ -125,8 +115,7 @@ class BitbucketOAuthenticator(OAuthenticator):
         )
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
-            resp = await http_client.fetch(req)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+            resp_json = await self.fetch(req)
             next_page = resp_json.get('next', None)
 
             user_teams = set([entry["username"] for entry in resp_json["values"]])

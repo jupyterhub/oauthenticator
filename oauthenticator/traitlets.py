@@ -1,5 +1,6 @@
 from traitlets import TraitType
 
+
 class Callable(TraitType):
     """
     A trait which is callable.

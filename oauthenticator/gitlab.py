@@ -1,27 +1,20 @@
 """
 Custom Authenticator to use GitLab OAuth with JupyterHub
 """
-
-
-import json
 import os
-import re
-import sys
 import warnings
 from urllib.parse import quote
 
-from tornado.auth import OAuth2Mixin
-from tornado import web
-
-from tornado.escape import url_escape
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
 from jupyterhub.auth import LocalAuthenticator
+from tornado.escape import url_escape
+from tornado.httpclient import HTTPRequest
+from tornado.httputil import url_concat
+from traitlets import CUnicode
+from traitlets import default
+from traitlets import Set
+from traitlets import Unicode
 
-from traitlets import Set, CUnicode, Unicode, default, observe
-
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator
 
 
 def _api_headers(access_token):
@@ -37,14 +30,11 @@ class GitLabOAuthenticator(OAuthenticator):
     # set scopes via config, e.g.
     # c.GitLabOAuthenticator.scope = ['read_user']
 
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
-        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0")
+        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     login_service = "GitLab"
 
@@ -102,13 +92,19 @@ class GitLabOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "%s/oauth/access_token" % self.gitlab_url
 
-    gitlab_group_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`", config=True,)
+    gitlab_group_whitelist = Set(
+        help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
+        config=True,
+    )
 
     allowed_gitlab_groups = Set(
         config=True, help="Automatically allow members of selected groups"
     )
 
-    gitlab_project_id_whitelist = Set(help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`", config=True,)
+    gitlab_project_id_whitelist = Set(
+        help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`",
+        config=True,
+    )
 
     allowed_project_ids = Set(
         config=True,
@@ -119,8 +115,6 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
 
         # Exchange the OAuth code for a GitLab Access Token
         #
@@ -147,9 +141,7 @@ class GitLabOAuthenticator(OAuthenticator):
             body='',  # Body is required for a POST...
         )
 
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-
+        resp_json = await self.fetch(req, label="getting access token")
         access_token = resp_json['access_token']
 
         # memoize gitlab version for class lifetime
@@ -164,8 +156,7 @@ class GitLabOAuthenticator(OAuthenticator):
             validate_cert=validate_server_cert,
             headers=_api_headers(access_token),
         )
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req, label="getting gitlab user")
 
         username = resp_json["username"]
         user_id = resp_json["id"]
@@ -178,7 +169,9 @@ class GitLabOAuthenticator(OAuthenticator):
 
         if self.allowed_gitlab_groups:
             is_group_specified = True
-            user_in_group = await self._check_membership_allowed_groups(user_id, access_token)
+            user_in_group = await self._check_membership_allowed_groups(
+                user_id, access_token
+            )
 
         # We skip project_id check if user is in allowed group.
         if self.allowed_project_ids and not user_in_group:
@@ -210,14 +203,12 @@ class GitLabOAuthenticator(OAuthenticator):
             headers=_api_headers(access_token),
             validate_cert=self.validate_server_cert,
         )
-        resp = await AsyncHTTPClient().fetch(req, raise_error=True)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
         version_strings = resp_json['version'].split('-')[0].split('.')[:3]
         version_ints = list(map(int, version_strings))
         return version_ints
 
     async def _check_membership_allowed_groups(self, user_id, access_token):
-        http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the allowed list
         for group in map(url_escape, self.allowed_gitlab_groups):
@@ -228,13 +219,12 @@ class GitLabOAuthenticator(OAuthenticator):
                 user_id,
             )
             req = HTTPRequest(url, method="GET", headers=headers)
-            resp = await http_client.fetch(req, raise_error=False)
+            resp = await self.fetch(req, raise_error=False, parse_json=False)
             if resp.code == 200:
                 return True  # user _is_ in group
         return False
 
     async def _check_membership_allowed_project_ids(self, user_id, access_token):
-        http_client = AsyncHTTPClient()
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the allowed list
         for project in self.allowed_project_ids:
@@ -245,15 +235,13 @@ class GitLabOAuthenticator(OAuthenticator):
                 user_id,
             )
             req = HTTPRequest(url, method="GET", headers=headers)
-            resp = await http_client.fetch(req, raise_error=False)
-
-            if resp.body:
-                resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+            resp_json = await self.fetch(req, raise_error=False)
+            if resp_json:
                 access_level = resp_json.get('access_level', 0)
 
                 # We only allow access level Developer and above
                 # Reference: https://docs.gitlab.com/ee/api/members.html
-                if resp.code == 200 and access_level >= 30:
+                if access_level >= 30:
                     return True
         return False
 

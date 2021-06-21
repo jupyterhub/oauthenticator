@@ -1,26 +1,19 @@
 """
 Authenticator to use GitHub OAuth with JupyterHub
 """
-
-
 import json
 import os
-import re
-import string
 import warnings
 
-from tornado.auth import OAuth2Mixin
-from tornado import web
-
-from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
-
 from jupyterhub.auth import LocalAuthenticator
+from tornado import web
+from tornado.httpclient import HTTPRequest
+from tornado.httputil import url_concat
+from traitlets import default
+from traitlets import Set
+from traitlets import Unicode
 
-from traitlets import List, Set, Unicode, default, observe
-
-from .common import next_page_from_links
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator
 
 
 def _api_headers(access_token):
@@ -37,13 +30,10 @@ class GitHubOAuthenticator(OAuthenticator):
     # set scopes via config, e.g.
     # c.GitHubOAuthenticator.scope = ['read:org']
 
-    _deprecated_aliases = {
+    _deprecated_oauth_aliases = {
         "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
     }
-
-    @observe(*list(_deprecated_aliases))
-    def _deprecated_trait(self, change):
-        super()._deprecated_trait(change)
 
     login_service = "GitHub"
 
@@ -116,7 +106,10 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
 
-    github_organization_whitelist = Set(help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`", config=True,)
+    github_organization_whitelist = Set(
+        help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`",
+        config=True,
+    )
 
     allowed_organizations = Set(
         config=True, help="Automatically allow members of selected organizations"
@@ -127,8 +120,6 @@ class GitHubOAuthenticator(OAuthenticator):
         receive it.
         """
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
 
         # Exchange the OAuth code for a GitHub Access Token
         #
@@ -149,30 +140,28 @@ class GitHubOAuthenticator(OAuthenticator):
             validate_cert=self.validate_server_cert,
         )
 
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
 
         if 'access_token' in resp_json:
             access_token = resp_json['access_token']
         elif 'error_description' in resp_json:
-            raise HTTPError(
+            raise web.HTTPError(
                 403,
                 "An access token was not returned: {}".format(
                     resp_json['error_description']
                 ),
             )
         else:
-            raise HTTPError(500, "Bad response: {}".format(resp))
+            raise web.HTTPError(500, "Bad response: {}".format(resp_json))
 
-        # Determine who the logged in user is
+        # Determine who the logged-in user is
         req = HTTPRequest(
             self.github_api + "/user",
             method="GET",
             headers=_api_headers(access_token),
             validate_cert=self.validate_server_cert,
         )
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req, "fetching user info")
 
         username = resp_json["login"]
         # username is now the GitHub userid.
@@ -207,8 +196,9 @@ class GitHubOAuthenticator(OAuthenticator):
 
         return userdict
 
-    async def _check_membership_allowed_organizations(self, org, username, access_token):
-        http_client = AsyncHTTPClient()
+    async def _check_membership_allowed_organizations(
+        self, org, username, access_token
+    ):
         headers = _api_headers(access_token)
         # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)
         # With empty scope (even if authenticated by an org member), this
@@ -228,8 +218,7 @@ class GitHubOAuthenticator(OAuthenticator):
         self.log.debug(
             "Checking GitHub organization membership: %s in %s?", username, org
         )
-        resp = await http_client.fetch(req, raise_error=False)
-        print(resp)
+        resp = await self.fetch(req, raise_error=False, parse_json=False)
         if resp.code == 204:
             self.log.info("Allowing %s as member of %s", username, org)
             return True

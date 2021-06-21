@@ -7,6 +7,7 @@ release on PyPI. The PyPI release is done automatically by TravisCI when a tag
 is pushed.
 
 For you to follow along according to these instructions, you need:
+
 - To have push rights to the [oauthenticator GitHub
   repository](https://github.com/jupyterhub/oauthenticator).
 
@@ -28,7 +29,7 @@ For you to follow along according to these instructions, you need:
    [choldgraf/github-activity](https://github.com/choldgraf/github-activity)
    utility.
 
-1. Set the `version_info` variable in [_version.py](oauthenticator/_version.py)
+1. Set the `version_info` variable in [\_version.py](oauthenticator/_version.py)
    appropriately and make a commit.
 
    ```
@@ -38,8 +39,9 @@ For you to follow along according to these instructions, you need:
    ```
 
 1. Reset the `version_info` variable in
-   [_version.py](oauthenticator/_version.py) appropriately with an incremented
+   [\_version.py](oauthenticator/_version.py) appropriately with an incremented
    patch version and a `dev` element, then make a commit.
+
    ```
    git add oauthenticator/_version.py
    git commit -m "back to dev"

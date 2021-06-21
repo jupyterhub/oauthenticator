@@ -28,19 +28,15 @@ jupyterhub_config.py :
   c.JupyterHub.authenticator_class = 'oauthenticator.auth0.Auth0OAuthenticator'
 
 """
-
 import json
 import os
 
-from tornado.auth import OAuth2Mixin
-from tornado import web
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
-from traitlets import Unicode, default
-
 from jupyterhub.auth import LocalAuthenticator
+from tornado.httpclient import HTTPRequest
+from traitlets import default
+from traitlets import Unicode
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from .oauth2 import OAuthenticator
 
 
 class Auth0OAuthenticator(OAuthenticator):
@@ -58,6 +54,16 @@ class Auth0OAuthenticator(OAuthenticator):
                 % self.__class__.__name__
             )
 
+    username_key = Unicode(
+        os.environ.get("OAUTH2_USERNAME_KEY", "email"),
+        config=True,
+        help="Userdata username key from returned json with user data login information",
+    )
+
+    @default("logout_redirect_url")
+    def _logout_redirect_url_default(self):
+        return 'https://%s.auth0.com/v2/logout' % self.auth0_subdomain
+
     @default("authorize_url")
     def _authorize_url_default(self):
         return "https://%s.auth0.com/authorize" % self.auth0_subdomain
@@ -68,8 +74,6 @@ class Auth0OAuthenticator(OAuthenticator):
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
 
         params = {
             'grant_type': 'authorization_code',
@@ -87,10 +91,12 @@ class Auth0OAuthenticator(OAuthenticator):
             body=json.dumps(params),
         )
 
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
 
         access_token = resp_json['access_token']
+
+        refresh_token = resp_json.get('refresh_token')
+        id_token = resp_json.get('id_token')
 
         # Determine who the logged in user is
         headers = {
@@ -103,12 +109,23 @@ class Auth0OAuthenticator(OAuthenticator):
             method="GET",
             headers=headers,
         )
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        resp_json = await self.fetch(req)
+
+        name = resp_json.get(self.username_key)
+        if not name:
+            self.log.error(
+                "Auth0 user contains no key %s: %s", self.username_key, resp_json
+            )
+            return
 
         return {
-            'name': resp_json["email"],
-            'auth_state': {'access_token': access_token, 'auth0_user': resp_json},
+            'name': name,
+            'auth_state': {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'id_token': id_token,
+                'auth0_user': resp_json,
+            },
         }
 
 

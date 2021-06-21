@@ -103,7 +103,6 @@ Set the above settings in your ``jupyterhub_config.py``:
    c.GenericOAuthenticator.authorize_url = "https://your-AWSCognito-domain/oauth2/authorize"
    c.GenericOAuthenticator.token_url = ""https://your-AWSCognito-domain/oauth2/token"
    c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/userInfo"
-   c.GenericOAuthenticator.userdata_method = 'POST'
 
 Azure AD Setup
 --------------
@@ -209,7 +208,7 @@ groups by setting
 
 ::
 
-   c.GitLabOAuthenticator.allowed_gitlab_project_ids = [ ... ]
+   c.GitLabOAuthenticator.allowed_project_ids = [ ... ]
 
 and
 
@@ -219,6 +218,9 @@ and
 
 but be aware that each entry incurs a separate API call, increasing the
 risk of rate limiting and timeouts.
+
+Note: if restriction to projects or groups does not work, you might not be using jupyterHub 1.2. In that case you can still you use whitelists as noted in this 
+`comment <https://github.com/jupyterhub/oauthenticator/pull/366#pullrequestreview-483095919>`__.
 
 Google Setup
 ------------
@@ -463,11 +465,11 @@ Use the ``GenericOAuthenticator`` for Jupyterhub by editing your
    c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE'
    c.GenericOAuthenticator.userdata_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/user_info.php'
    c.GenericOAuthenticator.token_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/token.php'
-   c.GenericOAuthenticator.userdata_method = 'POST'
    c.GenericOAuthenticator.extra_params = {
        'scope': 'user_info',
        'client_id': 'MOODLE-CLIENT-ID',
-       'client_secret': 'MOODLE-CLIENT-SECRET-KEY'}
+       'client_secret': 'MOODLE-CLIENT-SECRET-KEY',
+   }
 
 And set your environmental variable ``OAUTH2_AUTHORIZE_URL`` to:
 

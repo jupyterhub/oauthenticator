@@ -1,0 +1,97 @@
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions
+#
+name: Tests
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+env:
+  OAUTH2_TOKEN_URL: "token_url"
+  OAUTH2_USERDATA_URL: "userdata_url"
+
+jobs:
+  # Run "pre-commit run --all-files"
+  pre-commit:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 2
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      # ref: https://github.com/pre-commit/action
+      - uses: pre-commit/action@v2.0.3
+      - name: Help message if pre-commit fail
+        if: failure()
+        run: |
+          echo "You can install pre-commit hooks to automatically run formatting"
+          echo "on each commit with:"
+          echo "    pre-commit install"
+          echo "or you can run by hand on staged files with"
+          echo "    pre-commit run"
+          echo "or after-the-fact on already committed files with"
+          echo "    pre-commit run --all-files"
+
+  # Run tests
+  test:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+
+    strategy:
+      # Keep running even if one variation of the job fail
+      fail-fast: false
+      matrix:
+        python:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+        include:
+          - python: "3.9"
+            oldest_dependencies: oldest_dependencies
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      # preserve pip cache to speed up installation
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --upgrade . -r test-requirements.txt
+          if [ "${{ matrix.oldest_dependencies }}" != "" ]; then
+            # take any dependencies in requirements.txt such as jupyterhub>=1.2
+            # and transform them to jupyterhub==1.2 so we can run tests with the
+            # earliest-supported versions
+            cat requirements.txt | grep '>=' | sed -e 's@>=@==@g' > oldest-requirements.txt
+            pip install -r oldest-requirements.txt
+          fi
+          pip freeze
+
+      - name: Run tests
+        # FIXME: --color=yes explicitly set because:
+        #        https://github.com/actions/runner/issues/241
+        run: |
+          pytest -v --color=yes --cov=oauthenticator oauthenticator
+
+      - name: Submit codecov report
+        run: |
+          codecov

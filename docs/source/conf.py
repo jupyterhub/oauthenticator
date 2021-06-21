@@ -3,16 +3,13 @@
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
-
 # -- Path setup --------------------------------------------------------------
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
 import sys
-from subprocess import check_call
 
 source = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath('..'))
@@ -52,7 +49,7 @@ def render_autodoc_modules():
     # modules is a dict of dicts of lists
     # { '$module': { 'classes': [...], 'configurables': [...] } }
 
-    modules = defaultdict(lambda : defaultdict(list))
+    modules = defaultdict(lambda: defaultdict(list))
 
     # pre-load base classes
     modules['oauthenticator.oauth2'] = {
@@ -125,7 +122,6 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 
-import recommonmark
 from recommonmark.transform import AutoStructify
 
 
@@ -133,6 +129,7 @@ def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
     app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
+
 
 # -- Options for HTML output -------------------------------------------------
 

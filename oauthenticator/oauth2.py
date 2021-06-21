@@ -3,22 +3,29 @@ Base classes for Custom Authenticator to use OAuth with JupyterHub
 
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
-
 import base64
 import json
 import os
-from urllib.parse import quote, urlparse
 import uuid
+from urllib.parse import quote
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
+from jupyterhub.auth import Authenticator
+from jupyterhub.handlers import BaseHandler
+from jupyterhub.handlers import LogoutHandler
+from jupyterhub.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
+from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPClientError
 from tornado.log import app_log
-
-from jupyterhub.handlers import BaseHandler
-from jupyterhub.auth import Authenticator
-from jupyterhub.utils import url_path_join
-
-from traitlets import Unicode, Bool, List, Dict, default, observe
+from traitlets import Any
+from traitlets import Bool
+from traitlets import default
+from traitlets import Dict
+from traitlets import List
+from traitlets import Unicode
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -178,6 +185,15 @@ class OAuthCallbackHandler(BaseHandler):
         self.check_code()
         self.check_state()
 
+    def append_query_parameters(self, url, exclude=None):
+        """JupyterHub 1.2 appends query parameters by default in get_next_url
+
+        This is not appropriate for oauth callback handlers, where params are oauth state, code, etc.
+
+        Override the method used to append parameters to next_url to not preserve any parameters
+        """
+        return url
+
     def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
         state = self.get_state_url()
@@ -219,6 +235,18 @@ class OAuthCallbackHandler(BaseHandler):
         self.redirect(self.get_next_url(user))
 
 
+class OAuthLogoutHandler(LogoutHandler):
+    async def handle_logout(self):
+        self.clear_cookie(STATE_COOKIE_NAME)
+
+    async def render_logout_page(self):
+        if self.authenticator.logout_redirect_url:
+            self.redirect(self.authenticator.logout_redirect_url)
+            return
+
+        return await super().render_logout_page()
+
+
 class OAuthenticator(Authenticator):
     """Base class for OAuthenticators
 
@@ -230,10 +258,12 @@ class OAuthenticator(Authenticator):
 
     login_handler = OAuthLoginHandler
     callback_handler = OAuthCallbackHandler
+    logout_handler = OAuthLogoutHandler
 
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
     )
+
     @default("authorize_url")
     def _authorize_url_default(self):
         return os.environ.get("OAUTH2_AUTHORIZE_URL", "")
@@ -242,6 +272,7 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""The url retrieving an access token at the completion of oauth""",
     )
+
     @default("token_url")
     def _token_url_default(self):
         return os.environ.get("OAUTH2_TOKEN_URL", "")
@@ -250,9 +281,16 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""The url for retrieving user data with a completed access token""",
     )
+
     @default("userdata_url")
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
+
+    logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
+
+    @default("logout_redirect_url")
+    def _logout_redirect_url_default(self):
+        return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
     scope = List(
         Unicode(),
@@ -307,13 +345,68 @@ class OAuthenticator(Authenticator):
         else:
             return True
 
+    http_client = Any()
+
+    @default("http_client")
+    def _default_http_client(self):
+        return AsyncHTTPClient()
+
+    async def fetch(self, req, label="fetching", parse_json=True, **kwargs):
+        """Wrapper for http requests
+
+        logs error responses, parses successful JSON responses
+
+        Args:
+            req: tornado HTTPRequest
+            label (str): label describing what is happening,
+                used in log message when the request fails.
+            **kwargs: remaining keyword args
+                passed to underlying `client.fetch(req, **kwargs)`
+        Returns:
+            r: parsed JSON response
+        """
+        try:
+            resp = await self.http_client.fetch(req, **kwargs)
+        except HTTPClientError as e:
+            if e.response:
+                # Log failed response message for debugging purposes
+                message = e.response.body.decode("utf8", "replace")
+                try:
+                    # guess json, reformat for readability
+                    json_message = json.loads(message)
+                except ValueError:
+                    # not json
+                    pass
+                else:
+                    # reformat json log message for readability
+                    message = json.dumps(json_message, sort_keys=True, indent=1)
+            else:
+                # didn't get a response, e.g. connection error
+                message = str(e)
+
+            # log url without query params
+            url = urlunparse(urlparse(req.url)._replace(query=""))
+            app_log.error(f"Error {label} {e.code} {req.method} {url}: {message}")
+            raise e
+        else:
+            if parse_json:
+                if resp.body:
+                    return json.loads(resp.body.decode('utf8', 'replace'))
+                else:
+                    # empty body is None
+                    return None
+            else:
+                return resp
+
     def login_url(self, base_url):
         return url_path_join(base_url, 'oauth_login')
 
+    def logout_url(self, base_url):
+        return url_path_join(base_url, 'logout')
 
     def get_callback_url(self, handler=None):
         """Get my OAuth redirect URL
-        
+
         Either from config or guess based on the current request.
         """
         if self.oauth_callback_url:
@@ -333,16 +426,18 @@ class OAuthenticator(Authenticator):
         return [
             (r'/oauth_login', self.login_handler),
             (r'/oauth_callback', self.callback_handler),
+            (r'/logout', self.logout_handler),
         ]
 
     async def authenticate(self, handler, data=None):
         raise NotImplementedError()
 
+    _deprecated_oauth_aliases = {}
 
-    def _deprecated_trait(self, change):
+    def _deprecated_oauth_trait(self, change):
         """observer for deprecated traits"""
         old_attr = change.name
-        new_attr, version = self._deprecated_aliases.get(old_attr)
+        new_attr, version = self._deprecated_oauth_aliases.get(old_attr)
         new_value = getattr(self, new_attr)
         if new_value != change.new:
             # only warn if different
@@ -357,3 +452,11 @@ class OAuthenticator(Authenticator):
                 )
             )
             setattr(self, new_attr, change.new)
+
+    def __init__(self, **kwargs):
+        # observe deprecated config names in oauthenticator
+        if self._deprecated_oauth_aliases:
+            self.observe(
+                self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
+            )
+        super().__init__(**kwargs)

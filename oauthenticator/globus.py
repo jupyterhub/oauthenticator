@@ -1,25 +1,24 @@
 """
 Custom Authenticator to use Globus OAuth2 with JupyterHub
 """
+import base64
 import os
 import pickle
-import json
-import base64
 import urllib
 
-from tornado.web import HTTPError
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
-from traitlets import List, Unicode, Bool, default
-
-from jupyterhub.handlers import LogoutHandler
-from jupyterhub.utils import url_path_join
 from jupyterhub.auth import LocalAuthenticator
+from tornado.httpclient import HTTPRequest
+from tornado.web import HTTPError
+from traitlets import Bool
+from traitlets import default
+from traitlets import List
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
+from .oauth2 import OAuthLogoutHandler
 
 
-class GlobusLogoutHandler(LogoutHandler):
+class GlobusLogoutHandler(OAuthLogoutHandler):
     """
     Handle custom logout URLs and token revocation. If a custom logout url
     is specified, the 'logout' button will log the user out of that identity
@@ -44,6 +43,8 @@ class GlobusLogoutHandler(LogoutHandler):
     async def handle_logout(self):
         """Overridden method for custom logout functionality. Should be called by
         Jupyterhub on logout just before destroying the users session to log them out."""
+        await super().handle_logout()
+
         if self.current_user and self.authenticator.revoke_tokens_on_logout:
             await self.clear_tokens(self.current_user)
 
@@ -63,7 +64,7 @@ class GlobusLogoutHandler(LogoutHandler):
 
 class GlobusOAuthenticator(OAuthenticator):
     """The Globus OAuthenticator handles both authorization and passing
-    transfer tokens to the spawner. """
+    transfer tokens to the spawner."""
 
     login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
@@ -80,9 +81,7 @@ class GlobusOAuthenticator(OAuthenticator):
     def _revocation_url_default(self):
         return "https://auth.globus.org/v2/oauth2/token/revoke"
 
-    revocation_url = Unicode(
-        help="Globus URL to revoke live tokens."
-    ).tag(config=True)
+    revocation_url = Unicode(help="Globus URL to revoke live tokens.").tag(config=True)
 
     @default("token_url")
     def _token_url_default(self):
@@ -121,11 +120,6 @@ class GlobusOAuthenticator(OAuthenticator):
     def _globus_local_endpoint_default(self):
         return os.getenv('GLOBUS_LOCAL_ENDPOINT', '')
 
-    logout_redirect_url = Unicode(help="""URL for logging out.""").tag(config=True)
-
-    def _logout_redirect_url_default(self):
-        return os.getenv('LOGOUT_REDIRECT_URL', '')
-
     revoke_tokens_on_logout = Bool(
         help="""Revoke tokens so they cannot be used again. Single-user servers
         MUST be restarted after logout in order to get a fresh working set of
@@ -153,48 +147,58 @@ class GlobusOAuthenticator(OAuthenticator):
         will have the 'foouser' account in Jupyterhub.
         """
         # Complete login and exchange the code for tokens.
-        http_client = AsyncHTTPClient()
         params = dict(
             redirect_uri=self.get_callback_url(handler),
             code=handler.get_argument("code"),
             grant_type='authorization_code',
         )
-        req = HTTPRequest(self.token_url, method="POST",
+        req = HTTPRequest(
+            self.token_url,
+            method="POST",
             headers=self.get_client_credential_headers(),
             body=urllib.parse.urlencode(params),
         )
-        token_response = await http_client.fetch(req)
-        token_json = json.loads(token_response.body.decode('utf8', 'replace'))
+        token_json = await self.fetch(req)
 
         # Fetch user info at Globus's oauth2/userinfo/ HTTP endpoint to get the username
         user_headers = self.get_default_headers()
         user_headers['Authorization'] = 'Bearer {}'.format(token_json['access_token'])
         req = HTTPRequest(self.userdata_url, method='GET', headers=user_headers)
-        user_resp = await http_client.fetch(req)
-        username = self.get_username(json.loads(user_resp.body.decode('utf8', 'replace')))
+        user_resp = await self.fetch(req)
+        username = self.get_username(user_resp)
 
         # Each token should have these attributes. Resource server is optional,
         # and likely won't be present.
-        token_attrs = ['expires_in', 'resource_server', 'scope',
-                       'token_type', 'refresh_token', 'access_token']
+        token_attrs = [
+            'expires_in',
+            'resource_server',
+            'scope',
+            'token_type',
+            'refresh_token',
+            'access_token',
+        ]
         # The Auth Token is a bit special, it comes back at the top level with the
         # id token. The id token has some useful information in it, but nothing that
         # can't be retrieved with an Auth token.
         # Repackage the Auth token into a dict that looks like the other tokens
-        auth_token_dict = {attr_name: token_json.get(attr_name) for attr_name in token_attrs}
+        auth_token_dict = {
+            attr_name: token_json.get(attr_name) for attr_name in token_attrs
+        }
         # Make sure only the essentials make it into tokens. Other items, such as 'state' are
         # not needed after authentication and can be discarded.
-        other_tokens = [{attr_name: token_dict.get(attr_name) for attr_name in token_attrs}
-                        for token_dict in token_json['other_tokens']]
+        other_tokens = [
+            {attr_name: token_dict.get(attr_name) for attr_name in token_attrs}
+            for token_dict in token_json['other_tokens']
+        ]
         tokens = other_tokens + [auth_token_dict]
         # historically, tokens have been organized by resource server for convenience.
         # If multiple scopes are requested from the same resource server, they will be
         # combined into a single token from Globus Auth.
         by_resource_server = {
-                    token_dict['resource_server']: token_dict
-                    for token_dict in tokens
-                    if token_dict['resource_server'] not in self.exclude_tokens
-                }
+            token_dict['resource_server']: token_dict
+            for token_dict in tokens
+            if token_dict['resource_server'] not in self.exclude_tokens
+        }
         return {
             'name': username,
             'auth_state': {
@@ -238,23 +242,22 @@ class GlobusOAuthenticator(OAuthenticator):
             <Additional services>...
         }
         """
-        access_tokens = [token_dict.get('access_token') for token_dict in services.values()]
-        refresh_tokens = [token_dict.get('refresh_token') for token_dict in services.values()]
+        access_tokens = [
+            token_dict.get('access_token') for token_dict in services.values()
+        ]
+        refresh_tokens = [
+            token_dict.get('refresh_token') for token_dict in services.values()
+        ]
         all_tokens = [tok for tok in access_tokens + refresh_tokens if tok is not None]
-        http_client = AsyncHTTPClient()
+
         for token in all_tokens:
-            req = HTTPRequest(self.revocation_url,
-                              method="POST",
-                              headers=self.get_client_credential_headers(),
-                              body=urllib.parse.urlencode({'token': token}),
-                              )
-            await http_client.fetch(req)
-
-    def logout_url(self, base_url):
-        return url_path_join(base_url, 'logout')
-
-    def get_handlers(self, app):
-        return super().get_handlers(app) + [(r'/logout', self.logout_handler)]
+            req = HTTPRequest(
+                self.revocation_url,
+                method="POST",
+                headers=self.get_client_credential_headers(),
+                body=urllib.parse.urlencode({'token': token}),
+            )
+            await self.fetch(req)
 
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):

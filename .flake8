@@ -1,6 +1,10 @@
 [flake8]
-select = F
-ignore = E,W,C,F401,F841
+# Ignore style and complexity
+# E: style errors
+# W: style warnings
+# C: complexity
+# F841: local variable assigned but never used
+ignore = E, C, W, F841
 builtins =
     c
     get_config

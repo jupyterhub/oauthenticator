@@ -5,12 +5,11 @@ scope list, like so:
 
     c.GitLabOAuthenticator.scope = ['read_user']
 
-
 The following scopes are implemented in GitLab 11.x:
 
 `api`: Grants complete read/write access to the API, including all
 groups and projects. If no other scope is requested, this is the default.
-This is a *very* powerful set of permissions, it is recommended to limit
+This is a _very_ powerful set of permissions, it is recommended to limit
 the scope of authentication to something other than API.
 
 `read_user`: Grants read-only access to the authenticated user's

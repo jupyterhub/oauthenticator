@@ -1,11 +1,10 @@
 -r ./requirements.txt
 .[googlegroups]
 codecov
-flake8
-pyjwt
 mwoauth >= 0.3.7
+pre-commit
+pyjwt
 pytest >= 2.8
-pytest-cov
 pytest-asyncio
+pytest-cov
 requests-mock
-wheel

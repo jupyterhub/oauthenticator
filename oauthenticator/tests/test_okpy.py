@@ -1,8 +1,8 @@
-from pytest import fixture, mark
+from pytest import fixture
 
 from ..okpy import OkpyOAuthenticator
-
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(email):
@@ -14,7 +14,8 @@ def user_model(email):
 
 @fixture
 def okpy_client(client):
-    setup_oauth_mock(client,
+    setup_oauth_mock(
+        client,
         host=['okpy.org'],
         access_token_path='/oauth/token',
         user_path='/api/v3/user',
