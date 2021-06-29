@@ -107,6 +107,8 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
 
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
+        if "_host_" in redirect_uri:
+            redirect_uri = redirect_uri.replace("_host_", self.request.host)
         extra_params = self.authenticator.extra_authorize_params.copy()
         self.log.info('OAuth redirect: %r', redirect_uri)
         state = self.get_state()
