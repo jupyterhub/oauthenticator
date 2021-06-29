@@ -409,12 +409,7 @@ class OAuthenticator(Authenticator):
 
         Either from config or guess based on the current request.
         """
-        if self.oauth_callback_url and handler:
-            ret = self.oauth_callback_url
-            if "_host_" in ret:
-                ret = ret.replace("_host_", handler.request.host)
-            return ret
-        elif self.oauth_callback_url:
+        if self.oauth_callback_url:
             return self.oauth_callback_url
         elif handler:
             return guess_callback_uri(
