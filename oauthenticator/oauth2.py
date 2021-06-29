@@ -413,9 +413,8 @@ class OAuthenticator(Authenticator):
             ret = self.oauth_callback_url
             if "_host_" in ret:
                 ret = ret.replace("_host_", handler.request.host)
+            return ret
         elif self.oauth_callback_url:
-            
-                redirect_uri = redirect_uri.replace("_host_", self.request.host)
             return self.oauth_callback_url
         elif handler:
             return guess_callback_uri(
