@@ -9,6 +9,7 @@ import jwt
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
+from traitlets import List
 from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
@@ -17,6 +18,10 @@ from .oauth2 import OAuthenticator
 # pyjwt 2.0 has changed its signature,
 # but mwoauth pins to pyjwt 1.x
 PYJWT_2 = V(jwt.__version__) >= V("2.0")
+
+
+def check_user_has_role(member_roles, allowed_roles):
+    return any(role in member_roles for role in allowed_roles)
 
 
 class AzureAdOAuthenticator(OAuthenticator):
@@ -37,6 +42,18 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default('username_claim')
     def _username_claim_default(self):
         return 'name'
+
+    admin_azure_app_roles = List(
+        Unicode(),
+        config=True,
+        help="App roles that should give Jupyterhub admin privileges to a user",
+    )
+
+    allowed_azure_app_roles = List(
+        Unicode(),
+        config=True,
+        help="Automatically allow users with selected app roles",
+    )
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -80,9 +97,7 @@ class AzureAdOAuthenticator(OAuthenticator):
 
         if PYJWT_2:
             decoded = jwt.decode(
-                id_token,
-                options={"verify_signature": False},
-                audience=self.client_id,
+                id_token, options={"verify_signature": False}, audience=self.client_id,
             )
         else:
             # pyjwt 1.x
@@ -93,6 +108,16 @@ class AzureAdOAuthenticator(OAuthenticator):
         auth_state['access_token'] = access_token
         # results in a decoded JWT for the user data
         auth_state['user'] = decoded
+
+        roles = decoded.get("roles", [])
+
+        if self.admin_azure_app_roles:
+            if check_user_has_role(roles, self.admin_azure_app_roles):
+                userdict["admin"] = True
+
+        if self.allowed_azure_app_roles:
+            if not check_user_has_role(roles, self.allowed_azure_app_roles):
+                return None
 
         return userdict
 
