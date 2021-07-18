@@ -154,6 +154,10 @@ class GitHubOAuthenticator(OAuthenticator):
         else:
             raise web.HTTPError(500, "Bad response: {}".format(resp_json))
 
+        granted_scopes = []
+        if resp_json.get("scope"):
+            granted_scopes = resp_json["scope"].split(",")
+
         # Determine who the logged-in user is
         req = HTTPRequest(
             self.github_api + "/user",
@@ -191,8 +195,27 @@ class GitHubOAuthenticator(OAuthenticator):
         auth_state['access_token'] = access_token
         # store the whole user model in auth_state.github_user
         auth_state['github_user'] = resp_json
-        # A public email will return in the initial query (assuming default scope).
-        # Private will not.
+        # If a public email is not available, an extra API call has to be made
+        # to a /user/emails using the access token to retrieve emails. The
+        # scopes relevant for this are checked based on this documentation:
+        # - about scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
+        # - about /user/emails: https://docs.github.com/en/rest/reference/users#list-email-addresses-for-the-authenticated-user
+        #
+        # Note that the read:user scope does not imply the user:emails scope!
+        if not auth_state['github_user']['email'] and (
+            'user' in granted_scopes or 'user:email' in granted_scopes
+        ):
+            req = HTTPRequest(
+                self.github_api + "/user/emails",
+                method="GET",
+                headers=_api_headers(access_token),
+                validate_cert=self.validate_server_cert,
+            )
+            resp_json = await self.fetch(req, "fetching user emails")
+            for val in resp_json:
+                if val["primary"]:
+                    auth_state['github_user']['email'] = val['email']
+                    break
 
         return userdict
 
