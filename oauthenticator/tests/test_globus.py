@@ -15,11 +15,14 @@ from .mocks import mock_handler
 from .mocks import setup_oauth_mock
 
 
-def user_model(username):
+def user_model(username, email=None):
     """Return a user model"""
-    return {
+    userinfo = {
         'preferred_username': username,
     }
+    if email:
+        userinfo['email'] = email
+    return userinfo
 
 
 def revoke_token_request_handler(request):
@@ -194,6 +197,61 @@ async def test_namespaced_domain(globus_client):
     handler = globus_client.handler_for_user(um)
     data = await authenticator.authenticate(handler)
     assert data['name'] == 'wash'
+
+
+async def test_username_from_email(globus_client):
+    authenticator = GlobusOAuthenticator()
+    # Allow any idp
+    authenticator.identity_provider = ''
+    authenticator.username_from_email = True
+    um = user_model('wash@legitshipping.com@serenity.com', 'alan@tudyk.org')
+    handler = globus_client.handler_for_user(um)
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'alan'
+
+
+async def test_username_not_from_email(globus_client):
+    authenticator = GlobusOAuthenticator()
+    # Allow any idp
+    authenticator.identity_provider = ''
+    um = user_model('wash@legitshipping.com@serenity.com', 'alan@tudyk.org')
+    handler = globus_client.handler_for_user(um)
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'wash'
+
+
+async def test_email_scope_added(globus_client):
+    authenticator = GlobusOAuthenticator()
+    authenticator.username_from_email = True
+    assert authenticator.scope == [
+        'openid',
+        'profile',
+        'urn:globus:auth:scope:transfer.api.globus.org:all',
+        'email',
+    ]
+
+
+async def test_username_from_email_restricted_pass(globus_client):
+    authenticator = GlobusOAuthenticator()
+    # Allow any idp
+    authenticator.identity_provider = 'serenity.com'
+    authenticator.username_from_email = True
+    um = user_model('wash@serenity.com', 'alan@serenity.com')
+    handler = globus_client.handler_for_user(um)
+    data = await authenticator.authenticate(handler)
+    assert data['name'] == 'alan'
+
+
+async def test_username_from_email_restricted_fail(globus_client):
+    authenticator = GlobusOAuthenticator()
+    # Allow any idp
+    authenticator.identity_provider = 'serenity.com'
+    authenticator.username_from_email = True
+    um = user_model('wash@serenity.com', 'alan@tudyk.org')
+    handler = globus_client.handler_for_user(um)
+    with raises(web.HTTPError) as exc:
+        await authenticator.authenticate(handler)
+    assert exc.value.status_code == 403
 
 
 async def test_token_exclusion(globus_client):
