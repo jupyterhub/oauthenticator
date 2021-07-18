@@ -456,7 +456,7 @@ disable transfers, modify ``c.GlobusOAuthenticator.scope`` instead of
 tokens.
 
 Group Management
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Allowed and admin users can be managed through `Globus
 Groups <https://docs.globus.org/how-to/managing-groups/>`__.  Globus
@@ -471,10 +471,12 @@ Groups.
 
    # Groups of allowed users
    c.GlobusOAuthenticator.allowed_globus_groups = set
-   authenticator.allowed_globus_groups = set({'d11abe71-5132-4c04-a4ad-50926885dc8c',
-                                                                           '21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+   authenticator.allowed_globus_groups =  {
+       'd11abe71-5132-4c04-a4ad-50926885dc8c',
+       '21c6bc5d-fc12-4f60-b999-76766cd596c2',
+   }
    # Admin users
-   authenticator.admin_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+   authenticator.admin_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
 
 When any of these are set, the Globus Groups API scope will be
 included in the default list of scopes. When
