@@ -218,7 +218,12 @@ class GitLabOAuthenticator(OAuthenticator):
                 self.member_api_variant,
                 user_id,
             )
-            req = HTTPRequest(url, method="GET", headers=headers, validate_cert=self.validate_server_cert)
+            req = HTTPRequest(
+                url,
+                method="GET",
+                headers=headers,
+                validate_cert=self.validate_server_cert,
+            )
             resp = await self.fetch(req, raise_error=False, parse_json=False)
             if resp.code == 200:
                 return True  # user _is_ in group
@@ -234,7 +239,12 @@ class GitLabOAuthenticator(OAuthenticator):
                 self.member_api_variant,
                 user_id,
             )
-            req = HTTPRequest(url, method="GET", headers=headers, validate_cert=self.validate_server_cert)
+            req = HTTPRequest(
+                url,
+                method="GET",
+                headers=headers,
+                validate_cert=self.validate_server_cert,
+            )
             resp_json = await self.fetch(req, raise_error=False)
             if resp_json:
                 access_level = resp_json.get('access_level', 0)
