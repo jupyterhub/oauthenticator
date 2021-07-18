@@ -455,6 +455,41 @@ disable transfers, modify ``c.GlobusOAuthenticator.scope`` instead of
 ``c.GlobusOAuthenticator.exclude`` to avoid procuring unnecessary
 tokens.
 
+Group Management
+~~~~~~~~~~~~~~~~
+
+Allowed and admin users can be managed through `Globus
+Groups <https://docs.globus.org/how-to/managing-groups/>`__.  Globus
+Groups are identified using a UUID and multiple groups can be used for
+each of these configuration settings. The lets JuptyerHub admininstators
+choose whether to manage memership in the groups, or use groups
+managed by others. For example, researchers could manage groups of
+collaborators. Each of these settings can contain multiple Globus
+Groups.
+
+.. code:: python
+
+   # Groups of allowed users
+   c.GlobusOAuthenticator.allowed_globus_groups = set
+   authenticator.allowed_globus_groups =  {
+       'd11abe71-5132-4c04-a4ad-50926885dc8c',
+       '21c6bc5d-fc12-4f60-b999-76766cd596c2',
+   }
+   # Admin users
+   authenticator.admin_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
+
+When any of these are set, the Globus Groups API scope will be
+included in the default list of scopes. When
+``c.GlobusOAuthenticator.admin_globus_groups`` is set, only members of
+those groups will be JupyterHub admins.
+
+To block users, the ```c.Authenticator.blocked_users``
+<https://jupyterhub.readthedocs.io/en/stable/api/auth.html#jupyterhub.auth.Authenticator.blocked_users>`__
+configuration can be used. Or, users can be removed from the allowed
+Globus Groups, and the Group set require approval, so the user cannot
+rejoin it without action by an administrator.
+
+
 .. _moodle-setup-label:
 
 Moodle Setup
