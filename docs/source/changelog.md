@@ -6,6 +6,39 @@ command line for details.
 
 ## [Unreleased]
 
+## 14.1
+
+### [14.1.0] - 2021-07-19
+
+#### New features added
+
+- [Globus] Add config to manage: allowed, admin, and blocked users through Globus groups [#441](https://github.com/jupyterhub/oauthenticator/pull/441) ([@rpwagner](https://github.com/rpwagner))
+- [Globus] Add config username_from_email [#440](https://github.com/jupyterhub/oauthenticator/pull/440) ([@rpwagner](https://github.com/rpwagner))
+- [Auth0] Add config username_key - maps identity providers response to a JH username [#439](https://github.com/jupyterhub/oauthenticator/pull/439) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- [All] Support custom logout url (logout_redirect_url) [#437](https://github.com/jupyterhub/oauthenticator/pull/437) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Bugs fixed
+
+- [GitLab] Fix missing use validate_server_cert config for some web requests [#443](https://github.com/jupyterhub/oauthenticator/pull/443) ([@wOvAN](https://github.com/wOvAN))
+- [GitHub] Set JH user's email with non-public email if needed and granted scope to do so [#442](https://github.com/jupyterhub/oauthenticator/pull/442) ([@satra](https://github.com/satra))
+
+#### Maintenance and upkeep improvements
+
+- pre-commit configured and executed [#434](https://github.com/jupyterhub/oauthenticator/pull/434) ([@consideRatio](https://github.com/consideRatio))
+- ci: unpin pyjwt in test-requirements.txt [#431](https://github.com/jupyterhub/oauthenticator/pull/431) ([@consideRatio](https://github.com/consideRatio))
+
+#### Documentation improvements
+
+- docs: update to async/await in example [#435](https://github.com/jupyterhub/oauthenticator/pull/435) ([@consideRatio](https://github.com/consideRatio))
+- Add reference to external FeiShuAuthenticator [#427](https://github.com/jupyterhub/oauthenticator/pull/427) ([@harrywang](https://github.com/harrywang))
+- Note that whitelist should be used if not in 1.2 [#422](https://github.com/jupyterhub/oauthenticator/pull/422) ([@mafloh](https://github.com/mafloh))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2021-04-09&to=2021-07-18&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2021-04-09..2021-07-18&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2021-04-09..2021-07-18&type=Issues) | [@harrywang](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aharrywang+updated%3A2021-04-09..2021-07-18&type=Issues) | [@holdenk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aholdenk+updated%3A2021-04-09..2021-07-18&type=Issues) | [@mafloh](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amafloh+updated%3A2021-04-09..2021-07-18&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2021-04-09..2021-07-18&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2021-04-09..2021-07-18&type=Issues) | [@NickolausDS](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ANickolausDS+updated%3A2021-04-09..2021-07-18&type=Issues) | [@rpwagner](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Arpwagner+updated%3A2021-04-09..2021-07-18&type=Issues) | [@satra](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asatra+updated%3A2021-04-09..2021-07-18&type=Issues) | [@wOvAN](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AwOvAN+updated%3A2021-04-09..2021-07-18&type=Issues)
+
 ## 14.0
 
 ### [14.0.0] - 2021-04-09
@@ -373,7 +406,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.9.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.14.1...HEAD
+[14.1.0]: https://github.com/jupyterhub/oauthenticator/compare/0.14.0...14.1.0
 [14.0.0]: https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0
 [0.13.0]: https://github.com/jupyterhub/oauthenticator/compare/0.12.2...0.13.0
 [0.12.2]: https://github.com/jupyterhub/oauthenticator/compare/0.12.1...0.12.2
