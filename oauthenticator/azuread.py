@@ -10,6 +10,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
 from traitlets import Unicode
+from traitlets import Bool
 
 from .oauth2 import OAuthenticator
 
@@ -37,6 +38,12 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default('username_claim')
     def _username_claim_default(self):
         return 'name'
+
+    user_groups_claim = Unicode(config=True)
+
+    @default('user_groups_claim')
+    def _user_groups_claim_default(self):
+        return 'groups'
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -95,6 +102,11 @@ class AzureAdOAuthenticator(OAuthenticator):
         auth_state['user'] = decoded
 
         return userdict
+
+    def load_user_groups(self, auth_state):
+        auth_user_state = auth_state["auth_state"]["user"]
+        return auth_user_state[self.user_groups_claim]
+
 
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
