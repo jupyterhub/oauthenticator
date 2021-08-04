@@ -225,13 +225,13 @@ class GitHubOAuthenticator(OAuthenticator):
         headers = _api_headers(access_token)
         # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)
         # With empty scope (even if authenticated by an org member), this
-        #  will only await public org members.  You want 'read:org' in order
-        #  to be able to iterate through all members.
-        check_membership_url = "%s/orgs/%s/members/%s" % (
-            self.github_api,
-            org,
-            username,
-        )
+        # will only await public org members.  You want 'read:org' in order
+        # to be able to iterate through all members. If you would only like to
+        # allow certain teams within an organisation, specify
+        # allowed_organisations = {org_name:team_name}
+
+        check_membership_url = self._build_check_membership_url(org, username)
+
         req = HTTPRequest(
             check_membership_url,
             method="GET",
@@ -259,6 +259,13 @@ class GitHubOAuthenticator(OAuthenticator):
                 message,
             )
         return False
+
+    def _build_check_membership_url(self, org: str, username: str) -> str:
+        if ":" in org:
+            org, team = org.split(":")
+            return f"{self.github_api}/orgs/{org}/teams/{team}/members/{username}"
+        else:
+            return f"{self.github_api}/orgs/{org}/members/{username}"
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
