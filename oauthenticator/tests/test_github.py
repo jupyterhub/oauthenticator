@@ -7,6 +7,7 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from pytest import fixture
+from pytest import mark
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
@@ -71,40 +72,42 @@ async def test_allowed_org_membership(github_client):
 
     ## Mock Github API
 
-    teams = {
+    orgs = {
         'red': ['grif', 'simmons', 'donut', 'sarge', 'lopez'],
         'blue': ['tucker', 'caboose', 'burns', 'sheila', 'texas'],
     }
 
+    org_teams = {'blue': {'alpha': ['tucker', 'caboose', 'burns']}}
+
     member_regex = re.compile(r'/orgs/(.*)/members')
 
-    def team_members(paginate, request):
+    def org_members(paginate, request):
         urlinfo = urlparse(request.url)
-        team = member_regex.match(urlinfo.path).group(1)
+        org = member_regex.match(urlinfo.path).group(1)
 
-        if team not in teams:
+        if org not in orgs:
             return HTTPResponse(request, 404)
 
         if not paginate:
-            return [user_model(m) for m in teams[team]]
+            return [user_model(m) for m in orgs[org]]
         else:
             page = parse_qs(urlinfo.query).get('page', ['1'])
             page = int(page[0])
-            return team_members_paginated(
-                team, page, urlinfo, functools.partial(HTTPResponse, request)
+            return org_members_paginated(
+                org, page, urlinfo, functools.partial(HTTPResponse, request)
             )
 
-    def team_members_paginated(team, page, urlinfo, response):
-        if page < len(teams[team]):
+    def org_members_paginated(org, page, urlinfo, response):
+        if page < len(orgs[org]):
             headers = make_link_header(urlinfo, page + 1)
-        elif page == len(teams[team]):
+        elif page == len(orgs[org]):
             headers = {}
         else:
             return response(400)
 
         headers.update({'Content-Type': 'application/json'})
 
-        ret = [user_model(teams[team][page - 1])]
+        ret = [user_model(orgs[org][page - 1])]
 
         return response(
             200,
@@ -112,19 +115,42 @@ async def test_allowed_org_membership(github_client):
             buffer=BytesIO(json.dumps(ret).encode('utf-8')),
         )
 
-    membership_regex = re.compile(r'/orgs/(.*)/members/(.*)')
+    org_membership_regex = re.compile(r'/orgs/(.*)/members/(.*)')
+
+    def org_membership(request):
+        urlinfo = urlparse(request.url)
+        urlmatch = org_membership_regex.match(urlinfo.path)
+        org = urlmatch.group(1)
+        username = urlmatch.group(2)
+        print('Request org = %s, username = %s' % (org, username))
+        if org not in orgs:
+            print('Org not found: org = %s' % (org))
+            return HTTPResponse(request, 404)
+        if username not in orgs[org]:
+            print('Member not found: org = %s, username = %s' % (org, username))
+            return HTTPResponse(request, 404)
+        return HTTPResponse(request, 204)
+
+    team_membership_regex = re.compile(r'/orgs/(.*)/teams/(.*)/members/(.*)')
 
     def team_membership(request):
         urlinfo = urlparse(request.url)
-        urlmatch = membership_regex.match(urlinfo.path)
-        team = urlmatch.group(1)
-        username = urlmatch.group(2)
-        print('Request team = %s, username = %s' % (team, username))
-        if team not in teams:
-            print('Team not found: team = %s' % (team))
+        urlmatch = team_membership_regex.match(urlinfo.path)
+        org = urlmatch.group(1)
+        team = urlmatch.group(2)
+        username = urlmatch.group(3)
+        print('Request org = %s, team = %s username = %s' % (org, team, username))
+        if org not in orgs:
+            print('Org not found: org = %s' % (org))
             return HTTPResponse(request, 404)
-        if username not in teams[team]:
-            print('Member not found: team = %s, username = %s' % (team, username))
+        if team not in org_teams[org]:
+            print('Team not found in org: team = %s, org = %s' % (team, org))
+            return HTTPResponse(request, 404)
+        if username not in org_teams[org][team]:
+            print(
+                'Member not found: org = %s, team = %s, username = %s'
+                % (org, team, username)
+            )
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
 
@@ -132,8 +158,9 @@ async def test_allowed_org_membership(github_client):
 
     for paginate in (False, True):
         client_hosts = client.hosts['api.github.com']
-        client_hosts.append((membership_regex, team_membership))
-        client_hosts.append((member_regex, functools.partial(team_members, paginate)))
+        client_hosts.append((team_membership_regex, team_membership))
+        client_hosts.append((org_membership_regex, org_membership))
+        client_hosts.append((member_regex, functools.partial(org_members, paginate)))
 
         authenticator.allowed_organizations = ['blue']
 
@@ -156,8 +183,40 @@ async def test_allowed_org_membership(github_client):
         user = await authenticator.authenticate(handler)
         assert user['name'] == 'donut'
 
+        # test team membership
+        authenticator.allowed_organizations = ['blue:alpha', 'red']
+
+        handler = client.handler_for_user(user_model('tucker'))
+        user = await authenticator.authenticate(handler)
+        assert user['name'] == 'tucker'
+
+        handler = client.handler_for_user(user_model('grif'))
+        user = await authenticator.authenticate(handler)
+        assert user['name'] == 'grif'
+
+        handler = client.handler_for_user(user_model('texas'))
+        user = await authenticator.authenticate(handler)
+        assert user is None
+
         client_hosts.pop()
         client_hosts.pop()
+
+
+@mark.parametrize(
+    "org, username, expected",
+    [
+        ("blue", "texas", "https://api.github.com/orgs/blue/members/texas"),
+        (
+            "blue:alpha",
+            "tucker",
+            "https://api.github.com/orgs/blue/teams/alpha/members/tucker",
+        ),
+        ("red", "grif", "https://api.github.com/orgs/red/members/grif"),
+    ],
+)
+def test_build_check_membership_url(org, username, expected):
+    output = GitHubOAuthenticator()._build_check_membership_url(org, username)
+    assert output == expected
 
 
 def test_deprecated_config(caplog):
