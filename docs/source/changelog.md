@@ -6,6 +6,20 @@ command line for details.
 
 ## [Unreleased]
 
+## 14.2
+
+### [14.2.0] - 2021-08-09
+
+#### Enhancements made
+
+- [GitHub] Add syntax to allow specific teams in a GitHub organization [#449](https://github.com/jupyterhub/oauthenticator/pull/449) ([@j0nnyr0berts](https://github.com/j0nnyr0berts))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2021-07-19&to=2021-08-09&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2021-07-19..2021-08-09&type=Issues) | [@dhirschfeld](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adhirschfeld+updated%3A2021-07-19..2021-08-09&type=Issues) | [@j0nnyr0berts](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aj0nnyr0berts+updated%3A2021-07-19..2021-08-09&type=Issues) | [@jabbera](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajabbera+updated%3A2021-07-19..2021-08-09&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2021-07-19..2021-08-09&type=Issues) | [@sgibson91](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asgibson91+updated%3A2021-07-19..2021-08-09&type=Issues)
+
 ## 14.1
 
 ### [14.1.0] - 2021-07-19
@@ -406,7 +420,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.14.1...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.14.2...HEAD
+[14.2.0]: https://github.com/jupyterhub/oauthenticator/compare/0.14.1...14.2.0
 [14.1.0]: https://github.com/jupyterhub/oauthenticator/compare/0.14.0...14.1.0
 [14.0.0]: https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0
 [0.13.0]: https://github.com/jupyterhub/oauthenticator/compare/0.12.2...0.13.0
