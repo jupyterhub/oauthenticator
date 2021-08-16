@@ -124,6 +124,12 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
 class OAuthCallbackHandler(BaseHandler):
     """Basic handler for OAuth callback. Calls authenticator to verify username."""
 
+    def initialize(self, message_403='', message_403_html='', extra_error_html=''):
+        self.message_403 = message_403
+        self.message_403_html = message_403_html
+        self.extra_error_html = extra_error_html
+        super(OAuthCallbackHandler, self).initialize()
+
     _state_cookie = None
 
     def get_state_cookie(self):
@@ -227,11 +233,15 @@ class OAuthCallbackHandler(BaseHandler):
         login_user = _login_user_pre_08
 
     async def get(self):
+        # Remove message_html for non-403 errors
+        if self.message_403_html != '':
+            self.settings['template_vars'].update(dict(message_html=''))
         self.check_arguments()
         user = await self.login_user()
         if user is None:
-            # todo: custom error page?
-            raise web.HTTPError(403)
+            if self.message_403_html != '':
+                self.settings['template_vars'].update(dict(message_html=self.message_403_html))
+            raise web.HTTPError(403, self.message_403)
         self.redirect(self.get_next_url(user))
 
 
@@ -422,10 +432,37 @@ class OAuthenticator(Authenticator):
                 "Specify callback oauth_callback_url or give me a handler to guess with"
             )
 
+    callback_message_403 = Unicode(
+        config=True,
+        help="""A plain-text message to provide on the callback page when authentication fails.""",
+    )
+
+    @default("callback_message_403")
+    def _callback_message_403(self):
+        return "You have not been authenticated via OAuth."
+
+    callback_message_403_html = Unicode(
+        config=True,
+        help="""An HTML-formatted message to provide on the callback page when authentication fails.""",
+    )
+
+    @default("callback_message_403_html")
+    def _callback_message_403_html(self):
+        return ""
+
+    callback_extra_error_html = Unicode(
+        config=True,
+        help="""An HTML-formatted message to provide on the callback page when any error occurs.""",
+    )
+
+    @default("callback_extra_error_html")
+    def _callback_extra_error_html(self):
+        return ""
+
     def get_handlers(self, app):
         return [
             (r'/oauth_login', self.login_handler),
-            (r'/oauth_callback', self.callback_handler),
+            (r'/oauth_callback', self.callback_handler, dict(message_403=self.callback_message_403, message_403_html=self.callback_message_403_html, extra_error_html=self.callback_extra_error_html)),
             (r'/logout', self.logout_handler),
         ]
 
