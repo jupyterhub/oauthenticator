@@ -97,7 +97,9 @@ class AzureAdOAuthenticator(OAuthenticator):
 
         if PYJWT_2:
             decoded = jwt.decode(
-                id_token, options={"verify_signature": False}, audience=self.client_id,
+                id_token,
+                options={"verify_signature": False},
+                audience=self.client_id,
             )
         else:
             # pyjwt 1.x
