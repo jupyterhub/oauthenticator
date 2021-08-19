@@ -33,13 +33,13 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
 
-    username_claim = Unicode(config=True)
+    username_claim = Unicode(config=True, help="Name of claim containing username")
 
     @default('username_claim')
     def _username_claim_default(self):
         return 'name'
 
-    user_groups_claim = Unicode(config=True)
+    user_groups_claim = Unicode(config=True, help="Name of claim containing user group memberships")
 
     @default('user_groups_claim')
     def _user_groups_claim_default(self):
