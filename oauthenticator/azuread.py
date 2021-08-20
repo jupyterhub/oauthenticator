@@ -8,7 +8,6 @@ from distutils.version import LooseVersion as V
 import jwt
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
-from traitlets import Bool
 from traitlets import default
 from traitlets import Set
 from traitlets import Unicode
@@ -56,12 +55,6 @@ class AzureAdOAuthenticator(OAuthenticator):
         config=True,
         help="Only users with one of these app roles in their identity token claim 'roles' will be allowed to login into JupyterHub. Admins do not fall under this restriction. "
         + app_roles_help_message,
-    )
-
-    revoke_stale_admin_privileges = Bool(
-        False,
-        config=True,
-        help="If a user is not listed in admin_users or doesn't have an admin app role (admin_users_app_roles) in a token, user's admin privileges will be revoked upon login",
     )
 
     @default("authorize_url")
@@ -121,12 +114,6 @@ class AzureAdOAuthenticator(OAuthenticator):
         auth_state['user'] = decoded
 
         roles = auth_state['user'].get("roles", [])
-
-        # Admin privileges will be revoked if a user is not listed in admin_users
-        # and then added back if the user has one of admin_users_app_roles.
-        if self.revoke_stale_admin_privileges:
-            if userdict["name"].lower() not in self.admin_users:
-                userdict["admin"] = False
 
         if self.admin_users_app_roles:
             if check_user_has_role(roles, self.admin_users_app_roles):
