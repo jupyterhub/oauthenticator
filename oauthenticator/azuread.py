@@ -20,10 +20,6 @@ from .oauth2 import OAuthenticator
 PYJWT_2 = V(jwt.__version__) >= V("2.0")
 
 
-def check_user_has_role(member_roles, allowed_roles):
-    return any(role in member_roles for role in allowed_roles)
-
-
 class AzureAdOAuthenticator(OAuthenticator):
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Azure AD'),
@@ -113,15 +109,15 @@ class AzureAdOAuthenticator(OAuthenticator):
         # results in a decoded JWT for the user data
         auth_state['user'] = decoded
 
-        roles = auth_state['user'].get("roles", [])
+        roles = set(auth_state['user'].get("roles", []))
 
         if self.admin_users_app_roles:
-            if check_user_has_role(roles, self.admin_users_app_roles):
+            if roles.intersection(self.admin_users_app_roles):
                 userdict["admin"] = True
                 return userdict
 
         if self.allowed_users_app_roles:
-            if not check_user_has_role(roles, self.allowed_users_app_roles):
+            if not roles.intersection(self.allowed_users_app_roles):
                 return None
 
         return userdict
