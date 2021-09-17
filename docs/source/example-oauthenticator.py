@@ -25,7 +25,7 @@ class MyServiceLoginHandler(OAuthLoginHandler, MyServiceMixin):
     pass
 
 
-class GitHubOAuthenticator(OAuthenticator):
+class MyServiceOAuthenticator(OAuthenticator):
 
     # login_service is the text displayed on the "Login with..." button
     login_service = "My Service"
@@ -33,7 +33,7 @@ class GitHubOAuthenticator(OAuthenticator):
     login_handler = MyServiceLoginHandler
 
     async def authenticate(self, handler, data=None):
-        """We set up auth_state based on additional GitHub info if we
+        """We set up auth_state based on additional My Service info if we
         receive it.
         """
         code = handler.get_argument("code")
@@ -109,7 +109,7 @@ class GitHubOAuthenticator(OAuthenticator):
         return user_info
 
 
-class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
+class LocalMyServiceOAuthenticator(LocalAuthenticator, MyServiceOAuthenticator):
     """A version that mixes in local system user creation"""
 
     pass
