@@ -16,7 +16,8 @@ Example of configuration:
             'client_id': 'xxxx',
             'client_secret': 'xxxx',
             'oauth_callback_url': 'http://example.com/hub/google/oauth_callback'
-        })
+        }),
+        (PAMAuthenticator, "/pam", {"service_name": "PAM"}),
     ]
 
     c.JupyterHub.authenticator_class = 'oauthenticator.multioauthenticator.MultiOAuthenticator'
@@ -27,6 +28,24 @@ The same Authenticator class can be used several to support different providers.
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import url_path_join
 from traitlets import List
+
+
+class URLScopeMixin(object):
+    """Mixin class that adds the"""
+
+    scope = ""
+
+    def login_url(self, base_url):
+        return super().login_url(url_path_join(base_url, self.scope))
+
+    def logout_url(self, base_url):
+        return super().logout_url(url_path_join(base_url, self.scope))
+
+    def get_handlers(self, app):
+        handlers = super().get_handlers(app)
+        return [
+            (url_path_join(self.scope, path), handler) for path, handler in handlers
+        ]
 
 
 class MultiOAuthenticator(Authenticator):
@@ -48,21 +67,31 @@ class MultiOAuthenticator(Authenticator):
             # makes it configurable and the default value is used (take a look at
             # GoogleOAuthenticator for example).
             configuration.pop("login_service")
+
+            class WrapperAuthenticator(URLScopeMixin, authenticator_klass):
+                scope = url_scope
+
+            service_name = authenticator_configuration.pop("service_name", None)
             configuration.update(authenticator_configuration)
-            self._authenticators.append(
-                {
-                    "instance": authenticator_klass(**configuration),
-                    "url_scope": url_scope,
-                }
-            )
+
+            authenticator = WrapperAuthenticator(**configuration)
+
+            if service_name:
+                authenticator.service_name = service_name
+
+            self._authenticators.append(authenticator)
 
     def get_custom_html(self, base_url):
         """Re-implementation generating one login button per configured authenticator"""
 
         html = []
         for authenticator in self._authenticators:
-            login_service = authenticator["instance"].login_service
-            url = url_path_join(base_url, authenticator["url_scope"], "oauth_login")
+            if hasattr(authenticator, "service_name"):
+                login_service = getattr(authenticator, "service_name")
+            else:
+                login_service = authenticator.login_service
+
+            url = authenticator.login_url(base_url)
 
             html.append(
                 f"""
@@ -81,7 +110,7 @@ class MultiOAuthenticator(Authenticator):
 
         routes = []
         for _authenticator in self._authenticators:
-            for path, handler in _authenticator["instance"].get_handlers(app):
+            for path, handler in _authenticator.get_handlers(app):
 
                 class WrapperHandler(handler):
                     """'Real' handler configured for each authenticator. This allows
@@ -89,7 +118,7 @@ class MultiOAuthenticator(Authenticator):
                     services (for example GitLab.com, gitlab.example.com)
                     """
 
-                    authenticator = _authenticator["instance"]
+                    authenticator = _authenticator
 
-                routes.append((f'{_authenticator["url_scope"]}{path}', WrapperHandler))
+                routes.append((path, WrapperHandler))
         return routes
