@@ -1,10 +1,10 @@
-"""Test module for the MultiOAuthenticator class"""
+"""Test module for the MultiAuthenticator class"""
 from pytest import fixture
 
 from ..github import GitHubOAuthenticator
 from ..gitlab import GitLabOAuthenticator
 from ..google import GoogleOAuthenticator
-from ..multioauthenticator import MultiOAuthenticator
+from ..multiauthenticator import MultiAuthenticator
 
 
 @fixture
@@ -58,9 +58,9 @@ def same_authenticators():
 
 
 def test_different_authenticators(different_authenticators):
-    MultiOAuthenticator.authenticators = different_authenticators
+    MultiAuthenticator.authenticators = different_authenticators
 
-    authenticator = MultiOAuthenticator()
+    authenticator = MultiAuthenticator()
     assert len(authenticator._authenticators) == 2
 
     handlers = authenticator.get_handlers("")
@@ -75,9 +75,9 @@ def test_different_authenticators(different_authenticators):
 
 
 def test_same_authenticators(same_authenticators):
-    MultiOAuthenticator.authenticators = same_authenticators
+    MultiAuthenticator.authenticators = same_authenticators
 
-    authenticator = MultiOAuthenticator()
+    authenticator = MultiAuthenticator()
     assert len(authenticator._authenticators) == 2
 
     handlers = authenticator.get_handlers("")

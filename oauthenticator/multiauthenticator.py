@@ -6,7 +6,7 @@ Example of configuration:
     from oauthenticator.github import GitHubOAuthenticator
     from oauthenticator.google import GoogleOAuthenticator
 
-    c.MultiOAuthenticator.authenticators = [
+    c.MultiAuthenticator.authenticators = [
         (GitHubOAuthenticator, '/github', {
             'client_id': 'xxxx',
             'client_secret': 'xxxx',
@@ -20,7 +20,7 @@ Example of configuration:
         (PAMAuthenticator, "/pam", {"service_name": "PAM"}),
     ]
 
-    c.JupyterHub.authenticator_class = 'oauthenticator.multioauthenticator.MultiOAuthenticator'
+    c.JupyterHub.authenticator_class = 'oauthenticator.MultiAuthenticator.MultiAuthenticator'
 
 The same Authenticator class can be used several to support different providers.
 
@@ -48,7 +48,7 @@ class URLScopeMixin(object):
         ]
 
 
-class MultiOAuthenticator(Authenticator):
+class MultiAuthenticator(Authenticator):
     """Wrapper class that allows to use more than one authentication provider
     for JupyterHub"""
 
