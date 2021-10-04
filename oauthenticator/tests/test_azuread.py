@@ -9,6 +9,7 @@ import jwt
 import pytest
 
 from ..azuread import AzureAdOAuthenticator
+from ..azuread import PYJWT_2
 from .mocks import setup_oauth_mock
 
 
@@ -40,7 +41,9 @@ def user_model(tenant_id, client_id, name):
             "aio": "Df2UVXL1ix!lMCWMSOJBcFatzcGfvFGhjKv8q5g0x732dR5MB5BisvGQO7YWByjd8iQDLq!eGbIDakyp5mnOrcdqHeYSnltepQmRp6AIZ8jY",
         },
         os.urandom(5),
-    ).decode("ascii")
+    )
+    if not PYJWT_2:
+        id_token = id_token.decode("ascii")
 
     return {
         "access_token": "abc123",
