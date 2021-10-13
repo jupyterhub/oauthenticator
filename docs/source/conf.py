@@ -127,7 +127,6 @@ from recommonmark.transform import AutoStructify
 
 def setup(app):
     app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
-    app.add_stylesheet('custom.css')
     app.add_transform(AutoStructify)
 
 
