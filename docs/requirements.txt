@@ -4,5 +4,7 @@
 autodoc-traits
 git+https://github.com/pandas-dev/pandas-sphinx-theme.git@master
 recommonmark==0.6.0
+# FIXME: Sphinx 4 needs modern autodoc-traits which isn't yet released to PyPI,
+#        see https://github.com/jupyterhub/autodoc-traits/issues/5.
 sphinx>=2,<4
 sphinx-copybutton
