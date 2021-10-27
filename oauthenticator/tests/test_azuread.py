@@ -3,15 +3,12 @@ import os
 import re
 import time
 import uuid
-
 from functools import partial
-
 from unittest import mock
-
-from pytest import fixture
 
 import jwt
 import pytest
+from pytest import fixture
 
 from ..azuread import AzureAdOAuthenticator
 from .mocks import setup_oauth_mock
@@ -62,7 +59,7 @@ def _get_authenticator(**kwargs):
         tenant_id=str(uuid.uuid1()),
         client_id=str(uuid.uuid1()),
         client_secret=str(uuid.uuid1()),
-        **kwargs
+        **kwargs,
     )
 
 
@@ -100,7 +97,7 @@ async def test_azuread(get_authenticator, username_claim, azure_client):
         user_model(
             tenant_id=authenticator.tenant_id,
             client_id=authenticator.client_id,
-            name="somebody"
+            name="somebody",
         )
     )
 
@@ -119,17 +116,34 @@ async def test_azuread(get_authenticator, username_claim, azure_client):
 @pytest.mark.parametrize(
     'allowed_groups,admin_groups,azuread_groups,expected',
     [
-        ([], ['jupyterhub-admin'], ['jupyterhub-admin'], lambda r: bool(r) and r['admin']),
+        (
+            [],
+            ['jupyterhub-admin'],
+            ['jupyterhub-admin'],
+            lambda r: bool(r) and r['admin'],
+        ),
         ([], ['jupyterhub-admin'], ['jupyter-admin'], lambda r: not bool(r)),
         (['jupyterhub'], [], ['jupyterhub'], lambda r: bool(r) and not r['admin']),
         (['jupyterhub'], [], ['jupyter'], lambda r: not bool(r)),
         ([], [], ['jupyterhub'], lambda r: bool(r)),
-        (['jupyterhub'], ['jupyterhub-admin'], ['jupyterhub', 'jupyterhub-admin'], lambda r: bool(r) and r['admin']),
+        (
+            ['jupyterhub'],
+            ['jupyterhub-admin'],
+            ['jupyterhub', 'jupyterhub-admin'],
+            lambda r: bool(r) and r['admin'],
+        ),
         (['jupyterhub'], [], [], lambda r: not bool(r)),
-        ([], [], [], lambda r: bool(r) and r.get('admin') is None)
+        ([], [], [], lambda r: bool(r) and r.get('admin') is None),
     ],
 )
-async def test_azuread_groups(get_authenticator, azure_client, allowed_groups, admin_groups, azuread_groups, expected):
+async def test_azuread_groups(
+    get_authenticator,
+    azure_client,
+    allowed_groups,
+    admin_groups,
+    azuread_groups,
+    expected,
+):
     authenticator = get_authenticator(
         scope=['openid', 'profile'],
         allowed_groups=allowed_groups,

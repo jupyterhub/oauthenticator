@@ -9,8 +9,8 @@ import jwt
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
-from traitlets import Unicode
 from traitlets import List
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
 
