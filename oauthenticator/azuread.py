@@ -10,6 +10,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
 from traitlets import Unicode
+from traitlets import List
 
 from .oauth2 import OAuthenticator
 
@@ -49,6 +50,22 @@ class AzureAdOAuthenticator(OAuthenticator):
         return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(
             self.tenant_id
         )
+
+    allowed_groups = List(
+        Unicode(),
+        config=True,
+        help="Automatically allow members of selected groups",
+    )
+
+    admin_groups = List(
+        Unicode(),
+        config=True,
+        help="Groups whose members should have Jupyterhub admin privileges",
+    )
+
+    @staticmethod
+    def check_user_in_groups(member_groups, allowed_groups):
+        return bool(set(member_groups) & set(allowed_groups))
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -94,6 +111,15 @@ class AzureAdOAuthenticator(OAuthenticator):
         # results in a decoded JWT for the user data
         auth_state['user'] = decoded
 
+        groups = self.allowed_groups + self.admin_groups
+        if groups:
+            ad_groups = decoded.get('groups')
+            if self.check_user_in_groups(ad_groups, groups):
+                userdict['admin'] = self.check_user_in_groups(
+                    ad_groups, self.admin_groups
+                )
+            else:
+                userdict = None
         return userdict
 
 
