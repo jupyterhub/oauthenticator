@@ -8,6 +8,7 @@ import requests_mock
 from pytest import fixture
 from tornado import web
 
+from ..azuread import PYJWT_2
 from ..mediawiki import AUTH_REQUEST_COOKIE_NAME
 from ..mediawiki import MWOAuthenticator
 from .mocks import mock_handler
@@ -20,7 +21,7 @@ def mediawiki():
     def post_token(request, context):
         authorization_header = request.headers['Authorization'].decode('utf8')
         request_nonce = re.search(r'oauth_nonce="(.*?)"', authorization_header).group(1)
-        return jwt.encode(
+        content = jwt.encode(
             {
                 'username': 'wash',
                 'aud': 'client_id',
@@ -30,6 +31,10 @@ def mediawiki():
             },
             'client_secret',
         )
+        if PYJWT_2:
+            content = content.encode()
+
+        return content
 
     with requests_mock.Mocker() as mock:
         mock.post(
