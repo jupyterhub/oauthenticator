@@ -3,6 +3,7 @@ Custom Authenticator to use generic OAuth2 with JupyterHub
 """
 import base64
 import os
+import time
 from urllib.parse import urlencode
 
 from jupyterhub.auth import LocalAuthenticator
@@ -143,11 +144,18 @@ class GenericOAuthenticator(OAuthenticator):
         if isinstance(scope, str):
             scope = scope.split(' ')
 
+        try:
+            expires_in = int(token_response.get('expires_in'))
+            expires_at = time.time() + expires_in # seconds
+        except (KeyError, TypeError):
+            expires_at = None
+
         return {
             'access_token': access_token,
             'refresh_token': refresh_token,
             'oauth_user': user_data_response,
             'scope': scope,
+            'expires_at': expires_at,
         }
 
     @staticmethod
@@ -213,6 +221,46 @@ class GenericOAuthenticator(OAuthenticator):
                 )
             else:
                 user_info = None
+
+        return user_info
+
+    # Refresh user access and refresh tokens (called periodically)
+    async def refresh_user(self, user, handler=None):
+        # Retrieve user authentication info and check if refresh is needed
+        auth_state = await user.get_auth_state()
+        expires_at = auth_state.get('expires_at', None)
+        refresh_token = auth_state.get('refresh_token', None)
+
+        # If no refresh_token, return success
+        if not refresh_token:
+            return True
+
+        # If no expiration, return success
+        if not expires_at:
+            return True
+
+        # If over 2x auth_refresh_age intervals from expiration, return success
+        if (time.time() + 2*self.auth_refresh_age) < expires_at:
+            return True
+
+        self.log.info('Refreshing tokens for user %s', user.name)
+
+        # Attempt renewal
+        params = dict(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            refresh_token=refresh_token,
+            grant_type='refresh_token',
+        )
+
+        headers = self._get_headers()
+
+        token_resp_json = await self._get_token(headers, params)
+        user_data_resp_json = await self._get_user_data(token_resp_json)
+
+        user_info = {
+            'auth_state': self._create_auth_state(token_resp_json, user_data_resp_json),
+        }
 
         return user_info
 
