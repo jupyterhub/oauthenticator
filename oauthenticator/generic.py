@@ -146,7 +146,7 @@ class GenericOAuthenticator(OAuthenticator):
 
         try:
             expires_in = int(token_response.get('expires_in'))
-            expires_at = time.time() + expires_in # seconds
+            expires_at = time.time() + expires_in  # seconds
         except (KeyError, TypeError):
             expires_at = None
 
@@ -240,7 +240,7 @@ class GenericOAuthenticator(OAuthenticator):
             return True
 
         # If over 2x auth_refresh_age intervals from expiration, return success
-        if (time.time() + 2*self.auth_refresh_age) < expires_at:
+        if (time.time() + 2 * self.auth_refresh_age) < expires_at:
             return True
 
         self.log.info('Refreshing tokens for user %s', user.name)
