@@ -139,6 +139,10 @@ This sample code is provided for you in ``examples > azuread > sample_jupyter_co
 
 -  Make sure to replace the values in ``'{}'`` with your APP, TENANT, DOMAIN, etc. values
 
+- You might need to add at least the ``openid`` scope if your
+  organization requires MFA (``c.AzureAdOAuthenticator.scope =
+  ['openid']``), in addition to whatever else you need.
+
 -  Follow this
    `link to create an AAD APP <https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/>`__
 
