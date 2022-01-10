@@ -20,7 +20,7 @@ project = 'OAuthenticator'
 copyright = 'Jupyter Contributors'
 author = 'Jupyter Contributors'
 
-master_doc = 'index'
+root_doc = master_doc = 'index'
 
 import oauthenticator
 
