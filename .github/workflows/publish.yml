@@ -1,4 +1,6 @@
-# Build releases and (on tags) publish to PyPI
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
+#
 name: Release
 
 # always build releases (to make sure wheel-building works)
@@ -6,6 +8,7 @@ name: Release
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build-release:

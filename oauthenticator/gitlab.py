@@ -118,7 +118,7 @@ class GitLabOAuthenticator(OAuthenticator):
 
         # Exchange the OAuth code for a GitLab Access Token
         #
-        # See: https://github.com/gitlabhq/gitlabhq/blob/master/doc/api/oauth2.md
+        # See: https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
 
         # GitLab specifies a POST request yet requires URL parameters
         params = dict(

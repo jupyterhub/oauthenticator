@@ -1,10 +1,6 @@
-# ReadTheDocs uses the `environment.yaml` so make sure to update that as well
-# if you change this file
 -r ../requirements.txt
 autodoc-traits
-git+https://github.com/pandas-dev/pandas-sphinx-theme.git@master
-recommonmark==0.6.0
-# FIXME: Sphinx 4 needs modern autodoc-traits which isn't yet released to PyPI,
-#        see https://github.com/jupyterhub/autodoc-traits/issues/5.
-sphinx>=2,<4
+pydata-sphinx-theme
+recommonmark
+sphinx>=2
 sphinx-copybutton

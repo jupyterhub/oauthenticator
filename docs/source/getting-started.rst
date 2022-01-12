@@ -160,7 +160,7 @@ This sample code is provided for you in ``examples > azuread > sample_jupyter_co
 
 -  See ``run.sh`` for an `example <./examples/azuread/>`__
 
--  `Source Code <https://github.com/jupyterhub/oauthenticator/blob/master/oauthenticator/azuread.py>`__
+-  `Source Code <https://github.com/jupyterhub/oauthenticator/blob/HEAD/oauthenticator/azuread.py>`__
 
 
 GitHub Setup
@@ -419,7 +419,7 @@ Globus Scopes and Transfer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following shows how to get tokens into user Notebooks. `You can see how users
-use tokens here <https://github.com/globus/globus-jupyter-notebooks/blob/master/JupyterHub_Integration.ipynb>`__.
+use tokens here <https://github.com/globus/globus-jupyter-notebooks/blob/HEAD/JupyterHub_Integration.ipynb>`__.
 If you want a demonstration, you can visit `The Jupyter Globus Demo Server <https://jupyter.demo.globus.org>`__.
 
 The default server configuration will automatically setup user environments
@@ -588,9 +588,9 @@ Examples
 --------
 
 For an example docker image using OAuthenticator, see the
-`examples <https://github.com/jupyterhub/oauthenticator/tree/master/examples>`__ directory.
+`examples <https://github.com/jupyterhub/oauthenticator/tree/HEAD/examples>`__ directory.
 
 `Another
-example <https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth>`__
+example <https://github.com/jupyterhub/dockerspawner/tree/HEAD/examples/oauth>`__
 is using GitHub OAuth to spawn each user’s server in a separate docker
 container.

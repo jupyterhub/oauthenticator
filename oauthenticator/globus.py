@@ -31,7 +31,7 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
         # Ensure self.handle_logout() is called before self.default_handle_logout()
         # If default_handle_logout() is called first, the user session is popped and
         # it's not longer possible to call get_auth_state() to revoke tokens.
-        # See https://github.com/jupyterhub/jupyterhub/blob/master/jupyterhub/handlers/login.py  # noqa
+        # See https://github.com/jupyterhub/jupyterhub/blob/HEAD/jupyterhub/handlers/login.py  # noqa
         await self.handle_logout()
         await self.default_handle_logout()
         if self.authenticator.logout_redirect_url:

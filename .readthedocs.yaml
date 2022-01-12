@@ -1,0 +1,28 @@
+# Configuration on how ReadTheDocs (RTD) builds our documentation
+# ref: https://readthedocs.org/projects/oauthenticator/
+# ref: https://docs.readthedocs.io/en/stable/config-file/v2.html
+#
+version: 2
+
+build:
+  os: ubuntu-20.04
+  tools:
+    # FIXME: We don't support using Python 3.9 because of our dependency on
+    #        recommonmark / commonmark which hasn't updated properly. The
+    #        dependency can probably be removed by transitioning to MyST.
+    python: "3.8"
+
+sphinx:
+  configuration: docs/source/conf.py
+
+formats: []
+
+python:
+  install:
+    # NOTE:    We also install the oauthenticator package itself, because we use
+    #          the autodoc_traits sphinx extension to generate documentation via
+    #          source code inspection.
+    #
+    - method: pip
+      path: .
+    - requirements: docs/requirements.txt
