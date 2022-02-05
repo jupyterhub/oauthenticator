@@ -230,8 +230,8 @@ class OAuthCallbackHandler(BaseHandler):
         self.check_arguments()
         user = await self.login_user()
         if user is None:
-            # todo: custom error page?
-            raise web.HTTPError(403)
+            raise web.HTTPError(403, self.authenticator.custom_403_message)
+
         self.redirect(self.get_next_url(user))
 
 
@@ -291,6 +291,14 @@ class OAuthenticator(Authenticator):
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
         return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
+
+    custom_403_message = Unicode(
+        config=True, help="""The message to be shown when user was not allowed"""
+    )
+
+    @default("custom_403_message")
+    def _custom_403_message(self):
+        return "Looks like you have not been added to the list of allowed users for this hub. Please contact the hub administrator."
 
     scope = List(
         Unicode(),
