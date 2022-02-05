@@ -1,0 +1,33 @@
+{% extends "templates/error.html" %}
+
+{% block error_detail %}
+{% if status_code == 403 %}
+<style>
+	.info {
+  		color: #fc8703;
+  		background-color: #f2f2f3;
+		
+		max-width: 640px;
+		padding: 30px;
+		margin: 0 auto;
+		margin-bottom: 30px;
+		overflow: hidden;
+		font-size: 17px;
+	}
+</style>
+<div class="error">
+	<div class="info">
+		<i class="fa fa-info-circle"></i>
+		{{ message | safe }}
+	</div>
+	<div class="text-center">
+		<a role="button" class='btn btn-jupyter' href='{{base_url}}/logout'>
+		Tap to try a different account
+		</a>
+	</div>
+</div>
+{% else %}
+{{ super() }}
+{% endif %}
+
+{% endblock error_detail %}
