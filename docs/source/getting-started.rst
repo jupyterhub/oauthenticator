@@ -83,6 +83,36 @@ You can also set these values in your **configuration file**,
    c.MyOAuthenticator.client_id = 'your-client-id'
    c.MyOAuthenticator.client_secret = 'your-client-secret'
 
+Use a custom 403 error
+~~~~~~~~~~~~~~~~~~~~~~
+
+1. Custom message
+   When a user successfully logins at an OAuth provider but is forbidden access based on the config,
+   e.g. the ``allowed_users`` list or the ``blocked_users`` list, it is whoen the following message
+   by default:
+
+   *"Looks like you have not been added to the list of allowed users for this hub. Please contact the hub administrator."*
+
+   You can show a customized 403 error message by changing the OAuthenticator config:
+
+   .. code:: python
+
+      # Replace MyOAuthenticator with your selected OAuthenticator class (e.g. c.GithubOAuthenticator).
+      c.MyOAuthenticator.custom_403_message = "Your message for the user"
+
+2. Custom html page
+   You can also show a customized 403 HTML page message by creating a
+   `custom HTML template <https://jupyterhub.readthedocs.io/en/stable/reference/templates.html>`_ and
+   point JupyterHub to it.
+
+   An example custom 403 html page can be found in the
+   `examples directory <https://github.com/jupyterhub/oauthenticator/tree/main/examples/templates>`_
+
+   .. code:: python
+
+      # Replace MyOAuthenticator with your selected OAuthenticator class (e.g. c.GithubOAuthenticator).
+      c.JupyterHub.template_paths = ["examples/templates"]
+
 AWS Cognito Setup
 -----------------
 First visit
