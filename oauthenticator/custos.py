@@ -2,11 +2,10 @@
 Custos Authenticator to use  OAuth2 with JupyterHub
 """
 import base64
+import logging
 import os
 from urllib.parse import urlencode
-import logging
 
-import os
 from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
@@ -32,7 +31,9 @@ class CustosLoginHandler(OAuthLoginHandler):
 
 
 class CustosOAuthenticator(OAuthenticator):
-    custos_host = Unicode(os.environ.get("CUSTOS_HOST") or "custos.scigap.org", config=True)
+    custos_host = Unicode(
+        os.environ.get("CUSTOS_HOST") or "custos.scigap.org", config=True
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -47,7 +48,9 @@ class CustosOAuthenticator(OAuthenticator):
             iam_host = "keycloak.usecustos.org:31161"
         x = super().client_id.split("-")
         tenant_id = x[len(x) - 1]
-        self.iam_uri = "https://{}/auth/realms/{}/protocol/openid-connect/".format(iam_host, tenant_id)
+        self.iam_uri = "https://{}/auth/realms/{}/protocol/openid-connect/".format(
+            iam_host, tenant_id
+        )
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -55,7 +58,9 @@ class CustosOAuthenticator(OAuthenticator):
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://{}/apiserver/identity-management/v1.0.0/token".format(self.custos_host)
+        return "https://{}/apiserver/identity-management/v1.0.0/token".format(
+            self.custos_host
+        )
 
     scope = List(
         Unicode(),
@@ -64,7 +69,8 @@ class CustosOAuthenticator(OAuthenticator):
         help="""The OAuth scopes to request.
         See cilogon_scope.md for details.
         At least 'openid' is required.
-        """, )
+        """,
+    )
 
     @validate('scope')
     def _validate_scope(self, proposal):
@@ -76,16 +82,19 @@ class CustosOAuthenticator(OAuthenticator):
 
     async def authenticate(self, handler, data=None):
         """We set up auth_state based on additional Custos info if we
-            receive it.
-            """
+        receive it.
+        """
         code = handler.get_argument("code")
 
         authS = "{}:{}".format(self.client_id, self.client_secret)
         tokenByte = authS.encode('utf-8')
         encodedBytes = base64.b64encode(tokenByte)
         auth_string = encodedBytes.decode('utf-8')
-        headers = {"Accept": "application/json", "User-Agent": "JupyterHub",
-                   "Authorization": "Bearer {}".format(auth_string)}
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "Bearer {}".format(auth_string),
+        }
 
         params = dict(
             client_id=self.client_id,
@@ -105,7 +114,12 @@ class CustosOAuthenticator(OAuthenticator):
         # Determine who the logged in user is
         params = dict(access_token=access_token)
         req = HTTPRequest(
-            url_concat("https://{}/apiserver/identity-management/v1.0.0/user".format(self.custos_host), params),
+            url_concat(
+                "https://{}/apiserver/identity-management/v1.0.0/user".format(
+                    self.custos_host
+                ),
+                params,
+            ),
             headers=headers,
         )
         resp_json = await self.fetch(req)

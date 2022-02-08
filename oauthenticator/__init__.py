@@ -4,7 +4,7 @@ from ._version import __version__
 from ._version import version_info
 from .bitbucket import *
 from .cilogon import *
+from .custos import *
 from .github import *
 from .google import *
 from .oauth2 import *
-from .custos import *
