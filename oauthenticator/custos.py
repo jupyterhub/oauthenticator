@@ -30,11 +30,6 @@ class CustosLoginHandler(OAuthLoginHandler):
         """Add idp, skin to redirect params"""
         extra_params = kwargs.setdefault('extra_params', {})
         extra_params["kc_idp_hint"] = 'oidc'
-        # if self.authenticator.idp:
-        #     extra_params["selected_idp"] = self.authenticator.idp
-        # if self.authenticator.skin:
-        #     extra_params["skin"] = self.authenticator.skin
-
         return super().authorize_redirect(*args, **kwargs)
 
 
