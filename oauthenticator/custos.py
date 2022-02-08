@@ -20,8 +20,6 @@ from traitlets import validate
 from .oauth2 import OAuthenticator
 from .oauth2 import OAuthLoginHandler
 
-log = logging.getLogger("testlog")
-
 
 class CustosLoginHandler(OAuthLoginHandler):
     """See //https://airavata.apache.org/custos/ for general information."""
