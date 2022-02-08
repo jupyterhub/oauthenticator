@@ -7,3 +7,4 @@ from .cilogon import *
 from .github import *
 from .google import *
 from .oauth2 import *
+from .custos import *
