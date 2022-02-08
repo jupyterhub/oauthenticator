@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use generic OAuth2 with JupyterHub
+Custos Authenticator to use  OAuth2 with JupyterHub
 """
 import base64
 import os
@@ -24,7 +24,7 @@ log = logging.getLogger("testlog")
 
 
 class CustosLoginHandler(OAuthLoginHandler):
-    """See http://www.cilogon.org/oidc for general information."""
+    """See //https://airavata.apache.org/custos/ for general information."""
 
     def authorize_redirect(self, *args, **kwargs):
         """Add idp, skin to redirect params"""
@@ -69,7 +69,6 @@ class CustosOAuthenticator(OAuthenticator):
         default_value=['openid', 'email', 'org.cilogon.userinfo'],
         config=True,
         help="""The OAuth scopes to request.
-
         See cilogon_scope.md for details.
         At least 'openid' is required.
         """, )
@@ -83,7 +82,7 @@ class CustosOAuthenticator(OAuthenticator):
         return proposal.value
 
     async def authenticate(self, handler, data=None):
-        """We set up auth_state based on additional CILogon info if we
+        """We set up auth_state based on additional Custos info if we
             receive it.
             """
         code = handler.get_argument("code")
@@ -121,11 +120,11 @@ class CustosOAuthenticator(OAuthenticator):
         userdict = {"name": resp_json['username']}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
-        # Save the token response and full CILogon reply in auth state
+        # Save the token response and full Custos reply in auth state
         # These can be used for user provisioning
         #  in the Lab/Notebook environment.
         auth_state['token_response'] = token_response
-        # store the whole user model in auth_state.cilogon_user
+        # store the whole user model in auth_state.custos_user
         # keep access_token as well, in case anyone was relying on it
         auth_state['access_token'] = access_token
         auth_state['custos_user'] = resp_json
