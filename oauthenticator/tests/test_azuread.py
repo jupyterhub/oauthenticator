@@ -20,12 +20,11 @@ def test_tenant_id_from_env():
         assert aad.tenant_id == tenant_id
 
 
-def user_model(tenant_id, client_id, name):
+def user_model(tenant_id, client_id, name, roles=None):
     """Return a user model"""
     # model derived from https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens#v20
     now = int(time.time())
-    id_token = jwt.encode(
-        {
+    token_body = {
             "ver": "2.0",
             "iss": f"https://login.microsoftonline.com/{tenant_id}/v2.0",
             "sub": "AAAAAAAAAAAAAAAAAAAAAIkzqFVrSaSaFHy782bbtaQ",
@@ -39,9 +38,10 @@ def user_model(tenant_id, client_id, name):
             "tid": tenant_id,
             "nonce": "123523",
             "aio": "Df2UVXL1ix!lMCWMSOJBcFatzcGfvFGhjKv8q5g0x732dR5MB5BisvGQO7YWByjd8iQDLq!eGbIDakyp5mnOrcdqHeYSnltepQmRp6AIZ8jY",
-        },
-        os.urandom(5),
-    )
+    }
+    if roles:
+        token_body["roles"] = roles
+    id_token = jwt.encode(token_body, os.urandom(5))
     if not PYJWT_2:
         id_token = id_token.decode("ascii")
 
@@ -60,7 +60,6 @@ def azure_client(client):
         token_request_style='jwt',
     )
     return client
-
 
 @pytest.mark.parametrize(
     'username_claim',
@@ -98,3 +97,112 @@ async def test_azuread(username_claim, azure_client):
 
     name = user_info['name']
     assert name == jwt_user[authenticator.username_claim]
+
+@pytest.mark.parametrize(
+    'is_admin',
+    [
+        True,
+        False,
+    ],
+)
+async def test_azuread_admin(is_admin, azure_client):
+    authenticator = AzureAdOAuthenticator(
+        tenant_id=str(uuid.uuid1()),
+        client_id=str(uuid.uuid1()),
+        client_secret=str(uuid.uuid1()),
+        admin_role_id=str(uuid.uuid1()),
+    )
+    
+    roles = []
+    
+    if is_admin:
+        roles.append(authenticator.admin_role_id)
+
+    handler = azure_client.handler_for_user(
+        user_model(
+            tenant_id=authenticator.tenant_id,
+            client_id=authenticator.client_id,
+            name="somebody",
+            roles=(roles,None)[roles == []]
+        )
+    )
+
+    user_info = await authenticator.authenticate(handler)
+    auth_state = user_info['auth_state']
+    has_admin_role = False if 'admin' not in user_info.keys() else user_info["admin"]
+    
+    assert sorted(user_info) == ['admin','auth_state','name'] if is_admin else sorted(user_info) == ['auth_state','name']
+    assert is_admin == has_admin_role
+    assert is_admin if has_admin_role else not is_admin
+    assert not is_admin if not has_admin_role else is_admin
+
+@pytest.mark.parametrize(
+    'is_allowed',
+    [
+        True,
+        False,
+    ],
+)
+@pytest.mark.parametrize(
+    'is_admin',
+    [
+        True,
+        False,
+    ],
+)
+@pytest.mark.parametrize(
+    'allowed_role_id',
+    [
+        "",
+        "somevalue",
+    ],
+)
+@pytest.mark.parametrize(
+    'admin_role_id',
+    [
+        "",
+        "someothervalue",
+    ],
+)
+async def test_azuread_allowed(is_allowed, is_admin, allowed_role_id, admin_role_id, azure_client):
+    authenticator = AzureAdOAuthenticator(
+        tenant_id=str(uuid.uuid1()),
+        client_id=str(uuid.uuid1()),
+        client_secret=str(uuid.uuid1()),
+        allowed_user_role_id=allowed_role_id,
+        admin_role_id=admin_role_id,
+    )
+
+    roles = []
+    
+    if is_allowed and allowed_role_id != "":
+        roles.append(authenticator.allowed_user_role_id)
+
+    if is_admin and admin_role_id != "":
+        roles.append(authenticator.admin_role_id)
+
+    handler = azure_client.handler_for_user(
+        user_model(
+            tenant_id=authenticator.tenant_id,
+            client_id=authenticator.client_id,
+            name="somebody",
+            roles=(roles,None)[roles == []]
+        )
+    )
+
+    user_info = await authenticator.authenticate(handler)
+    authenticated = user_info != None
+    auth_state = [] if not authenticated else user_info["auth_state"]
+    user = [] if not authenticated else auth_state["user"]
+    user_roles = [] if not authenticated or 'roles' not in user.keys() else user["roles"]
+    
+    has_allowed_role = allowed_role_id in user_roles
+    has_admin_role = admin_role_id in user_roles
+    allow_required = authenticator.allowed_user_role_id != ""
+    allowed_as_admin = (allow_required and has_admin_role) or not allow_required 
+    allowed_as_user = (allow_required and has_allowed_role) or not allow_required
+
+    if allowed_as_admin or allowed_as_user:
+        assert authenticated
+    elif not allowed_as_admin and not allowed_as_user:
+        assert not authenticated
