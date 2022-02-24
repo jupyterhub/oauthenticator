@@ -84,10 +84,18 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable basic authentication for access token request",
     )
 
+    ca_certs = Unicode(
+        os.environ.get('OAUTH2_CA_CERTS', os.environ.get('SSL_CERT_FILE')),
+        allow_none=True,
+        config=True,
+        help="Custom trusted Certificate Authorities bundle in PEM format (ca_certs) or None to use defaults. Default: None",
+    )
+
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient(
-            force_instance=True, defaults=dict(validate_cert=self.tls_verify)
+            force_instance=True,
+            defaults=dict(ca_certs=self.ca_certs, validate_cert=self.tls_verify),
         )
 
     def _get_headers(self):
