@@ -167,3 +167,14 @@ async def test_generic_callable_groups_claim_key_with_allowed_groups_and_admin_g
     user_info = await authenticator.authenticate(handler)
     assert user_info['name'] == 'zoe'
     assert user_info['admin'] is True
+
+
+def test_generic_ca_certs():
+    authenticator = GenericOAuthenticator()
+    assert authenticator.http_client.defaults.get('ca_certs') == None
+
+    ca_certs_bundle = '/test/ca.bundle'
+    authenticator = GenericOAuthenticator(
+        ca_certs=ca_certs_bundle,
+    )
+    assert authenticator.http_client.defaults.get('ca_certs') == ca_certs_bundle
