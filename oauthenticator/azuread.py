@@ -9,8 +9,8 @@ import jwt
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
-from traitlets import Unicode
 from traitlets import List
+from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
 
@@ -32,15 +32,15 @@ class AzureAdOAuthenticator(OAuthenticator):
     admin_role_ids = List(
         Unicode(),
         default_value=[],
-        config=True, 
-        help="The GUIDs of the Azure Active Directory Groups or Application Roles containing admin users"
+        config=True,
+        help="The GUIDs of the Azure Active Directory Groups or Application Roles containing admin users",
     )
 
     allowed_user_role_ids = List(
         Unicode(),
         default_value=[],
-        config=True, 
-        help="The GUIDs of the Azure Active Direcetory Groups or Application Roles containing allowed users"
+        config=True,
+        help="The GUIDs of the Azure Active Direcetory Groups or Application Roles containing allowed users",
     )
 
     @default('tenant_id')
@@ -81,7 +81,6 @@ class AzureAdOAuthenticator(OAuthenticator):
                 if role_id in token[self.role_claim]:
                     return True
         return False
-        
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -135,10 +134,14 @@ class AzureAdOAuthenticator(OAuthenticator):
             self.log.debug("Access to Azure AD User %s is permitted.", userdict["name"])
             if self._claim_has_role(decoded, self.admin_role_ids):
                 userdict["admin"] = True
-                self.log.debug("Azure AD User %s has been granted admin privileges", userdict["name"])
-            return userdict          
-        
+                self.log.debug(
+                    "Azure AD User %s has been granted admin privileges",
+                    userdict["name"],
+                )
+            return userdict
+
         return None
+
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
     """A version that mixes in local system user creation"""

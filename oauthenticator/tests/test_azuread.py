@@ -25,19 +25,19 @@ def user_model(tenant_id, client_id, name, roles=None):
     # model derived from https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens#v20
     now = int(time.time())
     token_body = {
-            "ver": "2.0",
-            "iss": f"https://login.microsoftonline.com/{tenant_id}/v2.0",
-            "sub": "AAAAAAAAAAAAAAAAAAAAAIkzqFVrSaSaFHy782bbtaQ",
-            "aud": client_id,
-            "exp": now + 3600,
-            "iat": now,
-            "nbf": now,
-            "name": name,
-            "preferred_username": name,
-            "oid": str(uuid.uuid1()),
-            "tid": tenant_id,
-            "nonce": "123523",
-            "aio": "Df2UVXL1ix!lMCWMSOJBcFatzcGfvFGhjKv8q5g0x732dR5MB5BisvGQO7YWByjd8iQDLq!eGbIDakyp5mnOrcdqHeYSnltepQmRp6AIZ8jY",
+        "ver": "2.0",
+        "iss": f"https://login.microsoftonline.com/{tenant_id}/v2.0",
+        "sub": "AAAAAAAAAAAAAAAAAAAAAIkzqFVrSaSaFHy782bbtaQ",
+        "aud": client_id,
+        "exp": now + 3600,
+        "iat": now,
+        "nbf": now,
+        "name": name,
+        "preferred_username": name,
+        "oid": str(uuid.uuid1()),
+        "tid": tenant_id,
+        "nonce": "123523",
+        "aio": "Df2UVXL1ix!lMCWMSOJBcFatzcGfvFGhjKv8q5g0x732dR5MB5BisvGQO7YWByjd8iQDLq!eGbIDakyp5mnOrcdqHeYSnltepQmRp6AIZ8jY",
     }
     if roles:
         token_body["roles"] = roles
@@ -60,6 +60,7 @@ def azure_client(client):
         token_request_style='jwt',
     )
     return client
+
 
 @pytest.mark.parametrize(
     'username_claim',
@@ -98,6 +99,7 @@ async def test_azuread(username_claim, azure_client):
     name = user_info['name']
     assert name == jwt_user[authenticator.username_claim]
 
+
 @pytest.mark.parametrize(
     'is_admin',
     [
@@ -112,9 +114,9 @@ async def test_azuread_admin(is_admin, azure_client):
         client_secret=str(uuid.uuid1()),
         admin_role_ids=[str(uuid.uuid1())],
     )
-    
+
     roles = []
-    
+
     if is_admin:
         roles.extend(authenticator.admin_role_ids)
 
@@ -123,18 +125,23 @@ async def test_azuread_admin(is_admin, azure_client):
             tenant_id=authenticator.tenant_id,
             client_id=authenticator.client_id,
             name="somebody",
-            roles=(roles,None)[roles == []]
+            roles=(roles, None)[roles == []],
         )
     )
 
     user_info = await authenticator.authenticate(handler)
     auth_state = user_info['auth_state']
     has_admin_role = False if 'admin' not in user_info.keys() else user_info["admin"]
-    
-    assert sorted(user_info) == ['admin','auth_state','name'] if is_admin else sorted(user_info) == ['auth_state','name']
+
+    assert (
+        sorted(user_info) == ['admin', 'auth_state', 'name']
+        if is_admin
+        else sorted(user_info) == ['auth_state', 'name']
+    )
     assert is_admin == has_admin_role
     assert is_admin if has_admin_role else not is_admin
     assert not is_admin if not has_admin_role else is_admin
+
 
 @pytest.mark.parametrize(
     'is_allowed',
@@ -155,7 +162,7 @@ async def test_azuread_admin(is_admin, azure_client):
     [
         [],
         ["somevalue"],
-        ["somevalue","someothervalue"],
+        ["somevalue", "someothervalue"],
     ],
 )
 @pytest.mark.parametrize(
@@ -163,10 +170,12 @@ async def test_azuread_admin(is_admin, azure_client):
     [
         [],
         ["somevalue"],
-        ["somevalue","someothervalue"],
+        ["somevalue", "someothervalue"],
     ],
 )
-async def test_azuread_allowed(is_allowed, is_admin, allowed_role_ids, admin_role_ids, azure_client):
+async def test_azuread_allowed(
+    is_allowed, is_admin, allowed_role_ids, admin_role_ids, azure_client
+):
     authenticator = AzureAdOAuthenticator(
         tenant_id=str(uuid.uuid1()),
         client_id=str(uuid.uuid1()),
@@ -176,7 +185,7 @@ async def test_azuread_allowed(is_allowed, is_admin, allowed_role_ids, admin_rol
     )
 
     roles = []
-    
+
     if is_allowed and allowed_role_ids != []:
         roles.append(authenticator.allowed_user_role_ids)
 
@@ -188,7 +197,7 @@ async def test_azuread_allowed(is_allowed, is_admin, allowed_role_ids, admin_rol
             tenant_id=authenticator.tenant_id,
             client_id=authenticator.client_id,
             name="somebody",
-            roles=(roles,None)[roles == []]
+            roles=(roles, None)[roles == []],
         )
     )
 
@@ -196,12 +205,14 @@ async def test_azuread_allowed(is_allowed, is_admin, allowed_role_ids, admin_rol
     authenticated = user_info != None
     auth_state = [] if not authenticated else user_info["auth_state"]
     user = [] if not authenticated else auth_state["user"]
-    user_roles = [] if not authenticated or 'roles' not in user.keys() else user["roles"]
-    
+    user_roles = (
+        [] if not authenticated or 'roles' not in user.keys() else user["roles"]
+    )
+
     has_allowed_role = [r for r in allowed_role_ids if r in user_roles] != []
     has_admin_role = [r for r in admin_role_ids if r in user_roles] != []
     allow_required = authenticator.allowed_user_role_ids != []
-    allowed_as_admin = (allow_required and has_admin_role) or not allow_required 
+    allowed_as_admin = (allow_required and has_admin_role) or not allow_required
     allowed_as_user = (allow_required and has_allowed_role) or not allow_required
 
     if allowed_as_admin or allowed_as_user:
