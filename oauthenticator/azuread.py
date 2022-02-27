@@ -10,6 +10,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
 from traitlets import Unicode
+from traitlets import List
 
 from .oauth2 import OAuthenticator
 
@@ -28,9 +29,19 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
-    admin_role_id = Unicode(config=True, help="The GUID of the Azure Active Directory Group containing admin users")
+    admin_role_ids = List(
+        Unicode(),
+        default_value=[],
+        config=True, 
+        help="The GUIDs of the Azure Active Directory Groups or Application Roles containing admin users"
+    )
 
-    allowed_user_role_id = Unicode(config=True, help="The GUID of the Azure Active Direcetory Group containing allowed users")
+    allowed_user_role_ids = List(
+        Unicode(),
+        default_value=[],
+        config=True, 
+        help="The GUIDs of the Azure Active Direcetory Groups or Application Roles containing allowed users"
+    )
 
     @default('tenant_id')
     def _tenant_id_default(self):
@@ -64,9 +75,13 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _role_claim_default(self):
         return 'roles'
 
-    def _claim_has_role(self, token, role_id):
-        roles = [] if self.role_claim not in token.keys() else token[self.role_claim]
-        return role_id in roles
+    def _claim_has_role(self, token, role_ids):
+        if self.role_claim in token.keys():
+            for role_id in role_ids:
+                if role_id in token[self.role_claim]:
+                    return True
+        return False
+        
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -108,23 +123,22 @@ class AzureAdOAuthenticator(OAuthenticator):
             # pyjwt 1.x
             decoded = jwt.decode(id_token, verify=False)
 
-        has_admin_role = self._claim_has_role(decoded, self.admin_role_id)
-        has_allowed_role = self._claim_has_role(decoded, self.allowed_user_role_id) or has_admin_role
-        allowed = has_allowed_role if self.allowed_user_role_id else True
-
         userdict = {"name": decoded[self.username_claim]}
-
-        if allowed:
-            self.log.debug("Access to Azure AD User %s is permitted (has_admin_role: %r, has_allowed_role: %r)", userdict["name"], has_admin_role, has_allowed_role)
-        if has_admin_role:
-            userdict["admin"] = has_admin_role
-            self.log.debug("Azure AD User %s has been granted admin privileges", userdict["name"])
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
         # results in a decoded JWT for the user data
         auth_state['user'] = decoded
 
-        return userdict if allowed else None
+        all_roles = list(self.allowed_user_role_ids)
+        all_roles.extend(self.admin_role_ids)
+        if self._claim_has_role(decoded, all_roles) or self.allowed_user_role_ids == []:
+            self.log.debug("Access to Azure AD User %s is permitted.", userdict["name"])
+            if self._claim_has_role(decoded, self.admin_role_ids):
+                userdict["admin"] = True
+                self.log.debug("Azure AD User %s has been granted admin privileges", userdict["name"])
+            return userdict          
+        
+        return None
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
     """A version that mixes in local system user creation"""
