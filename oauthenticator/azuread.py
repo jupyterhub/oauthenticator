@@ -9,6 +9,7 @@ from distutils.version import LooseVersion as V
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from traitlets import default
+from traitlets import Set
 from traitlets import Unicode
 
 from .oauth2 import OAuthenticator
@@ -37,6 +38,20 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default('username_claim')
     def _username_claim_default(self):
         return 'name'
+
+    app_roles_help_message = "More details on app roles: https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-add-app-roles-in-azure-ad-apps"
+
+    admin_users_app_roles = Set(
+        config=True,
+        help="Users with one of these app roles in their identity token claim 'roles' are treated as admins. "
+        + app_roles_help_message,
+    )
+
+    allowed_users_app_roles = Set(
+        config=True,
+        help="Only users with one of these app roles in their identity token claim 'roles' will be allowed to login into JupyterHub. Admins do not fall under this restriction. "
+        + app_roles_help_message,
+    )
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -93,6 +108,17 @@ class AzureAdOAuthenticator(OAuthenticator):
         auth_state['access_token'] = access_token
         # results in a decoded JWT for the user data
         auth_state['user'] = decoded
+
+        roles = set(auth_state['user'].get("roles", []))
+
+        if self.admin_users_app_roles:
+            if roles.intersection(self.admin_users_app_roles):
+                userdict["admin"] = True
+                return userdict
+
+        if self.allowed_users_app_roles:
+            if not roles.intersection(self.allowed_users_app_roles):
+                return None
 
         return userdict
 
