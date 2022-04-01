@@ -39,7 +39,8 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 class CILogonOAuthenticator(OAuthenticator):
     _deprecated_oauth_aliases = {
-        "idp_whitelist": ("allowed_idps", "0.12.0"),
+        "idp_whitelist": ("allowed_domains", "0.12.0"),
+        "allowed_idps": ("allowed_domains", "15.0.0"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
@@ -72,25 +73,78 @@ class CILogonOAuthenticator(OAuthenticator):
 
     @validate('scope')
     def _validate_scope(self, proposal):
+        scopes = proposal.value
+
         """ensure openid is requested"""
         if 'openid' not in proposal.value:
-            return ['openid'] + proposal.value
-        return proposal.value
+            scopes += ['openid']
+
+        """ ensure org.cilogon.userinfo is requested when
+        allowed_auth_providers is specified"""
+        if self.allowed_auth_providers and 'org.cilogon.userinfo' not in proposal.value:
+            scopes += ['org.cilogon.userinfo']
+
+        return scopes
 
     idp_whitelist = List(
-        help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`",
+        help="Deprecated, use `CIlogonOAuthenticator.allowed_domains`",
         config=True,
     )
+
     allowed_idps = List(
+        help="Deprecated, use `CIlogonOAuthenticator.allowed_domains`",
         config=True,
-        help="""A list of IDP which can be stripped from the username after the @ sign.""",
     )
+
+    allowed_auth_providers = List(
+        Unicode(),
+        config=True,
+        help="""A list of the only EntityIDs that will be allowed to use to login.
+             See https://cilogon.org/idplist for the list of EntityIDs of each IDP.""",
+    )
+
+    @validate("allowed_auth_providers")
+    def _validate_allowed_auth_providers(self, proposal):
+        allowed_auth_providers = proposal.value
+
+        # Make sure allowed_auth_providers containes EntityIDs and not domain names.
+        for idp in allowed_auth_providers:
+            # EntityIDs are the form of: `https://github.com/login/oauth/authorize`
+            if "https://" not in idp:
+                self.log.error(
+                    f"Trying to allow an auth provider that doesn't look like a valid CILogon EntityIDs {idp}",
+                )
+                raise ValueError(
+                    """The `allowed_auth_providers` list **must** contain CILogon permitted EntityIDs.
+                    See https://cilogon.org/idplist for the list of EntityIDs of each IDP.
+                    """
+                )
+
+        return allowed_auth_providers
+
+    allowed_domains = List(
+        Unicode(),
+        config=True,
+        help="""A list of domains which can be stripped from
+        the username after the @ sign and are allowed to login.""",
+    )
+
+    @validate("allowed_domains")
+    def _validate_allowed_domains(self, proposal):
+        # Make sure allowed_auth_providers containes EntityIDs and not domain names.
+        if proposal.value and not self.allowed_auth_providers:
+            self.log.warning(
+                "You didn't configure CILogonOAuthenticator.allowed_auth_providers list, so allowed_domains won't have any effect."
+            )
+        return proposal.value
+
     strip_idp_domain = Bool(
         False,
         config=True,
         help="""Remove the IDP domain from the username. Note that only domains which
-             appear in the `allowed_idps` will be stripped.""",
+             appear in the `allowed_domains` list will be stripped.""",
     )
+
     idp = Unicode(
         config=True,
         help="""The `idp` attribute is the SAML Entity ID of the user's selected
@@ -100,6 +154,7 @@ class CILogonOAuthenticator(OAuthenticator):
             providers supported by CILogon.
         """,
     )
+
     skin = Unicode(
         config=True,
         help="""The `skin` attribute is the name of the custom CILogon interface skin
@@ -108,6 +163,7 @@ class CILogonOAuthenticator(OAuthenticator):
             Contact help@cilogon.org to request a custom skin.
         """,
     )
+
     username_claim = Unicode(
         "eppn",
         config=True,
@@ -185,13 +241,29 @@ class CILogonOAuthenticator(OAuthenticator):
                 )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-        if self.allowed_idps:
-            gotten_name, gotten_idp = username.split('@')
-            if gotten_idp not in self.allowed_idps:
-                self.log.error("Trying to login from not allowed domain %s", gotten_idp)
-                raise web.HTTPError(500, "Trying to login from a domain not allowed")
-            if len(self.allowed_idps) == 1 and self.strip_idp_domain:
-                username = gotten_name
+        if self.allowed_auth_providers:
+            selected_auth_provider = resp_json.get("idp")
+            if selected_auth_provider not in self.allowed_auth_providers:
+                self.log.error(
+                    "Trying to login from an identity provider that wasn't allowed %s",
+                    selected_auth_provider,
+                )
+                raise web.HTTPError(
+                    500, "Trying to login using an identity provider not allowed"
+                )
+
+            if self.allowed_domains:
+                gotten_name, gotten_idp = username.split('@')
+                if gotten_idp not in self.allowed_domains:
+                    self.log.error(
+                        "Trying to login from not allowed domain %s", gotten_idp
+                    )
+                    raise web.HTTPError(
+                        500, "Trying to login from a domain not allowed"
+                    )
+                if len(self.allowed_domains) == 1 and self.strip_idp_domain:
+                    username = gotten_name
+
         userdict = {"name": username}
         # Now we set up auth_state
         userdict["auth_state"] = auth_state = {}
