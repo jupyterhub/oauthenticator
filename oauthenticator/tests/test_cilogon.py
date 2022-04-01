@@ -16,10 +16,12 @@ def user_model(username):
     }
 
 
-def alternative_user_model(username, claimname):
+def alternative_user_model(username, claimname, **kwargs):
     """Return a user model with alternate claim name"""
+    print(kwargs)
     return {
         claimname: username,
+        **kwargs
     }
 
 
@@ -101,17 +103,69 @@ async def test_cilogon_missing_alternate_claim(cilogon_client):
 
 def test_deprecated_config(caplog):
     cfg = Config()
-    cfg.CILogonOAuthenticator.idp_whitelist = ['pink']
+    cfg.CILogonOAuthenticator.allowed_idps = ['pink']
 
     log = logging.getLogger("testlog")
     authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert caplog.record_tuples == [
-        (
-            log.name,
-            logging.WARNING,
-            'CILogonOAuthenticator.idp_whitelist is deprecated in CILogonOAuthenticator 0.12.0, use '
-            'CILogonOAuthenticator.allowed_idps instead',
-        )
-    ]
+    log_msgs = caplog.record_tuples
 
-    assert authenticator.allowed_idps == ['pink']
+    expected_deprecation_error = (
+        log.name,
+        logging.WARNING,
+        'CILogonOAuthenticator.allowed_idps is deprecated in CILogonOAuthenticator 15.0.0, use '
+        'CILogonOAuthenticator.allowed_domains instead',
+    )
+
+    assert expected_deprecation_error in log_msgs
+    assert authenticator.allowed_domains == ['pink']
+
+
+async def test_allowed_domains_but_no_allowed_auth_provider(caplog):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_domains = ['https://github.com/login/oauth/authorize']
+
+    log = logging.getLogger("testlog")
+    CILogonOAuthenticator(config=cfg, log=log)
+
+    assert caplog.record_tuples == [(
+        log.name,
+        logging.WARNING,
+        "You didn't configure CILogonOAuthenticator.allowed_auth_providers list, so allowed_domains won't have any effect."
+    )]
+
+
+async def test_cilogon_scopes():
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_auth_providers = ['https://some-idp.com/login/oauth/authorize']
+    cfg.CILogonOAuthenticator.scope = ['email']
+
+    authenticator = CILogonOAuthenticator(config=cfg)
+    expected_scopes = ['email', 'openid', 'org.cilogon.userinfo']
+
+    assert authenticator.scope == expected_scopes
+
+
+async def test_allowed_auth_providers_validity():
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_auth_providers = ['uni.edu']
+
+    with raises(ValueError):
+        CILogonOAuthenticator(config=cfg)
+
+async def test_strip_username_domain(cilogon_client):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_auth_providers = ['https://some-idp.com/login/oauth/authorize']
+    cfg.CILogonOAuthenticator.allowed_domains = ["uni.edu"]
+    cfg.CILogonOAuthenticator.strip_idp_domain = True
+    cfg.CILogonOAuthenticator.username_claim = 'email'
+
+    authenticator = CILogonOAuthenticator(config=cfg)
+    handler = cilogon_client.handler_for_user(
+        alternative_user_model(
+            'jtkirk@uni.edu', 'email', idp = "https://some-idp.com/login/oauth/authorize"
+        )
+    )
+    user_info = await authenticator.authenticate(handler)
+    print(json.dumps(user_info, sort_keys=True, indent=4))
+    name = user_info['name']
+    assert name == 'jtkirk'
