@@ -29,8 +29,8 @@ class CILogonLoginHandler(OAuthLoginHandler):
     def authorize_redirect(self, *args, **kwargs):
         """Add idp, skin to redirect params"""
         extra_params = kwargs.setdefault('extra_params', {})
-        if self.authenticator.idp:
-            extra_params["selected_idp"] = self.authenticator.idp
+        if self.authenticator.shown_idps:
+            extra_params["selected_idp"] = self.authenticator.shown_idps
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
 
@@ -41,6 +41,7 @@ class CILogonOAuthenticator(OAuthenticator):
     _deprecated_oauth_aliases = {
         "idp_whitelist": ("allowed_domains", "0.12.0"),
         "allowed_idps": ("allowed_domains", "15.0.0"),
+        "idp": ("shown_idps", "15.0.0"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
@@ -145,9 +146,11 @@ class CILogonOAuthenticator(OAuthenticator):
              appear in the `allowed_domains` list will be stripped.""",
     )
 
-    idp = Unicode(
+    shown_idps = List(
+        Unicode(),
         config=True,
-        help="""The `idp` attribute is the SAML Entity ID of the user's selected
+        help="""A list of idps to be shown as login options.
+            The `idp` attribute is the SAML Entity ID of the user's selected
             identity provider.
 
             See https://cilogon.org/include/idplist.xml for the list of identity
