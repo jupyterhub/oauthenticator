@@ -18,7 +18,6 @@ def user_model(username):
 
 def alternative_user_model(username, claimname, **kwargs):
     """Return a user model with alternate claim name"""
-    print(kwargs)
     return {
         claimname: username,
         **kwargs
@@ -177,7 +176,6 @@ async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
         logging.WARNING,
         "Config username-derivation.a not recognized! Available options are: ['username-claim', 'action', 'domain', 'prefix']"
     )
-    print(log_msgs)
     assert expected_deprecation_error in log_msgs
 
 async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
@@ -201,7 +199,6 @@ async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
         logging.WARNING,
         "No domain was specified for stripping. The configuration will be discharged."
     )
-    print(log_msgs)
     assert expected_deprecation_error in log_msgs
 
 async def test_allowed_idps_invalid_config_username_prefix(caplog):
@@ -225,7 +222,6 @@ async def test_allowed_idps_invalid_config_username_prefix(caplog):
         logging.WARNING,
         "No prefix was specified to append. The configuration will be discharged."
     )
-    print(log_msgs)
     assert expected_deprecation_error in log_msgs
 
 async def test_cilogon_scopes():
