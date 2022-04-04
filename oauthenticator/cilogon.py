@@ -39,9 +39,9 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 class CILogonOAuthenticator(OAuthenticator):
     _deprecated_oauth_aliases = {
-        "idp_whitelist": ("allowed_domains", "0.12.0"),
-        "allowed_idps": ("allowed_domains", "15.0.0"),
-        "idp": ("shown_idps", "15.0.0"),
+        "idp_whitelist": ("allowed_idps", "0.12.0", False),
+        "idp": ("shown_idps", "15.0.0", False),
+        "strip_idp_domain": ("allowed_idps", "15.0.0", False),
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
@@ -81,8 +81,8 @@ class CILogonOAuthenticator(OAuthenticator):
             scopes += ['openid']
 
         """ ensure org.cilogon.userinfo is requested when
-        allowed_auth_providers is specified"""
-        if self.allowed_auth_providers and 'org.cilogon.userinfo' not in proposal.value:
+        allowed_idps is specified"""
+        if self.allowed_idps and 'org.cilogon.userinfo' not in proposal.value:
             scopes += ['org.cilogon.userinfo']
 
         return scopes
@@ -93,14 +93,14 @@ class CILogonOAuthenticator(OAuthenticator):
     )
 
     allowed_idps = Dict(
-        Unicode(),
         config=True,
+        default_value={},
         help="""A dictionary of the only entity IDs that will be allowed to use on login.
         See https://cilogon.org/idplist for the list of `EntityIDs` of each IDP.
 
-        The entity ids can have a username-derivation scheme that can be used to override
-        the `CILogonOAuthenticator.strip_idp_domain`, `CILogonOAuthenticator.username_claim`
-        options on a per-idp basis to avoid username clashes.
+        The entity ids can have a username-derivation scheme that can be used to enable
+        stripping idp domains from hub usernames and overwrite the option
+        `CILogonOAuthenticator.username_claim` on a per-idp basis to avoid username clashes.
 
         Required format:
             - `username-derivation` dict can only contain the following keys:
@@ -130,28 +130,40 @@ class CILogonOAuthenticator(OAuthenticator):
         }
 
         If you login with a `uni.edu` account, the hub username will be your email, from which the domain
-        will be stripped, but if you login with github, it'll be your GitHub username prefixed with gh:.
+        will be stripped, but if you login with github, it'll be your GitHub username prefixed with `gh:`.
         This way, multiple users can log in without clashes across IDPs
 
-        If no `username-derivation dict` is provided, then `CILogonOAuthenticator.strip_idp_domain`
-        and `CILogonOAuthenticator.username_claim` will be used for every idp-id in `allowed_idps`.
+        If no `username-derivation dict` is provided, then no domain stripping will take place and
+        and `CILogonOAuthenticator.username_claim` will be used for the hub username,
+        for every idp-id in `allowed_idps`.
 
         Warning: if there are more than one idp in this dict and no username-derivation specified,
         then username clashes might happen!
         """,
     )
 
-    def _valid_username_derivation_config(self):
+    def _valid_username_derivation_config(self, idp):
         """
         Checks whether or not the username_derivation config is valid and only contains accepted
         keys and values.
         """
 
-        username_derivation_dict = self.allowed_idps["username-derivation"]
-        allowed_username_derivation_keys = ["username_claim", "action", "domain", "prefix"]
+        if type(self.allowed_idps[idp]["username-derivation"]) is not dict:
+            self.log.warning(
+                f"Config not recognized! `username-derivation` must be a dict. Will be discharged!",
+            )
+            return False
+
+        username_derivation_dict = self.allowed_idps[idp]["username-derivation"]
+        allowed_username_derivation_keys = [
+            "username-claim",
+            "action",
+            "domain",
+            "prefix",
+        ]
         for key, value in username_derivation_dict.items():
             if key not in allowed_username_derivation_keys:
-                self.log.error(
+                self.log.warning(
                     f"Config username-derivation.{key} not recognized! Available options are: {allowed_username_derivation_keys}",
                 )
                 return False
@@ -160,31 +172,46 @@ class CILogonOAuthenticator(OAuthenticator):
             allowed_actions = ["strip-idp-domain", "prefix"]
             if key == "action":
                 if value not in allowed_actions:
-                    self.log.error(
+                    self.log.warning(
                         f"Config {key}.{value} not recognized! Available options are: {key}.{allowed_actions}",
                     )
                     return False
 
                 # When action is strip-idp-domain, domain to strip must be passed
                 if value == "strip-idp-domain":
-                    if not self.allowed_idps["username-derivation"].get("domain", None):
+                    if not self.allowed_idps[idp]["username-derivation"].get(
+                        "domain", None
+                    ):
+                        self.log.warning(
+                            f"No domain was specified for stripping. The configuration will be discharged.",
+                        )
                         return False
                 # When action is prefix, prefix to add must be passed
                 if value == "prefix":
-                    if not self.allowed_idps["username-derivation"].get("prefix", None):
+                    if not self.allowed_idps[idp]["username-derivation"].get(
+                        "prefix", None
+                    ):
+                        self.log.warning(
+                            f"No prefix was specified to append. The configuration will be discharged.",
+                        )
                         return False
 
         return True
-
 
     @validate("allowed_idps")
     def _validate_allowed_idps(self, proposal):
         idps = proposal.value
         valid_idps_dict = {}
 
+        # If we receive a list, then turn that into a dict
+        if type(idps) is List:
+            for idp in idps:
+                valid_idps_dict[idp] = {}
+            return valid_idps_dict
+
         for entity_id, username_derivation in idps.items():
 
-            # Make sure allowed_auth_providers containes EntityIDs and not domain names.
+            # Make sure allowed_idps containes EntityIDs and not domain names.
             if "https://" not in entity_id:
                 # Validate entity ids are the form of: `https://github.com/login/oauth/authorize`
                 self.log.error(
@@ -196,23 +223,18 @@ class CILogonOAuthenticator(OAuthenticator):
                     """
                 )
 
-            # No username-derivation config passed, skip validation
-            if not username_derivation:
-                continue
-
             # Validate it's username_derivation what we're configuring for each idp id and not something else
-            if len(username_derivation.keys()) > 1:
-                valid_idps_dict[entity_id] = {}
-
-            if not username_derivation.get("username-derivation", None):
-                self.log.error(
-                    f"Config not recognized! Available option is {entity_id}.username-derivation.",
+            if (
+                type(username_derivation) is not dict
+                or username_derivation.get("username-derivation", None) is None
+            ):
+                self.log.warning(
+                    f"Config not recognized! Available option is {entity_id}.username-derivation. Will be discharged",
                 )
                 valid_idps_dict[entity_id] = {}
                 continue
 
-            # Validate username-derivation dict config is valid
-            if not self._valid_username_derivation_config():
+            if not self._valid_username_derivation_config(entity_id):
                 valid_idps_dict[entity_id] = {}
                 continue
 
@@ -222,12 +244,12 @@ class CILogonOAuthenticator(OAuthenticator):
 
         return idps
 
-
     strip_idp_domain = Bool(
         False,
         config=True,
-        help="""Remove the IDP domain from the username. Note that this option can be overwritten
-        by allowed_idps[username-derivation] config if present.
+        help="""Deprecated, use CIlogonOAuthenticator.allowed_idps["username-derivation"]["action"] = "strip-idp-domain"
+        to enable it and CIlogonOAuthenticator.allowed_idps["username-derivation"]["domain"] to list the domain
+        which will be stripped
         """,
     )
 
@@ -276,6 +298,27 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
+    def check_username_claim(self, claimlist, resp_json):
+        for claim in claimlist:
+            username = resp_json.get(claim)
+            if username:
+                return username
+
+        if not username:
+            if len(claimlist) < 2:
+                self.log.error(
+                    "Username claim %s not found in response: %s",
+                    self.username_claim,
+                    sorted(resp_json.keys()),
+                )
+            else:
+                self.log.error(
+                    "No username claim from %r in response: %s",
+                    claimlist,
+                    sorted(resp_json.keys()),
+                )
+            raise web.HTTPError(500, "Failed to get username from CILogon")
+
     async def authenticate(self, handler, data=None):
         """We set up auth_state based on additional CILogon info if we
         receive it.
@@ -312,28 +355,11 @@ class CILogonOAuthenticator(OAuthenticator):
         if self.additional_username_claims:
             claimlist.extend(self.additional_username_claims)
 
-        for claim in claimlist:
-            username = resp_json.get(claim)
-            if username:
-                break
-        if not username:
-            if len(claimlist) < 2:
-                self.log.error(
-                    "Username claim %s not found in response: %s",
-                    self.username_claim,
-                    sorted(resp_json.keys()),
-                )
-            else:
-                self.log.error(
-                    "No username claim from %r in response: %s",
-                    claimlist,
-                    sorted(resp_json.keys()),
-                )
-            raise web.HTTPError(500, "Failed to get username from CILogon")
-
-        if self.allowed_auth_providers:
-            selected_auth_provider = resp_json.get("idp")
-            if selected_auth_provider not in self.allowed_auth_providers:
+        selected_auth_provider = resp_json.get("idp")
+        # Check if selected idp was marked as allowed
+        if self.allowed_idps:
+            # Faild hard if idp wasn't allowed
+            if selected_auth_provider not in self.allowed_idps.keys():
                 self.log.error(
                     "Trying to login from an identity provider that wasn't allowed %s",
                     selected_auth_provider,
@@ -342,17 +368,41 @@ class CILogonOAuthenticator(OAuthenticator):
                     500, "Trying to login using an identity provider not allowed"
                 )
 
-            if self.allowed_domains:
-                gotten_name, gotten_idp = username.split('@')
-                if gotten_idp not in self.allowed_domains:
-                    self.log.error(
-                        "Trying to login from not allowed domain %s", gotten_idp
-                    )
-                    raise web.HTTPError(
-                        500, "Trying to login from a domain not allowed"
-                    )
-                if len(self.allowed_domains) == 1 and self.strip_idp_domain:
-                    username = gotten_name
+            # Check if another username_claim should be used for this idp
+            if (
+                self.allowed_idps[selected_auth_provider]
+                .get("username-derivation", None)
+                .get("username-claim", None)
+            ):
+                claimlist = [
+                    self.allowed_idps[selected_auth_provider]["username-derivation"][
+                        "username-claim"
+                    ]
+                ]
+
+        # Check if the requested username_claim exists in the response from the provider
+        username = self.check_username_claim(claimlist, resp_json)
+
+        # Check if we need to strip/prefix username
+        if self.allowed_idps:
+            username_derivation_config = self.allowed_idps.get(
+                selected_auth_provider, None
+            ).get("username-derivation", None)
+            if username_derivation_config:
+                action = username_derivation_config["action"]
+                if action == "strip-idp-domain":
+                    gotten_name, gotten_domain = username.split('@')
+                    if gotten_domain != username_derivation_config["domain"]:
+                        self.log.warning(
+                            """Trying to strip from the username a domain that doesn't exist.
+                            Username will be left unchanged.
+                            """
+                        )
+                    else:
+                        username = gotten_name
+                elif action == "prefix":
+                    prefix = username_derivation_config["prefix"]
+                    username = f"{prefix}:{username}"
 
         userdict = {"name": username}
         # Now we set up auth_state
