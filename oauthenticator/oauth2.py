@@ -5,6 +5,7 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 """
 import base64
 import json
+from multiprocessing.dummy import Value
 import os
 import uuid
 from urllib.parse import quote, urlparse, urlunparse
@@ -434,7 +435,12 @@ class OAuthenticator(Authenticator):
     def _deprecated_oauth_trait(self, change):
         """observer for deprecated traits"""
         old_attr = change.name
-        new_attr, version = self._deprecated_oauth_aliases.get(old_attr)
+        try:
+            new_attr, version, same = self._deprecated_oauth_aliases.get(old_attr)
+        except ValueError:
+            new_attr, version = self._deprecated_oauth_aliases.get(old_attr)
+            same = True
+
         new_value = getattr(self, new_attr)
         if new_value != change.new:
             # only warn if different
@@ -448,7 +454,10 @@ class OAuthenticator(Authenticator):
                     version=version,
                 )
             )
-            setattr(self, new_attr, change.new)
+
+            # set the value for the new attr only if they are the same type
+            if (same):
+                setattr(self, new_attr, change.new)
 
     def __init__(self, **kwargs):
         # observe deprecated config names in oauthenticator
