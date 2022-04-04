@@ -18,7 +18,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Bool, List, Unicode, default, validate
+from traitlets import Bool, Dict, List, Unicode, default, validate
 
 from .oauth2 import OAuthenticator, OAuthLoginHandler
 
@@ -92,78 +92,163 @@ class CILogonOAuthenticator(OAuthenticator):
         config=True,
     )
 
-    allowed_idps = List(
-        help="Deprecated, use `CIlogonOAuthenticator.allowed_domains`",
-        config=True,
-    )
-
-    allowed_auth_providers = List(
+    allowed_idps = Dict(
         Unicode(),
         config=True,
-        help="""A list of the only EntityIDs that will be allowed to use to login.
-             See https://cilogon.org/idplist for the list of EntityIDs of each IDP.""",
+        help="""A dictionary of the only entity IDs that will be allowed to use on login.
+        See https://cilogon.org/idplist for the list of `EntityIDs` of each IDP.
+
+        The entity ids can have a username-derivation scheme that can be used to override
+        the `CILogonOAuthenticator.strip_idp_domain`, `CILogonOAuthenticator.username_claim`
+        options on a per-idp basis to avoid username clashes.
+
+        Required format:
+            - `username-derivation` dict can only contain the following keys:
+              ["username-claim", "action", "domain", "prefix"].
+            - `username-derivation.action` can only be `strip-idp-domain` or `prefix`
+            - if `username-derivation.action` is `strip-idp-domain`, then
+              `username-derivation.domain` must be specified
+            - if `username-derivation.action` is `prefix`, then `username-derivation.prefix`
+              must be specified.
+
+        For example:
+        {
+            "idp-id-for-uni-edu": {
+                "username-derivation": {
+                    "username-claim": "email",
+                    "action": "strip-idp-domain",
+                    "domain": "berkeley.edu",
+                }
+            },
+            "idp-id-for-github": {
+                "username-derivation": {
+                    "username-claim": "username",
+                    "action": "prefix",
+                    "prefix": "gh"
+                }
+            }
+        }
+
+        If you login with a `uni.edu` account, the hub username will be your email, from which the domain
+        will be stripped, but if you login with github, it'll be your GitHub username prefixed with gh:.
+        This way, multiple users can log in without clashes across IDPs
+
+        If no `username-derivation dict` is provided, then `CILogonOAuthenticator.strip_idp_domain`
+        and `CILogonOAuthenticator.username_claim` will be used for every idp-id in `allowed_idps`.
+
+        Warning: if there are more than one idp in this dict and no username-derivation specified,
+        then username clashes might happen!
+        """,
     )
 
-    @validate("allowed_auth_providers")
-    def _validate_allowed_auth_providers(self, proposal):
-        allowed_auth_providers = proposal.value
+    def _valid_username_derivation_config(self):
+        """
+        Checks whether or not the username_derivation config is valid and only contains accepted
+        keys and values.
+        """
 
-        # Make sure allowed_auth_providers containes EntityIDs and not domain names.
-        for idp in allowed_auth_providers:
-            # EntityIDs are the form of: `https://github.com/login/oauth/authorize`
-            if "https://" not in idp:
+        username_derivation_dict = self.allowed_idps["username-derivation"]
+        allowed_username_derivation_keys = ["username_claim", "action", "domain", "prefix"]
+        for key, value in username_derivation_dict.items():
+            if key not in allowed_username_derivation_keys:
                 self.log.error(
-                    f"Trying to allow an auth provider that doesn't look like a valid CILogon EntityIDs {idp}",
+                    f"Config username-derivation.{key} not recognized! Available options are: {allowed_username_derivation_keys}",
+                )
+                return False
+
+            # Make sure only supported actions are passed
+            allowed_actions = ["strip-idp-domain", "prefix"]
+            if key == "action":
+                if value not in allowed_actions:
+                    self.log.error(
+                        f"Config {key}.{value} not recognized! Available options are: {key}.{allowed_actions}",
+                    )
+                    return False
+
+                # When action is strip-idp-domain, domain to strip must be passed
+                if value == "strip-idp-domain":
+                    if not self.allowed_idps["username-derivation"].get("domain", None):
+                        return False
+                # When action is prefix, prefix to add must be passed
+                if value == "prefix":
+                    if not self.allowed_idps["username-derivation"].get("prefix", None):
+                        return False
+
+        return True
+
+
+    @validate("allowed_idps")
+    def _validate_allowed_idps(self, proposal):
+        idps = proposal.value
+        valid_idps_dict = {}
+
+        for entity_id, username_derivation in idps.items():
+
+            # Make sure allowed_auth_providers containes EntityIDs and not domain names.
+            if "https://" not in entity_id:
+                # Validate entity ids are the form of: `https://github.com/login/oauth/authorize`
+                self.log.error(
+                    f"Trying to allow an auth provider that doesn't look like a valid CILogon EntityIDs {entity_id}",
                 )
                 raise ValueError(
-                    """The `allowed_auth_providers` list **must** contain CILogon permitted EntityIDs.
+                    """The keys of `allowed_idps` **must** be CILogon permitted EntityIDs.
                     See https://cilogon.org/idplist for the list of EntityIDs of each IDP.
                     """
                 )
 
-        return allowed_auth_providers
+            # No username-derivation config passed, skip validation
+            if not username_derivation:
+                continue
 
-    allowed_domains = List(
-        Unicode(),
-        config=True,
-        help="""A list of domains which can be stripped from
-        the username after the @ sign and are allowed to login.""",
-    )
+            # Validate it's username_derivation what we're configuring for each idp id and not something else
+            if len(username_derivation.keys()) > 1:
+                valid_idps_dict[entity_id] = {}
 
-    @validate("allowed_domains")
-    def _validate_allowed_domains(self, proposal):
-        # Make sure allowed_auth_providers containes EntityIDs and not domain names.
-        if proposal.value and not self.allowed_auth_providers:
-            self.log.warning(
-                "You didn't configure CILogonOAuthenticator.allowed_auth_providers list, so allowed_domains won't have any effect."
-            )
-        return proposal.value
+            if not username_derivation.get("username-derivation", None):
+                self.log.error(
+                    f"Config not recognized! Available option is {entity_id}.username-derivation.",
+                )
+                valid_idps_dict[entity_id] = {}
+                continue
+
+            # Validate username-derivation dict config is valid
+            if not self._valid_username_derivation_config():
+                valid_idps_dict[entity_id] = {}
+                continue
+
+        # If valid_idps is not empty, it means some part of the config wasn't valid and we've overwritten it
+        if valid_idps_dict:
+            return valid_idps_dict
+
+        return idps
+
 
     strip_idp_domain = Bool(
         False,
         config=True,
-        help="""Remove the IDP domain from the username. Note that only domains which
-             appear in the `allowed_domains` list will be stripped.""",
+        help="""Remove the IDP domain from the username. Note that this option can be overwritten
+        by allowed_idps[username-derivation] config if present.
+        """,
     )
 
     shown_idps = List(
         Unicode(),
         config=True,
         help="""A list of idps to be shown as login options.
-            The `idp` attribute is the SAML Entity ID of the user's selected
-            identity provider.
+        The `idp` attribute is the SAML Entity ID of the user's selected
+        identity provider.
 
-            See https://cilogon.org/include/idplist.xml for the list of identity
-            providers supported by CILogon.
+        See https://cilogon.org/include/idplist.xml for the list of identity
+        providers supported by CILogon.
         """,
     )
 
     skin = Unicode(
         config=True,
         help="""The `skin` attribute is the name of the custom CILogon interface skin
-            for your application.
+        for your application.
 
-            Contact help@cilogon.org to request a custom skin.
+        Contact help@cilogon.org to request a custom skin.
         """,
     )
 
@@ -171,12 +256,14 @@ class CILogonOAuthenticator(OAuthenticator):
         "eppn",
         config=True,
         help="""The claim in the userinfo response from which to get the JupyterHub username
+        Examples include: eppn, email
 
-            Examples include: eppn, email
+        What keys are available will depend on the scopes requested.
 
-            What keys are available will depend on the scopes requested.
+        See http://www.cilogon.org/oidc for details.
 
-            See http://www.cilogon.org/oidc for details.
+        Note that this option can be overwritten by allowed_idps[username-derivation]
+        config if present.
         """,
     )
 
