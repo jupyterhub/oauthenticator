@@ -294,7 +294,8 @@ class CILogonOAuthenticator(OAuthenticator):
                     f"Trying to login from an identity provider that was not allowed {selected_auth_provider}",
                 )
                 raise web.HTTPError(
-                    500, "Trying to login using an identity provider that was not allowed"
+                    500,
+                    "Trying to login using an identity provider that was not allowed",
                 )
 
             # Check if another username_claim should be used for this idp
