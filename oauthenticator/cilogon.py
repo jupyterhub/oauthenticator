@@ -13,11 +13,11 @@ Caveats:
   email instead of ePPN as the JupyterHub username.
 """
 import os
-import jsonschema
 from urllib.parse import urlparse
-from ruamel.yaml import YAML
 
+import jsonschema
 from jupyterhub.auth import LocalAuthenticator
+from ruamel.yaml import YAML
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
@@ -162,8 +162,8 @@ class CILogonOAuthenticator(OAuthenticator):
                     See https://cilogon.org/idplist for the list of EntityIDs of each IDP.
                     """
                 )
-
-            schema_file = os.path.join(os.path.dirname(__file__), "cilogon-schema.yaml")
+            root_dir = os.path.dirname(os.path.abspath(__file__))
+            schema_file = os.path.join(root_dir, "schemas", "cilogon-schema.yaml")
             with open(schema_file) as schema_fd:
                 schema = yaml.load(schema_fd)
                 # Raises useful exception if validation fails

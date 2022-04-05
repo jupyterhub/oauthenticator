@@ -5,7 +5,6 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 """
 import base64
 import json
-from multiprocessing.dummy import Value
 import os
 import uuid
 from urllib.parse import quote, urlparse, urlunparse

@@ -50,6 +50,7 @@ setup_args = dict(
     platforms="Linux, Mac OS X",
     keywords=['Interactive', 'Interpreter', 'Shell', 'Web'],
     python_requires=">=3.6",
+    include_package_data=True,
     entry_points={
         'jupyterhub.authenticators': [
             'auth0 = oauthenticator.auth0:Auth0OAuthenticator',

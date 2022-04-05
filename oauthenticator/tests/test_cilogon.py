@@ -1,11 +1,11 @@
 import json
 import logging
 
+from jsonschema.exceptions import ValidationError
 from pytest import fixture, raises
 from tornado.web import HTTPError
 from traitlets.config import Config
 from traitlets.traitlets import TraitError
-from jsonschema.exceptions import ValidationError
 
 from ..cilogon import CILogonOAuthenticator
 from .mocks import setup_oauth_mock
