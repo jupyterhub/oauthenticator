@@ -13,7 +13,9 @@ Caveats:
   email instead of ePPN as the JupyterHub username.
 """
 import os
+import jsonschema
 from urllib.parse import urlparse
+from ruamel.yaml import YAML
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado import web
@@ -22,6 +24,8 @@ from tornado.httputil import url_concat
 from traitlets import Bool, Dict, List, Unicode, default, validate
 
 from .oauth2 import OAuthenticator, OAuthLoginHandler
+
+yaml = YAML(typ="safe", pure=True)
 
 
 class CILogonLoginHandler(OAuthLoginHandler):
@@ -140,66 +144,9 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
-    def _valid_username_derivation_config(self, idp):
-        """
-        Checks whether or not the username_derivation config is valid and only contains accepted
-        keys and values.
-        """
-
-        if not isinstance(self.allowed_idps[idp]["username-derivation"], dict):
-            self.log.warning(
-                f"The config is not recognized and will be discarded! `username-derivation` must be a dict.",
-            )
-            return False
-
-        username_derivation_dict = self.allowed_idps[idp]["username-derivation"]
-        allowed_username_derivation_keys = [
-            "username-claim",
-            "action",
-            "domain",
-            "prefix",
-        ]
-        for key, value in username_derivation_dict.items():
-            if key not in allowed_username_derivation_keys:
-                self.log.warning(
-                    f"Config username-derivation.{key} not recognized! Available options are: {allowed_username_derivation_keys}",
-                )
-                return False
-
-            # Make sure only supported actions are passed
-            allowed_actions = ["strip-idp-domain", "prefix"]
-            if key == "action":
-                if value not in allowed_actions:
-                    self.log.warning(
-                        f"Config {key}.{value} not recognized! Available options are: {key}.{allowed_actions}",
-                    )
-                    return False
-
-                # When action is strip-idp-domain, domain to strip must be passed
-                if value == "strip-idp-domain":
-                    if not self.allowed_idps[idp]["username-derivation"].get(
-                        "domain", None
-                    ):
-                        self.log.warning(
-                            f"No domain was specified for stripping. The configuration will be discarded.",
-                        )
-                        return False
-                # When action is prefix, prefix to add must be passed
-                if value == "prefix":
-                    if not self.allowed_idps[idp]["username-derivation"].get(
-                        "prefix", None
-                    ):
-                        self.log.warning(
-                            f"No prefix was specified to append. The configuration will be discarded.",
-                        )
-                        return False
-
-        return True
-
     @validate("allowed_idps")
     def _validate_allowed_idps(self, proposal):
         idps = proposal.value
-        valid_idps_dict = {}
 
         for entity_id, username_derivation in idps.items():
             accepted_entity_id_scheme = ["urn", "https", "http"]
@@ -216,24 +163,11 @@ class CILogonOAuthenticator(OAuthenticator):
                     """
                 )
 
-            # Validate it's username_derivation what we're configuring for each idp id and not something else
-            if (
-                not isinstance(username_derivation, dict)
-                or not username_derivation.get("username-derivation", {})
-            ):
-                self.log.warning(
-                    f"The config is not recognized and will be discarded! Available option is {entity_id}.username-derivation.",
-                )
-                valid_idps_dict[entity_id] = {}
-                continue
-
-            if not self._valid_username_derivation_config(entity_id):
-                valid_idps_dict[entity_id] = {}
-                continue
-
-        # If valid_idps is not empty, it means some part of the config wasn't valid and we've overwritten it
-        if valid_idps_dict:
-            return valid_idps_dict
+            schema_file = os.path.join(os.path.dirname(__file__), "cilogon-schema.yaml")
+            with open(schema_file) as schema_fd:
+                schema = yaml.load(schema_fd)
+                # Raises useful exception if validation fails
+                jsonschema.validate(username_derivation, schema)
 
         return idps
 
