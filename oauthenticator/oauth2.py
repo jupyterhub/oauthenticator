@@ -438,6 +438,7 @@ class OAuthenticator(Authenticator):
         try:
             new_attr, version, same = self._deprecated_oauth_aliases.get(old_attr)
         except ValueError:
+            # if `same` flag wasn't passed, we assume the new and old trait have the same type
             new_attr, version = self._deprecated_oauth_aliases.get(old_attr)
             same = True
 

@@ -134,12 +134,9 @@ class CILogonOAuthenticator(OAuthenticator):
         will be stripped, but if you login with github, it'll be your GitHub username prefixed with `gh:`.
         This way, multiple users can log in without clashes across IDPs
 
-        If no `username-derivation dict` is provided, then no domain stripping will take place and
-        and `CILogonOAuthenticator.username_claim` will be used for the hub username,
-        for every idp-id in `allowed_idps`.
-
-        Warning: if there are more than one idp in this dict and no username-derivation specified,
-        then username clashes might happen!
+        Note: if no `username-derivation dict` is provided, then no domain stripping will take place!
+        Also, `CILogonOAuthenticator.username_claim` will be used for the hub username, for every idp
+        id in `allowed_idps`.
         """,
     )
 
