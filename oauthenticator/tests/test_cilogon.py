@@ -4,6 +4,7 @@ import logging
 from pytest import fixture, raises
 from tornado.web import HTTPError
 from traitlets.config import Config
+from traitlets.traitlets import TraitError
 
 from ..cilogon import CILogonOAuthenticator
 from .mocks import setup_oauth_mock
@@ -18,10 +19,7 @@ def user_model(username):
 
 def alternative_user_model(username, claimname, **kwargs):
     """Return a user model with alternate claim name"""
-    return {
-        claimname: username,
-        **kwargs
-    }
+    return {claimname: username, **kwargs}
 
 
 @fixture
@@ -118,65 +116,83 @@ def test_deprecated_config(caplog):
     assert expected_deprecation_error in log_msgs
 
 
+def test_allowed_idps_wrong_type(caplog):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = ['pink']
+
+    with raises(TraitError):
+        CILogonOAuthenticator(config=cfg)
+
+
 async def test_allowed_idps_invalid_config_option(caplog):
     cfg = Config()
     # Test config option not recognized
-    cfg.CILogonOAuthenticator.allowed_idps = {'https://github.com/login/oauth/authorize': "invalid"}
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://github.com/login/oauth/authorize': "invalid"
+    }
 
     log = logging.getLogger("testlog")
     authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {'https://github.com/login/oauth/authorize': {}}
+    assert authenticator.allowed_idps == {
+        'https://github.com/login/oauth/authorize': {}
+    }
     log_msgs = caplog.record_tuples
 
     expected_deprecation_error = (
         log.name,
         logging.WARNING,
-        "Config not recognized! Available option is https://github.com/login/oauth/authorize.username-derivation. Will be discharged"
+        "The config is not recognized and will be discarded! Available option is https://github.com/login/oauth/authorize.username-derivation.",
     )
 
     assert expected_deprecation_error in log_msgs
+
 
 async def test_allowed_idps_invalid_config_type(caplog):
     cfg = Config()
     # Test username-derivation not dict
-    cfg.CILogonOAuthenticator.allowed_idps = {'https://github.com/login/oauth/authorize': "username-derivation"}
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://github.com/login/oauth/authorize': "username-derivation"
+    }
 
     log = logging.getLogger("testlog")
     authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {'https://github.com/login/oauth/authorize': {}}
+    assert authenticator.allowed_idps == {
+        'https://github.com/login/oauth/authorize': {}
+    }
     log_msgs = caplog.record_tuples
 
     expected_deprecation_error = (
         log.name,
         logging.WARNING,
-        "Config not recognized! Available option is https://github.com/login/oauth/authorize.username-derivation. Will be discharged"
+        "The config is not recognized and will be discarded! Available option is https://github.com/login/oauth/authorize.username-derivation.",
     )
 
     assert expected_deprecation_error in log_msgs
+
 
 async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
     cfg = Config()
     # Test username-derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
         "https://github.com/login/oauth/authorize": {
-            "username-derivation": {
-                "a": 1,
-                "b": 2
-            }
+            "username-derivation": {"a": 1, "b": 2}
         }
     }
 
     log = logging.getLogger("testlog")
     authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {'https://github.com/login/oauth/authorize': {}}
+    assert authenticator.allowed_idps == {
+        'https://github.com/login/oauth/authorize': {}
+    }
     log_msgs = caplog.record_tuples
 
     expected_deprecation_error = (
         log.name,
         logging.WARNING,
-        "Config username-derivation.a not recognized! Available options are: ['username-claim', 'action', 'domain', 'prefix']"
+        "Config username-derivation.a not recognized! Available options are: ['username-claim', 'action', 'domain', 'prefix']",
     )
     assert expected_deprecation_error in log_msgs
+
 
 async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
     cfg = Config()
@@ -191,15 +207,18 @@ async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
 
     log = logging.getLogger("testlog")
     authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {'https://github.com/login/oauth/authorize': {}}
+    assert authenticator.allowed_idps == {
+        'https://github.com/login/oauth/authorize': {}
+    }
     log_msgs = caplog.record_tuples
 
     expected_deprecation_error = (
         log.name,
         logging.WARNING,
-        "No domain was specified for stripping. The configuration will be discharged."
+        "No domain was specified for stripping. The configuration will be discarded.",
     )
     assert expected_deprecation_error in log_msgs
+
 
 async def test_allowed_idps_invalid_config_username_prefix(caplog):
     cfg = Config()
@@ -214,19 +233,24 @@ async def test_allowed_idps_invalid_config_username_prefix(caplog):
 
     log = logging.getLogger("testlog")
     authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {'https://github.com/login/oauth/authorize': {}}
+    assert authenticator.allowed_idps == {
+        'https://github.com/login/oauth/authorize': {}
+    }
     log_msgs = caplog.record_tuples
 
     expected_deprecation_error = (
         log.name,
         logging.WARNING,
-        "No prefix was specified to append. The configuration will be discharged."
+        "No prefix was specified to append. The configuration will be discarded.",
     )
     assert expected_deprecation_error in log_msgs
 
+
 async def test_cilogon_scopes():
     cfg = Config()
-    cfg.CILogonOAuthenticator.allowed_idps = {'https://some-idp.com/login/oauth/authorize': {}}
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://some-idp.com/login/oauth/authorize': {}
+    }
     cfg.CILogonOAuthenticator.scope = ['email']
 
     authenticator = CILogonOAuthenticator(config=cfg)
@@ -242,23 +266,20 @@ async def test_allowed_auth_providers_validity():
     with raises(ValueError):
         CILogonOAuthenticator(config=cfg)
 
+
 async def test_strip_and_prefix_username(cilogon_client):
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
         "https://some-idp.com/login/oauth/authorize": {
-            "username-derivation": {
-                "action": "strip-idp-domain",
-                "domain": "uni.edu"
-            }
+            "username-derivation": {"action": "strip-idp-domain", "domain": "uni.edu"}
         },
         "https://another-idp.com/login/oauth/authorize": {
             "username-derivation": {
                 "username-claim": "nickname",
                 "action": "prefix",
-                "prefix": "idp"
+                "prefix": "idp",
             }
-        }
-
+        },
     }
     cfg.CILogonOAuthenticator.username_claim = 'email'
 
@@ -267,7 +288,7 @@ async def test_strip_and_prefix_username(cilogon_client):
     # Test stripping domain
     handler = cilogon_client.handler_for_user(
         alternative_user_model(
-            'jtkirk@uni.edu', 'email', idp = "https://some-idp.com/login/oauth/authorize"
+            'jtkirk@uni.edu', 'email', idp="https://some-idp.com/login/oauth/authorize"
         )
     )
     user_info = await authenticator.authenticate(handler)
@@ -278,7 +299,7 @@ async def test_strip_and_prefix_username(cilogon_client):
     # Test appending prefixes
     handler = cilogon_client.handler_for_user(
         alternative_user_model(
-            'jtkirk', 'nickname', idp = "https://another-idp.com/login/oauth/authorize"
+            'jtkirk', 'nickname', idp="https://another-idp.com/login/oauth/authorize"
         )
     )
     user_info = await authenticator.authenticate(handler)

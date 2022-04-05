@@ -150,7 +150,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         if type(self.allowed_idps[idp]["username-derivation"]) is not dict:
             self.log.warning(
-                f"Config not recognized! `username-derivation` must be a dict. Will be discharged!",
+                f"The config is not recognized and will be discarded! `username-derivation` must be a dict.",
             )
             return False
 
@@ -183,7 +183,7 @@ class CILogonOAuthenticator(OAuthenticator):
                         "domain", None
                     ):
                         self.log.warning(
-                            f"No domain was specified for stripping. The configuration will be discharged.",
+                            f"No domain was specified for stripping. The configuration will be discarded.",
                         )
                         return False
                 # When action is prefix, prefix to add must be passed
@@ -192,7 +192,7 @@ class CILogonOAuthenticator(OAuthenticator):
                         "prefix", None
                     ):
                         self.log.warning(
-                            f"No prefix was specified to append. The configuration will be discharged.",
+                            f"No prefix was specified to append. The configuration will be discarded.",
                         )
                         return False
 
@@ -202,12 +202,6 @@ class CILogonOAuthenticator(OAuthenticator):
     def _validate_allowed_idps(self, proposal):
         idps = proposal.value
         valid_idps_dict = {}
-
-        # If we receive a list, then turn that into a dict
-        if type(idps) is List:
-            for idp in idps:
-                valid_idps_dict[idp] = {}
-            return valid_idps_dict
 
         for entity_id, username_derivation in idps.items():
 
@@ -229,7 +223,7 @@ class CILogonOAuthenticator(OAuthenticator):
                 or username_derivation.get("username-derivation", None) is None
             ):
                 self.log.warning(
-                    f"Config not recognized! Available option is {entity_id}.username-derivation. Will be discharged",
+                    f"The config is not recognized and will be discarded! Available option is {entity_id}.username-derivation.",
                 )
                 valid_idps_dict[entity_id] = {}
                 continue
