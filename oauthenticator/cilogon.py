@@ -219,7 +219,7 @@ class CILogonOAuthenticator(OAuthenticator):
             # Validate it's username_derivation what we're configuring for each idp id and not something else
             if (
                 not isinstance(username_derivation, dict)
-                or username_derivation.get("username-derivation", None) is None
+                or not username_derivation.get("username-derivation", {})
             ):
                 self.log.warning(
                     f"The config is not recognized and will be discarded! Available option is {entity_id}.username-derivation.",
@@ -364,7 +364,7 @@ class CILogonOAuthenticator(OAuthenticator):
             # Check if another username_claim should be used for this idp
             if (
                 self.allowed_idps[selected_auth_provider]
-                .get("username-derivation", None)
+                .get("username-derivation", {})
                 .get("username-claim", None)
             ):
                 claimlist = [
@@ -380,7 +380,7 @@ class CILogonOAuthenticator(OAuthenticator):
         if self.allowed_idps:
             username_derivation_config = self.allowed_idps.get(
                 selected_auth_provider, None
-            ).get("username-derivation", None)
+            ).get("username-derivation", {})
             if username_derivation_config:
                 action = username_derivation_config["action"]
                 if action == "strip-idp-domain":
