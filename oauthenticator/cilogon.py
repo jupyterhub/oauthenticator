@@ -35,7 +35,10 @@ class CILogonLoginHandler(OAuthLoginHandler):
         """Add idp, skin to redirect params"""
         extra_params = kwargs.setdefault('extra_params', {})
         if self.authenticator.shown_idps:
-            extra_params["selected_idp"] = self.authenticator.shown_idps
+            # selected_idp must be a string where idps are separated by comas, with no space between, otherwise it will get escaped
+            # example: https://accounts.google.com/o/oauth2/auth,https://github.com/login/oauth/authorize
+            idps = ",".join(self.authenticator.shown_idps)
+            extra_params["selected_idp"] = idps
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
 
@@ -288,11 +291,10 @@ class CILogonOAuthenticator(OAuthenticator):
             # Faild hard if idp wasn't allowed
             if selected_auth_provider not in self.allowed_idps.keys():
                 self.log.error(
-                    "Trying to login from an identity provider that wasn't allowed %s",
-                    selected_auth_provider,
+                    f"Trying to login from an identity provider that was not allowed {selected_auth_provider}",
                 )
                 raise web.HTTPError(
-                    500, "Trying to login using an identity provider not allowed"
+                    500, "Trying to login using an identity provider that was not allowed"
                 )
 
             # Check if another username_claim should be used for this idp
