@@ -1,0 +1,44 @@
+title: username-derivation
+type: object
+additionalProperties: false
+properties:
+  username-derivation:
+    type: object
+    description: |
+      todo
+    additionalProperties: false
+    properties:
+      username-claim:
+        type: string
+        description: |
+          todo
+      action:
+        type: string
+        description: |
+          todo
+        enum:
+          - strip-idp-domain
+          - prefix
+      domain:
+        type: string
+        description: |
+          todo
+      prefix:
+        type: string
+        description: |
+          todo
+    allOf:
+      - if:
+          properties:
+            action:
+              const: strip-idp-domain
+        then:
+          required:
+            - domain
+      - if:
+          properties:
+            action:
+              const: prefix
+        then:
+          required:
+            - prefix
