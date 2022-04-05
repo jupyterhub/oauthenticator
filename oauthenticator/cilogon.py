@@ -146,7 +146,7 @@ class CILogonOAuthenticator(OAuthenticator):
         keys and values.
         """
 
-        if type(self.allowed_idps[idp]["username-derivation"]) is not dict:
+        if not isinstance(self.allowed_idps[idp]["username-derivation"], dict):
             self.log.warning(
                 f"The config is not recognized and will be discarded! `username-derivation` must be a dict.",
             )
@@ -218,7 +218,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
             # Validate it's username_derivation what we're configuring for each idp id and not something else
             if (
-                type(username_derivation) is not dict
+                not isinstance(username_derivation, dict)
                 or username_derivation.get("username-derivation", None) is None
             ):
                 self.log.warning(
