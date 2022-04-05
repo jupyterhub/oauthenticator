@@ -5,6 +5,7 @@ from pytest import fixture, raises
 from tornado.web import HTTPError
 from traitlets.config import Config
 from traitlets.traitlets import TraitError
+from jsonschema.exceptions import ValidationError
 
 from ..cilogon import CILogonOAuthenticator
 from .mocks import setup_oauth_mock
@@ -150,20 +151,8 @@ async def test_allowed_idps_invalid_config_option(caplog):
         'https://github.com/login/oauth/authorize': "invalid"
     }
 
-    log = logging.getLogger("testlog")
-    authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {
-        'https://github.com/login/oauth/authorize': {}
-    }
-    log_msgs = caplog.record_tuples
-
-    expected_deprecation_error = (
-        log.name,
-        logging.WARNING,
-        "The config is not recognized and will be discarded! Available option is https://github.com/login/oauth/authorize.username-derivation.",
-    )
-
-    assert expected_deprecation_error in log_msgs
+    with raises(ValidationError, match="'invalid' is not of type 'object'"):
+        CILogonOAuthenticator(config=cfg)
 
 
 async def test_allowed_idps_invalid_config_type(caplog):
@@ -173,20 +162,8 @@ async def test_allowed_idps_invalid_config_type(caplog):
         'https://github.com/login/oauth/authorize': "username-derivation"
     }
 
-    log = logging.getLogger("testlog")
-    authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {
-        'https://github.com/login/oauth/authorize': {}
-    }
-    log_msgs = caplog.record_tuples
-
-    expected_deprecation_error = (
-        log.name,
-        logging.WARNING,
-        "The config is not recognized and will be discarded! Available option is https://github.com/login/oauth/authorize.username-derivation.",
-    )
-
-    assert expected_deprecation_error in log_msgs
+    with raises(ValidationError, match="'username-derivation' is not of type 'object'"):
+        CILogonOAuthenticator(config=cfg)
 
 
 async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
@@ -198,19 +175,8 @@ async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
         }
     }
 
-    log = logging.getLogger("testlog")
-    authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {
-        'https://github.com/login/oauth/authorize': {}
-    }
-    log_msgs = caplog.record_tuples
-
-    expected_deprecation_error = (
-        log.name,
-        logging.WARNING,
-        "Config username-derivation.a not recognized! Available options are: ['username-claim', 'action', 'domain', 'prefix']",
-    )
-    assert expected_deprecation_error in log_msgs
+    with raises(ValidationError, match="Additional properties are not allowed") as e:
+        CILogonOAuthenticator(config=cfg)
 
 
 async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
@@ -224,19 +190,8 @@ async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
         }
     }
 
-    log = logging.getLogger("testlog")
-    authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {
-        'https://github.com/login/oauth/authorize': {}
-    }
-    log_msgs = caplog.record_tuples
-
-    expected_deprecation_error = (
-        log.name,
-        logging.WARNING,
-        "No domain was specified for stripping. The configuration will be discarded.",
-    )
-    assert expected_deprecation_error in log_msgs
+    with raises(ValidationError, match="'domain' is a required property"):
+        CILogonOAuthenticator(config=cfg)
 
 
 async def test_allowed_idps_invalid_config_username_prefix(caplog):
@@ -250,19 +205,8 @@ async def test_allowed_idps_invalid_config_username_prefix(caplog):
         }
     }
 
-    log = logging.getLogger("testlog")
-    authenticator = CILogonOAuthenticator(config=cfg, log=log)
-    assert authenticator.allowed_idps == {
-        'https://github.com/login/oauth/authorize': {}
-    }
-    log_msgs = caplog.record_tuples
-
-    expected_deprecation_error = (
-        log.name,
-        logging.WARNING,
-        "No prefix was specified to append. The configuration will be discarded.",
-    )
-    assert expected_deprecation_error in log_msgs
+    with raises(ValidationError, match="'prefix' is a required property"):
+        CILogonOAuthenticator(config=cfg)
 
 
 async def test_cilogon_scopes():
