@@ -13,6 +13,7 @@ Caveats:
   email instead of ePPN as the JupyterHub username.
 """
 import os
+from urllib.parse import urlparse
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado import web
@@ -204,12 +205,13 @@ class CILogonOAuthenticator(OAuthenticator):
         valid_idps_dict = {}
 
         for entity_id, username_derivation in idps.items():
-
+            accepted_entity_id_scheme = ["urn", "https", "http"]
+            entity_id_scheme = urlparse(entity_id).scheme
             # Make sure allowed_idps containes EntityIDs and not domain names.
-            if "https://" not in entity_id:
+            if entity_id_scheme not in accepted_entity_id_scheme:
                 # Validate entity ids are the form of: `https://github.com/login/oauth/authorize`
                 self.log.error(
-                    f"Trying to allow an auth provider that doesn't look like a valid CILogon EntityIDs {entity_id}",
+                    f"Trying to allow an auth provider: {entity_id}, that doesn't look like a valid CILogon EntityID.",
                 )
                 raise ValueError(
                     """The keys of `allowed_idps` **must** be CILogon permitted EntityIDs.

@@ -124,6 +124,25 @@ def test_allowed_idps_wrong_type(caplog):
         CILogonOAuthenticator(config=cfg)
 
 
+def test_allowed_idps_invalid_entity_id(caplog):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = {'uni.edu': {}}
+    log = logging.getLogger("testlog")
+
+    with raises(ValueError):
+        CILogonOAuthenticator(config=cfg, log=log)
+
+    log_msgs = caplog.record_tuples
+
+    expected_deprecation_error = (
+        log.name,
+        logging.ERROR,
+        "Trying to allow an auth provider: uni.edu, that doesn't look like a valid CILogon EntityID.",
+    )
+
+    assert expected_deprecation_error in log_msgs
+
+
 async def test_allowed_idps_invalid_config_option(caplog):
     cfg = Config()
     # Test config option not recognized
@@ -257,14 +276,6 @@ async def test_cilogon_scopes():
     expected_scopes = ['email', 'openid', 'org.cilogon.userinfo']
 
     assert authenticator.scope == expected_scopes
-
-
-async def test_allowed_auth_providers_validity():
-    cfg = Config()
-    cfg.CILogonOAuthenticator.allowed_idps = {'uni.edu': {}}
-
-    with raises(ValueError):
-        CILogonOAuthenticator(config=cfg)
 
 
 async def test_strip_and_prefix_username(cilogon_client):
