@@ -82,14 +82,14 @@ class CILogonOAuthenticator(OAuthenticator):
 
     @validate('scope')
     def _validate_scope(self, proposal):
+        """Ensure `openid` is always requested and `org.cilogon.userinfo`
+        is requested when allowed_idps is specified.
+        """
         scopes = proposal.value
 
-        """ensure openid is requested"""
         if 'openid' not in proposal.value:
             scopes += ['openid']
 
-        """ ensure org.cilogon.userinfo is requested when
-        allowed_idps is specified"""
         if self.allowed_idps and 'org.cilogon.userinfo' not in proposal.value:
             scopes += ['org.cilogon.userinfo']
 
