@@ -85,10 +85,14 @@ class GenericOAuthenticator(OAuthenticator):
     )
 
     ca_certs = Unicode(
-        os.environ.get('OAUTH2_CA_CERTS', os.environ.get('SSL_CERT_FILE')),
+        os.environ.get('OAUTH2_CA_CERTS', os.environ.get('SSL_CERT_FILE', None)),
         allow_none=True,
         config=True,
-        help="Custom trusted Certificate Authorities bundle in PEM format (ca_certs) or None to use defaults. Default: None",
+        help="""
+        Custom trusted Certificate Authorities bundle in PEM format (ca_certs). Default: None (to use system trusted CAs).
+
+        Can be overriden with OAUTH2_CA_CERTS (higher precedence) or SSL_CERT_FILE environment variable.
+        """,
     )
 
     @default("http_client")
