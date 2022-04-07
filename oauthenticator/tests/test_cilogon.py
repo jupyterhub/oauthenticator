@@ -124,6 +124,7 @@ def test_deprecated_config(caplog):
 
 
 def test_allowed_idps_wrong_type(caplog):
+    # Test alllowed_idps is a dict
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = ['pink']
 
@@ -131,10 +132,31 @@ def test_allowed_idps_wrong_type(caplog):
         CILogonOAuthenticator(config=cfg)
 
 
-def test_allowed_idps_invalid_entity_id(caplog):
+async def test_allowed_idps_required_username_derivation(caplog):
+    # Test username-derivation is a required field of allowed_idps
     cfg = Config()
-    cfg.CILogonOAuthenticator.allowed_idps = {'uni.edu': {}}
-    log = logging.getLogger("testlog")
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://github.com/login/oauth/authorize': {}
+    }
+
+    with raises(ValidationError, match="'username-derivation' is a required property"):
+        CILogonOAuthenticator(config=cfg)
+
+
+def test_allowed_idps_invalid_entity_id(caplog):
+    # Test allowed_idps keys cannot be domains, but only valid CILogon entity ids,
+    # i.e. only fully formed URLs
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'uni.edu': {
+            'username-derivation': {
+                'username-claim': 'email',
+                'action': 'strip-idp-domain',
+                'domain': 'uni.edu',
+            }
+        }
+    }
+    log = logging.getLogger('testlog')
 
     with raises(ValueError):
         CILogonOAuthenticator(config=cfg, log=log)
@@ -154,7 +176,7 @@ async def test_allowed_idps_invalid_config_option(caplog):
     cfg = Config()
     # Test config option not recognized
     cfg.CILogonOAuthenticator.allowed_idps = {
-        'https://github.com/login/oauth/authorize': "invalid"
+        'https://github.com/login/oauth/authorize': 'invalid'
     }
 
     with raises(ValidationError, match="'invalid' is not of type 'object'"):
@@ -165,7 +187,7 @@ async def test_allowed_idps_invalid_config_type(caplog):
     cfg = Config()
     # Test username-derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
-        'https://github.com/login/oauth/authorize': "username-derivation"
+        'https://github.com/login/oauth/authorize': 'username-derivation'
     }
 
     with raises(ValidationError, match="'username-derivation' is not of type 'object'"):
@@ -176,12 +198,12 @@ async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
     cfg = Config()
     # Test username-derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
-        "https://github.com/login/oauth/authorize": {
-            "username-derivation": {"a": 1, "b": 2}
+        'https://github.com/login/oauth/authorize': {
+            'username-derivation': {'a': 1, 'b': 2}
         }
     }
 
-    with raises(ValidationError, match="Additional properties are not allowed") as e:
+    with raises(ValidationError, match='Additional properties are not allowed') as e:
         CILogonOAuthenticator(config=cfg)
 
 
@@ -189,9 +211,10 @@ async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
     cfg = Config()
     # Test username-derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
-        "https://github.com/login/oauth/authorize": {
-            "username-derivation": {
-                "action": "strip-idp-domain",
+        'https://github.com/login/oauth/authorize': {
+            'username-derivation': {
+                'username-claim': 'email',
+                'action': 'strip-idp-domain',
             }
         }
     }
@@ -204,9 +227,10 @@ async def test_allowed_idps_invalid_config_username_prefix(caplog):
     cfg = Config()
     # Test username-derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
-        "https://github.com/login/oauth/authorize": {
-            "username-derivation": {
-                "action": "prefix",
+        'https://github.com/login/oauth/authorize': {
+            'username-derivation': {
+                'username-claim': 'email',
+                'action': 'prefix',
             }
         }
     }
@@ -218,7 +242,13 @@ async def test_allowed_idps_invalid_config_username_prefix(caplog):
 async def test_cilogon_scopes():
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
-        'https://some-idp.com/login/oauth/authorize': {}
+        'https://some-idp.com/login/oauth/authorize': {
+            'username-derivation': {
+                'username-claim': 'email',
+                'action': 'prefix',
+                'prefix': 'hub',
+            }
+        }
     }
     cfg.CILogonOAuthenticator.scope = ['email']
 
@@ -231,25 +261,28 @@ async def test_cilogon_scopes():
 async def test_strip_and_prefix_username(cilogon_client):
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
-        "https://some-idp.com/login/oauth/authorize": {
-            "username-derivation": {"action": "strip-idp-domain", "domain": "uni.edu"}
+        'https://some-idp.com/login/oauth/authorize': {
+            'username-derivation': {
+                'username-claim': 'email',
+                'action': 'strip-idp-domain',
+                'domain': 'uni.edu',
+            }
         },
-        "https://another-idp.com/login/oauth/authorize": {
-            "username-derivation": {
-                "username-claim": "nickname",
-                "action": "prefix",
-                "prefix": "idp",
+        'https://another-idp.com/login/oauth/authorize': {
+            'username-derivation': {
+                'username-claim': 'nickname',
+                'action': 'prefix',
+                'prefix': 'idp',
             }
         },
     }
-    cfg.CILogonOAuthenticator.username_claim = 'email'
 
     authenticator = CILogonOAuthenticator(config=cfg)
 
     # Test stripping domain
     handler = cilogon_client.handler_for_user(
         alternative_user_model(
-            'jtkirk@uni.edu', 'email', idp="https://some-idp.com/login/oauth/authorize"
+            'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
         )
     )
     user_info = await authenticator.authenticate(handler)
@@ -260,7 +293,7 @@ async def test_strip_and_prefix_username(cilogon_client):
     # Test appending prefixes
     handler = cilogon_client.handler_for_user(
         alternative_user_model(
-            'jtkirk', 'nickname', idp="https://another-idp.com/login/oauth/authorize"
+            'jtkirk', 'nickname', idp='https://another-idp.com/login/oauth/authorize'
         )
     )
     user_info = await authenticator.authenticate(handler)

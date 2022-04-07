@@ -158,9 +158,17 @@ class CILogonOAuthenticator(OAuthenticator):
         idps = proposal.value
 
         for entity_id, username_derivation in idps.items():
+            # Validate `username-derivation` config using the schema
+            root_dir = os.path.dirname(os.path.abspath(__file__))
+            schema_file = os.path.join(root_dir, "schemas", "cilogon-schema.yaml")
+            with open(schema_file) as schema_fd:
+                schema = yaml.load(schema_fd)
+                # Raises useful exception if validation fails
+                jsonschema.validate(username_derivation, schema)
+
+            # Make sure allowed_idps containes EntityIDs and not domain names.
             accepted_entity_id_scheme = ["urn", "https", "http"]
             entity_id_scheme = urlparse(entity_id).scheme
-            # Make sure allowed_idps containes EntityIDs and not domain names.
             if entity_id_scheme not in accepted_entity_id_scheme:
                 # Validate entity ids are the form of: `https://github.com/login/oauth/authorize`
                 self.log.error(
@@ -171,12 +179,6 @@ class CILogonOAuthenticator(OAuthenticator):
                     See https://cilogon.org/idplist for the list of EntityIDs of each IDP.
                     """
                 )
-            root_dir = os.path.dirname(os.path.abspath(__file__))
-            schema_file = os.path.join(root_dir, "schemas", "cilogon-schema.yaml")
-            with open(schema_file) as schema_fd:
-                schema = yaml.load(schema_fd)
-                # Raises useful exception if validation fails
-                jsonschema.validate(username_derivation, schema)
 
         return idps
 
@@ -304,41 +306,34 @@ class CILogonOAuthenticator(OAuthenticator):
                     "Trying to login using an identity provider that was not allowed",
                 )
 
-            # Check if another username_claim should be used for this idp
-            if (
-                self.allowed_idps[selected_auth_provider]
-                .get("username-derivation", {})
-                .get("username-claim", None)
-            ):
-                claimlist = [
-                    self.allowed_idps[selected_auth_provider]["username-derivation"][
-                        "username-claim"
-                    ]
+            # The username_claim which should be used for this idp
+            claimlist = [
+                self.allowed_idps[selected_auth_provider]["username-derivation"][
+                    "username-claim"
                 ]
+            ]
 
         # Check if the requested username_claim exists in the response from the provider
         username = self.check_username_claim(claimlist, resp_json)
 
         # Check if we need to strip/prefix username
         if self.allowed_idps:
-            username_derivation_config = self.allowed_idps.get(
-                selected_auth_provider, None
-            ).get("username-derivation", {})
-            if username_derivation_config:
-                action = username_derivation_config["action"]
-                if action == "strip-idp-domain":
-                    gotten_name, gotten_domain = username.split('@')
-                    if gotten_domain != username_derivation_config["domain"]:
-                        self.log.warning(
-                            """Trying to strip from the username a domain that doesn't exist.
-                            Username will be left unchanged.
-                            """
-                        )
-                    else:
-                        username = gotten_name
-                elif action == "prefix":
-                    prefix = username_derivation_config["prefix"]
-                    username = f"{prefix}:{username}"
+            username_derivation_config = self.allowed_idps[selected_auth_provider][
+                "username-derivation"
+            ]
+            action = username_derivation_config["action"]
+            if action == "strip-idp-domain":
+                gotten_name, gotten_domain = username.split('@')
+                if gotten_domain != username_derivation_config["domain"]:
+                    self.log.warning(
+                        "Trying to strip from the username a domain that doesn't exist."
+                        "Username will be left unchanged."
+                    )
+                else:
+                    username = gotten_name
+            elif action == "prefix":
+                prefix = username_derivation_config["prefix"]
+                username = f"{prefix}:{username}"
 
         userdict = {"name": username}
         # Now we set up auth_state

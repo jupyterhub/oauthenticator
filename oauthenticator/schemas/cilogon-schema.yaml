@@ -1,6 +1,8 @@
 title: username-derivation
 type: object
 additionalProperties: false
+required:
+  - username-derivation
 properties:
   username-derivation:
     type: object
@@ -39,6 +41,9 @@ properties:
         description: |
           The prefix which will be added at the beginning of the username
           followed by a semicolumn ":", if the action is "prefix".
+    required:
+      - username-claim
+      - action
     allOf:
       - if:
           properties:
