@@ -47,6 +47,12 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 class CILogonOAuthenticator(OAuthenticator):
     _deprecated_oauth_aliases = {
+        # <deprecated-config>:
+        #   (
+        #    <new-config>,
+        #    <deprecation-version>,
+        #    <deprecated-config-and-new-config-have-same-type>
+        #   )
         "idp_whitelist": ("allowed_idps", "0.12.0", False),
         "idp": ("shown_idps", "15.0.0", False),
         "strip_idp_domain": ("allowed_idps", "15.0.0", False),

@@ -103,13 +103,19 @@ def test_deprecated_config(caplog):
     cfg = Config()
     cfg.CILogonOAuthenticator.idp_whitelist = ['pink']
 
-    log = logging.getLogger("testlog")
-    CILogonOAuthenticator(config=cfg, log=log)
+    log = logging.getLogger('testlog')
+    with raises(
+        ValueError,
+        match='CILogonOAuthenticator.idp_whitelist is deprecated in CILogonOAuthenticator 0.12.0, use '
+        'CILogonOAuthenticator.allowed_idps instead',
+    ):
+        CILogonOAuthenticator(config=cfg, log=log)
     log_msgs = caplog.record_tuples
+    print(log_msgs)
 
     expected_deprecation_error = (
         log.name,
-        logging.WARNING,
+        logging.ERROR,
         'CILogonOAuthenticator.idp_whitelist is deprecated in CILogonOAuthenticator 0.12.0, use '
         'CILogonOAuthenticator.allowed_idps instead',
     )
