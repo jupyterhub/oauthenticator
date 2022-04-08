@@ -21,11 +21,11 @@ repos:
     hooks:
       - id: prettier
 
-  # Autoformat: https://github.com/asottile/reorder_python_imports
-  - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.0.1
+  # Autoformat: python imports
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
     hooks:
-      - id: reorder-python-imports
+      - id: isort
 
   # Misc...
   - repo: https://github.com/pre-commit/pre-commit-hooks

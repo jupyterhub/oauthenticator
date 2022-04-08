@@ -9,14 +9,9 @@ import urllib
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
 from tornado.web import HTTPError
-from traitlets import Bool
-from traitlets import default
-from traitlets import List
-from traitlets import Set
-from traitlets import Unicode
+from traitlets import Bool, List, Set, Unicode, default
 
-from .oauth2 import OAuthenticator
-from .oauth2 import OAuthLogoutHandler
+from .oauth2 import OAuthenticator, OAuthLogoutHandler
 
 
 class GlobusLogoutHandler(OAuthLogoutHandler):

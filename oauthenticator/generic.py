@@ -6,15 +6,9 @@ import os
 from urllib.parse import urlencode
 
 from jupyterhub.auth import LocalAuthenticator
-from tornado.httpclient import AsyncHTTPClient
-from tornado.httpclient import HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Bool
-from traitlets import default
-from traitlets import Dict
-from traitlets import List
-from traitlets import Unicode
-from traitlets import Union
+from traitlets import Bool, Dict, List, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
 from .traitlets import Callable

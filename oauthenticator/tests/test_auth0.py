@@ -5,8 +5,7 @@ from tornado import web
 
 from ..auth0 import Auth0OAuthenticator
 from ..oauth2 import OAuthLogoutHandler
-from .mocks import mock_handler
-from .mocks import setup_oauth_mock
+from .mocks import mock_handler, setup_oauth_mock
 
 auth0_subdomain = "jupyterhub-test"
 

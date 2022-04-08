@@ -7,18 +7,12 @@ import os
 import urllib.parse
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.crypto import decrypt
-from jupyterhub.crypto import EncryptionUnavailable
-from jupyterhub.crypto import InvalidToken
+from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
 from tornado.web import HTTPError
-from traitlets import default
-from traitlets import Dict
-from traitlets import List
-from traitlets import Unicode
-from traitlets import validate
+from traitlets import Dict, List, Unicode, default, validate
 
 from .oauth2 import OAuthenticator
 

@@ -18,14 +18,9 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Bool
-from traitlets import default
-from traitlets import List
-from traitlets import Unicode
-from traitlets import validate
+from traitlets import Bool, List, Unicode, default, validate
 
-from .oauth2 import OAuthenticator
-from .oauth2 import OAuthLoginHandler
+from .oauth2 import OAuthenticator, OAuthLoginHandler
 
 
 class CILogonLoginHandler(OAuthLoginHandler):

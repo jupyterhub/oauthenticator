@@ -5,8 +5,7 @@ import re
 import uuid
 from io import BytesIO
 from unittest.mock import Mock
-from urllib.parse import parse_qs
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from tornado import web

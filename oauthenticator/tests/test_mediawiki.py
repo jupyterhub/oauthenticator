@@ -9,8 +9,7 @@ from pytest import fixture
 from tornado import web
 
 from ..azuread import PYJWT_2
-from ..mediawiki import AUTH_REQUEST_COOKIE_NAME
-from ..mediawiki import MWOAuthenticator
+from ..mediawiki import AUTH_REQUEST_COOKIE_NAME, MWOAuthenticator
 from .mocks import mock_handler
 
 MW_URL = 'https://meta.wikimedia.org/w/index.php'

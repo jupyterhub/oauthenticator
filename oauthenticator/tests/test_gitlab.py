@@ -4,8 +4,7 @@ import json
 import logging
 import re
 from io import BytesIO
-from urllib.parse import parse_qs
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from pytest import fixture
 from tornado.httpclient import HTTPResponse

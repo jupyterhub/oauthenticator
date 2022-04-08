@@ -9,10 +9,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado.escape import url_escape
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import CUnicode
-from traitlets import default
-from traitlets import Set
-from traitlets import Unicode
+from traitlets import CUnicode, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
 
