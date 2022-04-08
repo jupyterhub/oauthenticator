@@ -134,7 +134,7 @@ class GitHubOAuthenticator(OAuthenticator):
         """
         Ensure read:org is requested if fetch_teams is true
         """
-        if 'read:org' not in proposal.value:
+        if 'read:org' not in proposal.value and self.fetch_teams:
             return ['read:org'] + proposal.value
         return proposal.value
 
