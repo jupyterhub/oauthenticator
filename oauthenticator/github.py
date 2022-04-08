@@ -9,7 +9,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Set, Unicode, default
+from traitlets import Set, Unicode, default, Bool, validate
 
 from .oauth2 import OAuthenticator
 
@@ -113,6 +113,31 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected organizations"
     )
 
+    fetch_teams = Bool(
+        False,
+        help="""
+        Fetch list of teams user is in and put it in auth_state.
+
+        'teams' will be a key in auth_state that has the same structure listed
+        in https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
+
+        Automatically adds read:org scope to requested scopes if it is not present.
+
+        Each user is currently limited to a maximum of 100 teams.
+        """,
+        config=True
+    )
+
+    @validate('scope')
+    def _validate_scope(self, proposal):
+        """
+        Ensure read:org is requested if fetch_teams is true
+        """
+        if 'read:org' not in proposal.value:
+            return ['read:org'] + proposal.value
+        return proposal.value
+
+
     async def authenticate(self, handler, data=None):
         """We set up auth_state based on additional GitHub info if we
         receive it.
@@ -214,6 +239,30 @@ class GitHubOAuthenticator(OAuthenticator):
                 if val["primary"]:
                     auth_state['github_user']['email'] = val['email']
                     break
+
+        if self.fetch_teams:
+            # Number of teams to request per page
+            per_page = 100
+            # Page counter
+            cur_page = 1
+
+            teams = []
+            while True:
+                req = HTTPRequest(
+                    self.github_api + f"/user/teams?per_page={per_page}&page={cur_page}",
+                    method="GET",
+                    headers=_api_headers(access_token),
+                    validate_cert=self.validate_server_cert,
+                )
+                resp_json = await self.fetch(req, "fetching user teams")
+                teams += resp_json
+
+                # Only try to paginate if we received the max number of teams we could have
+                if len(resp_json) != per_page:
+                    break
+                cur_page += 1
+
+            auth_state['teams'] = teams
 
         return userdict
 
