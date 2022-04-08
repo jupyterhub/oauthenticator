@@ -50,6 +50,13 @@ API Reference
    api/index
    changelog
 
+Migrations Guide
+-----------------
+.. toctree::
+   :maxdepth: 2
+
+   migrations
+
 
 Indices and tables
 ==================
