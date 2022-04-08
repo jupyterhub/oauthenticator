@@ -33,8 +33,7 @@ import os
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
-from traitlets import default
-from traitlets import Unicode
+from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
 

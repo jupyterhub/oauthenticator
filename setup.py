@@ -10,8 +10,7 @@ from __future__ import print_function
 import os
 import sys
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 from setuptools.command.bdist_egg import bdist_egg
 
 

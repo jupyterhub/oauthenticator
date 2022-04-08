@@ -2,8 +2,7 @@ import hashlib
 import logging
 import re
 
-from pytest import fixture
-from pytest import raises
+from pytest import fixture, raises
 from tornado.web import HTTPError
 from traitlets.config import Config
 

@@ -3,16 +3,14 @@ Custom Authenticator to use Azure AD with JupyterHub
 """
 import os
 import urllib
+from distutils.version import LooseVersion as V
 
 import jwt
-from distutils.version import LooseVersion as V
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPRequest
-from traitlets import default
-from traitlets import Unicode
+from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
-
 
 # pyjwt 2.0 has changed its signature,
 # but mwoauth pins to pyjwt 1.x

@@ -10,15 +10,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
-from mwoauth import ConsumerToken
-from mwoauth import Handshaker
+from mwoauth import ConsumerToken, Handshaker
 from mwoauth.tokens import RequestToken
-from traitlets import Any
-from traitlets import Integer
-from traitlets import Unicode
+from traitlets import Any, Integer, Unicode
 
-from oauthenticator import OAuthCallbackHandler
-from oauthenticator import OAuthenticator
+from oauthenticator import OAuthCallbackHandler, OAuthenticator
 
 # Name of cookie used to pass auth token between the oauth
 # login and authentication phase

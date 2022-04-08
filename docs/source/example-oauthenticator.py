@@ -5,13 +5,10 @@ import json
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient
-from tornado.httpclient import HTTPError
-from tornado.httpclient import HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPError, HTTPRequest
 from tornado.httputil import url_concat
 
-from oauthenticator.oauth2 import OAuthenticator
-from oauthenticator.oauth2 import OAuthLoginHandler
+from oauthenticator.oauth2 import OAuthenticator, OAuthLoginHandler
 
 
 class MyServiceMixin(OAuth2Mixin):

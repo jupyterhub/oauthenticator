@@ -3,16 +3,13 @@ from io import BytesIO
 from unittest.mock import Mock
 from urllib.parse import parse_qs
 
-from pytest import fixture
-from pytest import raises
+from pytest import fixture, raises
 from tornado import web
 from tornado.httpclient import HTTPResponse
 
-from ..globus import GlobusLogoutHandler
-from ..globus import GlobusOAuthenticator
+from ..globus import GlobusLogoutHandler, GlobusOAuthenticator
 from ..oauth2 import STATE_COOKIE_NAME
-from .mocks import mock_handler
-from .mocks import setup_oauth_mock
+from .mocks import mock_handler, setup_oauth_mock
 
 
 def user_model(username, email=None):

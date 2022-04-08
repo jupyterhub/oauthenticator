@@ -8,8 +8,7 @@ from unittest import mock
 import jwt
 import pytest
 
-from ..azuread import AzureAdOAuthenticator
-from ..azuread import PYJWT_2
+from ..azuread import PYJWT_2, AzureAdOAuthenticator
 from .mocks import setup_oauth_mock
 
 
