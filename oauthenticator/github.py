@@ -10,6 +10,7 @@ from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
 from traitlets import Bool, Set, Unicode, default, validate
+from requests.utils import parse_header_links
 
 from .oauth2 import OAuthenticator
 
@@ -242,25 +243,43 @@ class GitHubOAuthenticator(OAuthenticator):
         if self.fetch_teams:
             # Number of teams to request per page
             per_page = 100
-            # Page counter
-            cur_page = 1
 
             teams = []
+            url = self.github_api + f"/user/teams?per_page={per_page}"
             while True:
                 req = HTTPRequest(
-                    self.github_api
-                    + f"/user/teams?per_page={per_page}&page={cur_page}",
+                    url,
                     method="GET",
                     headers=_api_headers(access_token),
                     validate_cert=self.validate_server_cert,
                 )
-                resp_json = await self.fetch(req, "fetching user teams")
+                resp = await self.fetch(req, "fetching user teams", parse_json=False)
+
+                resp_json = json.loads(resp.body.decode())
                 teams += resp_json
 
-                # Only try to paginate if we received the max number of teams we could have
-                if len(resp_json) != per_page:
+                # Check if a Link header is present, with a collection of pagination links
+                links_header = resp.headers.get('Link')
+                if not links_header:
+                    # If Link header is not present, we just exit
                     break
-                cur_page += 1
+                else:
+                    # If Link header is present, let's parse it.
+                    links = parse_header_links(links_header)
+
+
+                    next_url = None
+                    # Look through all links to see if there is a 'next' link present
+                    for l in links:
+                        if l.get('rel') == 'next':
+                            next_url = l['url']
+
+                    # If we found a 'next' link, continue the while loop with the new URL
+                    # If not, we're out of pages to paginate, so we stop
+                    if next_url is not None:
+                        url = next_url
+                    else:
+                        break
 
             auth_state['teams'] = teams
 
