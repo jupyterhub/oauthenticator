@@ -36,6 +36,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
     **Old config Example**
     ```python
+    c.CILogonOAuthenticator.username_claim = "email"
     c.CILogonOAuthenticator.allowed_idps = ["uni.edu"]
     c.CILogonOAuthenticator.strip_idp_domain = True
     ```
@@ -55,11 +56,11 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
     **Note**
 
-    **If allowed_idps used to contain more than one domain, then check the section bellow to find out how to use prefixes to avoid username clashes.**
+    **If allowed_idps used to contain more than one domain, then check the section bellow to find out how to also use prefixes for usernames to avoid username clashes.**
 
 3. `allowed_idps` -> **changed type**
 
-    The `allowed_idps` List config was used prior to oauthenticator version 15.0.0 to only allow acces into the hub to usernames containing only these domains (after the @ sign). If `strip_idp_domain` was enabled, these domains would have been stripped from the hub username.
+    The `allowed_idps` List config was used prior to oauthenticator version 15.0.0 to only allow acces into the hub to usernames containing only these domains, after the @ sign. If `strip_idp_domain` was enabled, these domains would have been stripped from the hub username.
 
     Starting with oauthenticator 15.0.0 this config option must now be a Dict that contains a `username-derivation` dictionary that describes how the hub usernames will be derived for each allowed identity provider. More information about the accepted configuration that go into the `username-derivation` can be found in [this json schema](https://github.com/jupyterhub/oauthenticator/tree/main/oauthenticator/schemas/cilogon-schema.yaml).
 

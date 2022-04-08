@@ -112,18 +112,14 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""A dictionary of the only entity IDs that will be allowed to use on login.
         See https://cilogon.org/idplist for the list of `EntityIDs` of each IDP.
 
-        The entity ids can have a username-derivation scheme that can be used to enable
-        stripping idp domains from hub usernames and overwrite the option
-        `CILogonOAuthenticator.username_claim` on a per-idp basis to avoid username clashes.
-
+        Each entity id must define a username-derivation dict that will be used to define how hub usernames will be determined for each IDP.
         Required format:
             - `username-derivation` dict can only contain the following keys:
               ["username-claim", "action", "domain", "prefix"].
             - `username-derivation.action` can only be `strip-idp-domain` or `prefix`
             - if `username-derivation.action` is `strip-idp-domain`, then
-              `username-derivation.domain` must be specified
-            - if `username-derivation.action` is `prefix`, then `username-derivation.prefix`
-              must be specified.
+              `username-derivation.domain` must also be specified
+            - if `username-derivation.action` is `prefix`, then `username-derivation.prefix`must also be specified.
 
         For example:
         {
@@ -131,9 +127,10 @@ class CILogonOAuthenticator(OAuthenticator):
                 "username-derivation": {
                     "username-claim": "email",
                     "action": "strip-idp-domain",
-                    "domain": "berkeley.edu",
+                    "domain": "uni.edu",
                 }
             },
+
             "idp-id-for-github": {
                 "username-derivation": {
                     "username-claim": "username",
@@ -143,13 +140,15 @@ class CILogonOAuthenticator(OAuthenticator):
             }
         }
 
-        If you login with a `uni.edu` account, the hub username will be your email, from which the domain
-        will be stripped, but if you login with github, it'll be your GitHub username prefixed with `gh:`.
+        If you login using the IDP `idp-id-for-uni-edu` and the email
+        provided by this idp is a `user@uni.edu` account, then the hub
+        username will be your email, from which the domain `uni.edu`
+        has been stripped, i.e. just `user`.
+        But if you login with GitHub, it'll be your GitHub username prefixed with `gh:`.
         This way, multiple users can log in without clashes across IDPs
 
-        Note: if no `username-derivation dict` is provided, then no domain stripping will take place!
-        Also, `CILogonOAuthenticator.username_claim` will be used for the hub username, for every idp
-        id in `allowed_idps`.
+        Note: `username_claim` must be provided for each idp in
+        `allowed_idps`.
         """,
     )
 
