@@ -455,13 +455,12 @@ class OAuthenticator(Authenticator):
 
             # set the value for the new attr only if they are the same type
             # otherwise raise an error because unexpected things can happen
-            if (same):
+            if same:
                 self.log.warning(message)
                 setattr(self, new_attr, change.new)
             else:
                 self.log.error(message)
                 raise ValueError(message)
-
 
     def __init__(self, **kwargs):
         # observe deprecated config names in oauthenticator

@@ -185,10 +185,14 @@ class CILogonOAuthenticator(OAuthenticator):
     strip_idp_domain = Bool(
         False,
         config=True,
-        help="""Deprecated, use CIlogonOAuthenticator.allowed_idps["username-derivation"]["action"] = "strip-idp-domain"
-        to enable it and CIlogonOAuthenticator.allowed_idps["username-derivation"]["domain"] to list the domain
+        help="""Deprecated, use `CILogonOAuthenticator.allowed_idps["username-derivation"]["action"] = "strip-idp-domain"`
+        to enable it and `CIlogonOAuthenticator.allowed_idps["username-derivation"]["domain"]` to list the domain
         which will be stripped
         """,
+    )
+
+    idp = Unicode(
+        config=True, help="Deprecated, use `CILogonOAuthenticator.shown_idps`."
     )
 
     shown_idps = List(
