@@ -9,7 +9,7 @@ from jupyterhub.auth import LocalAuthenticator
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Set, Unicode, default, Bool, validate
+from traitlets import Bool, Set, Unicode, default, validate
 
 from .oauth2 import OAuthenticator
 
@@ -125,7 +125,7 @@ class GitHubOAuthenticator(OAuthenticator):
 
         Each user is currently limited to a maximum of 100 teams.
         """,
-        config=True
+        config=True,
     )
 
     @validate('scope')
@@ -136,7 +136,6 @@ class GitHubOAuthenticator(OAuthenticator):
         if 'read:org' not in proposal.value:
             return ['read:org'] + proposal.value
         return proposal.value
-
 
     async def authenticate(self, handler, data=None):
         """We set up auth_state based on additional GitHub info if we
@@ -249,7 +248,8 @@ class GitHubOAuthenticator(OAuthenticator):
             teams = []
             while True:
                 req = HTTPRequest(
-                    self.github_api + f"/user/teams?per_page={per_page}&page={cur_page}",
+                    self.github_api
+                    + f"/user/teams?per_page={per_page}&page={cur_page}",
                     method="GET",
                     headers=_api_headers(access_token),
                     validate_cert=self.validate_server_cert,
