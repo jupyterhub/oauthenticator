@@ -242,6 +242,8 @@ class GitHubOAuthenticator(OAuthenticator):
                 per_page = 100
 
                 teams = []
+                # Fetch all teams across all orgs this user is in and we have visibility for
+                # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
                 url = self.github_api + f"/user/teams?per_page={per_page}"
                 while True:
                     req = HTTPRequest(
