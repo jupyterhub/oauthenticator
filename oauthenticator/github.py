@@ -241,49 +241,57 @@ class GitHubOAuthenticator(OAuthenticator):
                 # Number of teams to request per page
                 per_page = 100
 
-                teams = []
                 # Fetch all teams across all orgs this user is in and we have visibility for
                 # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
                 url = self.github_api + f"/user/teams?per_page={per_page}"
-                while True:
-                    req = HTTPRequest(
-                        url,
-                        method="GET",
-                        headers=_api_headers(access_token),
-                        validate_cert=self.validate_server_cert,
-                    )
-                    resp = await self.fetch(
-                        req, "fetching user teams", parse_json=False
-                    )
 
-                    resp_json = json.loads(resp.body.decode())
-                    teams += resp_json
-
-                    # Check if a Link header is present, with a collection of pagination links
-                    links_header = resp.headers.get('Link')
-                    if not links_header:
-                        # If Link header is not present, we just exit
-                        break
-                    else:
-                        # If Link header is present, let's parse it.
-                        links = parse_header_links(links_header)
-
-                        next_url = None
-                        # Look through all links to see if there is a 'next' link present
-                        for l in links:
-                            if l.get('rel') == 'next':
-                                next_url = l['url']
-
-                        # If we found a 'next' link, continue the while loop with the new URL
-                        # If not, we're out of pages to paginate, so we stop
-                        if next_url is not None:
-                            url = next_url
-                        else:
-                            break
-
-                auth_state['teams'] = teams
+                auth_state['teams'] = await self._paginated_fetch(url, access_token)
 
         return userdict
+
+    async def _paginated_fetch(self, api_url, access_token):
+        """
+        Fetch all items via a paginated GitHub API call
+
+        Makes a request to api_url, and if pagination information is returned,
+        keep paginating until all the items are retrieved.
+        """
+        url = api_url
+        content = []
+        while True:
+            req = HTTPRequest(
+                url,
+                method="GET",
+                headers=_api_headers(access_token),
+                validate_cert=self.validate_server_cert,
+            )
+            resp = await self.fetch(req, "fetching user teams", parse_json=False)
+
+            resp_json = json.loads(resp.body.decode())
+            content += resp_json
+
+            # Check if a Link header is present, with a collection of pagination links
+            links_header = resp.headers.get('Link')
+            if not links_header:
+                # If Link header is not present, we just exit
+                break
+            else:
+                # If Link header is present, let's parse it.
+                links = parse_header_links(links_header)
+
+                next_url = None
+                # Look through all links to see if there is a 'next' link present
+                for l in links:
+                    if l.get('rel') == 'next':
+                        next_url = l['url']
+
+                # If we found a 'next' link, continue the while loop with the new URL
+                # If not, we're out of pages to paginate, so we stop
+                if next_url is not None:
+                    url = next_url
+                else:
+                    break
+        return content
 
     async def _check_membership_allowed_organizations(
         self, org, username, access_token
