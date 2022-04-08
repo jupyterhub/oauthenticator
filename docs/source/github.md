@@ -34,6 +34,9 @@ We currently use the following fields:
 - `name` is the full name GitHub knows the user by.
 - `email` is the publicly visible email address (if any) for the user.
 - `access_token` is the token used to authenticate to GitHub.
+- `teams` is list of teams the user is part of, fetched only if
+  `fetch_teams` option is set to `True` on `GitHubOAuthenticator`.
+  The `read:orgs` scope is also required for this to work.
 
 To use this expanded user information, you will need to subclass your
 current spawner and modify the subclass to read these fields from

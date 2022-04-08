@@ -6,11 +6,11 @@ import os
 import warnings
 
 from jupyterhub.auth import LocalAuthenticator
+from requests.utils import parse_header_links
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Bool, Set, Unicode, default, validate
-from requests.utils import parse_header_links
+from traitlets import Bool, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
 
@@ -122,21 +122,12 @@ class GitHubOAuthenticator(OAuthenticator):
         'teams' will be a key in auth_state that has the same structure listed
         in https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
 
-        Automatically adds read:org scope to requested scopes if it is not present.
+        Requires `read:org` to be set in scopes.
 
         Each user is currently limited to a maximum of 100 teams.
         """,
         config=True,
     )
-
-    @validate('scope')
-    def _validate_scope(self, proposal):
-        """
-        Ensure read:org is requested if fetch_teams is true
-        """
-        if 'read:org' not in proposal.value and self.fetch_teams:
-            return ['read:org'] + proposal.value
-        return proposal.value
 
     async def authenticate(self, handler, data=None):
         """We set up auth_state based on additional GitHub info if we
@@ -241,47 +232,54 @@ class GitHubOAuthenticator(OAuthenticator):
                     break
 
         if self.fetch_teams:
-            # Number of teams to request per page
-            per_page = 100
-
-            teams = []
-            url = self.github_api + f"/user/teams?per_page={per_page}"
-            while True:
-                req = HTTPRequest(
-                    url,
-                    method="GET",
-                    headers=_api_headers(access_token),
-                    validate_cert=self.validate_server_cert,
+            if 'read:org' not in self.scope:
+                # This means the 'read:org' scope was not set, and we can't fetch teams
+                self.log.error(
+                    'read:org scope is required for fetch_teams functionality to work'
                 )
-                resp = await self.fetch(req, "fetching user teams", parse_json=False)
+            else:
+                # Number of teams to request per page
+                per_page = 100
 
-                resp_json = json.loads(resp.body.decode())
-                teams += resp_json
+                teams = []
+                url = self.github_api + f"/user/teams?per_page={per_page}"
+                while True:
+                    req = HTTPRequest(
+                        url,
+                        method="GET",
+                        headers=_api_headers(access_token),
+                        validate_cert=self.validate_server_cert,
+                    )
+                    resp = await self.fetch(
+                        req, "fetching user teams", parse_json=False
+                    )
 
-                # Check if a Link header is present, with a collection of pagination links
-                links_header = resp.headers.get('Link')
-                if not links_header:
-                    # If Link header is not present, we just exit
-                    break
-                else:
-                    # If Link header is present, let's parse it.
-                    links = parse_header_links(links_header)
+                    resp_json = json.loads(resp.body.decode())
+                    teams += resp_json
 
-
-                    next_url = None
-                    # Look through all links to see if there is a 'next' link present
-                    for l in links:
-                        if l.get('rel') == 'next':
-                            next_url = l['url']
-
-                    # If we found a 'next' link, continue the while loop with the new URL
-                    # If not, we're out of pages to paginate, so we stop
-                    if next_url is not None:
-                        url = next_url
-                    else:
+                    # Check if a Link header is present, with a collection of pagination links
+                    links_header = resp.headers.get('Link')
+                    if not links_header:
+                        # If Link header is not present, we just exit
                         break
+                    else:
+                        # If Link header is present, let's parse it.
+                        links = parse_header_links(links_header)
 
-            auth_state['teams'] = teams
+                        next_url = None
+                        # Look through all links to see if there is a 'next' link present
+                        for l in links:
+                            if l.get('rel') == 'next':
+                                next_url = l['url']
+
+                        # If we found a 'next' link, continue the while loop with the new URL
+                        # If not, we're out of pages to paginate, so we stop
+                        if next_url is not None:
+                            url = next_url
+                        else:
+                            break
+
+                auth_state['teams'] = teams
 
         return userdict
 
