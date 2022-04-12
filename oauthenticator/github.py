@@ -117,14 +117,12 @@ class GitHubOAuthenticator(OAuthenticator):
     fetch_teams = Bool(
         False,
         help="""
-        Fetch list of teams user is in and put it in auth_state.
+        If auth_state is enabled, add list of teams user is part of to it.
 
         'teams' will be a key in auth_state that has the same structure listed
         in https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
 
         Requires `read:org` to be set in scopes.
-
-        Each user is currently limited to a maximum of 100 teams.
         """,
         config=True,
     )
@@ -241,8 +239,7 @@ class GitHubOAuthenticator(OAuthenticator):
                 # Number of teams to request per page
                 per_page = 100
 
-                # Fetch all teams across all orgs this user is in and we have visibility for
-                # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
+                #  https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
                 url = self.github_api + f"/user/teams?per_page={per_page}"
 
                 auth_state['teams'] = await self._paginated_fetch(url, access_token)
