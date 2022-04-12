@@ -114,7 +114,7 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected organizations"
     )
 
-    fetch_teams = Bool(
+    populate_team_membership = Bool(
         False,
         help="""
         If auth_state is enabled, add list of teams user is part of to it.
@@ -229,11 +229,11 @@ class GitHubOAuthenticator(OAuthenticator):
                     auth_state['github_user']['email'] = val['email']
                     break
 
-        if self.fetch_teams:
+        if self.populate_team_membership:
             if 'read:org' not in self.scope:
                 # This means the 'read:org' scope was not set, and we can't fetch teams
                 self.log.error(
-                    'read:org scope is required for fetch_teams functionality to work'
+                    'read:org scope is required for populate_team_membership functionality to work'
                 )
             else:
                 # Number of teams to request per page
