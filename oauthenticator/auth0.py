@@ -52,6 +52,7 @@ class Auth0OAuthenticator(OAuthenticator):
                 "Please specify $AUTH0_SUBDOMAIN env or %s.auth0_subdomain config"
                 % self.__class__.__name__
             )
+        return subdomain
 
     username_key = Unicode(
         os.environ.get("OAUTH2_USERNAME_KEY", "email"),
