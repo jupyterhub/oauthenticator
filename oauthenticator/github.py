@@ -117,7 +117,7 @@ class GitHubOAuthenticator(OAuthenticator):
     populate_teams_in_auth_state = Bool(
         False,
         help="""
-        If auth_state is enabled, add list of teams user is part of to it.
+        If auth_state is enabled, populate it with the list of teams the current user is a member of.
 
         'teams' will be a key in auth_state that has the same structure listed
         in https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
