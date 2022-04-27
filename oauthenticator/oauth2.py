@@ -295,7 +295,7 @@ class OAuthenticator(Authenticator):
     custom_403_message = Unicode(
         "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
         config=True,
-        help="""The message to be shown when user was not allowed"""
+        help="""The message to be shown when user was not allowed""",
     )
 
     scope = List(
