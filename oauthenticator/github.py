@@ -272,22 +272,23 @@ class GitHubOAuthenticator(OAuthenticator):
             if not links_header:
                 # If Link header is not present, we just exit
                 break
-            else:
-                # If Link header is present, let's parse it.
-                links = parse_header_links(links_header)
 
-                next_url = None
-                # Look through all links to see if there is a 'next' link present
-                for l in links:
-                    if l.get('rel') == 'next':
-                        next_url = l['url']
+            # If Link header is present, let's parse it.
+            links = parse_header_links(links_header)
 
-                # If we found a 'next' link, continue the while loop with the new URL
-                # If not, we're out of pages to paginate, so we stop
-                if next_url is not None:
-                    url = next_url
-                else:
+            next_url = None
+            # Look through all links to see if there is a 'next' link present
+            for l in links:
+                if l.get('rel') == 'next':
+                    next_url = l['url']
                     break
+
+            # If we found a 'next' link, continue the while loop with the new URL
+            # If not, we're out of pages to paginate, so we stop
+            if next_url is not None:
+                url = next_url
+            else:
+                break
         return content
 
     async def _check_membership_allowed_organizations(
