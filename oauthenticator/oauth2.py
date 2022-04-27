@@ -293,12 +293,10 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
     custom_403_message = Unicode(
-        config=True, help="""The message to be shown when user was not allowed"""
+        "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
+        config=True,
+        help="""The message to be shown when user was not allowed"""
     )
-
-    @default("custom_403_message")
-    def _custom_403_message(self):
-        return "Looks like you have not been added to the list of allowed users for this hub. Please contact the hub administrator."
 
     scope = List(
         Unicode(),
