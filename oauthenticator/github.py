@@ -117,12 +117,18 @@ class GitHubOAuthenticator(OAuthenticator):
     populate_teams_in_auth_state = Bool(
         False,
         help="""
-        If auth_state is enabled, populate it with the list of teams the current user is a member of.
+        Populates the authentication state dictionary `auth_state` with a key
+        `teams` assigned the list of teams the current user is a member of at
+        the time of authentication. The list of teams is structured like the
+        response of the GitHub API documented in
+        https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
 
-        'teams' will be a key in auth_state that has the same structure listed
-        in https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
-
-        Requires `read:org` to be set in scopes.
+        Requires `read:org` to be set in `scope`.
+        
+        Note that authentication state is only be available to a
+        `post_auth_hook` before being discarded unless configured to be
+        persisted via `enable_auth_state`. For more information, see
+        https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
         """,
         config=True,
     )
