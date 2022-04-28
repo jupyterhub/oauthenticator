@@ -6,10 +6,11 @@ import os
 import warnings
 
 from jupyterhub.auth import LocalAuthenticator
+from requests.utils import parse_header_links
 from tornado import web
 from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
-from traitlets import Set, Unicode, default
+from traitlets import Bool, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
 
@@ -111,6 +112,25 @@ class GitHubOAuthenticator(OAuthenticator):
 
     allowed_organizations = Set(
         config=True, help="Automatically allow members of selected organizations"
+    )
+
+    populate_teams_in_auth_state = Bool(
+        False,
+        help="""
+        Populates the authentication state dictionary `auth_state` with a key
+        `teams` assigned the list of teams the current user is a member of at
+        the time of authentication. The list of teams is structured like the
+        response of the GitHub API documented in
+        https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
+
+        Requires `read:org` to be set in `scope`.
+        
+        Note that authentication state is only be available to a
+        `post_auth_hook` before being discarded unless configured to be
+        persisted via `enable_auth_state`. For more information, see
+        https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
+        """,
+        config=True,
     )
 
     async def authenticate(self, handler, data=None):
@@ -215,7 +235,68 @@ class GitHubOAuthenticator(OAuthenticator):
                     auth_state['github_user']['email'] = val['email']
                     break
 
+        if self.populate_teams_in_auth_state:
+            if 'read:org' not in self.scope:
+                # This means the 'read:org' scope was not set, and we can't fetch teams
+                self.log.error(
+                    'read:org scope is required for populate_teams_in_auth_state functionality to work'
+                )
+            else:
+                # Number of teams to request per page
+                per_page = 100
+
+                #  https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
+                url = self.github_api + f"/user/teams?per_page={per_page}"
+
+                auth_state['teams'] = await self._paginated_fetch(url, access_token)
+
         return userdict
+
+    async def _paginated_fetch(self, api_url, access_token):
+        """
+        Fetch all items via a paginated GitHub API call
+
+        Makes a request to api_url, and if pagination information is returned,
+        keep paginating until all the items are retrieved.
+        """
+        url = api_url
+        content = []
+        while True:
+            req = HTTPRequest(
+                url,
+                method="GET",
+                headers=_api_headers(access_token),
+                validate_cert=self.validate_server_cert,
+            )
+            resp = await self.fetch(req, "fetching user teams", parse_json=False)
+
+            resp.raise_for_status()
+            resp_json = json.loads(resp.body.decode())
+            content += resp_json
+
+            # Check if a Link header is present, with a collection of pagination links
+            links_header = resp.headers.get('Link')
+            if not links_header:
+                # If Link header is not present, we just exit
+                break
+
+            # If Link header is present, let's parse it.
+            links = parse_header_links(links_header)
+
+            next_url = None
+            # Look through all links to see if there is a 'next' link present
+            for l in links:
+                if l.get('rel') == 'next':
+                    next_url = l['url']
+                    break
+
+            # If we found a 'next' link, continue the while loop with the new URL
+            # If not, we're out of pages to paginate, so we stop
+            if next_url is not None:
+                url = next_url
+            else:
+                break
+        return content
 
     async def _check_membership_allowed_organizations(
         self, org, username, access_token
