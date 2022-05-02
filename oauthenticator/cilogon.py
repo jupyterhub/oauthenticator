@@ -143,7 +143,7 @@ class CILogonOAuthenticator(OAuthenticator):
         params = dict(
             client_id=self.client_id,
             client_secret=self.client_secret,
-            redirect_uri=self.oauth_callback_url,
+            redirect_uri=self.get_callback_url(handler),
             code=code,
             grant_type='authorization_code',
         )
