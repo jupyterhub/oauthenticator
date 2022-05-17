@@ -270,7 +270,6 @@ class GitHubOAuthenticator(OAuthenticator):
             )
             resp = await self.fetch(req, "fetching user teams", parse_json=False)
 
-            resp.raise_for_status()
             resp_json = json.loads(resp.body.decode())
             content += resp_json
 
