@@ -584,6 +584,7 @@ And set the following environmental variables:
    OAUTH2_TOKEN_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/api/v1/token
    OAUTH2_USERDATA_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2.php/cloud/user?format=json
 
+.. _yandex-setup-label:
 
 Yandex Setup
 ------------
