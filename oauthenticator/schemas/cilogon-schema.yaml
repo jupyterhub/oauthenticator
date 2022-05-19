@@ -7,41 +7,19 @@ required:
 properties:
   username_derivation:
     type: object
-    description: |
-      Additional configuration for the usernames. It can be used to
-      enable domain stripping, adding prefixes to the usernames and
-      to specify an indentity provider specific username claim.
     additionalProperties: false
     properties:
       username_claim:
         type: string
-        description: |
-          The claim in the userinfo response from which to get the
-          JupyterHub username. Examples include: eppn, email.
-          What keys are available will depend on the scopes requested.
-          It will overwrite any value set through
-          CILogonOAuthenticator.username_claim for this identity provider.
       action:
         type: string
-        description: |
-          What action to perform on the username. Available options are
-          "strip_idp_domain", which will strip the domain from the username
-          if specified and "prefix", which will prefix the hub username with
-          "prefix:".
-
         enum:
           - strip_idp_domain
           - prefix
       domain:
         type: string
-        description: |
-          The domain after "@" which will be stripped from the username if it
-          exists and if the action is "strip_idp_domain".
       prefix:
         type: string
-        description: |
-          The prefix which will be added at the beginning of the username
-          followed by a semicolumn ":", if the action is "prefix".
     required:
       - username_claim
       - action

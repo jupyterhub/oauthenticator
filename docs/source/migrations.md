@@ -56,7 +56,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
     The `allowed_idps` List config was used prior to oauthenticator version 15.0.0 to only allow acces into the hub to usernames containing only these domains, after the @ sign. If `strip_idp_domain` was enabled, these domains would have been stripped from the hub username.
 
-    Starting with oauthenticator 15.0.0 this config option must now be a Dict that contains a `username_derivation` dictionary that describes how the hub usernames will be derived for each allowed identity provider. More information about the accepted configuration that go into the `username_derivation` can be found in [this json schema](https://github.com/jupyterhub/oauthenticator/tree/main/oauthenticator/schemas/cilogon-schema.yaml).
+    Starting with oauthenticator 15.0.0 this config option must now be a Dict that contains a `username_derivation` dictionary that describes how the hub usernames will be derived for each allowed identity provider. More information about each configuration option that can go into the `username_derivation` can be found in the `allowed_idps` docstring. Also, [this json schema](https://github.com/jupyterhub/oauthenticator/tree/main/oauthenticator/schemas/cilogon-schema.yaml) has information about how its validity it's checked.
 
     **Stripping the domain from one IDP username and adding prefixes to another**
 
@@ -84,4 +84,4 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
     **Note**
 
-    **If `allowed_idps` is specified, then each IDP in the dict must define the `username_derivation` dict, including `username_claim`. The CILogonOAuthenticator will only be used is `allowed_idps` is not specified!**
+    **If `allowed_idps` is specified, then each IDP in the dict must define the `username_derivation` dict, including `username_derivation.username_claim`. `CILogonOAuthenticator.username_claim` will only be used if `allowed_idps` is not specified!**

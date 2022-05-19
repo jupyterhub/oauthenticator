@@ -109,43 +109,40 @@ class CILogonOAuthenticator(OAuthenticator):
     allowed_idps = Dict(
         config=True,
         default_value={},
-        help="""A dictionary of the only entity IDs that will be allowed to use on login.
+        help="""A dictionary of the only entity IDs that will be allowed to be used as login options.
         See https://cilogon.org/idplist for the list of `EntityIDs` of each IDP.
 
-        Each entity id must define a username_derivation dict that will be used to define how hub usernames will be determined for each IDP.
+        Each entity id must define a `username_derivation` dict that will be used to define how hub usernames will be determined for each IDP. It can be used to enable domain stripping, adding prefixes to the usernames and to specify an indentity provider specific username claim.
+
         Required format:
-            - `username_derivation` dict can only contain the following keys:
-              ["username_claim", "action", "domain", "prefix"].
-            - `username_derivation.action` can only be `strip_idp_domain` or `prefix`
-            - if `username_derivation.action` is `strip_idp_domain`, then
-              `username_derivation.domain` must also be specified
-            - if `username_derivation.action` is `prefix`, then `username_derivation.prefix`must also be specified.
-
-        For example:
-        {
-            "idp_id_for_uni_edu": {
-                "username_derivation": {
-                    "username_claim": "email",
-                    "action": "strip_idp_domain",
-                    "domain": "uni.edu",
-                }
-            },
-
-            "idp_id_for_github": {
-                "username_derivation": {
-                    "username_claim": "username",
-                    "action": "prefix",
-                    "prefix": "gh"
-                }
-            }
+        username_derivation: {
+            username_claim: <claim>
+            action: "strip_idp_domain" or "prefix"
+            domain: <domain>
+            prefix: <prefix>
         }
 
-        If you login using the IDP `idp_id_for_uni_edu` and the email
-        provided by this idp is a `user@uni.edu` account, then the hub
-        username will be your email, from which the domain `uni.edu`
-        has been stripped, i.e. just `user`.
-        But if you login with GitHub, it'll be your GitHub username prefixed with `gh:`.
-        This way, multiple users can log in without clashes across IDPs
+        Where:
+        - `username_claim`: string
+            The claim in the userinfo response from which to get the
+            JupyterHub username. Examples include: eppn, email.
+            What keys are available will depend on the scopes requested.
+            It will overwrite any value set through
+            CILogonOAuthenticator.username_claim for this identity provider.
+        - `action`: string
+            What action to perform on the username. Available options are
+            "strip_idp_domain", which will strip the domain from the username if specified and "prefix", which will prefix the hub username with "prefix:".
+        - `domain:` string
+            The domain after "@" which will be stripped from the username if it exists and if the action is "strip_idp_domain".
+        - `prefix`: string
+            The prefix which will be added at the beginning of the username
+            followed by a semicolumn ":", if the action is "prefix".
+
+        Note:
+        - if `username_derivation.action` is `strip_idp_domain`, then
+          `username_derivation.domain` must also be specified
+        - if `username_derivation.action` is `prefix`, then
+          `username_derivation.prefix`must also be specified.
 
         Note: `username_claim` must be provided for each idp in
         `allowed_idps`.
