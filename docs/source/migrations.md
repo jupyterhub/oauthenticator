@@ -26,11 +26,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
 2. `strip_idp_domain` -> **removed**
 
-    The `strip_idp_domain` Bool config was used prior to oauthenticator version 15.0.0 to enable stripping the domains listed in the `allowed_idps` from the hub usernames.
-
-    Starting with oauthenticator 15.0.0 this config option has been removed and such behaviour can only be achieved using the `allowed_idps` Dict config.
-
-    Check `allowed_idps` section bellow for more info about other configuration supported.
+    The `strip_idp_domain` boolean config was previously used to enable stripping the domains listed in the `allowed_idps` from the hub usernames. In oauthenticator 15.0.0 this config option was removed and such behaviour can only be achieved using the `allowed_idps` dictionary config as documented in a section below.
 
     **Old config Example**
     ```python
