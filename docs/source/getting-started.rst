@@ -111,6 +111,7 @@ Use a custom 403 error
 
 AWS Cognito Setup
 -----------------
+
 First visit
 `Getting Started with User Pools <https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-with-cognito-user-pools.html>`_
 for info on how to register and configure a cognito user pool and app.
@@ -282,6 +283,13 @@ You can customize the sign in button text (optional):
 .. code:: python
 
    c.GoogleOAuthenticator.login_service = 'My College'
+
+.. note::
+
+   Additional notes, that seem quite outdated at the time of writing May 2022,
+   are available about authorizing users part of specific Google Groups are
+   `available here <google.md>`__. Contributions to update these and re-verify
+   this functionality are most welcome.
 
 OpenShift Setup
 ---------------
