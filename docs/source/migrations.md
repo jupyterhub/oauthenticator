@@ -12,7 +12,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
 1. `idp` -> **replaced**
 
-    The `idp` Unicode config reffers to the SAML Entity ID of the user's selected identity provider and prior to 15.0.0 was used to set the [CILogon `selected_idp` optional authorization parameter](https://www.cilogon.org/oidc#h.p_IWGvXH0okDI_) in order to show only this identity provider in the CILogon IDP list.
+    The `idp` Unicode config refers to the SAML Entity ID of the user's selected identity provider and prior to 15.0.0 was used to set the [CILogon `selected_idp` optional authorization parameter](https://www.cilogon.org/oidc#h.p_IWGvXH0okDI_) in order to show only this identity provider in the CILogon IDP list.
 
     Starting with oauthenticator 15.0.0, this config has been renamed to `shown_idps` and must now be a list of such SAML Entity IDs. Only the identity providers in this list will be shown in the CILogon IDP list, with the first one being considered the default.
 
