@@ -109,8 +109,8 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'autodoc_traits',
+    'myst_parser',
     'sphinx_copybutton',
-    'recommonmark',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -120,14 +120,6 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
-
-from recommonmark.transform import AutoStructify
-
-
-def setup(app):
-    app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
-    app.add_transform(AutoStructify)
 
 
 # -- Options for HTML output -------------------------------------------------
