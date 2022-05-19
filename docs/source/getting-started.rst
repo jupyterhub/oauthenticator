@@ -3,34 +3,30 @@ Get started
 
 The general steps to take when using OAuthenticator:
 
-1. Pick your identity provider
-2. Register with the provider
-3. Choose an authenticator class, or use :class:`~.oauthenticator.generic.GenericOAuthenticator`
-   and configure JupyterHub to use it
-4. Configure the authenticator class (client_id, client_secret, callback_url, allowed_users, etc.)
-5. Specific configuration for your identity provider
+1. Register an OAuth2 application with the identity provider
+2. Configure JupyterHub to use an authenticator class compatible with the identity provider
+3. Configure the chosen authenticator class
 
-OAuthenticator currently supports the following **identity providers**:
+OAuthenticator provides a few dedicated authentication classes, besides the
+`generic implementation <oauthenticator.generic.GenericOAuthenticator>`__ that
+can be used with **any OAuth2 identity provider**.
 
-- `Auth0 <oauthenticator/auth0.py>`__
-- `Azure AD <oauthenticator/azuread.py>`__
-- `Bitbucket <oauthenticator/bitbucket.py>`__
-- `CILogon <oauthenticator/cilogon.py>`__
-- `GitHub <oauthenticator/github.py>`__
-- `GitLab <oauthenticator/gitlab.py>`__
-- `Globus <oauthenticator/globus.py>`__
-- `Google <oauthenticator/google.py>`__
-- `MediaWiki <oauthenticator/mediawiki.py>`__
-- `Okpy <oauthenticator/okpy.py>`__
-- `OpenShift <oauthenticator/openshift.py>`__
-
-A `generic implementation <oauthenticator.generic.GenericOAuthenticator>`__, which you can
-use with **any OAuth2 identity provider**, is also available.
+- `Auth0OAuthenticator`
+- `AzureAdOAuthenticator`
+- `BitbucketOAuthenticator`
+- `CILogonOAuthenticator`
+- `GitHubOAuthenticator`
+- `GitLabOAuthenticator`
+- `GlobusOAuthenticator`
+- `GoogleOAuthenticator`
+- `MediaWikiOAuthenticator`
+- `OkpyOAuthenticator`
+- `OpenShiftOAuthenticator`
 
 General setup
 -------------
 
-The first step is to tell JupyterHub to use your chosen OAuthenticator.
+The first step is to tell JupyterHub to use your chosen authenticator class.
 Each authenticator is provided in a submodule of ``oauthenticator``, and
 each authenticator has a variant with ``Local``
 (e.g. ``LocalGitHubOAuthenticator``), which will map OAuth usernames
