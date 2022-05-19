@@ -6,8 +6,6 @@ The following section describes how to migrate your OAuthenticator to a newer ve
 
 OAuthenticator release of 15.0.0 version introduced some breaking changes for the CILogonOAuthenticator. This is a description of what breaking changes have been made and a step by step guide on how to update your JupyterHub CILogonOAuthenticator to this version.
 
-### jupyterhub-oauthenticator 15.0.0 breaking changes
-
 The following configurations have been deprecated in oauthenticator 15.0.0
 
 1. `idp` -> **replaced**
