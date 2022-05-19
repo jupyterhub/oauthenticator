@@ -3,7 +3,6 @@ Custom Authenticator to use Azure AD with JupyterHub
 """
 import os
 import urllib
-from distutils.version import LooseVersion as V
 
 import jwt
 from jupyterhub.auth import LocalAuthenticator
@@ -14,7 +13,7 @@ from .oauth2 import OAuthenticator
 
 # pyjwt 2.0 has changed its signature,
 # but mwoauth pins to pyjwt 1.x
-PYJWT_2 = V(jwt.__version__) >= V("2.0")
+PYJWT_2 = int(jwt.__version__.split(".")[0]) >= 2
 
 
 class AzureAdOAuthenticator(OAuthenticator):
