@@ -112,35 +112,35 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""A dictionary of the only entity IDs that will be allowed to use on login.
         See https://cilogon.org/idplist for the list of `EntityIDs` of each IDP.
 
-        Each entity id must define a username-derivation dict that will be used to define how hub usernames will be determined for each IDP.
+        Each entity id must define a username_derivation dict that will be used to define how hub usernames will be determined for each IDP.
         Required format:
-            - `username-derivation` dict can only contain the following keys:
-              ["username-claim", "action", "domain", "prefix"].
-            - `username-derivation.action` can only be `strip-idp-domain` or `prefix`
-            - if `username-derivation.action` is `strip-idp-domain`, then
-              `username-derivation.domain` must also be specified
-            - if `username-derivation.action` is `prefix`, then `username-derivation.prefix`must also be specified.
+            - `username_derivation` dict can only contain the following keys:
+              ["username_claim", "action", "domain", "prefix"].
+            - `username_derivation.action` can only be `strip_idp_domain` or `prefix`
+            - if `username_derivation.action` is `strip_idp_domain`, then
+              `username_derivation.domain` must also be specified
+            - if `username_derivation.action` is `prefix`, then `username_derivation.prefix`must also be specified.
 
         For example:
         {
-            "idp-id-for-uni-edu": {
-                "username-derivation": {
-                    "username-claim": "email",
-                    "action": "strip-idp-domain",
+            "idp_id_for_uni_edu": {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
                     "domain": "uni.edu",
                 }
             },
 
-            "idp-id-for-github": {
-                "username-derivation": {
-                    "username-claim": "username",
+            "idp_id_for_github": {
+                "username_derivation": {
+                    "username_claim": "username",
                     "action": "prefix",
                     "prefix": "gh"
                 }
             }
         }
 
-        If you login using the IDP `idp-id-for-uni-edu` and the email
+        If you login using the IDP `idp_id_for_uni_edu` and the email
         provided by this idp is a `user@uni.edu` account, then the hub
         username will be your email, from which the domain `uni.edu`
         has been stripped, i.e. just `user`.
@@ -157,7 +157,7 @@ class CILogonOAuthenticator(OAuthenticator):
         idps = proposal.value
 
         for entity_id, username_derivation in idps.items():
-            # Validate `username-derivation` config using the schema
+            # Validate `username_derivation` config using the schema
             root_dir = os.path.dirname(os.path.abspath(__file__))
             schema_file = os.path.join(root_dir, "schemas", "cilogon-schema.yaml")
             with open(schema_file) as schema_fd:
@@ -184,8 +184,8 @@ class CILogonOAuthenticator(OAuthenticator):
     strip_idp_domain = Bool(
         False,
         config=True,
-        help="""Deprecated, use `CILogonOAuthenticator.allowed_idps["username-derivation"]["action"] = "strip-idp-domain"`
-        to enable it and `CIlogonOAuthenticator.allowed_idps["username-derivation"]["domain"]` to list the domain
+        help="""Deprecated, use `CILogonOAuthenticator.allowed_idps["username_derivation"]["action"] = "strip_idp_domain"`
+        to enable it and `CIlogonOAuthenticator.allowed_idps["username_derivation"]["domain"]` to list the domain
         which will be stripped
         """,
     )
@@ -225,7 +225,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         See http://www.cilogon.org/oidc for details.
 
-        Note that this option can be overwritten by allowed_idps[username-derivation]
+        Note that this option can be overwritten by allowed_idps[username_derivation]
         config if present.
         """,
     )
@@ -311,8 +311,8 @@ class CILogonOAuthenticator(OAuthenticator):
 
             # The username_claim which should be used for this idp
             claimlist = [
-                self.allowed_idps[selected_auth_provider]["username-derivation"][
-                    "username-claim"
+                self.allowed_idps[selected_auth_provider]["username_derivation"][
+                    "username_claim"
                 ]
             ]
 
@@ -322,10 +322,10 @@ class CILogonOAuthenticator(OAuthenticator):
         # Check if we need to strip/prefix username
         if self.allowed_idps:
             username_derivation_config = self.allowed_idps[selected_auth_provider][
-                "username-derivation"
+                "username_derivation"
             ]
             action = username_derivation_config["action"]
-            if action == "strip-idp-domain":
+            if action == "strip_idp_domain":
                 gotten_name, gotten_domain = username.split('@')
                 if gotten_domain != username_derivation_config["domain"]:
                     self.log.warning(

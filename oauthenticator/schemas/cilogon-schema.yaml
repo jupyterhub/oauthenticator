@@ -1,11 +1,11 @@
 $schema: http://json-schema.org/draft-07/schema#
-title: username-derivation
+title: username_derivation
 type: object
 additionalProperties: false
 required:
-  - username-derivation
+  - username_derivation
 properties:
-  username-derivation:
+  username_derivation:
     type: object
     description: |
       Additional configuration for the usernames. It can be used to
@@ -13,7 +13,7 @@ properties:
       to specify an indentity provider specific username claim.
     additionalProperties: false
     properties:
-      username-claim:
+      username_claim:
         type: string
         description: |
           The claim in the userinfo response from which to get the
@@ -25,31 +25,31 @@ properties:
         type: string
         description: |
           What action to perform on the username. Available options are
-          "strip-idp-domain", which will strip the domain from the username
+          "strip_idp_domain", which will strip the domain from the username
           if specified and "prefix", which will prefix the hub username with
           "prefix:".
 
         enum:
-          - strip-idp-domain
+          - strip_idp_domain
           - prefix
       domain:
         type: string
         description: |
           The domain after "@" which will be stripped from the username if it
-          exists and if the action is "strip-idp-domain".
+          exists and if the action is "strip_idp_domain".
       prefix:
         type: string
         description: |
           The prefix which will be added at the beginning of the username
           followed by a semicolumn ":", if the action is "prefix".
     required:
-      - username-claim
+      - username_claim
       - action
     allOf:
       - if:
           properties:
             action:
-              const: strip-idp-domain
+              const: strip_idp_domain
         then:
           required:
             - domain

@@ -133,13 +133,13 @@ def test_allowed_idps_wrong_type(caplog):
 
 
 async def test_allowed_idps_required_username_derivation(caplog):
-    # Test username-derivation is a required field of allowed_idps
+    # Test username_derivation is a required field of allowed_idps
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
         'https://github.com/login/oauth/authorize': {}
     }
 
-    with raises(ValidationError, match="'username-derivation' is a required property"):
+    with raises(ValidationError, match="'username_derivation' is a required property"):
         CILogonOAuthenticator(config=cfg)
 
 
@@ -149,9 +149,9 @@ def test_allowed_idps_invalid_entity_id(caplog):
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
         'uni.edu': {
-            'username-derivation': {
-                'username-claim': 'email',
-                'action': 'strip-idp-domain',
+            'username_derivation': {
+                'username_claim': 'email',
+                'action': 'strip_idp_domain',
                 'domain': 'uni.edu',
             }
         }
@@ -185,21 +185,21 @@ async def test_allowed_idps_invalid_config_option(caplog):
 
 async def test_allowed_idps_invalid_config_type(caplog):
     cfg = Config()
-    # Test username-derivation not dict
+    # Test username_derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
-        'https://github.com/login/oauth/authorize': 'username-derivation'
+        'https://github.com/login/oauth/authorize': 'username_derivation'
     }
 
-    with raises(ValidationError, match="'username-derivation' is not of type 'object'"):
+    with raises(ValidationError, match="'username_derivation' is not of type 'object'"):
         CILogonOAuthenticator(config=cfg)
 
 
 async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
     cfg = Config()
-    # Test username-derivation not dict
+    # Test username_derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
         'https://github.com/login/oauth/authorize': {
-            'username-derivation': {'a': 1, 'b': 2}
+            'username_derivation': {'a': 1, 'b': 2}
         }
     }
 
@@ -209,12 +209,12 @@ async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
 
 async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
     cfg = Config()
-    # Test username-derivation not dict
+    # Test username_derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
         'https://github.com/login/oauth/authorize': {
-            'username-derivation': {
-                'username-claim': 'email',
-                'action': 'strip-idp-domain',
+            'username_derivation': {
+                'username_claim': 'email',
+                'action': 'strip_idp_domain',
             }
         }
     }
@@ -225,11 +225,11 @@ async def test_allowed_idps_invalid_config_username_domain_stripping(caplog):
 
 async def test_allowed_idps_invalid_config_username_prefix(caplog):
     cfg = Config()
-    # Test username-derivation not dict
+    # Test username_derivation not dict
     cfg.CILogonOAuthenticator.allowed_idps = {
         'https://github.com/login/oauth/authorize': {
-            'username-derivation': {
-                'username-claim': 'email',
+            'username_derivation': {
+                'username_claim': 'email',
                 'action': 'prefix',
             }
         }
@@ -243,8 +243,8 @@ async def test_cilogon_scopes():
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
         'https://some-idp.com/login/oauth/authorize': {
-            'username-derivation': {
-                'username-claim': 'email',
+            'username_derivation': {
+                'username_claim': 'email',
                 'action': 'prefix',
                 'prefix': 'hub',
             }
@@ -262,15 +262,15 @@ async def test_strip_and_prefix_username(cilogon_client):
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = {
         'https://some-idp.com/login/oauth/authorize': {
-            'username-derivation': {
-                'username-claim': 'email',
-                'action': 'strip-idp-domain',
+            'username_derivation': {
+                'username_claim': 'email',
+                'action': 'strip_idp_domain',
                 'domain': 'uni.edu',
             }
         },
         'https://another-idp.com/login/oauth/authorize': {
-            'username-derivation': {
-                'username-claim': 'nickname',
+            'username_derivation': {
+                'username_claim': 'nickname',
                 'action': 'prefix',
                 'prefix': 'idp',
             }
