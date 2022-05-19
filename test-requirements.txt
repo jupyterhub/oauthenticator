@@ -1,9 +1,9 @@
 -r ./requirements.txt
 .[googlegroups]
 codecov
-mwoauth >= 0.3.7
+mwoauth >= 0.3.8
 pre-commit
-pyjwt
+pyjwt >= 2
 pytest >= 2.8
 pytest-asyncio
 pytest-cov
