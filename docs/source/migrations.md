@@ -21,7 +21,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
     **New config Example**
     ```python
-    c.CILogonOAuthenticator.idp = ["https://accounts.google.com/o/oauth2/auth"]
+    c.CILogonOAuthenticator.shown_idps = ["https://accounts.google.com/o/oauth2/auth"]
     ```
 
 2. `strip_idp_domain` -> **removed**
