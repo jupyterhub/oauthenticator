@@ -6,6 +6,7 @@ Derived using the Github and Google OAuthenticator implementations as examples.
 The following environment variables may be used for configuration:
 
     AUTH0_SUBDOMAIN - The subdomain for your Auth0 account
+    AUTH0_CUSTOM_DOMAIN - The custom domain for your Auth0 account
     OAUTH_CLIENT_ID - Your client id
     OAUTH_CLIENT_SECRET - Your client secret
     OAUTH_CALLBACK_URL - Your callback handler URL
@@ -42,17 +43,20 @@ class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
 
-    auth0_subdomain = Unicode(config=True)
+    auth0_subdomain = Unicode(config=True, allow_none=True)
+    auth0_custom_domain = Unicode(config=True, allow_none=True)
+
+    user_info_url = Unicode(
+        config=True, help="""The url for getting the user information"""
+    )
 
     @default("auth0_subdomain")
     def _auth0_subdomain_default(self):
-        subdomain = os.getenv("AUTH0_SUBDOMAIN")
-        if not subdomain:
-            raise ValueError(
-                "Please specify $AUTH0_SUBDOMAIN env or %s.auth0_subdomain config"
-                % self.__class__.__name__
-            )
-        return subdomain
+        return os.getenv("AUTH0_SUBDOMAIN")
+
+    @default("auth0_custom_domain")
+    def _auth0_custom_domain_default(self):
+        return os.getenv("AUTH0_CUSTOM_DOMAIN")
 
     username_key = Unicode(
         os.environ.get("OAUTH2_USERNAME_KEY", "email"),
@@ -60,17 +64,43 @@ class Auth0OAuthenticator(OAuthenticator):
         help="Userdata username key from returned json with user data login information",
     )
 
+    @property
+    def auth0_domain(self):
+
+        if self.auth0_custom_domain and self.auth0_subdomain:
+            raise ValueError(
+                "Both auth0_custom_domain and auth0_subdomain are set, please specify only one"
+            )
+
+        if self.auth0_subdomain:
+            return f'{self.auth0_subdomain}.auth0.com'
+        elif self.auth0_custom_domain:
+            return self.auth0_custom_domain
+        else:
+            raise ValueError(
+                f"""Please specify one of the following:
+                    $AUTH0_SUBDOMAIN env, 
+                    $AUTH0_CUSTOM_DOMAIN env, 
+                    {self.__class__.__name__}.auth0_subdomain config, 
+                    {self.__class__.__name__}.auth0_custom_domain_config
+                """
+            )
+
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
-        return 'https://%s.auth0.com/v2/logout' % self.auth0_subdomain
+        return f'https://{self.auth0_domain}/v2/logout'
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "https://%s.auth0.com/authorize" % self.auth0_subdomain
+        return f'https://{self.auth0_domain}/authorize'
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://%s.auth0.com/oauth/token" % self.auth0_subdomain
+        return f'https://{self.auth0_domain}/oauth/token'
+
+    @default("user_info_url")
+    def _user_info_url_default(self):
+        return f'https://{self.auth0_domain}/userinfo'
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
@@ -105,7 +135,7 @@ class Auth0OAuthenticator(OAuthenticator):
             "Authorization": "Bearer {}".format(access_token),
         }
         req = HTTPRequest(
-            "https://%s.auth0.com/userinfo" % self.auth0_subdomain,
+            self.user_info_url,
             method="GET",
             headers=headers,
         )
