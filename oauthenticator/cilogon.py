@@ -138,14 +138,12 @@ class CILogonOAuthenticator(OAuthenticator):
             The prefix which will be added at the beginning of the username
             followed by a semicolumn ":", if the action is "prefix".
 
-        Note:
+        Requirements:
         - if `username_derivation.action` is `strip_idp_domain`, then
           `username_derivation.domain` must also be specified
         - if `username_derivation.action` is `prefix`, then
           `username_derivation.prefix`must also be specified.
-
-        Note: `username_claim` must be provided for each idp in
-        `allowed_idps`.
+        - `username_claim` must be provided for each idp in `allowed_idps`.
         """,
     )
 
