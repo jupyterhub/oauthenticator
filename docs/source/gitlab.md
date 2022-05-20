@@ -1,3 +1,5 @@
+(gitlab-scopes-label)=
+
 # GitLab-specific scopes
 
 Scopes may be added to the GitLab OAuthenticator by overriding the

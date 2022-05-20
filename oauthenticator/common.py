@@ -41,8 +41,8 @@ def next_page_from_links(response):
     Return None if no link header called 'next' is found.
 
     Both Gitlab and Github use link headers for pagination:
-        https://docs.gitlab.com/ee/api/README.html#pagination-link-header
-        https://developer.github.com/v3/#pagination
+        https://docs.gitlab.com/ee/api/index.html#pagination-link-header
+        https://docs.github.com/en/rest#pagination
     """
     link_header = response.headers.get('Link')
     if not link_header:

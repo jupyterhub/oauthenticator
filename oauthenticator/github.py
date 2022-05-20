@@ -141,7 +141,7 @@ class GitHubOAuthenticator(OAuthenticator):
 
         # Exchange the OAuth code for a GitHub Access Token
         #
-        # See: https://developer.github.com/v3/oauth/
+        # See: https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
 
         # GitHub specifies a POST request yet requires URL parameters
         params = dict(
@@ -301,7 +301,7 @@ class GitHubOAuthenticator(OAuthenticator):
         self, org, username, access_token
     ):
         headers = _api_headers(access_token)
-        # Check membership of user `username` for organization `org` via api [check-membership](https://developer.github.com/v3/orgs/members/#check-membership)
+        # Check membership of user `username` for organization `org` via api [check-membership](https://docs.github.com/en/rest/orgs/members#check-membership)
         # With empty scope (even if authenticated by an org member), this
         # will only await public org members.  You want 'read:org' in order
         # to be able to iterate through all members. If you would only like to

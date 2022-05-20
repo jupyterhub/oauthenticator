@@ -8,8 +8,8 @@ The general steps to take when using OAuthenticator:
 3. Configure the chosen authenticator class
 
 OAuthenticator provides a few dedicated authentication classes, besides the
-`generic implementation <oauthenticator.generic.GenericOAuthenticator>`__ that
-can be used with **any OAuth2 identity provider**.
+generic implementation `GenericOAuthenticator` that can be used with **any
+OAuth2 identity provider**.
 
 - `Auth0OAuthenticator`
 - `AzureAdOAuthenticator`
@@ -128,7 +128,7 @@ Set the above settings in your ``jupyterhub_config.py``:
    c.GenericOAuthenticator.login_service = "AWSCognito"
    c.GenericOAuthenticator.username_key = "login"
    c.GenericOAuthenticator.authorize_url = "https://your-AWSCognito-domain/oauth2/authorize"
-   c.GenericOAuthenticator.token_url = ""https://your-AWSCognito-domain/oauth2/token"
+   c.GenericOAuthenticator.token_url = "https://your-AWSCognito-domain/oauth2/token"
    c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/userInfo"
 
 Azure AD Setup
@@ -171,7 +171,7 @@ This sample code is provided for you in ``examples > azuread > sample_jupyter_co
   ['openid']``), in addition to whatever else you need.
 
 -  Follow this
-   `link to create an AAD APP <https://www.netiq.com/communities/cool-solutions/creating-application-client-id-client-secret-microsoft-azure-new-portal/>`__
+   `link to create an AAD APP <https://community.microfocus.com/cyberres/netiq-identity-governance-administration/idm/w/identity_mgr_tips/17052/creating-the-application-client-id-and-client-secret-from-microsoft-azure-new-portal---part-1>`__
 
 -  CLIENT_ID === *Azure Application ID*, found in:
    ``Azure portal --> AD --> App Registrations --> App``
@@ -185,7 +185,7 @@ This sample code is provided for you in ``examples > azuread > sample_jupyter_co
 
    sudo jupyterhub -f ./path/to/jupyterhub_config.py
 
--  See ``run.sh`` for an `example <./examples/azuread/>`__
+-  See ``run.sh`` for an `example <https://github.com/jupyterhub/oauthenticator/tree/main/examples/azuread>`__
 
 -  `Source Code <https://github.com/jupyterhub/oauthenticator/blob/HEAD/oauthenticator/azuread.py>`__
 
@@ -212,14 +212,13 @@ You can use your own Github Enterprise instance by setting the
 You can set ``GITHUB_HTTP`` environment variable to true or anything if
 your GitHub Enterprise supports http only.
 
-GitHub allows expanded capabilities by adding `GitHub-Specific
-Scopes <github_scope.md>`__ to the requested token.
+GitHub allows expanded capabilities by adding :ref:`GitHub-Specific Scopes <github-scopes-label>` to the requested token.
 
 GitLab Setup
 ------------
 
 First, you’ll need to create a `GitLab OAuth
-application <http://docs.gitlab.com/ce/integration/oauth_provider.html>`__.
+application <https://docs.gitlab.com/ee/integration/oauth_provider.html>`__.
 
 Then, add the following to your ``jupyterhub_config.py`` file:
 
@@ -258,7 +257,7 @@ Google Setup
 
 Visit https://console.developers.google.com to set up an OAuth client ID
 and secret. See `Google’s
-documentation <https://developers.google.com/identity/protocols/OAuth2>`__
+documentation <https://developers.google.com/identity/protocols/oauth2>`__
 on how to create OAUth 2.0 client credentials. The
 ``Authorized JavaScript origins`` should be set to to your hub’s public
 address while ``Authorized redirect URIs`` should be set to the same but
@@ -288,8 +287,8 @@ You can customize the sign in button text (optional):
 
    Additional notes, that seem quite outdated at the time of writing May 2022,
    are available about authorizing users part of specific Google Groups are
-   `available here <google.md>`__. Contributions to update these and re-verify
-   this functionality are most welcome.
+   :ref:`available here <google-groups-label>`. Contributions to update these
+   and re-verify this functionality are most welcome.
 
 OpenShift Setup
 ---------------
@@ -313,7 +312,7 @@ Global OAuth (admin)
 ~~~~~~~~~~~~~~~~~~~~
 
 As a cluster admin, you can create a global `OAuth
-client <https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#oauth-clients>`__
+client <https://docs.okd.io/latest/authentication/configuring-oauth-clients.html>`__
 in your OpenShift cluster creating a new OAuthClient object using the
 API:
 
@@ -360,11 +359,11 @@ be found in the upstream documentation.
 OkpyAuthenticator
 -----------------
 
-`Okpy <https://github.com/Cal-CS-61A-Staff/ok-client>`__ is an
+`Okpy <https://github.com/okpy/ok-client>`__ is an
 auto-grading tool that is widely used in UC Berkeley EECS and Data
 Science courses. This authenticator enhances its support for Jupyter
 Notebook by enabling students to authenticate with the
-`Hub <http://datahub.berkeley.edu/hub/home>`__ first and saving relevant
+`Hub <https://datahub.berkeley.edu/hub/login>`__ first and saving relevant
 user states to the ``env`` (the feature is redacted until a secure state
 saving mechanism is developed).
 
@@ -423,7 +422,7 @@ User Identity
 By default, ``identity_provider = ''`` will allow anyone to login.
 If you want to use a *Linked Identity* such as
 ``malcolm@universityofindependence.edu``, go to your `App Developer
-page <http://developers.globus.org>`__ and set *Required Identity
+page <https://developers.globus.org>`__ and set *Required Identity
 Provider* for your app to ``<Your University>``, and set the following
 in the config:
 
@@ -454,13 +453,13 @@ Globus Scopes and Transfer
 
 The following shows how to get tokens into user Notebooks. `You can see how users
 use tokens here <https://github.com/globus/globus-jupyter-notebooks/blob/HEAD/JupyterHub_Integration.ipynb>`__.
-If you want a demonstration, you can visit `The Jupyter Globus Demo Server <https://jupyter.demo.globus.org>`__.
+If you want a demonstration, you can visit `The Jupyter Globus Demo Server <https://jupyter.demo.globus.org/hub/login>`__.
 
 The default server configuration will automatically setup user environments
 with tokens, allowing them to start up python notebooks and initiate
 Globus Transfers. If you want to transfer data onto your JupyterHub
 server, it’s suggested you install `Globus Connect
-Server <https://docs.globus.org/globus-connect-server-installation-guide/#install_section>`__
+Server <https://docs.globus.org/globus-connect-server/v5/#install_section>`__
 and add the ``globus_local_endpoint`` uuid below. If you want to change
 other behavior, you can modify the defaults below:
 
@@ -596,8 +595,7 @@ Yandex Setup
 First visit `Yandex OAuth <https://oauth.yandex.com>`__ to setup your
 app. Ensure that **Web services** is checked (in the **Platform**
 section) and make sure the **Callback URI #1** looks like:
-
-https://[your-host]/hub/oauth_callback
+`https://[your-host]/hub/oauth_callback`
 
 Choose **Yandex.Passport API** in Permissions and check these options:
 

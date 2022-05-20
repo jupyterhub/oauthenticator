@@ -1,7 +1,7 @@
 # OAuthenticator
 
 Example of running [JupyterHub](https://github.com/jupyterhub/jupyterhub)
-with [GitHub OAuth](https://developer.github.com/v3/oauth/) for authentication.
+with [GitHub OAuth](https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps) for authentication.
 
 ## setup
 
