@@ -1,0 +1,38 @@
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+#
+name: Test docs
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "oauthenticator/**"
+      - "**/test-docs.yaml"
+  push:
+    paths:
+      - "docs/**"
+      - "oauthenticator/**"
+      - "**/test-docs.yaml"
+    branches-ignore:
+      - "dependabot/**"
+      - "pre-commit-ci-update-config"
+    tags: ["**"]
+  workflow_dispatch:
+
+jobs:
+  linkcheck:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+
+      - name: Install deps
+        run: |
+          cd docs
+          pip install -r requirements.txt
+
+      - name: make linkcheck
+        run: |
+          cd docs
+          make linkcheck SPHINXOPTS='--color -W --keep-going'
