@@ -115,11 +115,12 @@ class CILogonOAuthenticator(OAuthenticator):
         Each entity id must define a `username_derivation` dict that will be used to define how hub usernames will be determined for each IDP. It can be used to enable domain stripping, adding prefixes to the usernames and to specify an indentity provider specific username claim.
 
         Required format:
-        username_derivation: {
-            username_claim: <claim>
-            action: "strip_idp_domain" or "prefix"
-            domain: <domain>
-            prefix: <prefix>
+        ```python
+        "username_derivation": {
+            "username_claim": <claim>
+            "action": "strip_idp_domain" or "prefix"
+            "domain": <domain>
+            "prefix": <prefix>
         }
 
         Where:
