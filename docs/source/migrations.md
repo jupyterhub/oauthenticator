@@ -48,9 +48,9 @@ The following configurations have been deprecated in oauthenticator 15.0.0
     }
     ```
 
-    **Note**
-
-    **If allowed_idps used to contain more than one domain, then check the section bellow to find out how to also use prefixes for usernames to avoid username clashes.**
+    ```{note}
+    If allowed_idps used to contain more than one domain, then check the section bellow to find out how to also use prefixes for usernames to avoid username clashes.
+    ```
 
 3. `allowed_idps` -> **changed type**
 
@@ -82,6 +82,6 @@ The following configurations have been deprecated in oauthenticator 15.0.0
     This config means that if you login using a `some-idp` provider, the hub username will be the email registered for that IDP, from which the domain `uni.edu` will be stripped (assuming this is domain in the email provided by `some-idp`).
     But if you login using `another-idp` the hub username will be your `another-idp` provided `nickname` claim, username prefixed with `idp:`. This way, multiple users can log in without clashes across IDPs
 
-    **Note**
-
-    **If `allowed_idps` is specified, then each IDP in the dict must define the `username_derivation` dict, including `username_derivation.username_claim`. `CILogonOAuthenticator.username_claim` will only be used if `allowed_idps` is not specified!**
+    ```{note}
+    If `allowed_idps` is specified, then each IDP in the dict must define the `username_derivation` dict, including `username_derivation.username_claim`. `CILogonOAuthenticator.username_claim` will only be used if `allowed_idps` is not specified!
+    ```
