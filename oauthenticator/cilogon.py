@@ -117,10 +117,10 @@ class CILogonOAuthenticator(OAuthenticator):
         Required format:
         ```python
         "username_derivation": {
-            "username_claim": <claim>
-            "action": "strip_idp_domain" or "prefix"
-            "domain": <domain>
-            "prefix": <prefix>
+            "username_claim": <claim>,
+            "action": "strip_idp_domain" or "prefix",
+            "domain": <domain>,
+            "prefix": <prefix>,
         }
 
         Where:
