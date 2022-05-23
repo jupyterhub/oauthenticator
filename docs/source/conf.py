@@ -98,6 +98,7 @@ render_autodoc_modules()
 
 autodoc_mock_imports = ["tornado", "jwt", "mwoauth", "globus_sdk"]
 
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -109,8 +110,8 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'autodoc_traits',
+    'myst_parser',
     'sphinx_copybutton',
-    'recommonmark',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -120,14 +121,6 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
-
-from recommonmark.transform import AutoStructify
-
-
-def setup(app):
-    app.add_config_value('recommonmark_config', {'enable_eval_rst': True}, True)
-    app.add_transform(AutoStructify)
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -144,3 +137,22 @@ html_favicon = '_static/images/logo/favicon.ico'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+# -- Options for linkcheck builder -------------------------------------------
+# ref: http://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-linkcheck-builder
+linkcheck_ignore = [
+    r"(.*)github\.com(.*)#",  # javascript based anchors
+    r"(.*)/#%21(.*)/(.*)",  # /#!forum/jupyter - encoded anchor edge case
+    r"https://github.com/[^/]*$",  # too many github usernames / searches in changelog
+    "https://github.com/jupyterhub/oauthenticator/pull/",  # too many pull requests in changelog
+    "https://github.com/jupyterhub/oauthenticator/compare/",  # too many ref comparisons in changelog
+    "https://github.com/settings/applications/new",  # sign-in redirect noise
+    "https://admin.google.com/",  # sign-in redirect noise
+    "https://console.cloud.google.com",  # sign-in redirect noise
+    "https://console.developers.google.com",  # sign-in redirect noise
+]
+linkcheck_anchors_ignore = [
+    "/#!",
+    "/#%21",
+]

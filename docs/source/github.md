@@ -1,6 +1,8 @@
+(github-scopes-label)=
+
 # GitHub-specific scopes
 
-The following [GitHub scopes](https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/)
+The following [GitHub scopes](https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps)
 may be suitable for certain use cases:
 
 `read:org` grants access to the users' organizations. This is handy if

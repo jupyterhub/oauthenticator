@@ -29,7 +29,7 @@ yaml = YAML(typ="safe", pure=True)
 
 
 class CILogonLoginHandler(OAuthLoginHandler):
-    """See http://www.cilogon.org/oidc for general information."""
+    """See https://www.cilogon.org/oidc for general information."""
 
     def authorize_redirect(self, *args, **kwargs):
         """Add idp, skin to redirect params"""
@@ -231,7 +231,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         What keys are available will depend on the scopes requested.
 
-        See http://www.cilogon.org/oidc for details.
+        See https://www.cilogon.org/oidc for details.
 
         Note that this option can be overridden for specific identity providers via `allowed_idps[<identity provider>]["username_derivation"]["username_claim"]`.
         """,
@@ -274,7 +274,7 @@ class CILogonOAuthenticator(OAuthenticator):
         code = handler.get_argument("code")
 
         # Exchange the OAuth code for a CILogon Access Token
-        # See: http://www.cilogon.org/oidc
+        # See: https://www.cilogon.org/oidc
         headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
 
         params = dict(

@@ -3,7 +3,6 @@ Custom Authenticator to use Azure AD with JupyterHub
 """
 import os
 import urllib
-from distutils.version import LooseVersion as V
 
 import jwt
 from jupyterhub.auth import LocalAuthenticator
@@ -12,9 +11,23 @@ from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
 
-# pyjwt 2.0 has changed its signature,
-# but mwoauth pins to pyjwt 1.x
-PYJWT_2 = V(jwt.__version__) >= V("2.0")
+# For now we support both pyjwt 1 and 2, but as they have a different behavior
+# we must adjust to the version. We can stop doing this if our dependency
+# `mwoauth` gets a release newer than 0.3.7 that still pins pyjwt==1.*, making
+# it hard for us to require pyjwt>=2.
+#
+# See https://github.com/mediawiki-utilities/python-mwoauth/issues/46 for a
+# request for a new release to be made.
+#
+# To have our sphinx documentation be able to build this without installing the
+# optional dependency, we have listed jwt in docs/source/conf.py's
+# autodoc_mock_imports configuration. It helps, but here we call int() on the
+# version that sometimes is this mocked response, and that will cause an error.
+#
+try:
+    PYJWT_2 = int(jwt.__version__.split(".")[0]) >= 2
+except Exception:
+    PYJWT_2 = False
 
 
 class AzureAdOAuthenticator(OAuthenticator):

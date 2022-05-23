@@ -1,6 +1,6 @@
 # CILogon-specific scopes
 
-[CILogon scopes](http://www.cilogon.org/oidc) can
+[CILogon scopes](https://www.cilogon.org/oidc) can
 be used to extend the CILogon OAuthenticator. By overriding the scope
 list in the authenticator, additional features can be enabled for
 specific deployment needs.
