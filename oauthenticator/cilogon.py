@@ -112,16 +112,28 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""A dictionary of the only entity IDs that will be allowed to be used as login options.
         See https://cilogon.org/idplist for the list of `EntityIDs` of each IdP.
 
-        Each entity id must define a `username_derivation` dict that will be used to define how hub usernames will be determined for each IdP. It can be used to enable domain stripping, adding prefixes to the usernames and to specify an identity provider specific username claim.
+        It can be used to enable domain stripping, adding prefixes to the usernames and to specify an identity provider specific username claim.
 
-        Required format:
+        For example:
+
         ```python
-        "username_derivation": {
-            "username_claim": <claim>,
-            "action": "strip_idp_domain" or "prefix",
-            "domain": <domain>,
-            "prefix": <prefix>,
+        allowed_idps = {
+            "https://idpz.utorauth.utoronto.ca/shibboleth": {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "utoronto.ca",
+                }
+            },
+            "https://github.com/login/oauth/authorize": {
+                "username_derivation": {
+                    "username_claim": "username",
+                    "action": "prefix",
+                    "prefix": "gh"
+                }
+            }
         }
+        ```
 
         Where:
         - `username_claim`: string
