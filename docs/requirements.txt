@@ -1,6 +1,9 @@
--r ../requirements.txt
+# autodoc_traits needs to inspect the oauthenticator module, so we also install
+# oauthenticator itself.
+#
+-e ./
 autodoc-traits
+myst-parser
 pydata-sphinx-theme
-recommonmark
 sphinx>=2
 sphinx-copybutton

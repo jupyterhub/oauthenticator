@@ -1,3 +1,5 @@
+(google-groups-label)=
+
 # Google specific configs
 
 **Note:** The instructions below are to be performed after [finishing setting up google](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#google-setup)
@@ -25,7 +27,7 @@ and give it read only access to users and groups.
 3. The **Service account permissions (optional)** section that follows is not required. Click **Continue**.
 4. On the **Grant users access to this service account** screen, scroll down to the **Create key** section. Click add (`+`) **Create key**.
 5. n the side panel that appears, select the format for your key: **JSON**
-6. Click **Create**. Your new public/private key pair is generated and downloaded to your machine; it serves as the only copy of this key. For information on how to store it securely, see [Managing service account keys](https://cloud.google.com/iam/docs/understanding-service-accounts#managing_service_account_keys).
+6. Click **Create**. Your new public/private key pair is generated and downloaded to your machine; it serves as the only copy of this key. For information on how to store it securely, see [Managing service account keys](https://cloud.google.com/iam/docs/understanding-service-accounts#managing_service_accounts).
 7. Click **Close** on the **Private key saved to your computer** dialog, then click **Done** to return to the table of your service accounts.
 8. Locate the newly-created service account in the table. Under `Actions`, click then **Edit**.
 9. In the service account details, click 🔽 **Show domain-wide delegation**, then ensure the **Enable G Suite Domain-wide Delegation** checkbox is checked.
@@ -34,7 +36,7 @@ and give it read only access to users and groups.
 
 ### Delegate domain-wide authority to your service account
 
-1. Go to your G Suite domain’s [Admin console](http://admin.google.com/).
+1. Go to your G Suite domain’s [Admin console](https://admin.google.com/).
 2. Select **Security** from the list of controls. If you don't see **Security** listed, select **More controls** from the gray bar at the bottom of the page, then select **Security** from the list of controls.
 3. Select **Advanced settings** from the list of options.
 4. Select **Manage API client access** in the **Authentication** section.

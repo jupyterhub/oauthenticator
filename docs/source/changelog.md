@@ -420,9 +420,9 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.14.2...HEAD
-[14.2.0]: https://github.com/jupyterhub/oauthenticator/compare/0.14.1...14.2.0
-[14.1.0]: https://github.com/jupyterhub/oauthenticator/compare/0.14.0...14.1.0
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/14.2.0...HEAD
+[14.2.0]: https://github.com/jupyterhub/oauthenticator/compare/14.1.0...14.2.0
+[14.1.0]: https://github.com/jupyterhub/oauthenticator/compare/14.0.0...14.1.0
 [14.0.0]: https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0
 [0.13.0]: https://github.com/jupyterhub/oauthenticator/compare/0.12.2...0.13.0
 [0.12.2]: https://github.com/jupyterhub/oauthenticator/compare/0.12.1...0.12.2

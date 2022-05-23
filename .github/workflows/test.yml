@@ -5,7 +5,19 @@ name: Tests
 
 on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - ".github/workflows/*.yaml"
+      - "!.github/workflows/test.yaml"
   push:
+    paths-ignore:
+      - "docs/**"
+      - ".github/workflows/*.yaml"
+      - "!.github/workflows/test.yaml"
+    branches-ignore:
+      - "dependabot/**"
+      - "pre-commit-ci-update-config"
+    tags: ["**"]
   workflow_dispatch:
 
 env:
@@ -39,9 +51,8 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --upgrade pip
           pip install --upgrade . -r test-requirements.txt
-          pip freeze
+          pip list
 
       - name: Downgrade to oldest dependencies
         if: matrix.oldest_dependencies != ''
@@ -51,7 +62,7 @@ jobs:
         run: |
           cat requirements.txt | grep '>=' | sed -e 's@>=@==@g' > oldest-requirements.txt
           pip install -r oldest-requirements.txt
-          pip freeze
+          pip list
 
       - name: Run tests
         run: |
