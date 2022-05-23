@@ -303,13 +303,13 @@ class CILogonOAuthenticator(OAuthenticator):
         if self.additional_username_claims:
             claimlist.extend(self.additional_username_claims)
 
-        selected_auth_provider = resp_json.get("idp")
+        selected_idp = resp_json.get("idp")
         # Check if selected idp was marked as allowed
         if self.allowed_idps:
             # Faild hard if idp wasn't allowed
-            if selected_auth_provider not in self.allowed_idps.keys():
+            if selected_idp not in self.allowed_idps.keys():
                 self.log.error(
-                    f"Trying to login from an identity provider that was not allowed {selected_auth_provider}",
+                    f"Trying to login from an identity provider that was not allowed {selected_idp}",
                 )
                 raise web.HTTPError(
                     500,
@@ -318,9 +318,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
             # The username_claim which should be used for this idp
             claimlist = [
-                self.allowed_idps[selected_auth_provider]["username_derivation"][
-                    "username_claim"
-                ]
+                self.allowed_idps[selected_idp]["username_derivation"]["username_claim"]
             ]
 
         # Check if the requested username_claim exists in the response from the provider
@@ -328,7 +326,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         # Check if we need to strip/prefix username
         if self.allowed_idps:
-            username_derivation_config = self.allowed_idps[selected_auth_provider][
+            username_derivation_config = self.allowed_idps[selected_idp][
                 "username_derivation"
             ]
             action = username_derivation_config["action"]
