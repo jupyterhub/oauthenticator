@@ -35,7 +35,7 @@ class CILogonLoginHandler(OAuthLoginHandler):
         """Add idp, skin to redirect params"""
         extra_params = kwargs.setdefault('extra_params', {})
         if self.authenticator.shown_idps:
-            # selected_idp must be a string where idps are separated by comas, with no space between, otherwise it will get escaped
+            # selected_idp must be a string where idps are separated by commas, with no space between, otherwise it will get escaped
             # example: https://accounts.google.com/o/oauth2/auth,https://github.com/login/oauth/authorize
             idps = ",".join(self.authenticator.shown_idps)
             extra_params["selected_idp"] = idps
@@ -102,7 +102,7 @@ class CILogonOAuthenticator(OAuthenticator):
         return scopes
 
     idp_whitelist = List(
-        help="Deprecated, use `CIlogonOAuthenticator.allowed_domains`",
+        help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`",
         config=True,
     )
 
@@ -110,9 +110,9 @@ class CILogonOAuthenticator(OAuthenticator):
         config=True,
         default_value={},
         help="""A dictionary of the only entity IDs that will be allowed to be used as login options.
-        See https://cilogon.org/idplist for the list of `EntityIDs` of each IDP.
+        See https://cilogon.org/idplist for the list of `EntityIDs` of each IdP.
 
-        Each entity id must define a `username_derivation` dict that will be used to define how hub usernames will be determined for each IDP. It can be used to enable domain stripping, adding prefixes to the usernames and to specify an indentity provider specific username claim.
+        Each entity id must define a `username_derivation` dict that will be used to define how hub usernames will be determined for each IdP. It can be used to enable domain stripping, adding prefixes to the usernames and to specify an identity provider specific username claim.
 
         Required format:
         ```python
@@ -193,7 +193,7 @@ class CILogonOAuthenticator(OAuthenticator):
     shown_idps = List(
         Unicode(),
         config=True,
-        help="""A list of idps to be shown as login options.
+        help="""A list of identity providers to be shown as login options.
         The `idp` attribute is the SAML Entity ID of the user's selected
         identity provider.
 
@@ -221,8 +221,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         See http://www.cilogon.org/oidc for details.
 
-        Note that this option can be overwritten by allowed_idps[username_derivation]
-        config if present.
+        Note that this option can be overridden for specific identity providers via `allowed_idps[<identity provider>]["username_derivation"]["username_claim"]`.
         """,
     )
 
