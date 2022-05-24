@@ -8,7 +8,6 @@ import requests_mock
 from pytest import fixture
 from tornado import web
 
-from ..azuread import PYJWT_2
 from ..mediawiki import AUTH_REQUEST_COOKIE_NAME, MWOAuthenticator
 from .mocks import mock_handler
 
@@ -29,9 +28,7 @@ def mediawiki():
                 'nonce': request_nonce,
             },
             'client_secret',
-        )
-        if PYJWT_2:
-            content = content.encode()
+        ).encode()
 
         return content
 

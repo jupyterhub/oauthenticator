@@ -11,24 +11,6 @@ from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
 
-# For now we support both pyjwt 1 and 2, but as they have a different behavior
-# we must adjust to the version. We can stop doing this if our dependency
-# `mwoauth` gets a release newer than 0.3.7 that still pins pyjwt==1.*, making
-# it hard for us to require pyjwt>=2.
-#
-# See https://github.com/mediawiki-utilities/python-mwoauth/issues/46 for a
-# request for a new release to be made.
-#
-# To have our sphinx documentation be able to build this without installing the
-# optional dependency, we have listed jwt in docs/source/conf.py's
-# autodoc_mock_imports configuration. It helps, but here we call int() on the
-# version that sometimes is this mocked response, and that will cause an error.
-#
-try:
-    PYJWT_2 = int(jwt.__version__.split(".")[0]) >= 2
-except Exception:
-    PYJWT_2 = False
-
 
 class AzureAdOAuthenticator(OAuthenticator):
     login_service = Unicode(
@@ -89,15 +71,11 @@ class AzureAdOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
         id_token = resp_json['id_token']
 
-        if PYJWT_2:
-            decoded = jwt.decode(
-                id_token,
-                options={"verify_signature": False},
-                audience=self.client_id,
-            )
-        else:
-            # pyjwt 1.x
-            decoded = jwt.decode(id_token, verify=False)
+        decoded = jwt.decode(
+            id_token,
+            options={"verify_signature": False},
+            audience=self.client_id,
+        )
 
         userdict = {"name": decoded[self.username_claim]}
         userdict["auth_state"] = auth_state = {}

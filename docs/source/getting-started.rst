@@ -134,7 +134,7 @@ Set the above settings in your ``jupyterhub_config.py``:
 Azure AD Setup
 --------------
 
--  Install ``PyJWT>=1.5.3``
+-  Install ``PyJWT>=2``
 
 ::
 
