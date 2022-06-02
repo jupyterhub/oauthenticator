@@ -6,6 +6,56 @@ command line for details.
 
 ## [Unreleased]
 
+## 15.0
+
+### 15.0.0
+
+If you are using AzureAD, MediaWiki, and CILogon authenticators, make sure to
+read about the breaking changes.
+
+#### Breaking changes
+
+- `pyjwt` version 2.4.0 or greater is now required when use with authentication
+  classes that needs it: `AzureAdOAuthenticator`, `MWOAuthenticator`.
+- `CILogonOAuthenticator` has breaking changes and come with a [migration
+  guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0-0).
+  These changes resolve the known vulnerability
+  [GHSA-r7v4-jwx9-wx43](https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-r7v4-jwx9-wx43).
+
+#### New features added
+
+- [GitHub] Add populate_teams_in_auth_state option [#498](https://github.com/jupyterhub/oauthenticator/pull/498) ([@yuvipanda](https://github.com/yuvipanda), [@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena), [@manics](https://github.com/manics))
+
+#### Enhancements made
+
+- Allow and document custom 403 messages and pages [#484](https://github.com/jupyterhub/oauthenticator/pull/484) ([@GeorgianaElena](https://github.com/GeorgianaElena), [@yuvipanda](https://github.com/yuvipanda))
+
+#### Bugs fixed
+
+- [GitHub] fix implementation of populate_teams_in_auth_state [#504](https://github.com/jupyterhub/oauthenticator/pull/504) ([@consideRatio](https://github.com/consideRatio), [@yuvipanda](https://github.com/yuvipanda))
+- [Auth0] Fix AUTH0_SUBDOMAIN default setting [#502](https://github.com/jupyterhub/oauthenticator/pull/502) ([@alejandrosame](https://github.com/alejandrosame), [@yuvipanda](https://github.com/yuvipanda))
+
+#### Maintenance and upkeep improvements
+
+- maint: unpin extras_require googlegroups dependencies [#508](https://github.com/jupyterhub/oauthenticator/pull/508) ([@consideRatio](https://github.com/consideRatio), [@missingcharacter](https://github.com/missingcharacter))
+- breaking maint: require pyjwt>=2 and mwoauth>=0.3.8 (to reduce complexity) [#506](https://github.com/jupyterhub/oauthenticator/pull/506) ([@consideRatio](https://github.com/consideRatio), [@yuvipanda](https://github.com/yuvipanda), [@GeorgianaElena](https://github.com/GeorgianaElena), [@halfak](https://github.com/halfak))
+- Use isort for import formatting [#497](https://github.com/jupyterhub/oauthenticator/pull/497) ([@yuvipanda](https://github.com/yuvipanda), [@consideRatio](https://github.com/consideRatio))
+- General maintenance and fix of pre-commit ci failure [#479](https://github.com/jupyterhub/oauthenticator/pull/479) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk), [@GeorgianaElena](https://github.com/GeorgianaElena))
+- Remove custom stylesheet and bump sphinx version [#465](https://github.com/jupyterhub/oauthenticator/pull/465) ([@diego-plan9](https://github.com/diego-plan9), [@consideRatio](https://github.com/consideRatio))
+- Support pyjwt >= 2 in tests [#461](https://github.com/jupyterhub/oauthenticator/pull/461) ([@diego-plan9](https://github.com/diego-plan9), [@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+#### Documentation improvements
+
+- docs/ci: use myst, fix broken links, add linkcheck test, remove deprecated distutils, avoid 2x job triggers [#511](https://github.com/jupyterhub/oauthenticator/pull/511) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
+- docs/source/getting-started: mention openid scope for AzureAD + MFA [#478](https://github.com/jupyterhub/oauthenticator/pull/478) ([@rkdarst](https://github.com/rkdarst), [@consideRatio](https://github.com/consideRatio))
+- Fix My Service authenticator class names in documentation [#457](https://github.com/jupyterhub/oauthenticator/pull/457) ([@sgaist](https://github.com/sgaist), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2021-08-10&to=2022-06-02&type=c))
+
+[@alejandrosame](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aalejandrosame+updated%3A2021-08-10..2022-06-02&type=Issues) | [@brianaydemir](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abrianaydemir+updated%3A2021-08-10..2022-06-02&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2021-08-10..2022-06-02&type=Issues) | [@diego-plan9](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adiego-plan9+updated%3A2021-08-10..2022-06-02&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2021-08-10..2022-06-02&type=Issues) | [@halfak](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ahalfak+updated%3A2021-08-10..2022-06-02&type=Issues) | [@kkaraivanov1](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Akkaraivanov1+updated%3A2021-08-10..2022-06-02&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2021-08-10..2022-06-02&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2021-08-10..2022-06-02&type=Issues) | [@missingcharacter](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amissingcharacter+updated%3A2021-08-10..2022-06-02&type=Issues) | [@rkdarst](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Arkdarst+updated%3A2021-08-10..2022-06-02&type=Issues) | [@sgaist](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asgaist+updated%3A2021-08-10..2022-06-02&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2021-08-10..2022-06-02&type=Issues)
+
 ## 14.2
 
 ### [14.2.0] - 2021-08-09
