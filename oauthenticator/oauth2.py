@@ -434,21 +434,33 @@ class OAuthenticator(Authenticator):
     def _deprecated_oauth_trait(self, change):
         """observer for deprecated traits"""
         old_attr = change.name
-        new_attr, version = self._deprecated_oauth_aliases.get(old_attr)
+        try:
+            new_attr, version, same = self._deprecated_oauth_aliases.get(old_attr)
+        except ValueError:
+            # if `same` flag wasn't passed, we assume the new and old trait have the same type
+            new_attr, version = self._deprecated_oauth_aliases.get(old_attr)
+            same = True
+
         new_value = getattr(self, new_attr)
         if new_value != change.new:
             # only warn if different
             # protects backward-compatible config from warnings
             # if they set the same value under both names
-            self.log.warning(
-                "{cls}.{old} is deprecated in {cls} {version}, use {cls}.{new} instead".format(
-                    cls=self.__class__.__name__,
-                    old=old_attr,
-                    new=new_attr,
-                    version=version,
-                )
+            message = "{cls}.{old} is deprecated in {cls} {version}, use {cls}.{new} instead".format(
+                cls=self.__class__.__name__,
+                old=old_attr,
+                new=new_attr,
+                version=version,
             )
-            setattr(self, new_attr, change.new)
+
+            # set the value for the new attr only if they are the same type
+            # otherwise raise an error because unexpected things can happen
+            if same:
+                self.log.warning(message)
+                setattr(self, new_attr, change.new)
+            else:
+                self.log.error(message)
+                raise ValueError(message)
 
     def __init__(self, **kwargs):
         # observe deprecated config names in oauthenticator

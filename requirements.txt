@@ -1,3 +1,7 @@
+# jsonschema is used for validating authenticator configurations
+jsonschema
 jupyterhub>=1.2
 # requests is already required by JupyterHub, but explicitly ask for it since we use it
 requests
+# ruamel.yaml is used to read and write .yaml files.
+ruamel.yaml
