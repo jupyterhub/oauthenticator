@@ -135,7 +135,13 @@ class GitLabOAuthenticator(OAuthenticator):
 
         # Renew the Access Token with a valid Refresh Token
         #
-        # See: https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
+        # Without that custom configuration, the Gitlab access token gets
+        # outdated while the user can still connect to JupyterHub, that leads to
+        # forbidden Git interactions with Gitlab within Notebook.
+        #
+        # See:
+        # - https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
+        # - https://github.com/jupyterhub/oauthenticator/pull/490
 
         auth_state = await user.get_auth_state()
         if not auth_state:
