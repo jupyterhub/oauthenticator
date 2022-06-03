@@ -13,14 +13,18 @@ command line for details.
 If you are using AzureAD, MediaWiki, and CILogon authenticators, make sure to
 read about the breaking changes.
 
-#### Breaking changes
+#### Breaking security change
 
-- `pyjwt` version 2.4.0 or greater is now required when use with authentication
-  classes that needs it: `AzureAdOAuthenticator`, `MWOAuthenticator`.
 - `CILogonOAuthenticator` has breaking changes and come with a [migration
   guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0-0).
   These changes resolve the known vulnerability
   [GHSA-r7v4-jwx9-wx43](https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-r7v4-jwx9-wx43).
+  **Your hub will fail to start if you do not follow the migration guide**.
+
+#### Other breaking changes
+
+- `pyjwt` version 2.4.0 or greater is now required when use with authentication
+  classes that needs it: `AzureAdOAuthenticator`, `MWOAuthenticator`.
 
 #### New features added
 
