@@ -2,6 +2,7 @@
 Custom Authenticator to use GitLab OAuth with JupyterHub
 """
 import os
+import time
 import warnings
 from urllib.parse import quote
 
@@ -131,9 +132,11 @@ class GitLabOAuthenticator(OAuthenticator):
         return await self._oauth_call(handler, params, data)
 
     async def refresh_user(self, user, handler=None):
+
         # Renew the Access Token with a valid Refresh Token
         #
         # See: https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
+
         auth_state = await user.get_auth_state()
         if not auth_state:
             self.log.info(
@@ -141,6 +144,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 user,
             )
             return False
+
         # In seconds, ex : 1607635748
         created_at = auth_state.get('created_at', 0)
         # In seconds, ex : 7200
@@ -153,6 +157,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 user,
             )
             return True
+
         # GitLab specifies a POST request yet requires URL parameters
         params = dict(
             client_id=self.client_id,
