@@ -128,7 +128,9 @@ class GitLabOAuthenticator(OAuthenticator):
             grant_type="authorization_code",
             redirect_uri=self.get_callback_url(handler),
         )
+        return await self._oauth_call(handler, params, data)
 
+    async def _oauth_call(self, handler, params, data=None):
         validate_server_cert = self.validate_server_cert
 
         url = url_concat("%s/oauth/token" % self.gitlab_url, params)
