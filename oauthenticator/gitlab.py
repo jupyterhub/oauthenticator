@@ -131,6 +131,9 @@ class GitLabOAuthenticator(OAuthenticator):
         return await self._oauth_call(handler, params, data)
 
     async def _oauth_call(self, handler, params, data=None):
+        """
+        Common logic shared by authenticate() and refresh_user()
+        """
         validate_server_cert = self.validate_server_cert
 
         url = url_concat("%s/oauth/token" % self.gitlab_url, params)
@@ -143,8 +146,8 @@ class GitLabOAuthenticator(OAuthenticator):
             body='',  # Body is required for a POST...
         )
 
-        resp_json = await self.fetch(req, label="getting access token")
-        access_token = resp_json['access_token']
+        oauth_resp = await self.fetch(req, label="getting access token")
+        access_token = oauth_resp['access_token']
 
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
@@ -158,11 +161,10 @@ class GitLabOAuthenticator(OAuthenticator):
             validate_cert=validate_server_cert,
             headers=_api_headers(access_token),
         )
-        resp_json = await self.fetch(req, label="getting gitlab user")
+        gitlab_user = await self.fetch(req, label="getting gitlab user")
 
-        username = resp_json["username"]
-        user_id = resp_json["id"]
-        is_admin = resp_json.get("is_admin", False)
+        username = gitlab_user["username"]
+        user_id = gitlab_user["id"]
 
         # Check if user is a member of any allowed groups or projects.
         # These checks are performed here, as it requires `access_token`.
@@ -191,10 +193,13 @@ class GitLabOAuthenticator(OAuthenticator):
         ):
             return {
                 'name': username,
-                'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
+                'auth_state': {**oauth_resp, **{'gitlab_user': gitlab_user}},
             }
         else:
-            self.log.warning("%s not in group or project allowed list", username)
+            self.log.warning(
+                "%s not in group or project allowed list",
+                username,
+            )
             return None
 
     async def _get_gitlab_version(self, access_token):
