@@ -130,6 +130,38 @@ class GitLabOAuthenticator(OAuthenticator):
         )
         return await self._oauth_call(handler, params, data)
 
+    async def refresh_user(self, user, handler=None):
+        # Renew the Access Token with a valid Refresh Token
+        #
+        # See: https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
+        auth_state = await user.get_auth_state()
+        if not auth_state:
+            self.log.info(
+                "No auth_state found for user %s refresh, full authentication needed",
+                user,
+            )
+            return False
+        # In seconds, ex : 1607635748
+        created_at = auth_state.get('created_at', 0)
+        # In seconds, ex : 7200
+        expires_in = auth_state.get('expires_in', 0)
+        is_expired = created_at + expires_in - time.time() < 0
+        if not is_expired:
+            # Access token still valid, function returns True
+            self.log.info(
+                "access_token still valid for user %s, refresh skipped",
+                user,
+            )
+            return True
+        # GitLab specifies a POST request yet requires URL parameters
+        params = dict(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            grant_type="refresh_token",
+            refresh_token=auth_state['refresh_token'],
+        )
+        return await self._oauth_call(handler, params)
+
     async def _oauth_call(self, handler, params, data=None):
         """
         Common logic shared by authenticate() and refresh_user()
