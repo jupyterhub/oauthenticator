@@ -22,7 +22,6 @@ properties:
         type: string
     required:
       - username_claim
-      - action
     allOf:
       - if:
           properties:
