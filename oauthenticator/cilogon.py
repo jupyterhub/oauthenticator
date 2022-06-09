@@ -329,7 +329,7 @@ class CILogonOAuthenticator(OAuthenticator):
             username_derivation_config = self.allowed_idps[selected_idp][
                 "username_derivation"
             ]
-            action = username_derivation_config["action"]
+            action = username_derivation_config.get("action", None)
             if action == "strip_idp_domain":
                 gotten_name, gotten_domain = username.split('@')
                 if gotten_domain != username_derivation_config["domain"]:
