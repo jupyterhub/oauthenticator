@@ -339,8 +339,7 @@ class CILogonOAuthenticator(OAuthenticator):
             ]
             action = username_derivation_config.get("action", None)
             allowed_domains = self.allowed_idps[selected_idp].get(
-                "allowed_domains",
-                None
+                "allowed_domains", None
             )
 
             if allowed_domains:
