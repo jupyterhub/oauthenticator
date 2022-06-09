@@ -110,14 +110,14 @@ class BitbucketOAuthenticator(OAuthenticator):
         headers = _api_headers(access_token)
         # We verify the team membership by calling teams endpoint.
         next_page = url_concat(
-            "https://api.bitbucket.org/2.0/teams", {'role': 'member'}
+            "https://api.bitbucket.org/2.0/workspaces", {'role': 'member'}
         )
         while next_page:
             req = HTTPRequest(next_page, method="GET", headers=headers)
             resp_json = await self.fetch(req)
             next_page = resp_json.get('next', None)
 
-            user_teams = set([entry["username"] for entry in resp_json["values"]])
+            user_teams = set([entry["name"] for entry in resp_json["values"]])
             # check if any of the organizations seen thus far are in the allowed list
             if len(self.allowed_teams & user_teams) > 0:
                 return True

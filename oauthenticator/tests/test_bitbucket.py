@@ -53,10 +53,10 @@ async def test_allowed_teams(bitbucket_client):
         values = []
         for team, members in teams.items():
             if username in members:
-                values.append({'username': team})
+                values.append({'name': team})
         return {'values': values}
 
-    client.hosts['api.bitbucket.org'].append(('/2.0/teams', list_teams))
+    client.hosts['api.bitbucket.org'].append(('/2.0/workspaces', list_teams))
 
     handler = client.handler_for_user(user_model('caboose'))
     user_info = await authenticator.authenticate(handler)
