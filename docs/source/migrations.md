@@ -77,7 +77,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
            'username_derivation': {
                'username_claim': 'nickname',
                'action': 'prefix',
-               'prefix': 'idp',
+              'prefix': 'idp',
            }
        },
        'https://yet-another-idp.com/login/oauth/authorize': {
