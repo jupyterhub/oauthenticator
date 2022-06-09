@@ -8,6 +8,20 @@ command line for details.
 
 ## 15.0
 
+### 15.0.1
+
+#### Bugs fixed
+
+- [Bitbucket] Fix for changes to bitbucket API - /teams removed and /workspaces to be used [#477](https://github.com/jupyterhub/oauthenticator/pull/477) ([@Marcalberga](https://github.com/Marcalberga))
+- [CILogon] Don't make action a required field of CILogonOAuthenticator.allowed_idps follow-up [#517](https://github.com/jupyterhub/oauthenticator/pull/517) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- [CILogon] Don't make action a required field of CILogonOAuthenticator.allowed_idps [#516](https://github.com/jupyterhub/oauthenticator/pull/516) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2022-06-03&to=2022-06-09&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2022-06-03..2022-06-09&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2022-06-03..2022-06-09&type=Issues) | [@Marcalberga](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AMarcalberga+updated%3A2022-06-03..2022-06-09&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awelcome+updated%3A2022-06-03..2022-06-09&type=Issues)
+
 ### 15.0.0
 
 If you are using AzureAD, MediaWiki, and CILogon authenticators, make sure to
@@ -16,7 +30,7 @@ read about the breaking changes.
 #### Breaking security change
 
 - `CILogonOAuthenticator` has breaking changes and come with a [migration
-  guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0-0).
+  guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0).
   These changes resolve the known vulnerability
   [GHSA-r7v4-jwx9-wx43](https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-r7v4-jwx9-wx43).
   **Your hub will fail to start if you do not follow the migration guide**.
