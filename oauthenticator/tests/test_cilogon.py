@@ -413,5 +413,3 @@ async def test_allowed_domains_no_stripping(cilogon_client):
     user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'jtkirk@pink.org'
-Toggle all file notes
-Toggle all file annotations
