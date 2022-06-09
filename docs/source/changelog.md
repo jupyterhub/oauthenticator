@@ -30,7 +30,7 @@ read about the breaking changes.
 #### Breaking security change
 
 - `CILogonOAuthenticator` has breaking changes and come with a [migration
-  guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0-0).
+  guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0).
   These changes resolve the known vulnerability
   [GHSA-r7v4-jwx9-wx43](https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-r7v4-jwx9-wx43).
   **Your hub will fail to start if you do not follow the migration guide**.
