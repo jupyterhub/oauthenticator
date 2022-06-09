@@ -2,17 +2,17 @@
 
 The following section describes how to migrate your OAuthenticator to a newer version given some upgrade scenarios.
 
-## Migrating CILogonOAuthenticator to version 15.0.0
+## Migrating CILogonOAuthenticator to version 15.0.1
 
-OAuthenticator release of 15.0.0 version introduced some breaking changes for the CILogonOAuthenticator. This is a description of what breaking changes have been made and a step by step guide on how to update your JupyterHub CILogonOAuthenticator to this version.
+OAuthenticator release of 15.0.1 version introduced some breaking changes for the CILogonOAuthenticator. This is a description of what breaking changes have been made and a step by step guide on how to update your JupyterHub CILogonOAuthenticator to this version.
 
-The following configurations have been deprecated in oauthenticator 15.0.0
+The following configurations have been deprecated in oauthenticator 15.0.1
 
 1. `idp` -> **replaced**
 
-   The `idp` config refers to the SAML Entity ID of the user's selected identity provider and prior to 15.0.0 was used to set the [CILogon `selected_idp` optional authorization parameter](https://www.cilogon.org/oidc#h.p_IWGvXH0okDI_) in order to show only this identity provider in the CILogon IdP list.
+   The `idp` config refers to the SAML Entity ID of the user's selected identity provider and prior to 15.0.1 was used to set the [CILogon `selected_idp` optional authorization parameter](https://www.cilogon.org/oidc#h.p_IWGvXH0okDI_) in order to show only this identity provider in the CILogon IdP list.
 
-   Starting with oauthenticator 15.0.0, this config has been renamed to `shown_idps` and must now be a list of such SAML Entity IDs. Only the identity providers in this list will be shown in the CILogon IDP list, with the first one being considered the default.
+   Starting with oauthenticator 15.0.1, this config has been renamed to `shown_idps` and must now be a list of such SAML Entity IDs. Only the identity providers in this list will be shown in the CILogon IDP list, with the first one being considered the default.
 
    **Old config Example**
 
@@ -28,7 +28,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
 2. `strip_idp_domain` -> **removed**
 
-   The `strip_idp_domain` boolean config was previously used to enable stripping the domains listed in the `allowed_idps` from the hub usernames. In oauthenticator 15.0.0 this config option was removed and such behaviour can only be achieved using the `allowed_idps` dictionary config as documented in a section below.
+   The `strip_idp_domain` boolean config was previously used to enable stripping the domains listed in the `allowed_idps` from the hub usernames. In oauthenticator 15.0.1 this config option was removed and such behaviour can only be achieved using the `allowed_idps` dictionary config as documented in a section below.
 
    **Old config Example**
 
@@ -58,9 +58,9 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
 3. `allowed_idps` -> **changed type**
 
-   The `allowed_idps` config was used prior to oauthenticator version 15.0.0 to only allow access into the hub to usernames containing only these domains, after the @ sign. If `strip_idp_domain` was enabled, these domains would have been stripped from the hub username.
+   The `allowed_idps` config was used prior to oauthenticator version 15.0.1 to only allow access into the hub to usernames containing only these domains, after the @ sign. If `strip_idp_domain` was enabled, these domains would have been stripped from the hub username.
 
-   Starting with oauthenticator 15.0.0 this config option must now be a dictionary structured like below. More information about each configuration option that can go into the `username_derivation` can be found in the `allowed_idps` docstring.
+   Starting with oauthenticator 15.0.1 this config option must now be a dictionary structured like below. More information about each configuration option that can go into the `username_derivation` can be found in the `allowed_idps` docstring.
 
    **Stripping the domain from one IDP username, adding prefixes to another and leaving other unchanged**
 
@@ -77,7 +77,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
            'username_derivation': {
                'username_claim': 'nickname',
                'action': 'prefix',
-              'prefix': 'idp',
+               'prefix': 'idp',
            }
        },
        'https://yet-another-idp.com/login/oauth/authorize': {
