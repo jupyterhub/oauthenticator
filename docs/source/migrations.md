@@ -62,7 +62,7 @@ The following configurations have been deprecated in oauthenticator 15.0.0
 
    Starting with oauthenticator 15.0.0 this config option must now be a dictionary structured like below. More information about each configuration option that can go into the `username_derivation` can be found in the `allowed_idps` docstring.
 
-   **Stripping the domain from one IDP username and adding prefixes to another**
+   **Stripping the domain from one IDP username, adding prefixes to another and leaving other unchanged**
 
    ```python
    c.CILogonOAuthenticator.allowed_idps = {
@@ -80,11 +80,18 @@ The following configurations have been deprecated in oauthenticator 15.0.0
                'prefix': 'idp',
            }
        },
+       'https://yet-another-idp.com/login/oauth/authorize': {
+           'username_derivation': {
+               'username_claim': 'nickname',
+           }
+       },
    }
    ```
 
-   This config means that if you login using a `some-idp` provider, the hub username will be the email registered for that IdP, from which the domain `uni.edu` will be stripped (assuming this is domain in the email provided by `some-idp`).
-   But if you login using `another-idp` the hub username will be your `another-idp` provided `nickname` claim, username prefixed with `idp:`. This way, users from different identity providers can log in without username clashes.
+   This config translates into:
+    - if you login using a `some-idp` provider, the hub username will be the email registered for that IdP, from which the domain `uni.edu` will be stripped (assuming this is domain in the email provided by `some-idp`).
+    - if you login using `another-idp` the hub username will be your `another-idp` provided `nickname` claim, username prefixed with `idp:`. This way, users from different identity providers can log in without username clashes.
+    - if you login using `yet-another-idp`, then the username will be left unchanged, i.e. the value corresponding to the `username_claim`.
 
    ```{note}
    If `allowed_idps` is specified, then each IdP in the dict must define the `username_derivation` dict, including `username_derivation.username_claim`. `CILogonOAuthenticator.username_claim` will only be used if `allowed_idps` is not specified!
