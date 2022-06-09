@@ -27,6 +27,8 @@ properties:
           properties:
             action:
               const: strip_idp_domain
+          required:
+            - action
         then:
           required:
             - domain
@@ -34,6 +36,8 @@ properties:
           properties:
             action:
               const: prefix
+          required:
+            - action
         then:
           required:
             - prefix
