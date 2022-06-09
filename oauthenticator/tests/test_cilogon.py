@@ -300,3 +300,26 @@ async def test_strip_and_prefix_username(cilogon_client):
     print(json.dumps(user_info, sort_keys=True, indent=4))
     name = user_info['name']
     assert name == 'idp:jtkirk'
+
+
+async def test_no_action_specified(cilogon_client):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://some-idp.com/login/oauth/authorize': {
+            'username_derivation': {
+                'username_claim': 'email',
+            }
+        },
+    }
+
+    authenticator = CILogonOAuthenticator(config=cfg)
+
+    # Test stripping domain
+    handler = cilogon_client.handler_for_user(
+        alternative_user_model(
+            'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
+        )
+    )
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'jtkirk@uni.edu'
