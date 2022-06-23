@@ -5,6 +5,10 @@ additionalProperties: false
 required:
   - username_derivation
 properties:
+  allowed_domains:
+    type: array
+    items:
+      type: string
   username_derivation:
     type: object
     additionalProperties: false

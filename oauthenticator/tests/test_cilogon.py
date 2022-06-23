@@ -323,3 +323,93 @@ async def test_no_action_specified(cilogon_client):
     user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'jtkirk@uni.edu'
+
+
+async def test_not_allowed_domains_and_stripping(cilogon_client):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://some-idp.com/login/oauth/authorize': {
+            'username_derivation': {
+                'username_claim': 'email',
+                'action': 'strip_idp_domain',
+                'domain': 'uni.edu',
+            },
+            'allowed_domains': ['pink.org'],
+        },
+    }
+
+    authenticator = CILogonOAuthenticator(config=cfg)
+
+    # Test stripping domain not allowed
+    handler = cilogon_client.handler_for_user(
+        alternative_user_model(
+            'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
+        )
+    )
+
+    # The domain to be stripped isn't allowed, so it should fail
+    with raises(HTTPError):
+        user_info = await authenticator.authenticate(handler)
+
+
+async def test_allowed_domains_and_stripping(cilogon_client):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://some-idp.com/login/oauth/authorize': {
+            'username_derivation': {
+                'username_claim': 'email',
+                'action': 'strip_idp_domain',
+                'domain': 'pink.org',
+            },
+            'allowed_domains': ['pink.org'],
+        },
+    }
+
+    authenticator = CILogonOAuthenticator(config=cfg)
+
+    # Test stripping allowed domain
+    handler = cilogon_client.handler_for_user(
+        alternative_user_model(
+            'jtkirk@pink.org', 'email', idp='https://some-idp.com/login/oauth/authorize'
+        )
+    )
+
+    # The domain to be stripped is allowed, so it should be stripped
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'jtkirk'
+
+
+async def test_allowed_domains_no_stripping(cilogon_client):
+    cfg = Config()
+    cfg.CILogonOAuthenticator.allowed_idps = {
+        'https://some-idp.com/login/oauth/authorize': {
+            'username_derivation': {
+                'username_claim': 'email',
+            },
+            'allowed_domains': ['pink.org'],
+        },
+    }
+
+    authenticator = CILogonOAuthenticator(config=cfg)
+
+    # Test domain not allowed
+    handler = cilogon_client.handler_for_user(
+        alternative_user_model(
+            'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
+        )
+    )
+
+    with raises(HTTPError):
+        user_info = await authenticator.authenticate(handler)
+
+    # Test allowed domain login
+    handler = cilogon_client.handler_for_user(
+        alternative_user_model(
+            'jtkirk@pink.org', 'email', idp='https://some-idp.com/login/oauth/authorize'
+        )
+    )
+
+    user_info = await authenticator.authenticate(handler)
+    name = user_info['name']
+    assert name == 'jtkirk@pink.org'
