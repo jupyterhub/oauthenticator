@@ -128,7 +128,16 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pydata_sphinx_theme'
+html_theme = 'sphinx_book_theme'
+html_title = 'OAuthenticator'
+
+html_theme_options = {
+    "repository_url": "https://github.com/jupyterhub/oauthenticator",
+    "use_issues_button": True,
+    "use_repository_button": True,
+    "use_edit_page_button": True,
+}
+
 
 html_logo = '_static/images/logo/logo.png'
 html_favicon = '_static/images/logo/favicon.ico'
