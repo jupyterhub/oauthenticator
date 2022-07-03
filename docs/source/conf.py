@@ -114,6 +114,10 @@ extensions = [
     'sphinx_copybutton',
 ]
 
+# Disable autosummary otherwise it will overwrite the oauthenticators docs in the `gen` directory.
+# Reference: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
+autosummary_generate = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
