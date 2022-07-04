@@ -5,7 +5,7 @@
 
 autodoc-traits
 myst-parser
-sphinx-book-theme
 sphinx>=2
-sphinx-copybutton
 sphinx-autobuild
+sphinx-book-theme
+sphinx-copybutton
