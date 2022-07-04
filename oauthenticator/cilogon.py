@@ -114,57 +114,52 @@ class CILogonOAuthenticator(OAuthenticator):
 
         It can be used to enable domain stripping, adding prefixes to the usernames and to specify an identity provider specific username claim.
 
-        For example:
+        For example::
 
-        ```python
-        allowed_idps = {
-            "https://idpz.utorauth.utoronto.ca/shibboleth": {
-                "username_derivation": {
-                    "username_claim": "email",
-                    "action": "strip_idp_domain",
-                    "domain": "utoronto.ca",
+            allowed_idps = {
+                "https://idpz.utorauth.utoronto.ca/shibboleth": {
+                    "username_derivation": {
+                        "username_claim": "email",
+                        "action": "strip_idp_domain",
+                        "domain": "utoronto.ca",
+                    }
+                },
+                "https://github.com/login/oauth/authorize": {
+                    "username_derivation": {
+                        "username_claim": "username",
+                        "action": "prefix",
+                        "prefix": "gh"
+                    }
                 }
-            },
-            "https://github.com/login/oauth/authorize": {
-                "username_derivation": {
-                    "username_claim": "username",
-                    "action": "prefix",
-                    "prefix": "gh"
+                "http://google.com/accounts/o8/id": {
+                    "username_derivation": {
+                        "username_claim": "username",
+                    }
+                    "allowed_domains": ["uni.edu", "something.org"]
                 }
             }
-            "http://google.com/accounts/o8/id": {
-                "username_derivation": {
-                    "username_claim": "username",
-                }
-                "allowed_domains": ["uni.edu", "something.org"]
-            }
-        }
-        ```
 
-        Where
-        - `username_derivation` defines:
-            - `username_claim`: string
-                The claim in the userinfo response from which to get the
-                JupyterHub username. Examples include: eppn, email.
-                What keys are available will depend on the scopes requested.
-                It will overwrite any value set through
-                CILogonOAuthenticator.username_claim for this identity provider.
-            - `action`: string
-                What action to perform on the username. Available options are
-                "strip_idp_domain", which will strip the domain from the username if specified and "prefix", which will prefix the hub username with "prefix:".
-            - `domain:` string
+        Where `username_derivation` defines:
+            * :attr:`username_claim`: string
+                The claim in the `userinfo` response from which to get the JupyterHub username.
+                Examples include: `eppn`, `email`. What keys are available will depend on the scopes requested.
+                It will overwrite any value set through CILogonOAuthenticator.username_claim for this identity provider.
+            * :attr:`action`: string
+                What action to perform on the username. Available options are "strip_idp_domain", which will strip the domain from the username if specified and "prefix", which will prefix the hub username with "prefix:".
+            * :attr:`domain:` string
                 The domain after "@" which will be stripped from the username if it exists and if the action is "strip_idp_domain".
-            - `prefix`: string
-                The prefix which will be added at the beginning of the username
-                followed by a semicolumn ":", if the action is "prefix".
-        - `allowed_domains` defines which domains will be allowed to login using the specific idp
+            * :attr:`prefix`: string
+                The prefix which will be added at the beginning of the username followed by a semi-column ":", if the action is "prefix".
+            * :attr:`allowed_domains`: string
+                It defines which domains will be allowed to login using the specific identity provider.
 
         Requirements:
-        - if `username_derivation.action` is `strip_idp_domain`, then
-          `username_derivation.domain` must also be specified
-        - if `username_derivation.action` is `prefix`, then
-          `username_derivation.prefix`must also be specified.
-        - `username_claim` must be provided for each idp in `allowed_idps`.
+            * if `username_derivation.action` is `strip_idp_domain`, then `username_derivation.domain` must also be specified
+            * if `username_derivation.action` is `prefix`, then `username_derivation.prefix` must also be specified.
+            * `username_claim` must be provided for each idp in `allowed_idps`
+
+        .. versionchanged:: 15.0.0
+            `CILogonOAuthenticaor.allowed_idps` changed type from list to dict
         """,
     )
 

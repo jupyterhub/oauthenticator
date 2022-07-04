@@ -114,6 +114,10 @@ extensions = [
     'sphinx_copybutton',
 ]
 
+# Disable autosummary otherwise it will overwrite the oauthenticators docs in the `gen` directory.
+# Reference: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html#confval-autosummary_generate
+autosummary_generate = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -128,7 +132,16 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pydata_sphinx_theme'
+html_theme = 'sphinx_book_theme'
+html_title = 'OAuthenticator'
+
+html_theme_options = {
+    "repository_url": "https://github.com/jupyterhub/oauthenticator",
+    "use_issues_button": True,
+    "use_repository_button": True,
+    "use_edit_page_button": True,
+}
+
 
 html_logo = '_static/images/logo/logo.png'
 html_favicon = '_static/images/logo/favicon.ico'

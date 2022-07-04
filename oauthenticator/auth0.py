@@ -5,16 +5,16 @@ Derived using the Github and Google OAuthenticator implementations as examples.
 
 The following environment variables may be used for configuration:
 
-    AUTH0_SUBDOMAIN - The subdomain for your Auth0 account
-    OAUTH_CLIENT_ID - Your client id
-    OAUTH_CLIENT_SECRET - Your client secret
-    OAUTH_CALLBACK_URL - Your callback handler URL
+* AUTH0_SUBDOMAIN - The subdomain for your Auth0 account
+* OAUTH_CLIENT_ID - Your client id
+* OAUTH_CLIENT_SECRET - Your client secret
+* OAUTH_CALLBACK_URL - Your callback handler URL
 
 Additionally, if you are concerned about your secrets being exposed by
 an env dump(I know I am!) you can set the client_secret, client_id and
 oauth_callback_url directly on the config for Auth0OAuthenticator.
 
-One instance of this could be adding the following to your jupyterhub_config.py :
+One instance of this could be adding the following to your jupyterhub_config.py::
 
   c.Auth0OAuthenticator.client_id = 'YOUR_CLIENT_ID'
   c.Auth0OAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'

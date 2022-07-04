@@ -1,9 +1,11 @@
 # autodoc_traits needs to inspect the oauthenticator module, so we also install
 # oauthenticator itself.
-#
+# Note: the install command must be ran from the oauthenticator root directory
 -e ./
+
 autodoc-traits
 myst-parser
-pydata-sphinx-theme
 sphinx>=2
+sphinx-autobuild
+sphinx-book-theme
 sphinx-copybutton
