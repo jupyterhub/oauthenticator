@@ -115,7 +115,7 @@ extensions = [
 ]
 
 # Disable autosummary otherwise it will overwrite the oauthenticators docs in the `gen` directory.
-# Reference: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
+# Reference: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html#confval-autosummary_generate
 autosummary_generate = False
 
 # Add any paths that contain templates here, relative to this directory.
