@@ -10,11 +10,13 @@ import uuid
 from urllib.parse import quote, urlparse, urlunparse
 
 from jupyterhub.auth import Authenticator
+from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from jupyterhub.handlers import BaseHandler, LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient, HTTPClientError
+from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
+from tornado.httputil import url_concat
 from tornado.log import app_log
 from traitlets import Any, Bool, Dict, List, Unicode, default
 
@@ -251,6 +253,15 @@ class OAuthenticator(Authenticator):
     callback_handler = OAuthCallbackHandler
     logout_handler = OAuthLogoutHandler
 
+    user_auth_state_key = Unicode(
+        config=True,
+        help="""The name of the user key expected to be present in `auth_state`.""",
+    )
+
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "oauth_user"
+
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
     )
@@ -277,7 +288,44 @@ class OAuthenticator(Authenticator):
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
 
+    username_claim = Unicode(
+        config=True,
+        help="""Field in userdata reply to use for username
+        The field in the userdata response from which to get the JupyterHub username.
+        Examples include: email, username, nickname
+
+        What keys are available will depend on the scopes requested and the authenticator used.
+        """,
+    )
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "username"
+
+    # Enable refresh_pre_spawn by default if self.enable_auth_state
+    @default("refresh_pre_spawn")
+    def _refresh_pre_spawn(self):
+        if self.enable_auth_state:
+            return True
+
     logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
+
+    # Originally a GenericOAuthenticator only trait
+    userdata_params = Dict(
+        help="Userdata params to get user data login information"
+    ).tag(config=True)
+
+    # Originally a GenericOAuthenticator only trait
+    userdata_token_method = Unicode(
+        os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
+        config=True,
+        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header",
+    )
+
+    # Originally a GenericOAuthenticator only trait
+    extra_params = Dict(
+        help="Extra parameters for first POST request exchanging the OAuth code for an Access Token"
+    ).tag(config=True)
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
@@ -310,6 +358,13 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""Callback URL to use.
         Typically `https://{host}/hub/oauth_callback`""",
+    )
+
+    # Originally a GenericOAuthenticator only trait
+    basic_auth = Bool(
+        os.environ.get('OAUTH2_BASIC_AUTH', 'False').lower() in {'false', '0'},
+        config=True,
+        help="Whether or not to use basic authentication for access token request",
     )
 
     client_id_env = ''
@@ -426,8 +481,274 @@ class OAuthenticator(Authenticator):
             (r'/logout', self.logout_handler),
         ]
 
-    async def authenticate(self, handler, data=None):
-        raise NotImplementedError()
+    def build_userdata_request_headers(self, access_token, token_type):
+        """
+        Builds and returns the headers to be used in the userdata request.
+        Called by the :meth:`oauthenticator.OAuthenticator.token_to_user`
+        """
+        return {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "{} {}".format(token_type, access_token),
+        }
+
+    def build_token_info_req_headers(self):
+        """
+        Builds and returns the headers to be used in the access token request.
+        Called by the :meth:`oauthenticator.OAuthenticator.get_tokens_info`.
+        """
+        headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
+
+        if self.basic_auth:
+            b64key = base64.b64encode(
+                bytes("{}:{}".format(self.client_id, self.client_secret), "utf8")
+            )
+            headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
+        return headers
+
+    def user_info_to_username(self, user_info):
+        """
+        Gets the self.username_claim key's value from the user_info dictionary.
+        This is equivalent to the JupyterHub username.
+
+        Should be overridden by the authenticators for which the hub username cannot
+        be extracted this way and needs extra processing.
+
+        Args:
+            user_info: the dictionary returned by the userdata request
+
+        Returns:
+            user_info["self.username_claim"] or raises an error if such value isn't found.
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        username = user_info.get(self.username_claim, None)
+        if not username:
+            message = "No %s found in %s", self.username_claim, user_info
+            self.log.error(message)
+            raise ValueError(message)
+
+        return username
+
+    # Originally a GoogleOAuthenticator only feature
+    async def get_prev_refresh_token(self, handler, username):
+        """
+        Retrieves the `refresh_token` from previous encrypted auth state.
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        user = handler.find_user(username)
+        if not user or not user.encrypted_auth_state:
+            return
+
+        self.log.debug(
+            "Encrypted_auth_state was found, will try to decrypt and pull refresh_token from it..."
+        )
+
+        try:
+            encrypted = user.encrypted_auth_state
+            auth_state = await decrypt(encrypted)
+
+            return auth_state.get('refresh_token')
+        except (ValueError, InvalidToken, EncryptionUnavailable) as e:
+            self.log.warning(
+                f"Failed to retrieve encrypted auth_state for {username}. Error was {e}.",
+            )
+            return
+
+    def build_access_tokens_req_params(self, handler):
+        """
+        Builds the parameters that should be passed to the URL request
+        that exchanges the OAuth code for the Access Token.
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`.
+        """
+        code = handler.get_argument("code")
+        if not code:
+            raise web.HTTPError(400, "Authentication Cancelled.")
+
+        params = {
+            'code': code,
+            'grant_type': 'authorization_code',
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'redirect_uri': self.get_callback_url(handler),
+        }
+        params.update(self.extra_params)
+
+        return params
+
+    async def get_tokens_info(self, handler, params):
+        """
+        Makes a "POST" request to `self.token_url`, with the parameters received as argument.
+
+        Returns:
+            the JSON response to the `token_url` the request.
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        url = url_concat(self.token_url, params)
+
+        req = HTTPRequest(
+            url,
+            method="POST",
+            headers=self.build_token_info_req_headers(),
+            body=json.dumps(params),
+            validate_cert=self.validate_server_cert,
+        )
+
+        tokens_info = await self.fetch(req)
+
+        if "error_description" in tokens_info:
+            raise web.HTTPError(
+                403,
+                "An access token was not returned: {}".format(
+                    tokens_info["error_description"]
+                ),
+            )
+        elif "access_token" not in tokens_info:
+            raise web.HTTPError(500, "Bad response: {}".format(tokens_info))
+
+        return tokens_info
+
+    async def token_to_user(self, tokens_info):
+        """
+        Determines who the logged-in user by sending a "GET" request to
+        :data:`oauthenticator.OAuthenticator.userdata_url` using the `access_token`.
+
+        Args:
+            tokens_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
+
+        Returns:
+            the JSON response to the `userdata_url` request.
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        access_token = tokens_info["access_token"]
+        token_type = tokens_info["token_type"]
+
+        if not self.userdata_url:
+            raise ValueError(
+                "authenticator.userdata_url is missing. Please configure it."
+            )
+
+        url = url_concat(self.userdata_url, self.userdata_params)
+        if self.userdata_token_method == "url":
+            url = url_concat(url, dict(access_token=access_token))
+
+        req = HTTPRequest(
+            url,
+            method="GET",
+            headers=self.build_userdata_request_headers(access_token, token_type),
+            validate_cert=self.validate_server_cert,
+        )
+
+        return await self.fetch(req, "Fetching user info...")
+
+    def build_auth_state_dict(self, tokens_info, user_info):
+        """
+        Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
+
+        Args:
+            tokens_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
+            user_info: the dictionary returned by the userdata request
+
+        Returns:
+            auth_state: a dictionary of auth state that should be persisted with the following keys:
+                - 'access_token': the access_token
+                - 'refresh_token': the refresh_token, if available
+                - 'id_token': the id_token, if available
+                - 'scope': the scopes, if available
+                - 'token_response': the full tokens_info response
+                - self.user_auth_state_key: the full user_info reponse
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+
+        # We know for sure the `access_token` key exists, oterwise we would have errored out already
+        access_token = tokens_info['access_token']
+
+        refresh_token = tokens_info.get('refresh_token', None)
+        id_token = tokens_info.get('id_token', None)
+        scope = tokens_info.get('scope', '')
+
+        if isinstance(scope, str):
+            scope = scope.split(' ')
+
+        return {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'id_token': id_token,
+            'scope': scope,
+            # Save the full token response
+            # These can be used for user provisioning in the Lab/Notebook environment.
+            'token_response': tokens_info,
+            # store the whole user model in auth_state too
+            self.user_auth_state_key: user_info,
+        }
+
+    async def update_auth_model(self, auth_model, **kwargs):
+        """
+        Updates `auth_model` dict if any fields have changed or additional information is available
+        or returns the unchanged `auth_model`.
+
+        Should be overridden to take into account changes like group/admin membership.
+
+        Args:
+            auth_model: the auth model dictionary  dict instead, containing:
+                - the `name` key holding the username
+                - the `auth_state` key, the dictionary of of auth state
+                  returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
+
+        Returns the model unchanged by default.
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        return auth_model
+
+    async def user_is_authorized(self, auth_model):
+        """
+        Checks if the user that is authenticating should be authorized or not and False otherwise.
+        Should be overridden with any relevant logic specific to each oauthenticator.
+
+        Returns True by default.
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        return True
+
+    async def authenticate(self, handler, **kwargs):
+        # build the parameters to be used in the request exchanging the oauth code for the access token
+        access_token_params = self.build_access_tokens_req_params(handler)
+        # exchange the oauth code for an access token and get the JSON with info about it
+        tokens_info = await self.get_tokens_info(handler, access_token_params)
+        # use the access_token to get userdata info
+        user_info = await self.token_to_user(tokens_info)
+        # extract the username out of the user_info dict
+        username = self.user_info_to_username(user_info)
+
+        # check if there any refresh_token in the tokens_info dict
+        refresh_token = tokens_info.get("refresh_token", None)
+        if self.enable_auth_state and not refresh_token:
+            self.log.debug(
+                "Refresh token was empty, will try to pull refresh_token from previous auth_state"
+            )
+            refresh_token = await self.get_prev_refresh_token(handler, username)
+            if refresh_token:
+                tokens_info["refresh_token"] = refresh_token
+
+        # build the auth model to be persisted if authentication goes right
+        auth_model = {
+            'name': username,
+            'auth_state': self.build_auth_state_dict(tokens_info, user_info),
+        }
+
+        # check if the username that's authenticating should be authorized
+        authorized = await self.user_is_authorized(auth_model)
+        if not authorized:
+            return None
+
+        # update the auth model with any info if available
+        return await self.update_auth_model(auth_model, **kwargs)
 
     _deprecated_oauth_aliases = {}
 

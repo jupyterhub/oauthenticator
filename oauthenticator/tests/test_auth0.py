@@ -1,7 +1,9 @@
+import logging
 from unittest.mock import Mock
 
 from pytest import fixture, mark
 from tornado import web
+from traitlets.config import Config
 
 from ..auth0 import Auth0OAuthenticator
 from ..oauth2 import OAuthLogoutHandler
@@ -79,3 +81,19 @@ async def test_custom_logout(monkeypatch):
     await logout_handler.get()
     custom_logout_url = f'https://{auth0_domain}/v2/logout'
     logout_handler.redirect.assert_called_with(custom_logout_url)
+
+
+def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.Auth0OAuthenticator.username_key = 'nickname'
+    log = logging.getLogger("testlog")
+    authenticator = Auth0OAuthenticator(config=cfg, log=log)
+
+    assert (
+        log.name,
+        logging.WARNING,
+        'Auth0OAuthenticator.username_key is deprecated in Auth0OAuthenticator 15.1.0, use '
+        'Auth0OAuthenticator.username_claim instead',
+    ) in caplog.record_tuples
+
+    assert authenticator.username_claim == 'nickname'

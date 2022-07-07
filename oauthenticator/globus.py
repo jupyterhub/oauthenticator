@@ -65,6 +65,10 @@ class GlobusOAuthenticator(OAuthenticator):
     login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
 
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "globus_user"
+
     @default("userdata_url")
     def _userdata_url_default(self):
         return "https://auth.globus.org/v2/oauth2/userinfo"
@@ -110,6 +114,12 @@ class GlobusOAuthenticator(OAuthenticator):
     @default("username_from_email")
     def _username_from_email_default(self):
         return False
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        if self.username_from_email:
+            return "email"
+        return "preferred_username"
 
     exclude_tokens = List(
         help="""Exclude tokens from being passed into user environments
@@ -162,6 +172,10 @@ class GlobusOAuthenticator(OAuthenticator):
         their UUIDs. Setting this will add the Globus Groups scope."""
     ).tag(config=True)
 
+    @staticmethod
+    def check_user_in_groups(member_groups, allowed_groups):
+        return bool(set(member_groups) & set(allowed_groups))
+
     async def pre_spawn_start(self, user, spawner):
         """Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
@@ -173,33 +187,7 @@ class GlobusOAuthenticator(OAuthenticator):
             globus_data = base64.b64encode(pickle.dumps(state))
             spawner.environment['GLOBUS_DATA'] = globus_data.decode('utf-8')
 
-    async def authenticate(self, handler, data=None):
-        """
-        Authenticate with globus.org. Usernames (and therefore Jupyterhub
-        accounts) will correspond to a Globus User ID, so foouser@globusid.org
-        will have the 'foouser' account in Jupyterhub.
-        """
-        # Complete login and exchange the code for tokens.
-        params = dict(
-            redirect_uri=self.get_callback_url(handler),
-            code=handler.get_argument("code"),
-            grant_type='authorization_code',
-        )
-        req = HTTPRequest(
-            self.token_url,
-            method="POST",
-            headers=self.get_client_credential_headers(),
-            body=urllib.parse.urlencode(params),
-        )
-        token_json = await self.fetch(req)
-
-        # Fetch user info at Globus's oauth2/userinfo/ HTTP endpoint to get the username
-        user_headers = self.get_default_headers()
-        user_headers['Authorization'] = 'Bearer {}'.format(token_json['access_token'])
-        req = HTTPRequest(self.userdata_url, method='GET', headers=user_headers)
-        user_resp = await self.fetch(req)
-        username = self.get_username(user_resp)
-
+    def get_globus_tokens(self, tokens_info):
         # Each token should have these attributes. Resource server is optional,
         # and likely won't be present.
         token_attrs = [
@@ -215,15 +203,24 @@ class GlobusOAuthenticator(OAuthenticator):
         # can't be retrieved with an Auth token.
         # Repackage the Auth token into a dict that looks like the other tokens
         auth_token_dict = {
-            attr_name: token_json.get(attr_name) for attr_name in token_attrs
+            attr_name: tokens_info.get(attr_name) for attr_name in token_attrs
         }
         # Make sure only the essentials make it into tokens. Other items, such as 'state' are
         # not needed after authentication and can be discarded.
         other_tokens = [
             {attr_name: token_dict.get(attr_name) for attr_name in token_attrs}
-            for token_dict in token_json['other_tokens']
+            for token_dict in tokens_info['other_tokens']
         ]
-        tokens = other_tokens + [auth_token_dict]
+        return other_tokens + [auth_token_dict]
+
+    def build_auth_state_dict(self, tokens_info, user_info):
+        """
+        Usernames (and therefore Jupyterhub
+        accounts) will correspond to a Globus User ID, so foouser@globusid.org
+        will have the 'foouser' account in Jupyterhub.
+        """
+
+        tokens = self.get_globus_tokens(tokens_info)
         # historically, tokens have been organized by resource server for convenience.
         # If multiple scopes are requested from the same resource server, they will be
         # combined into a single token from Globus Auth.
@@ -233,56 +230,80 @@ class GlobusOAuthenticator(OAuthenticator):
             if token_dict['resource_server'] not in self.exclude_tokens
         }
 
-        user_info = {
-            'name': username,
-            'auth_state': {
-                'client_id': self.client_id,
-                'tokens': by_resource_server,
-            },
+        return {
+            'client_id': self.client_id,
+            'tokens': by_resource_server,
+            'token_response': tokens_info,
+            self.user_auth_state_key: user_info,
         }
-        use_globus_groups = False
-        user_allowed = False
+
+    async def get_users_groups_ids(self, tokens):
+        user_group_ids = set()
+        # Get Groups access token, may not be in dict headed to auth state
+        for token_dict in tokens:
+            if token_dict['resource_server'] == 'groups.api.globus.org':
+                groups_token = token_dict['access_token']
+        # Get list of user's Groups
+        groups_headers = self.get_default_headers()
+        groups_headers['Authorization'] = 'Bearer {}'.format(groups_token)
+        req = HTTPRequest(self.globus_groups_url, method='GET', headers=groups_headers)
+        groups_resp = await self.fetch(req)
+        # Build set of Group IDs
+        for group in groups_resp:
+            user_group_ids.add(group['id'])
+
+        return user_group_ids
+
+    async def user_is_authorized(self, auth_model):
+        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+
         if self.allowed_globus_groups or self.admin_globus_groups:
             # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            use_globus_groups = True
-            user_group_ids = set()
-            # Get Groups access token, may not be in dict headed to auth state
-            for token_dict in tokens:
-                if token_dict['resource_server'] == 'groups.api.globus.org':
-                    groups_token = token_dict['access_token']
-            # Get list of user's Groups
-            groups_headers = self.get_default_headers()
-            groups_headers['Authorization'] = 'Bearer {}'.format(groups_token)
-            req = HTTPRequest(
-                self.globus_groups_url, method='GET', headers=groups_headers
-            )
-            groups_resp = await self.fetch(req)
-            # Build set of Group IDs
-            for group in groups_resp:
-                user_group_ids.add(group['id'])
-            if user_group_ids & self.allowed_globus_groups:
-                user_allowed = True
-            if self.admin_globus_groups:
-                # Admin users are being managed via Globus Groups
-                # Default to False
-                user_info['admin'] = False
-                if user_group_ids & self.admin_globus_groups:
-                    # User is an admin, admins allowed by default
-                    user_allowed = user_info['admin'] = True
+            user_group_ids = await self.get_users_groups_ids(tokens)
+            if not self.check_user_in_groups(
+                user_group_ids, self.allowed_globus_groups
+            ):
+                if not self.check_user_in_groups(
+                    user_group_ids, self.admin_globus_groups
+                ):
+                    self.log.warning(
+                        '{} not in an allowed Globus Group'.format(
+                            self.user_info_to_username(
+                                auth_model["auth_state"][self.user_auth_state_key]
+                            )
+                        )
+                    )
+                    return False
 
-        if user_allowed or not use_globus_groups:
-            return user_info
-        else:
-            self.log.warning('{} not in an allowed Globus Group'.format(username))
-            return None
+        return True
 
-    def get_username(self, user_data):
+    async def update_auth_model(self, auth_model):
+        username = self.user_info_to_username(
+            auth_model["auth_state"][self.user_auth_state_key]
+        )
+        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+
+        if self.admin_globus_groups:
+            # If any of these configurations are set, user must be in the allowed or admin Globus Group
+            user_group_ids = await self.get_users_groups_ids(tokens)
+            # Admin users are being managed via Globus Groups
+            # Default to False
+            auth_model['admin'] = False
+            if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
+                auth_model['admin'] = True
+
+        return auth_model
+
+    def user_info_to_username(self, user_info):
+        """
+        Usernames (and therefore Jupyterhub
+        accounts) will correspond to a Globus User ID, so foouser@globusid.org
+        will have the 'foouser' account in Jupyterhub.
+        """
+
         # It's possible for identity provider domains to be namespaced
         # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username_field = 'preferred_username'
-        if self.username_from_email:
-            username_field = 'email'
-        username, domain = user_data.get(username_field).split('@', 1)
+        username, domain = user_info.get(self.username_claim).split('@', 1)
         if self.identity_provider and domain != self.identity_provider:
             raise HTTPError(
                 403,

@@ -8,7 +8,6 @@ from urllib.parse import quote
 from jupyterhub.auth import LocalAuthenticator
 from tornado.escape import url_escape
 from tornado.httpclient import HTTPRequest
-from tornado.httputil import url_concat
 from traitlets import CUnicode, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -37,6 +36,10 @@ class GitLabOAuthenticator(OAuthenticator):
 
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
+
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "gitlab_user"
 
     gitlab_url = Unicode("https://gitlab.com", config=True)
 
@@ -87,7 +90,11 @@ class GitLabOAuthenticator(OAuthenticator):
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth/access_token" % self.gitlab_url
+        return "%s/oauth/token" % self.gitlab_url
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "%s/user" % self.gitlab_api
 
     gitlab_group_whitelist = Set(
         help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
@@ -110,54 +117,14 @@ class GitLabOAuthenticator(OAuthenticator):
 
     gitlab_version = None
 
-    async def authenticate(self, handler, data=None):
-        code = handler.get_argument("code")
-
-        # Exchange the OAuth code for a GitLab Access Token
-        #
-        # See: https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
-
-        # GitLab specifies a POST request yet requires URL parameters
-        params = dict(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            code=code,
-            grant_type="authorization_code",
-            redirect_uri=self.get_callback_url(handler),
-        )
-
-        validate_server_cert = self.validate_server_cert
-
-        url = url_concat("%s/oauth/token" % self.gitlab_url, params)
-
-        req = HTTPRequest(
-            url,
-            method="POST",
-            headers={"Accept": "application/json"},
-            validate_cert=validate_server_cert,
-            body='',  # Body is required for a POST...
-        )
-
-        resp_json = await self.fetch(req, label="getting access token")
-        access_token = resp_json['access_token']
+    async def user_is_authorized(self, auth_model):
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
 
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
             self.gitlab_version = await self._get_gitlab_version(access_token)
             self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
-
-        # Determine who the logged in user is
-        req = HTTPRequest(
-            "%s/user" % self.gitlab_api,
-            method="GET",
-            validate_cert=validate_server_cert,
-            headers=_api_headers(access_token),
-        )
-        resp_json = await self.fetch(req, label="getting gitlab user")
-
-        username = resp_json["username"]
-        user_id = resp_json["id"]
-        is_admin = resp_json.get("is_admin", False)
 
         # Check if user is a member of any allowed groups or projects.
         # These checks are performed here, as it requires `access_token`.
@@ -184,13 +151,13 @@ class GitLabOAuthenticator(OAuthenticator):
             or (is_project_id_specified and user_in_project)
             or no_config_specified
         ):
-            return {
-                'name': username,
-                'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
-            }
-        else:
-            self.log.warning("%s not in group or project allowed list", username)
-            return None
+            return True
+
+        self.log.warning(
+            "%s not in group or project allowed list",
+            auth_model["name"],
+        )
+        return False
 
     async def _get_gitlab_version(self, access_token):
         url = '%s/version' % self.gitlab_api

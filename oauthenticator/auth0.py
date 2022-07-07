@@ -33,17 +33,20 @@ jupyterhub_config.py :
   c.JupyterHub.authenticator_class = 'oauthenticator.auth0.Auth0OAuthenticator'
 
 """
-import json
 import os
 
 from jupyterhub.auth import LocalAuthenticator
-from tornado.httpclient import HTTPRequest
 from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
 
 
 class Auth0OAuthenticator(OAuthenticator):
+
+    _deprecated_oauth_aliases = {
+        "username_key": ("username_claim", "15.1.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
 
     login_service = "Auth0"
 
@@ -68,10 +71,17 @@ class Auth0OAuthenticator(OAuthenticator):
         )
 
     username_key = Unicode(
-        os.environ.get("OAUTH2_USERNAME_KEY", "email"),
         config=True,
-        help="Userdata username key from returned json with user data login information",
+        help="Deprecated, use `Auth0OAuthenticator.username_claim`",
     )
+
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "auth0_user"
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "email"
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
@@ -85,61 +95,9 @@ class Auth0OAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "https://%s/oauth/token" % self.auth0_domain
 
-    async def authenticate(self, handler, data=None):
-        code = handler.get_argument("code")
-
-        params = {
-            'grant_type': 'authorization_code',
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'code': code,
-            'redirect_uri': self.get_callback_url(handler),
-        }
-        url = self.token_url
-
-        req = HTTPRequest(
-            url,
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            body=json.dumps(params),
-        )
-
-        resp_json = await self.fetch(req)
-
-        access_token = resp_json['access_token']
-
-        refresh_token = resp_json.get('refresh_token')
-        id_token = resp_json.get('id_token')
-
-        # Determine who the logged in user is
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "Bearer {}".format(access_token),
-        }
-        req = HTTPRequest(
-            "https://%s/userinfo" % self.auth0_domain,
-            method="GET",
-            headers=headers,
-        )
-        resp_json = await self.fetch(req)
-
-        name = resp_json.get(self.username_key)
-        if not name:
-            self.log.error(
-                "Auth0 user contains no key %s: %s", self.username_key, resp_json
-            )
-            return
-
-        return {
-            'name': name,
-            'auth_state': {
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'id_token': id_token,
-                'auth0_user': resp_json,
-            },
-        }
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "https://%s/userinfo" % self.auth0_domain
 
 
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):

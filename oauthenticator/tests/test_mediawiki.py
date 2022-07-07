@@ -58,8 +58,9 @@ async def test_mediawiki(mediawiki):
         spec=web.RequestHandler,
         get_secure_cookie=Mock(return_value=json.dumps(['key', 'secret'])),
         request=Mock(query='oauth_token=key&oauth_verifier=me'),
+        find_user=Mock(return_value=None),
     )
-    user = await authenticator.authenticate(handler, None)
+    user = await authenticator.authenticate(handler)
     assert user['name'] == 'wash'
     auth_state = user['auth_state']
     assert auth_state['ACCESS_TOKEN_KEY'] == 'key'

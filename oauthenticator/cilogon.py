@@ -19,8 +19,6 @@ import jsonschema
 from jupyterhub.auth import LocalAuthenticator
 from ruamel.yaml import YAML
 from tornado import web
-from tornado.httpclient import HTTPRequest
-from tornado.httputil import url_concat
 from traitlets import Bool, Dict, List, Unicode, default, validate
 
 from .oauth2 import OAuthenticator, OAuthLoginHandler
@@ -67,6 +65,10 @@ class CILogonOAuthenticator(OAuthenticator):
 
     cilogon_host = Unicode(os.environ.get("CILOGON_HOST") or "cilogon.org", config=True)
 
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "cilogon_user"
+
     @default("authorize_url")
     def _authorize_url_default(self):
         return "https://%s/authorize" % self.cilogon_host
@@ -74,6 +76,18 @@ class CILogonOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url(self):
         return "https://%s/oauth2/token" % self.cilogon_host
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "https://%s/oauth2/userinfo" % self.cilogon_host
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        """What keys are available will depend on the scopes requested.
+        See https://www.cilogon.org/oidc for details.
+        Note that this option can be overridden for specific identity providers via `allowed_idps[<identity provider>]["username_derivation"]["username_claim"]`.
+        """
+        return "eppn"
 
     scope = List(
         Unicode(),
@@ -226,20 +240,6 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
-    username_claim = Unicode(
-        "eppn",
-        config=True,
-        help="""The claim in the userinfo response from which to get the JupyterHub username
-        Examples include: eppn, email
-
-        What keys are available will depend on the scopes requested.
-
-        See https://www.cilogon.org/oidc for details.
-
-        Note that this option can be overridden for specific identity providers via `allowed_idps[<identity provider>]["username_derivation"]["username_claim"]`.
-        """,
-    )
-
     additional_username_claims = List(
         config=True,
         help="""Additional claims to check if the username_claim fails.
@@ -249,9 +249,23 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
-    def check_username_claim(self, claimlist, resp_json):
+    def user_info_to_username(self, user_info):
+        claimlist = [self.username_claim]
+        if self.additional_username_claims:
+            claimlist.extend(self.additional_username_claims)
+
+        if self.allowed_idps:
+            selected_idp = user_info.get("idp")
+            if selected_idp:
+                # The username_claim which should be used for this idp
+                claimlist = [
+                    self.allowed_idps[selected_idp]["username_derivation"][
+                        "username_claim"
+                    ]
+                ]
+
         for claim in claimlist:
-            username = resp_json.get(claim)
+            username = user_info.get(claim)
             if username:
                 return username
 
@@ -260,56 +274,22 @@ class CILogonOAuthenticator(OAuthenticator):
                 self.log.error(
                     "Username claim %s not found in response: %s",
                     self.username_claim,
-                    sorted(resp_json.keys()),
+                    sorted(user_info.keys()),
                 )
             else:
                 self.log.error(
                     "No username claim from %r in response: %s",
                     claimlist,
-                    sorted(resp_json.keys()),
+                    sorted(user_info.keys()),
                 )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-    async def authenticate(self, handler, data=None):
-        """We set up auth_state based on additional CILogon info if we
-        receive it.
-        """
-        code = handler.get_argument("code")
-
-        # Exchange the OAuth code for a CILogon Access Token
-        # See: https://www.cilogon.org/oidc
-        headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
-
-        params = dict(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            redirect_uri=self.get_callback_url(handler),
-            code=code,
-            grant_type='authorization_code',
-        )
-
-        url = url_concat(self.token_url, params)
-
-        req = HTTPRequest(url, headers=headers, method="POST", body='')
-
-        token_response = await self.fetch(req)
-        access_token = token_response['access_token']
-        # Determine who the logged in user is
-        params = dict(access_token=access_token)
-        req = HTTPRequest(
-            url_concat("https://%s/oauth2/userinfo" % self.cilogon_host, params),
-            headers=headers,
-        )
-        resp_json = await self.fetch(req)
-
-        claimlist = [self.username_claim]
-        if self.additional_username_claims:
-            claimlist.extend(self.additional_username_claims)
-
-        selected_idp = resp_json.get("idp")
+    async def user_is_authorized(self, auth_model):
+        username = auth_model["name"]
         # Check if selected idp was marked as allowed
         if self.allowed_idps:
-            # Faild hard if idp wasn't allowed
+            selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
+            # Fail hard if idp wasn't allowed
             if selected_idp not in self.allowed_idps.keys():
                 self.log.error(
                     f"Trying to login from an identity provider that was not allowed {selected_idp}",
@@ -319,20 +299,6 @@ class CILogonOAuthenticator(OAuthenticator):
                     "Trying to login using an identity provider that was not allowed",
                 )
 
-            # The username_claim which should be used for this idp
-            claimlist = [
-                self.allowed_idps[selected_idp]["username_derivation"]["username_claim"]
-            ]
-
-        # Check if the requested username_claim exists in the response from the provider
-        username = self.check_username_claim(claimlist, resp_json)
-
-        # Check if we need to strip/prefix username
-        if self.allowed_idps:
-            username_derivation_config = self.allowed_idps[selected_idp][
-                "username_derivation"
-            ]
-            action = username_derivation_config.get("action", None)
             allowed_domains = self.allowed_idps[selected_idp].get(
                 "allowed_domains", None
             )
@@ -345,31 +311,33 @@ class CILogonOAuthenticator(OAuthenticator):
                         "Trying to login using a domain that was not allowed",
                     )
 
+        return True
+
+    async def update_auth_model(self, auth_model):
+        selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
+
+        # Check if the requested username_claim exists in the response from the provider
+        username = auth_model["name"]
+
+        # Check if we need to strip/prefix username
+        if self.allowed_idps:
+            username_derivation_config = self.allowed_idps[selected_idp][
+                "username_derivation"
+            ]
+            action = username_derivation_config.get("action", None)
+            allowed_domains = self.allowed_idps[selected_idp].get(
+                "allowed_domains", None
+            )
+
             if action == "strip_idp_domain":
                 gotten_name, gotten_domain = username.split('@')
-                if gotten_domain != username_derivation_config["domain"]:
-                    self.log.warning(
-                        "Trying to strip from the username a domain that doesn't exist."
-                        "Username will be left unchanged."
-                    )
-                else:
-                    username = gotten_name
+                username = gotten_name
             elif action == "prefix":
                 prefix = username_derivation_config["prefix"]
                 username = f"{prefix}:{username}"
 
-        userdict = {"name": username}
-        # Now we set up auth_state
-        userdict["auth_state"] = auth_state = {}
-        # Save the token response and full CILogon reply in auth state
-        # These can be used for user provisioning
-        #  in the Lab/Notebook environment.
-        auth_state['token_response'] = token_response
-        # store the whole user model in auth_state.cilogon_user
-        # keep access_token as well, in case anyone was relying on it
-        auth_state['access_token'] = access_token
-        auth_state['cilogon_user'] = resp_json
-        return userdict
+        auth_model["name"] = username
+        return auth_model
 
 
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
