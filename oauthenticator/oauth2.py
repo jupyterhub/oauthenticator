@@ -232,7 +232,16 @@ class OAuthLogoutHandler(LogoutHandler):
 
     async def render_logout_page(self):
         if self.authenticator.logout_redirect_url:
-            self.redirect(self.authenticator.logout_redirect_url)
+            user = list(self.users.values())[0]
+            auth_state = await user.get_auth_state()
+            redirect_uri = self.authenticator.logout_redirect_url
+            if auth_state['id_token']:
+                redirect_uri = f"{redirect_uri}?id_token_hint={auth_state['id_token']}"
+                if self.authenticator.post_logout_redirect_uri:
+                    redirect_uri = f"{redirect_uri}&post_logout_redirect_uri=" \
+                                   f"{self.authenticator.post_logout_redirect_uri}"
+
+            self.redirect(redirect_uri)
             return
 
         return await super().render_logout_page()
@@ -282,6 +291,12 @@ class OAuthenticator(Authenticator):
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
         return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
+
+    post_logout_redirect_uri = Unicode(config=True, help="The URI where the client is redirected after logout")
+
+    @default("post_logout_redirect_uri")
+    def _post_logout_redirect_uri(self):
+        return os.getenv("OAUTH2_POST_LOGOUT_REDIRECT_URI", "")
 
     custom_403_message = Unicode(
         "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",

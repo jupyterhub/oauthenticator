@@ -134,6 +134,7 @@ class GenericOAuthenticator(OAuthenticator):
         access_token = token_response['access_token']
         refresh_token = token_response.get('refresh_token', None)
         scope = token_response.get('scope', '')
+        id_token = token_response.get('id_token', None)
         if isinstance(scope, str):
             scope = scope.split(' ')
 
@@ -142,6 +143,7 @@ class GenericOAuthenticator(OAuthenticator):
             'refresh_token': refresh_token,
             'oauth_user': user_data_response,
             'scope': scope,
+            'id_token': id_token,
         }
 
     @staticmethod
