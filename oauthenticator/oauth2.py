@@ -252,8 +252,10 @@ class OAuthLogoutHandler(LogoutHandler):
         if not self.authenticator.post_logout_redirect_uri:
             return redirect_uri
 
-        redirect_uri = f"{redirect_uri}&post_logout_redirect_uri=" \
-                       f"{self.authenticator.post_logout_redirect_uri}"
+        redirect_uri = (
+            f"{redirect_uri}&post_logout_redirect_uri="
+            f"{self.authenticator.post_logout_redirect_uri}"
+        )
         return redirect_uri
 
 
