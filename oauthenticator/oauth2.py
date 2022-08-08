@@ -124,7 +124,7 @@ class OAuthCallbackHandler(BaseHandler):
         """
         if self._state_cookie is None:
             self._state_cookie = (
-                    self.get_secure_cookie(STATE_COOKIE_NAME) or b''
+                self.get_secure_cookie(STATE_COOKIE_NAME) or b''
             ).decode('utf8', 'replace')
             self.clear_cookie(STATE_COOKIE_NAME)
         return self._state_cookie
@@ -246,8 +246,10 @@ class OAuthLogoutHandler(LogoutHandler):
             if auth_state['id_token']:
                 redirect_uri = f"{redirect_uri}?id_token_hint={auth_state['id_token']}"
                 if self.authenticator.post_logout_redirect_uri:
-                    redirect_uri = f"{redirect_uri}&post_logout_redirect_uri=" \
-                                   f"{self.authenticator.post_logout_redirect_uri}"
+                    redirect_uri = (
+                        f"{redirect_uri}&post_logout_redirect_uri="
+                        f"{self.authenticator.post_logout_redirect_uri}"
+                    )
         return redirect_uri
 
 
@@ -296,7 +298,9 @@ class OAuthenticator(Authenticator):
     def _logout_redirect_url_default(self):
         return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
-    post_logout_redirect_uri = Unicode(config=True, help="The URI where the client is redirected after logout")
+    post_logout_redirect_uri = Unicode(
+        config=True, help="The URI where the client is redirected after logout"
+    )
 
     @default("post_logout_redirect_uri")
     def _post_logout_redirect_uri(self):
