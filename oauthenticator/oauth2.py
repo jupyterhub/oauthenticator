@@ -241,13 +241,19 @@ class OAuthLogoutHandler(LogoutHandler):
     async def get_post_redirect_uri(self):
         redirect_uri = self.authenticator.logout_redirect_url
         user = list(self.users.values())
-        if user:
-            auth_state = await user[0].get_auth_state()
-            if auth_state['id_token']:
-                redirect_uri = f"{redirect_uri}?id_token_hint={auth_state['id_token']}"
-                if self.authenticator.post_logout_redirect_uri:
-                    redirect_uri = f"{redirect_uri}&post_logout_redirect_uri=" \
-                                   f"{self.authenticator.post_logout_redirect_uri}"
+        if not user:
+            return redirect_uri
+
+        auth_state = await user[0].get_auth_state()
+        if not auth_state['id_token']:
+            return redirect_uri
+
+        redirect_uri = f"{redirect_uri}?id_token_hint={auth_state['id_token']}"
+        if not self.authenticator.post_logout_redirect_uri:
+            return redirect_uri
+
+        redirect_uri = f"{redirect_uri}&post_logout_redirect_uri=" \
+                       f"{self.authenticator.post_logout_redirect_uri}"
         return redirect_uri
 
 
