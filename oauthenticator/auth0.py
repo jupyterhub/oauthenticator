@@ -55,8 +55,9 @@ class Auth0OAuthenticator(OAuthenticator):
         # This is allowed to be empty unless auth0_domain is not supplied either
         return os.getenv("AUTH0_SUBDOMAIN", "")
 
+    @default("auth0_domain")
     def _auth0_domain_default(self):
-        domain = os.getenv("AUTH0_DOMAIN")
+        domain = os.getenv("AUTH0_DOMAIN", "")
         if domain:
             return domain
         if self.auth0_subdomain:
