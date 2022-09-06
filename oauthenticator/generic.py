@@ -191,10 +191,18 @@ class GenericOAuthenticator(OAuthenticator):
             if callable(self.claim_groups_key):
                 groups = self.claim_groups_key(user_data_resp_json)
             else:
-                groups = reduce(
-                    dict.get, self.claim_groups_key.split("."), user_data_resp_json
-                )
-
+                try:
+                    groups = reduce(
+                        dict.get, self.claim_groups_key.split("."), user_data_resp_json
+                    )
+                except TypeError:
+                    # This happens if a nested key does not exist (reduce trying to call None.get)
+                    self.log.error(
+                        "The key {} does not exist in the user token, or it is set to null".format(
+                            self.claim_groups_key
+                        )
+                    )
+                    groups = None
             if not groups:
                 self.log.error(
                     "No claim groups found for user! Something wrong with the `claim_groups_key` {}? {}".format(

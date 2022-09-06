@@ -115,6 +115,21 @@ async def test_generic_groups_claim_key_nested_strings(
     assert user_info['name'] == 'wash'
 
 
+async def test_generic_groups_claim_key_nested_strings_nonexistant_key(
+    get_authenticator, generic_client
+):
+    authenticator = get_authenticator(
+        scope=['openid', 'profile', 'roles'],
+        claim_groups_key='permissions.groups',
+        allowed_groups=['super_user'],
+    )
+    handler = generic_client.handler_for_user(
+        user_model('wash', alternate_username='zoe')
+    )
+    user_info = await authenticator.authenticate(handler)
+    assert user_info is None
+
+
 async def test_generic_groups_claim_key_with_allowed_groups_unauthorized(
     get_authenticator, generic_client
 ):
