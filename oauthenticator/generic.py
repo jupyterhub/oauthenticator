@@ -3,6 +3,7 @@ Custom Authenticator to use generic OAuth2 with JupyterHub
 """
 import base64
 import os
+from functools import reduce
 from urllib.parse import urlencode
 
 from jupyterhub.auth import LocalAuthenticator
@@ -25,9 +26,8 @@ class GenericOAuthenticator(OAuthenticator):
         help="""
         Userdata groups claim key from returned json for USERDATA_URL.
 
-        Can be a string key name or a callable that accepts the returned
-        json (as a dict) and returns the groups list. The callable is useful
-        e.g. for extracting the groups from a nested object in the response.
+        Can be a string key name (use periods for nested keys), or a callable
+        that accepts the returned json (as a dict) and returns the groups list.
         """,
     )
 
@@ -191,7 +191,9 @@ class GenericOAuthenticator(OAuthenticator):
             if callable(self.claim_groups_key):
                 groups = self.claim_groups_key(user_data_resp_json)
             else:
-                groups = user_data_resp_json.get(self.claim_groups_key)
+                groups = reduce(
+                    dict.get, self.claim_groups_key.split("."), user_data_resp_json
+                )
 
             if not groups:
                 self.log.error(
