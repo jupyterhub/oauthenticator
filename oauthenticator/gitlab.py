@@ -2,6 +2,7 @@
 Custom Authenticator to use GitLab OAuth with JupyterHub
 """
 import os
+import time
 import warnings
 from urllib.parse import quote
 
@@ -125,7 +126,54 @@ class GitLabOAuthenticator(OAuthenticator):
             grant_type="authorization_code",
             redirect_uri=self.get_callback_url(handler),
         )
+        return await self._oauth_call(handler, params, data)
 
+    async def refresh_user(self, user, handler=None):
+
+        # Renew the Access Token with a valid Refresh Token
+        #
+        # Without that custom configuration, the Gitlab access token gets
+        # outdated while the user can still connect to JupyterHub, that leads to
+        # forbidden Git interactions with Gitlab within Notebook.
+        #
+        # See:
+        # - https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
+        # - https://github.com/jupyterhub/oauthenticator/pull/490
+
+        auth_state = await user.get_auth_state()
+        if not auth_state:
+            self.log.info(
+                "No auth_state found for user %s refresh, full authentication needed",
+                user,
+            )
+            return False
+
+        # In seconds, ex : 1607635748
+        created_at = auth_state.get('created_at', 0)
+        # In seconds, ex : 7200
+        expires_in = auth_state.get('expires_in', 0)
+        is_expired = created_at + expires_in - time.time() < 0
+        if not is_expired:
+            # Access token still valid, function returns True
+            self.log.info(
+                "access_token still valid for user %s, refresh skipped",
+                user,
+            )
+            return True
+
+        # GitLab specifies a POST request yet requires URL parameters
+        params = dict(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            grant_type="refresh_token",
+            refresh_token=auth_state['refresh_token'],
+        )
+        return await self._oauth_call(handler, params)
+
+    async def _oauth_call(self, handler, params, data=None):
+        """
+        Common logic shared by authenticate() and refresh_user()
+        """
         validate_server_cert = self.validate_server_cert
 
         url = url_concat("%s/oauth/token" % self.gitlab_url, params)
@@ -138,8 +186,8 @@ class GitLabOAuthenticator(OAuthenticator):
             body='',  # Body is required for a POST...
         )
 
-        resp_json = await self.fetch(req, label="getting access token")
-        access_token = resp_json['access_token']
+        oauth_resp = await self.fetch(req, label="getting access token")
+        access_token = oauth_resp['access_token']
 
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
@@ -153,11 +201,10 @@ class GitLabOAuthenticator(OAuthenticator):
             validate_cert=validate_server_cert,
             headers=_api_headers(access_token),
         )
-        resp_json = await self.fetch(req, label="getting gitlab user")
+        gitlab_user = await self.fetch(req, label="getting gitlab user")
 
-        username = resp_json["username"]
-        user_id = resp_json["id"]
-        is_admin = resp_json.get("is_admin", False)
+        username = gitlab_user["username"]
+        user_id = gitlab_user["id"]
 
         # Check if user is a member of any allowed groups or projects.
         # These checks are performed here, as it requires `access_token`.
@@ -186,10 +233,13 @@ class GitLabOAuthenticator(OAuthenticator):
         ):
             return {
                 'name': username,
-                'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
+                'auth_state': {**oauth_resp, **{'gitlab_user': gitlab_user}},
             }
         else:
-            self.log.warning("%s not in group or project allowed list", username)
+            self.log.warning(
+                "%s not in group or project allowed list",
+                username,
+            )
             return None
 
     async def _get_gitlab_version(self, access_token):
