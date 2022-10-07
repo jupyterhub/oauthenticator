@@ -108,11 +108,11 @@ class MWOAuthenticator(OAuthenticator):
 
     # We're overriding this method because mediawiki it's more special
     # and needs a Handshaker object to send the tokes request.
-    # So, we're building the params directly in the `get_tokens_info`.
-    def build_access_tokens_req_params(self, handler):
+    # So, we're building the params directly in the `get_token_info`.
+    def build_access_tokens_request_params(self, handler):
         return None
 
-    async def get_tokens_info(self, handler, params):
+    async def get_token_info(self, handler, params):
         # Exchange the OAuth code for an Access Token
         consumer_token = ConsumerToken(
             self.client_id,
@@ -129,23 +129,23 @@ class MWOAuthenticator(OAuthenticator):
         )
         return {"access_token": access_token, "consumer_token": consumer_token}
 
-    async def token_to_user(self, tokens_info):
-        handshaker = Handshaker(self.mw_index_url, tokens_info["consumer_token"])
+    async def token_to_user(self, token_info):
+        handshaker = Handshaker(self.mw_index_url, token_info["consumer_token"])
 
         return await wrap_future(
-            self.executor.submit(handshaker.identify, tokens_info["access_token"])
+            self.executor.submit(handshaker.identify, token_info["access_token"])
         )
 
     async def update_auth_model(self, auth_model):
         auth_model['name'] = auth_model['name'].replace(' ', '_')
         return auth_model
 
-    def build_auth_state_dict(self, tokens_info, user_info):
+    def build_auth_state_dict(self, token_info, user_info):
         username = self.user_info_to_username(user_info)
         # this shouldn't be necessary anymore,
         # but keep for backward-compatibility
         return {
-            'ACCESS_TOKEN_KEY': tokens_info["access_token"].key,
-            'ACCESS_TOKEN_SECRET': tokens_info["access_token"].secret,
+            'ACCESS_TOKEN_KEY': token_info["access_token"].key,
+            'ACCESS_TOKEN_SECRET': token_info["access_token"].secret,
             'MEDIAWIKI_USER_IDENTITY': user_info,
         }

@@ -43,9 +43,9 @@ class AzureAdOAuthenticator(OAuthenticator):
             self.tenant_id
         )
 
-    async def token_to_user(self, tokens_info):
-        access_token = tokens_info['access_token']
-        id_token = tokens_info['id_token']
+    async def token_to_user(self, token_info):
+        access_token = token_info['access_token']
+        id_token = token_info['id_token']
         decoded = jwt.decode(
             id_token,
             options={"verify_signature": False},

@@ -187,7 +187,7 @@ class GlobusOAuthenticator(OAuthenticator):
             globus_data = base64.b64encode(pickle.dumps(state))
             spawner.environment['GLOBUS_DATA'] = globus_data.decode('utf-8')
 
-    def get_globus_tokens(self, tokens_info):
+    def get_globus_tokens(self, token_info):
         # Each token should have these attributes. Resource server is optional,
         # and likely won't be present.
         token_attrs = [
@@ -203,24 +203,24 @@ class GlobusOAuthenticator(OAuthenticator):
         # can't be retrieved with an Auth token.
         # Repackage the Auth token into a dict that looks like the other tokens
         auth_token_dict = {
-            attr_name: tokens_info.get(attr_name) for attr_name in token_attrs
+            attr_name: token_info.get(attr_name) for attr_name in token_attrs
         }
         # Make sure only the essentials make it into tokens. Other items, such as 'state' are
         # not needed after authentication and can be discarded.
         other_tokens = [
             {attr_name: token_dict.get(attr_name) for attr_name in token_attrs}
-            for token_dict in tokens_info['other_tokens']
+            for token_dict in token_info['other_tokens']
         ]
         return other_tokens + [auth_token_dict]
 
-    def build_auth_state_dict(self, tokens_info, user_info):
+    def build_auth_state_dict(self, token_info, user_info):
         """
         Usernames (and therefore Jupyterhub
         accounts) will correspond to a Globus User ID, so foouser@globusid.org
         will have the 'foouser' account in Jupyterhub.
         """
 
-        tokens = self.get_globus_tokens(tokens_info)
+        tokens = self.get_globus_tokens(token_info)
         # historically, tokens have been organized by resource server for convenience.
         # If multiple scopes are requested from the same resource server, they will be
         # combined into a single token from Globus Auth.
@@ -233,7 +233,7 @@ class GlobusOAuthenticator(OAuthenticator):
         return {
             'client_id': self.client_id,
             'tokens': by_resource_server,
-            'token_response': tokens_info,
+            'token_response': token_info,
             self.user_auth_state_key: user_info,
         }
 

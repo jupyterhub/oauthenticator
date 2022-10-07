@@ -491,10 +491,10 @@ class OAuthenticator(Authenticator):
             "Authorization": "{} {}".format(token_type, access_token),
         }
 
-    def build_token_info_req_headers(self):
+    def build_token_info_request_headers(self):
         """
         Builds and returns the headers to be used in the access token request.
-        Called by the :meth:`oauthenticator.OAuthenticator.get_tokens_info`.
+        Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
         """
         headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
 
@@ -554,7 +554,7 @@ class OAuthenticator(Authenticator):
             )
             return
 
-    def build_access_tokens_req_params(self, handler):
+    def build_access_tokens_request_params(self, handler):
         """
         Builds the parameters that should be passed to the URL request
         that exchanges the OAuth code for the Access Token.
@@ -575,7 +575,7 @@ class OAuthenticator(Authenticator):
 
         return params
 
-    async def get_tokens_info(self, handler, params):
+    async def get_token_info(self, handler, params):
         """
         Makes a "POST" request to `self.token_url`, with the parameters received as argument.
 
@@ -589,40 +589,40 @@ class OAuthenticator(Authenticator):
         req = HTTPRequest(
             url,
             method="POST",
-            headers=self.build_token_info_req_headers(),
+            headers=self.build_token_info_request_headers(),
             body=json.dumps(params),
             validate_cert=self.validate_server_cert,
         )
 
-        tokens_info = await self.fetch(req)
+        token_info = await self.fetch(req)
 
-        if "error_description" in tokens_info:
+        if "error_description" in token_info:
             raise web.HTTPError(
                 403,
                 "An access token was not returned: {}".format(
-                    tokens_info["error_description"]
+                    token_info["error_description"]
                 ),
             )
-        elif "access_token" not in tokens_info:
-            raise web.HTTPError(500, "Bad response: {}".format(tokens_info))
+        elif "access_token" not in token_info:
+            raise web.HTTPError(500, "Bad response: {}".format(token_info))
 
-        return tokens_info
+        return token_info
 
-    async def token_to_user(self, tokens_info):
+    async def token_to_user(self, token_info):
         """
         Determines who the logged-in user by sending a "GET" request to
         :data:`oauthenticator.OAuthenticator.userdata_url` using the `access_token`.
 
         Args:
-            tokens_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
+            token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
 
         Returns:
             the JSON response to the `userdata_url` request.
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-        access_token = tokens_info["access_token"]
-        token_type = tokens_info["token_type"]
+        access_token = token_info["access_token"]
+        token_type = token_info["token_type"]
 
         if not self.userdata_url:
             raise ValueError(
@@ -642,12 +642,12 @@ class OAuthenticator(Authenticator):
 
         return await self.fetch(req, "Fetching user info...")
 
-    def build_auth_state_dict(self, tokens_info, user_info):
+    def build_auth_state_dict(self, token_info, user_info):
         """
         Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
 
         Args:
-            tokens_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
+            token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
             user_info: the dictionary returned by the userdata request
 
         Returns:
@@ -656,18 +656,18 @@ class OAuthenticator(Authenticator):
                 - 'refresh_token': the refresh_token, if available
                 - 'id_token': the id_token, if available
                 - 'scope': the scopes, if available
-                - 'token_response': the full tokens_info response
+                - 'token_response': the full token_info response
                 - self.user_auth_state_key: the full user_info reponse
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
 
         # We know for sure the `access_token` key exists, oterwise we would have errored out already
-        access_token = tokens_info['access_token']
+        access_token = token_info['access_token']
 
-        refresh_token = tokens_info.get('refresh_token', None)
-        id_token = tokens_info.get('id_token', None)
-        scope = tokens_info.get('scope', '')
+        refresh_token = token_info.get('refresh_token', None)
+        id_token = token_info.get('id_token', None)
+        scope = token_info.get('scope', '')
 
         if isinstance(scope, str):
             scope = scope.split(' ')
@@ -679,7 +679,7 @@ class OAuthenticator(Authenticator):
             'scope': scope,
             # Save the full token response
             # These can be used for user provisioning in the Lab/Notebook environment.
-            'token_response': tokens_info,
+            'token_response': token_info,
             # store the whole user model in auth_state too
             self.user_auth_state_key: user_info,
         }
@@ -716,28 +716,28 @@ class OAuthenticator(Authenticator):
 
     async def authenticate(self, handler, **kwargs):
         # build the parameters to be used in the request exchanging the oauth code for the access token
-        access_token_params = self.build_access_tokens_req_params(handler)
+        access_token_params = self.build_access_tokens_request_params(handler)
         # exchange the oauth code for an access token and get the JSON with info about it
-        tokens_info = await self.get_tokens_info(handler, access_token_params)
+        token_info = await self.get_token_info(handler, access_token_params)
         # use the access_token to get userdata info
-        user_info = await self.token_to_user(tokens_info)
+        user_info = await self.token_to_user(token_info)
         # extract the username out of the user_info dict
         username = self.user_info_to_username(user_info)
 
-        # check if there any refresh_token in the tokens_info dict
-        refresh_token = tokens_info.get("refresh_token", None)
+        # check if there any refresh_token in the token_info dict
+        refresh_token = token_info.get("refresh_token", None)
         if self.enable_auth_state and not refresh_token:
             self.log.debug(
                 "Refresh token was empty, will try to pull refresh_token from previous auth_state"
             )
             refresh_token = await self.get_prev_refresh_token(handler, username)
             if refresh_token:
-                tokens_info["refresh_token"] = refresh_token
+                token_info["refresh_token"] = refresh_token
 
         # build the auth model to be persisted if authentication goes right
         auth_model = {
             'name': username,
-            'auth_state': self.build_auth_state_dict(tokens_info, user_info),
+            'auth_state': self.build_auth_state_dict(token_info, user_info),
         }
 
         # check if the username that's authenticating should be authorized
