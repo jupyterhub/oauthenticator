@@ -100,16 +100,16 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
 
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
-        extra_params = self.authenticator.extra_authorize_params.copy()
+        token_params = self.authenticator.extra_authorize_params.copy()
         self.log.info('OAuth redirect: %r', redirect_uri)
         state = self.get_state()
         self.set_state_cookie(state)
-        extra_params['state'] = state
+        token_params['state'] = state
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=self.authenticator.scope,
-            extra_params=extra_params,
+            token_params=token_params,
             response_type='code',
         )
 
@@ -321,7 +321,7 @@ class OAuthenticator(Authenticator):
     )
 
     # Originally a GenericOAuthenticator only trait
-    extra_params = Dict(
+    token_params = Dict(
         help="Extra parameters for first POST request exchanging the OAuth code for an Access Token"
     ).tag(config=True)
 
@@ -571,7 +571,7 @@ class OAuthenticator(Authenticator):
             'client_secret': self.client_secret,
             'redirect_uri': self.get_callback_url(handler),
         }
-        params.update(self.extra_params)
+        params.update(self.token_params)
 
         return params
 

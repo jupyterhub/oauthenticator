@@ -16,6 +16,7 @@ class GenericOAuthenticator(OAuthenticator):
 
     _deprecated_oauth_aliases = {
         "username_key": ("username_claim", "15.1.0"),
+        "extra_params": ("token_params", "15.1.0"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
 

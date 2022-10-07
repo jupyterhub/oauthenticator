@@ -31,14 +31,14 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
     def authorize_redirect(self, *args, **kwargs):
         """Add idp, skin to redirect params"""
-        extra_params = kwargs.setdefault('extra_params', {})
+        token_params = kwargs.setdefault('token_params', {})
         if self.authenticator.shown_idps:
             # selected_idp must be a string where idps are separated by commas, with no space between, otherwise it will get escaped
             # example: https://accounts.google.com/o/oauth2/auth,https://github.com/login/oauth/authorize
             idps = ",".join(self.authenticator.shown_idps)
-            extra_params["selected_idp"] = idps
+            token_params["selected_idp"] = idps
         if self.authenticator.skin:
-            extra_params["skin"] = self.authenticator.skin
+            token_params["skin"] = self.authenticator.skin
 
         return super().authorize_redirect(*args, **kwargs)
 
