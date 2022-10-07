@@ -254,13 +254,10 @@ class OAuthenticator(Authenticator):
     logout_handler = OAuthLogoutHandler
 
     user_auth_state_key = Unicode(
+        "oauth_user",
         config=True,
         help="""The name of the user key expected to be present in `auth_state`.""",
     )
-
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "oauth_user"
 
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
