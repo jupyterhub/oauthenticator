@@ -92,7 +92,7 @@ def test_deprecated_config(caplog):
     assert (
         log.name,
         logging.WARNING,
-        'Auth0OAuthenticator.username_key is deprecated in Auth0OAuthenticator 15.1.0, use '
+        'Auth0OAuthenticator.username_key is deprecated in Auth0OAuthenticator 16.0.0, use '
         'Auth0OAuthenticator.username_claim instead',
     ) in caplog.record_tuples
 
