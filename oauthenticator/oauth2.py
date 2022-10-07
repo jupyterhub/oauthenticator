@@ -289,6 +289,7 @@ class OAuthenticator(Authenticator):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
 
     username_claim = Unicode(
+        "username",
         config=True,
         help="""Field in userdata reply to use for username
         The field in the userdata response from which to get the JupyterHub username.
@@ -298,9 +299,6 @@ class OAuthenticator(Authenticator):
         """,
     )
 
-    @default("username_claim")
-    def _username_claim_default(self):
-        return "username"
 
     # Enable refresh_pre_spawn by default if self.enable_auth_state
     @default("refresh_pre_spawn")
