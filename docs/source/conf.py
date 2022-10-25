@@ -34,14 +34,15 @@ release = oauthenticator.__version__
 
 from collections import defaultdict
 
-import entrypoints
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 import jinja2
 
 
 def render_autodoc_modules():
-    authenticator_entrypoints = entrypoints.get_group_named(
-        "jupyterhub.authenticators"
-    ).values()
+    authenticator_entrypoints = entry_points(group="jupyterhub.authenticators")
 
     api = os.path.join(source, "api")
     api_gen = os.path.join(api, "gen")
@@ -64,8 +65,9 @@ def render_autodoc_modules():
 
     # load Authenticator classes from entrypoints
     for ep in authenticator_entrypoints:
-        if ep.module_name and ep.module_name.startswith('oauthenticator.'):
-            modules[ep.module_name]['configurables'].append(ep.object_name)
+        if ep.value and ep.value.startswith('oauthenticator.'):
+            module_name, _, object_name = ep.value.partition(":")
+            modules[module_name]['configurables'].append(object_name)
 
     with open(os.path.join(api, "authenticator.rst.tpl")) as f:
         tpl = jinja2.Template(f.read())
