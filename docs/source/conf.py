@@ -64,7 +64,7 @@ def render_autodoc_modules():
     }
 
     # load Authenticator classes from entrypoints
-    for name, ep in authenticator_entrypoints:
+    for ep in authenticator_entrypoints:
         if ep.value and ep.value.startswith('oauthenticator.'):
             module_name, _, object_name = ep.value.partition(":")
             modules[module_name]['configurables'].append(object_name)
