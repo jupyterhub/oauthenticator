@@ -3,6 +3,7 @@ Custom Authenticator to use generic OAuth2 with JupyterHub
 """
 import base64
 import os
+import time
 from functools import reduce
 from urllib.parse import urlencode
 
@@ -131,8 +132,10 @@ class GenericOAuthenticator(OAuthenticator):
 
     @staticmethod
     def _create_auth_state(token_response, user_data_response):
-        access_token = token_response['access_token']
+        now = time.time()
+        access_token = token_response.get('access_token', None)
         refresh_token = token_response.get('refresh_token', None)
+        expires_in = token_response.get('expires_in', 0)
         scope = token_response.get('scope', '')
         if isinstance(scope, str):
             scope = scope.split(' ')
@@ -141,8 +144,13 @@ class GenericOAuthenticator(OAuthenticator):
             'access_token': access_token,
             'refresh_token': refresh_token,
             'oauth_user': user_data_response,
+            'expires_at': now + float(expires_in),
             'scope': scope,
         }
+
+    @staticmethod
+    def is_auth_token_expired(auth_state: dict):
+        return time.time() < float(auth_state.get('expires_at', 0))
 
     @staticmethod
     def check_user_in_groups(member_groups, allowed_groups):
