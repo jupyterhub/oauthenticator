@@ -1,8 +1,7 @@
 from functools import partial
 from time import time
 
-from pytest import approx
-from pytest import fixture
+from pytest import approx, fixture
 
 from ..generic import GenericOAuthenticator
 from .mocks import setup_oauth_mock
