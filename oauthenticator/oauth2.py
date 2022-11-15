@@ -550,7 +550,7 @@ class OAuthenticator(Authenticator):
             )
             return
 
-    def build_access_tokens_request_params(self, handler):
+    def build_access_tokens_request_params(self, handler, data=None):
         """
         Builds the parameters that should be passed to the URL request
         that exchanges the OAuth code for the Access Token.
@@ -566,6 +566,7 @@ class OAuthenticator(Authenticator):
             "client_id": self.client_id,
             "client_secret": self.client_secret,
             "redirect_uri": self.get_callback_url(handler),
+            "data": data
         }
         params.update(self.token_params)
 
@@ -710,9 +711,9 @@ class OAuthenticator(Authenticator):
         """
         return True
 
-    async def authenticate(self, handler, **kwargs):
+    async def authenticate(self, handler, data=None, **kwargs):
         # build the parameters to be used in the request exchanging the oauth code for the access token
-        access_token_params = self.build_access_tokens_request_params(handler)
+        access_token_params = self.build_access_tokens_request_params(handler, data)
         # exchange the oauth code for an access token and get the JSON with info about it
         token_info = await self.get_token_info(handler, access_token_params)
         # use the access_token to get userdata info

@@ -109,7 +109,7 @@ class MWOAuthenticator(OAuthenticator):
     # We're overriding this method because mediawiki it's more special
     # and needs a Handshaker object to send the tokes request.
     # So, we're building the params directly in the `get_token_info`.
-    def build_access_tokens_request_params(self, handler):
+    def build_access_tokens_request_params(self, handler, data=None):
         return None
 
     async def get_token_info(self, handler, params):
