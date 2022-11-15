@@ -22,10 +22,7 @@ from traitlets import Any, Bool, Dict, List, Unicode, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
-    return "{proto}://{host}{path}".format(
-        proto=protocol, host=host, path=url_path_join(hub_server_url, "oauth_callback")
-    )
-
+    return f'{protocol}://{host}{url_path_join(hub_server_url, "oauth_callback")}'
 
 STATE_COOKIE_NAME = "oauthenticator-state"
 
@@ -43,12 +40,12 @@ def _deserialize_state(b64_state):
     try:
         json_state = base64.urlsafe_b64decode(b64_state).decode("utf8")
     except ValueError:
-        app_log.error("Failed to b64-decode state: %r", b64_state)
+        app_log.error(f"Failed to b64-decode state: {b64_state}")
         return {}
     try:
         return json.loads(json_state)
     except ValueError:
-        app_log.error("Failed to json-decode state: %r", json_state)
+        app_log.error(f"Failed to json-decode state: {json_state}")
         return {}
 
 
@@ -90,7 +87,7 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
             ).geturl()
             if next_url != original_next_url:
                 self.log.warning(
-                    "Ignoring next_url %r, using %r", original_next_url, next_url
+                    f"Ignoring next_url {original_next_url}, using {next_url}"
                 )
         if self._state is None:
             self._state = _serialize_state(
@@ -101,7 +98,7 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
         token_params = self.authenticator.extra_authorize_params.copy()
-        self.log.info("OAuth redirect: %r", redirect_uri)
+        self.log.info(f"OAuth redirect: {redirect_uri}")
         state = self.get_state()
         self.set_state_cookie(state)
         token_params["state"] = state
@@ -484,7 +481,7 @@ class OAuthenticator(Authenticator):
             "Accept": "application/json",
             "Content-Type": "application/json",
             "User-Agent": "JupyterHub",
-            "Authorization": "{} {}".format(token_type, access_token),
+            "Authorization": f"{token_type} {access_token}"
         }
 
     def build_token_info_request_headers(self):
@@ -496,9 +493,9 @@ class OAuthenticator(Authenticator):
 
         if self.basic_auth:
             b64key = base64.b64encode(
-                bytes("{}:{}".format(self.client_id, self.client_secret), "utf8")
+                bytes("{self.client_id}:{self.client_secret}", "utf8")
             )
-            headers.update({"Authorization": "Basic {}".format(b64key.decode("utf8"))})
+            headers.update({"Authorization": f'Basic {b64key.decode("utf8")}'})
         return headers
 
     def user_info_to_username(self, user_info):
@@ -596,12 +593,10 @@ class OAuthenticator(Authenticator):
         if "error_description" in token_info:
             raise web.HTTPError(
                 403,
-                "An access token was not returned: {}".format(
-                    token_info["error_description"]
-                ),
+                f'An access token was not returned: {token_info["error_description"]}',
             )
         elif "access_token" not in token_info:
-            raise web.HTTPError(500, "Bad response: {}".format(token_info))
+            raise web.HTTPError(500, f"Bad response: {token_info}")
 
         return token_info
 
