@@ -24,6 +24,7 @@ from traitlets import Any, Bool, Dict, List, Unicode, default
 def guess_callback_uri(protocol, host, hub_server_url):
     return f'{protocol}://{host}{url_path_join(hub_server_url, "oauth_callback")}'
 
+
 STATE_COOKIE_NAME = "oauthenticator-state"
 
 
@@ -481,7 +482,7 @@ class OAuthenticator(Authenticator):
             "Accept": "application/json",
             "Content-Type": "application/json",
             "User-Agent": "JupyterHub",
-            "Authorization": f"{token_type} {access_token}"
+            "Authorization": f"{token_type} {access_token}",
         }
 
     def build_token_info_request_headers(self):
@@ -516,7 +517,7 @@ class OAuthenticator(Authenticator):
         """
         username = user_info.get(self.username_claim, None)
         if not username:
-            message = f"No {self.username_claim} found in {user_info}",
+            message = (f"No {self.username_claim} found in {user_info}",)
             self.log.error(message)
             raise ValueError(message)
 
@@ -563,7 +564,7 @@ class OAuthenticator(Authenticator):
             "client_id": self.client_id,
             "client_secret": self.client_secret,
             "redirect_uri": self.get_callback_url(handler),
-            "data": data
+            "data": data,
         }
         params.update(self.token_params)
 

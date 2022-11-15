@@ -69,6 +69,7 @@ async def test_generic_data(get_authenticator, generic_client):
     name = user_info['name']
     assert name == 'wash'
 
+
 async def test_generic_callable_username_key(get_authenticator, generic_client):
     authenticator = get_authenticator(username_key=lambda r: r['alternate_username'])
     handler = generic_client.handler_for_user(
