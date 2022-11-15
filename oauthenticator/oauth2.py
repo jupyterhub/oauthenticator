@@ -150,7 +150,7 @@ class OAuthCallbackHandler(BaseHandler):
         if not url_state:
             raise web.HTTPError(400, "OAuth state missing from URL")
         if cookie_state != url_state:
-            self.log.warning("OAuth state mismatch: %s != %s", cookie_state, url_state)
+            self.log.warning(f"OAuth state mismatch: {cookie_state} != {url_state}")
             raise web.HTTPError(400, "OAuth state mismatch")
 
     def check_error(self):
@@ -158,7 +158,7 @@ class OAuthCallbackHandler(BaseHandler):
         error = self.get_argument("error", False)
         if error:
             message = self.get_argument("error_description", error)
-            raise web.HTTPError(400, "OAuth error: %s" % message)
+            raise web.HTTPError(400, f"OAuth error: {message}")
 
     def check_code(self):
         """Check the OAuth code"""
@@ -519,7 +519,7 @@ class OAuthenticator(Authenticator):
         """
         username = user_info.get(self.username_claim, None)
         if not username:
-            message = "No %s found in %s", self.username_claim, user_info
+            message = f"No {self.username_claim} found in {user_info}",
             self.log.error(message)
             raise ValueError(message)
 

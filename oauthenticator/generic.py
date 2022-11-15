@@ -90,7 +90,7 @@ class GenericOAuthenticator(OAuthenticator):
         else:
             username = user_info.get(self.username_claim, None)
             if not username:
-                message = "No %s found in %s", self.username_claim, user_info
+                message = f"No {self.username_claim} found in {user_info}",
                 self.log.error(message)
                 raise ValueError(message)
 
