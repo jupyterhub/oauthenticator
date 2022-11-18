@@ -7,20 +7,10 @@ import warnings
 
 from jupyterhub.auth import LocalAuthenticator
 from requests.utils import parse_header_links
-from tornado import web
 from tornado.httpclient import HTTPRequest
-from tornado.httputil import url_concat
 from traitlets import Bool, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
-
-
-def _api_headers(access_token):
-    return {
-        "Accept": "application/json",
-        "User-Agent": "JupyterHub",
-        "Authorization": "token {}".format(access_token),
-    }
 
 
 class GitHubOAuthenticator(OAuthenticator):
@@ -35,6 +25,10 @@ class GitHubOAuthenticator(OAuthenticator):
     }
 
     login_service = "GitHub"
+
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "github_user"
 
     github_url = Unicode("https://github.com", config=True)
 
@@ -89,6 +83,14 @@ class GitHubOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "%s/login/oauth/access_token" % (self.github_url)
 
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return self.github_api + "/user"
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "login"
+
     # deprecated names
     github_client_id = Unicode(config=True, help="DEPRECATED")
 
@@ -133,86 +135,27 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True,
     )
 
-    async def authenticate(self, handler, data=None):
-        """We set up auth_state based on additional GitHub info if we
-        receive it.
-        """
-        code = handler.get_argument("code")
-
-        # Exchange the OAuth code for a GitHub Access Token
-        #
-        # See: https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
-
-        # GitHub specifies a POST request yet requires URL parameters
-        params = dict(
-            client_id=self.client_id, client_secret=self.client_secret, code=code
-        )
-
-        url = url_concat(self.token_url, params)
-
-        req = HTTPRequest(
-            url,
-            method="POST",
-            headers={"Accept": "application/json"},
-            body='',  # Body is required for a POST...
-            validate_cert=self.validate_server_cert,
-        )
-
-        resp_json = await self.fetch(req)
-
-        if 'access_token' in resp_json:
-            access_token = resp_json['access_token']
-        elif 'error_description' in resp_json:
-            raise web.HTTPError(
-                403,
-                "An access token was not returned: {}".format(
-                    resp_json['error_description']
-                ),
-            )
-        else:
-            raise web.HTTPError(500, "Bad response: {}".format(resp_json))
-
-        granted_scopes = []
-        if resp_json.get("scope"):
-            granted_scopes = resp_json["scope"].split(",")
-
-        # Determine who the logged-in user is
-        req = HTTPRequest(
-            self.github_api + "/user",
-            method="GET",
-            headers=_api_headers(access_token),
-            validate_cert=self.validate_server_cert,
-        )
-        resp_json = await self.fetch(req, "fetching user info")
-
-        username = resp_json["login"]
-        # username is now the GitHub userid.
-        if not username:
-            return None
+    async def user_is_authorized(self, auth_model):
         # Check if user is a member of any allowed organizations.
         # This check is performed here, as it requires `access_token`.
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        token_type = auth_model["auth_state"]["token_response"]["token_type"]
         if self.allowed_organizations:
             for org in self.allowed_organizations:
                 user_in_org = await self._check_membership_allowed_organizations(
-                    org, username, access_token
+                    org, auth_model["name"], access_token, token_type
                 )
                 if user_in_org:
                     break
             else:  # User not found in member list for any organisation
-                self.log.warning("User %s is not in allowed org list", username)
-                return None
-        userdict = {"name": username}
-        # Now we set up auth_state
-        userdict["auth_state"] = auth_state = {}
-        # Save the access token and full GitHub reply (name, id, email) in auth state
-        # These can be used for user provisioning in the Lab/Notebook environment.
-        # e.g.
-        #  1) stash the access token
-        #  2) use the GitHub ID as the id
-        #  3) set up name/email for .gitconfig
-        auth_state['access_token'] = access_token
-        # store the whole user model in auth_state.github_user
-        auth_state['github_user'] = resp_json
+                self.log.warning(
+                    "User %s is not in allowed org list", auth_model["name"]
+                )
+                return False
+
+        return True
+
+    async def update_auth_model(self, auth_model):
         # If a public email is not available, an extra API call has to be made
         # to a /user/emails using the access token to retrieve emails. The
         # scopes relevant for this are checked based on this documentation:
@@ -220,26 +163,32 @@ class GitHubOAuthenticator(OAuthenticator):
         # - about /user/emails: https://docs.github.com/en/rest/reference/users#list-email-addresses-for-the-authenticated-user
         #
         # Note that the read:user scope does not imply the user:emails scope!
-        if not auth_state['github_user']['email'] and (
-            'user' in granted_scopes or 'user:email' in granted_scopes
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        token_type = auth_model["auth_state"]["token_response"]["token_type"]
+        granted_scopes = []
+        if auth_model["auth_state"]["scope"]:
+            granted_scopes = auth_model["auth_state"]["scope"]
+
+        if not auth_model["auth_state"]["github_user"]["email"] and (
+            "user" in granted_scopes or "user:email" in granted_scopes
         ):
             req = HTTPRequest(
                 self.github_api + "/user/emails",
                 method="GET",
-                headers=_api_headers(access_token),
+                headers=self.build_userdata_request_headers(access_token, token_type),
                 validate_cert=self.validate_server_cert,
             )
             resp_json = await self.fetch(req, "fetching user emails")
             for val in resp_json:
                 if val["primary"]:
-                    auth_state['github_user']['email'] = val['email']
+                    auth_model["auth_state"]["github_user"]["email"] = val["email"]
                     break
 
         if self.populate_teams_in_auth_state:
-            if 'read:org' not in self.scope:
-                # This means the 'read:org' scope was not set, and we can't fetch teams
+            if "read:org" not in self.scope:
+                # This means the "read:org" scope was not set, and we can"t fetch teams
                 self.log.error(
-                    'read:org scope is required for populate_teams_in_auth_state functionality to work'
+                    "read:org scope is required for populate_teams_in_auth_state functionality to work"
                 )
             else:
                 # Number of teams to request per page
@@ -248,11 +197,13 @@ class GitHubOAuthenticator(OAuthenticator):
                 #  https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
                 url = self.github_api + f"/user/teams?per_page={per_page}"
 
-                auth_state['teams'] = await self._paginated_fetch(url, access_token)
+                auth_model["auth_state"]["teams"] = await self._paginated_fetch(
+                    url, access_token, token_type
+                )
 
-        return userdict
+        return auth_model
 
-    async def _paginated_fetch(self, api_url, access_token):
+    async def _paginated_fetch(self, api_url, access_token, token_type):
         """
         Fetch all items via a paginated GitHub API call
 
@@ -265,7 +216,7 @@ class GitHubOAuthenticator(OAuthenticator):
             req = HTTPRequest(
                 url,
                 method="GET",
-                headers=_api_headers(access_token),
+                headers=self.build_userdata_request_headers(access_token, token_type),
                 validate_cert=self.validate_server_cert,
             )
             resp = await self.fetch(req, "fetching user teams", parse_json=False)
@@ -298,9 +249,9 @@ class GitHubOAuthenticator(OAuthenticator):
         return content
 
     async def _check_membership_allowed_organizations(
-        self, org, username, access_token
+        self, org, username, access_token, token_type
     ):
-        headers = _api_headers(access_token)
+        headers = self.build_userdata_request_headers(access_token, token_type)
         # Check membership of user `username` for organization `org` via api [check-membership](https://docs.github.com/en/rest/orgs/members#check-membership)
         # With empty scope (even if authenticated by an org member), this
         # will only await public org members.  You want 'read:org' in order

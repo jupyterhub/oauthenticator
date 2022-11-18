@@ -7,8 +7,6 @@ import os
 
 import requests
 from jupyterhub.auth import LocalAuthenticator
-from tornado.httpclient import HTTPRequest
-from tornado.httputil import url_concat
 from traitlets import Bool, Set, Unicode, default
 
 from oauthenticator.oauth2 import OAuthenticator
@@ -67,6 +65,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
         config=True,
     )
 
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "openshift_user"
+
     @default("openshift_rest_api_url")
     def _openshift_rest_api_url_default(self):
         return self.openshift_url
@@ -79,6 +81,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return "%s/oauth/token" % self.openshift_auth_api_url
 
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "name"
+
     @default("userdata_url")
     def _userdata_url_default(self):
         return "%s/apis/user.openshift.io/v1/users/~" % self.openshift_rest_api_url
@@ -87,85 +93,37 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def user_in_groups(user_groups: set, allowed_groups: set):
         return any(user_groups.intersection(allowed_groups))
 
-    async def authenticate(self, handler, data=None):
-        code = handler.get_argument("code")
+    def user_info_to_username(self, user_info):
+        return user_info['metadata']['name']
 
-        # Exchange the OAuth code for a OpenShift Access Token
-        #
-        # See: https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#api-authentication
-
-        params = dict(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            grant_type="authorization_code",
-            code=code,
-        )
-
-        url = url_concat(self.token_url, params)
-
-        req = HTTPRequest(
-            url,
-            method="POST",
-            validate_cert=self.validate_cert,
-            ca_certs=self.ca_certs,
-            headers={"Accept": "application/json"},
-            body='',  # Body is required for a POST...
-        )
-
-        resp_json = await self.fetch(req)
-        access_token = resp_json['access_token']
-
-        # Determine who the logged in user is
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "JupyterHub",
-            "Authorization": "Bearer {}".format(access_token),
-        }
-
-        req = HTTPRequest(
-            self.userdata_url,
-            method="GET",
-            validate_cert=self.validate_cert,
-            ca_certs=self.ca_certs,
-            headers=headers,
-        )
-
-        ocp_user = await self.fetch(req)
-
-        username = ocp_user['metadata']['name']
-
-        user_info = {
-            'name': username,
-            'auth_state': {'access_token': access_token, 'openshift_user': ocp_user},
-        }
-
-        if self.allowed_groups or self.admin_groups:
-            user_info = await self._add_openshift_group_info(user_info)
-
-        return user_info
-
-    async def _add_openshift_group_info(self, user_info: dict):
+    async def update_auth_model(self, auth_model):
         """
         Use the group info stored on the OpenShift User object to determine if a user
-        is authenticated based on groups, an admin, or both.
+        is an admin and update the auth_model with this info.
         """
-        user_groups = set(user_info['auth_state']['openshift_user']['groups'])
-        username = user_info['name']
+        user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
 
         if self.admin_groups:
-            is_admin = self.user_in_groups(user_groups, self.admin_groups)
+            auth_model['admin'] = self.user_in_groups(user_groups, self.admin_groups)
 
-        user_in_allowed_group = self.user_in_groups(user_groups, self.allowed_groups)
+        return auth_model
 
-        if self.admin_groups and (is_admin or user_in_allowed_group):
-            user_info['admin'] = is_admin
-            return user_info
-        elif user_in_allowed_group:
-            return user_info
-        else:
+    async def user_is_authorized(self, auth_model):
+        """
+        Use the group info stored on the OpenShift User object to determine if a user
+        is authorized to login.
+        """
+        user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
+        username = auth_model['name']
+
+        if self.allowed_groups or self.admin_groups:
             msg = f"username:{username} User not in any of the allowed/admin groups"
-            self.log.warning(msg)
-            return None
+            if not self.user_in_groups(user_groups, self.allowed_groups):
+                if not self.user_in_groups(user_groups, self.admin_groups):
+                    self.log.warning(msg)
+                    return False
+
+        return True
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):

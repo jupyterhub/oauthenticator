@@ -44,15 +44,12 @@ async def test_github(github_client):
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
-
-    assert auth_state == {
-        'access_token': auth_state['access_token'],
-        'github_user': {
-            'email': 'dinosaurs@space',
-            'id': 5,
-            'login': name,
-            'name': 'Hoban Washburn',
-        },
+    assert 'github_user' in auth_state
+    assert auth_state["github_user"] == {
+        'email': 'dinosaurs@space',
+        'id': 5,
+        'login': name,
+        'name': 'Hoban Washburn',
     }
 
 

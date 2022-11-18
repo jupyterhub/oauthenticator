@@ -59,6 +59,17 @@ async def test_generic(get_authenticator, generic_client):
     assert 'scope' in auth_state
 
 
+async def test_generic_data(get_authenticator, generic_client):
+    authenticator = get_authenticator()
+
+    handler = get_simple_handler(generic_client)
+    data = {'testing': 'data'}
+    user_info = await authenticator.authenticate(handler, data)
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
+    assert name == 'wash'
+
+
 async def test_generic_callable_username_key(get_authenticator, generic_client):
     authenticator = get_authenticator(username_key=lambda r: r['alternate_username'])
     handler = generic_client.handler_for_user(

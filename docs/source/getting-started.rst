@@ -549,7 +549,7 @@ Use the ``GenericOAuthenticator`` for Jupyterhub by editing your
    c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE'
    c.GenericOAuthenticator.userdata_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/user_info.php'
    c.GenericOAuthenticator.token_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/token.php'
-   c.GenericOAuthenticator.extra_params = {
+   c.GenericOAuthenticator.token_params = {
        'scope': 'user_info',
        'client_id': 'MOODLE-CLIENT-ID',
        'client_secret': 'MOODLE-CLIENT-SECRET-KEY',
