@@ -50,11 +50,11 @@ $ pip install --upgrade --pre -r test-requirements.txt
 ```
 
 ```
-$ pytest -v ./oauthenticator/tests/
+$ pytest -v ./tests
 ```
 
 Or you run a specific test file with:
 
 ```
-$ pytest -v ./oauthenticator/tests/<test-file-name>
+$ pytest -v ./tests/<test-file-name>
 ```
