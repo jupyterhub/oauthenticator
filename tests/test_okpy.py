@@ -1,6 +1,7 @@
 from pytest import fixture
 
 from oauthenticator.okpy import OkpyOAuthenticator
+
 from .mocks import no_code_test, setup_oauth_mock
 
 

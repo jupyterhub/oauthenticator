@@ -7,6 +7,7 @@ from traitlets.config import Config
 
 from oauthenticator.auth0 import Auth0OAuthenticator
 from oauthenticator.oauth2 import OAuthLogoutHandler
+
 from .mocks import mock_handler, setup_oauth_mock
 
 auth0_subdomain = "jupyterhub-test"

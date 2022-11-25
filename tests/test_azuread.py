@@ -9,6 +9,7 @@ import jwt
 import pytest
 
 from oauthenticator.azuread import AzureAdOAuthenticator
+
 from .mocks import setup_oauth_mock
 
 

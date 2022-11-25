@@ -12,6 +12,7 @@ from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
 
 from oauthenticator.gitlab import GitLabOAuthenticator
+
 from .mocks import setup_oauth_mock
 
 API_ENDPOINT = '/api/v%s' % (GitLabOAuthenticator().gitlab_api_version)

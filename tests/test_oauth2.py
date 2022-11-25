@@ -8,6 +8,7 @@ from oauthenticator.oauth2 import (
     _deserialize_state,
     _serialize_state,
 )
+
 from .mocks import mock_handler
 
 

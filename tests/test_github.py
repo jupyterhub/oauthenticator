@@ -11,6 +11,7 @@ from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
 
 from oauthenticator.github import GitHubOAuthenticator
+
 from .mocks import setup_oauth_mock
 
 

@@ -7,6 +7,7 @@ from tornado.web import HTTPError
 from traitlets.config import Config
 
 from oauthenticator.google import GoogleOAuthenticator
+
 from .mocks import setup_oauth_mock
 
 

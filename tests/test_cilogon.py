@@ -8,6 +8,7 @@ from traitlets.config import Config
 from traitlets.traitlets import TraitError
 
 from oauthenticator.cilogon import CILogonOAuthenticator
+
 from .mocks import setup_oauth_mock
 
 

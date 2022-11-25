@@ -9,6 +9,7 @@ from tornado.httpclient import HTTPResponse
 
 from oauthenticator.globus import GlobusLogoutHandler, GlobusOAuthenticator
 from oauthenticator.oauth2 import STATE_COOKIE_NAME
+
 from .mocks import mock_handler, setup_oauth_mock
 
 
