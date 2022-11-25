@@ -4,7 +4,7 @@ There are two ways to write your own OAuthenticator.
 
 ## Using GenericOAuthenticator
 
-The first and simplest is to use :class:`~.oauthenticator.generic.GenericOAuthenticator`
+The first and simplest is to use the `oauthenticator.generic.GenericOAuthenticator` class
 and configuration to set the necessary configuration variables.
 
 - client_id
@@ -15,7 +15,6 @@ and configuration to set the necessary configuration variables.
 - username_key
 
 Example config:
-
 
 ```python
 c.JupyterHub.authenticator_class = "generic"

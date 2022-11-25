@@ -205,7 +205,7 @@ You can use your own Github Enterprise instance by setting the `GITHUB_HOST` env
 You can set `GITHUB_HTTP` environment variable to true or anything if
 your GitHub Enterprise supports http only.
 
-GitHub allows expanded capabilities by adding [](github:scopes-label) to the requested token.
+GitHub allows expanded capabilities by adding [](github:scopes) to the requested token.
 
 ## GitLab Setup
 
@@ -273,7 +273,7 @@ c.GoogleOAuthenticator.login_service = 'My College'
 ```{note}
 Additional notes, that seem quite outdated at the time of writing May 2022,
 are available about authorizing users part of specific Google Groups are
-[available here](google:groups-label). Contributions to update these
+[available here](google:groups). Contributions to update these
 and re-verify this functionality are most welcome.
 ```
 
