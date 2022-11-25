@@ -170,21 +170,11 @@ c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/us
 
 1. Follow [this link to create an AAD APP](https://community.microfocus.com/cyberres/netiq-identity-governance-administration/idm/w/identity_mgr_tips/17052/creating-the-application-client-id-and-client-secret-from-microsoft-azure-new-portal---part-1)
 
-<<<<<<< HEAD
-
-1. CLIENT*ID === \_Azure Application ID*, found in:
+1. CLIENT_ID === *Azure Application ID*, found in:
    `Azure portal --> AD --> App Registrations --> App`
 
-1. TENANT*ID === \_Azure Directory ID*, found in:
+1. TENANT_ID === *Azure Directory ID*, found in:
    `Azure portal --> AD --> Properties`
-   =======
-1. CLIENT*ID === \_Azure Application ID*, found in:
-   `Azure portal --> AD --> App Registrations --> App`
-
-1. TENANT*ID === \_Azure Directory ID*, found in:
-   `Azure portal --> AD --> Properties`
-
-   > > > > > > > 85debba ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 1. Run via:
 
