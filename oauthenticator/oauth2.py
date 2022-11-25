@@ -107,7 +107,7 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=self.authenticator.scope,
-            token_params=token_params,
+            extra_params=token_params,
             response_type="code",
         )
 
