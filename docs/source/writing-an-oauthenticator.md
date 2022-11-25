@@ -39,8 +39,7 @@ which enables more detailed customization login and logout actions.
 
 The skeleton of an OAuthenticator looks like this:
 
-```{eval-rst}
-.. literalinclude:: example-oauthenticator.py
+```{literalinclude} example-oauthenticator.py
 ```
 
 where you will need to find and define the URLs and requests necessary to complete OAuth with your provider.
