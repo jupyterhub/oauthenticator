@@ -526,9 +526,9 @@ c.GenericOAuthenticator.client_secret = 'MOODLE-CLIENT-SECRET-KEY'
 c.GenericOAuthenticator.login_service = 'NAME-OF-SERVICE'
 c.GenericOAuthenticator.userdata_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/user_info.php'
 c.GenericOAuthenticator.token_url = 'http://YOUR-MOODLE-DOMAIN.com/local/oauth/token.php'
-c.GenericOAuthenticator.token_params = {
-      'scope': 'user_info',
-      'client_id': 'MOODLE-CLIENT-ID',
+    'scope': 'user_info',
+    'client_id': 'MOODLE-CLIENT-ID',
+    'client_secret': 'MOODLE-CLIENT-SECRET-KEY',
       'client_secret': 'MOODLE-CLIENT-SECRET-KEY',
 }
 ```
