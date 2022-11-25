@@ -172,10 +172,10 @@ c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/us
 
 <<<<<<< HEAD
 
-1. CLIENT_ID === _Azure Application ID_, found in:
+1. CLIENT*ID === \_Azure Application ID*, found in:
    `Azure portal --> AD --> App Registrations --> App`
 
-1. TENANT_ID === _Azure Directory ID_, found in:
+1. TENANT*ID === \_Azure Directory ID*, found in:
    `Azure portal --> AD --> Properties`
    =======
 1. CLIENT*ID === \_Azure Application ID*, found in:
