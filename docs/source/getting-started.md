@@ -594,6 +594,6 @@ c.GenericOAuthenticator.userdata_url = "https://login.yandex.ru/info"
 For an example docker image using OAuthenticator, see the
 [examples](https://github.com/jupyterhub/oauthenticator/tree/HEAD/examples) directory.
 
-[Another example](https://github.com/jupyterhub/dockerspawner/tree/HEAD/examples/oauth>)
+[Another example](https://github.com/jupyterhub/dockerspawner/tree/HEAD/examples/oauth)
 is using GitHub OAuth to spawn each user’s server in a separate docker
 container.
