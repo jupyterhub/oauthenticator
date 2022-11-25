@@ -10,7 +10,7 @@ from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
 
-from ..github import GitHubOAuthenticator
+from oauthenticator.github import GitHubOAuthenticator
 from .mocks import setup_oauth_mock
 
 

@@ -7,7 +7,7 @@ from tornado.web import HTTPError
 from traitlets.config import Config
 from traitlets.traitlets import TraitError
 
-from ..cilogon import CILogonOAuthenticator
+from oauthenticator.cilogon import CILogonOAuthenticator
 from .mocks import setup_oauth_mock
 
 

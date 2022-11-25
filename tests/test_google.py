@@ -6,7 +6,7 @@ from pytest import fixture, raises
 from tornado.web import HTTPError
 from traitlets.config import Config
 
-from ..google import GoogleOAuthenticator
+from oauthenticator.google import GoogleOAuthenticator
 from .mocks import setup_oauth_mock
 
 

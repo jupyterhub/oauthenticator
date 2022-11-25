@@ -1,7 +1,7 @@
 import uuid
 from unittest.mock import Mock
 
-from ..oauth2 import (
+from oauthenticator.oauth2 import (
     STATE_COOKIE_NAME,
     OAuthenticator,
     OAuthLogoutHandler,

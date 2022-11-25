@@ -2,7 +2,7 @@ from functools import partial
 
 from pytest import fixture
 
-from ..generic import GenericOAuthenticator
+from oauthenticator.generic import GenericOAuthenticator
 from .mocks import setup_oauth_mock
 
 

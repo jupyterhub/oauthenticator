@@ -3,7 +3,7 @@ import logging
 from pytest import fixture
 from traitlets.config import Config
 
-from ..bitbucket import BitbucketOAuthenticator
+from oauthenticator.bitbucket import BitbucketOAuthenticator
 from .mocks import setup_oauth_mock
 
 

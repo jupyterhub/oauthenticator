@@ -5,8 +5,8 @@ from pytest import fixture, mark
 from tornado import web
 from traitlets.config import Config
 
-from ..auth0 import Auth0OAuthenticator
-from ..oauth2 import OAuthLogoutHandler
+from oauthenticator.auth0 import Auth0OAuthenticator
+from oauthenticator.oauth2 import OAuthLogoutHandler
 from .mocks import mock_handler, setup_oauth_mock
 
 auth0_subdomain = "jupyterhub-test"

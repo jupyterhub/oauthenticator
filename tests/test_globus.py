@@ -7,8 +7,8 @@ from pytest import fixture, raises
 from tornado import web
 from tornado.httpclient import HTTPResponse
 
-from ..globus import GlobusLogoutHandler, GlobusOAuthenticator
-from ..oauth2 import STATE_COOKIE_NAME
+from oauthenticator.globus import GlobusLogoutHandler, GlobusOAuthenticator
+from oauthenticator.oauth2 import STATE_COOKIE_NAME
 from .mocks import mock_handler, setup_oauth_mock
 
 
