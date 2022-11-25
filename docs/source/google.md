@@ -1,4 +1,4 @@
-(google-groups-label)=
+(google:groups-label)=
 
 # Google specific configs
 
