@@ -14,7 +14,7 @@ oauthenticator is a package available on [PyPI](https://pypi.org/project/oauthen
 2. Install with conda:
 
 ```bash
-conda install -c conda-forge oauthenticator 
+conda install -c conda-forge oauthenticator
 ```
 
 3. Dev install:

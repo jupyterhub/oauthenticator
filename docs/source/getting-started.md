@@ -82,7 +82,7 @@ c.MyOAuthenticator.client_secret = 'your-client-secret'
 
    When a user successfully logins at an OAuth provider,
    but is forbidden access based on the config,
-   e.g. the ``allowed_users`` list or the ``blocked_users`` list,
+   e.g. the `allowed_users` list or the `blocked_users` list,
    the following message is shown by default:
 
    ```{important}
@@ -132,13 +132,13 @@ c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/us
 
 ## Azure AD Setup
 
-1. Install ``PyJWT>=2``
+1. Install `PyJWT>=2`
 
    ```bash
    pip3 install PyJWT
    ```
 
-1. Set the ``AAD_TENANT_ID`` environment variable
+1. Set the `AAD_TENANT_ID` environment variable
 
    ```bash
    export AAD_TENANT_ID='{AAD-TENANT-ID}'
@@ -165,24 +165,26 @@ c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/us
 1. Make sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
 
 1. You might need to add at least the `openid` scope if your
-  organization requires MFA (`c.AzureAdOAuthenticator.scope = ['openid']`),
-  in addition to whatever else you need.
+   organization requires MFA (`c.AzureAdOAuthenticator.scope = ['openid']`),
+   in addition to whatever else you need.
 
 1. Follow [this link to create an AAD APP](https://community.microfocus.com/cyberres/netiq-identity-governance-administration/idm/w/identity_mgr_tips/17052/creating-the-application-client-id-and-client-secret-from-microsoft-azure-new-portal---part-1)
 
 <<<<<<< HEAD
-1. CLIENT_ID === *Azure Application ID*, found in:
-   ``Azure portal --> AD --> App Registrations --> App``
 
-1. TENANT_ID === *Azure Directory ID*, found in:
-   ``Azure portal --> AD --> Properties``
-=======
+1. CLIENT_ID === _Azure Application ID_, found in:
+   `Azure portal --> AD --> App Registrations --> App`
+
+1. TENANT_ID === _Azure Directory ID_, found in:
+   `Azure portal --> AD --> Properties`
+   =======
 1. CLIENT*ID === \_Azure Application ID*, found in:
    `Azure portal --> AD --> App Registrations --> App`
 
 1. TENANT*ID === \_Azure Directory ID*, found in:
    `Azure portal --> AD --> Properties`
->>>>>>> 85debba ([pre-commit.ci] auto fixes from pre-commit.com hooks)
+
+   > > > > > > > 85debba ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 1. Run via:
 
@@ -190,10 +192,9 @@ c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/us
    sudo jupyterhub -f ./path/to/jupyterhub_config.py
    ```
 
-1.  See `run.sh` for an [example](https://github.com/jupyterhub/oauthenticator/tree/main/examples/azuread)
+1. See `run.sh` for an [example](https://github.com/jupyterhub/oauthenticator/tree/main/examples/azuread)
 
 1. [Source Code](https://github.com/jupyterhub/oauthenticator/blob/HEAD/oauthenticator/azuread.py)
-
 
 ## GitHub Setup
 
@@ -226,7 +227,7 @@ from oauthenticator.gitlab import GitLabOAuthenticator
 c.JupyterHub.authenticator_class = GitLabOAuthenticator
 ```
 
-You can also use ``LocalGitLabOAuthenticator`` to map GitLab accounts onto local users.
+You can also use `LocalGitLabOAuthenticator` to map GitLab accounts onto local users.
 
 You can use your own GitLab CE/EE instance by setting the `GITLAB_HOST` environment flag.
 
@@ -245,7 +246,7 @@ c.GitLabOAuthenticator.allowed_gitlab_groups = [ ... ]
 but be aware that each entry incurs a separate API call, increasing the risk of rate limiting and timeouts.
 
 ```{note}
-If restriction to projects or groups does not work, you might not be using jupyterHub 1.2. In that case you can still you use whitelists as noted in this 
+If restriction to projects or groups does not work, you might not be using jupyterHub 1.2. In that case you can still you use whitelists as noted in this
 [comment](https://github.com/jupyterhub/oauthenticator/pull/366#pullrequestreview-483095919).
 ```
 
@@ -372,8 +373,8 @@ and set your `OAUTH_` environment variables.
 
 ## Globus Setup
 
-Visit https://developers.globus.org/ to set up your app. Ensure *Native
-App* is unchecked and make sure the callback URL looks like:
+Visit https://developers.globus.org/ to set up your app. Ensure _Native
+App_ is unchecked and make sure the callback URL looks like:
 
 ```
 https://[your-host]/hub/oauth_callback
@@ -407,10 +408,10 @@ settings related to User Identity, Transfer, and additional security.
 ### User Identity
 
 By default, `identity_provider = ''` will allow anyone to login.
-If you want to use a *Linked Identity* such as
+If you want to use a _Linked Identity_ such as
 `malcolm@universityofindependence.edu`, go to your [App Developer
-page](https://developers.globus.org) and set *Required Identity
-Provider* for your app to `<Your University>`, and set the following
+page](https://developers.globus.org) and set _Required Identity
+Provider_ for your app to `<Your University>`, and set the following
 in the config:
 
 ```python
@@ -507,8 +508,8 @@ configuration can be used. Or, users can be removed from the allowed
 Globus Groups, and the Group set require approval, so the user cannot
 rejoin it without action by an administrator.
 
-
 (getting-started:moodle-setup)=
+
 ## Moodle Setup
 
 First install the [OAuth2 Server Plugin](https://github.com/projectestac/moodle-local_oauth) for
@@ -535,7 +536,6 @@ c.GenericOAuthenticator.token_params = {
 And set your environmental variable `OAUTH2_AUTHORIZE_URL` to
 `http://YOUR-MOODLE-DOMAIN.com/local/oauth/login.php?client_id=MOODLE-CLIENT-ID&response_type=code`
 
-
 ## Nextcloud Setup
 
 Add a new OAuth2 Application in the Nextcloud Administrator
@@ -561,7 +561,9 @@ OAUTH2_AUTHORIZE_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/authorize
 OAUTH2_TOKEN_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/apps/oauth2/api/v1/token
 OAUTH2_USERDATA_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2.php/cloud/user?format=json
 ```
+
 (getting-started:yandex_setup)=
+
 ## Yandex Setup
 
 First visit [Yandex OAuth](https://oauth.yandex.com) to setup your
@@ -571,8 +573,8 @@ section) and make sure the **Callback URI #1** looks like:
 
 Choose **Yandex.Passport API** in Permissions and check these options:
 
--  Access to email address
--  Access to username, first name and surname
+- Access to email address
+- Access to username, first name and surname
 
 Set the above settings in your `jupyterhub_config.py`:
 
