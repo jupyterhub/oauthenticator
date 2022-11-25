@@ -19,8 +19,8 @@ oauthenticator is a package available on [PyPI](https://pypi.org/project/oauthen
 
 3. Dev install:
 
-```bash
-git clone https://github.com/jupyterhub/oauthenticator.git
-cd oauthenticator
-pip3 install -e .
-```
+   ```bash
+   git clone https://github.com/jupyterhub/oauthenticator.git
+   cd oauthenticator
+   pip3 install -e .
+   ```
