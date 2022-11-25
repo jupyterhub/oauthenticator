@@ -7,20 +7,20 @@ oauthenticator is a package available on [PyPI](https://pypi.org/project/oauthen
 
 1. Install with pip:
 
-```bash
-python3 -m pip install oauthenticator
-```
+   ```bash
+   python3 -m pip install oauthenticator
+   ```
 
 2. Install with conda:
 
-```bash
-conda install -c conda-forge oauthenticator 
-```
+   ```bash
+   conda install -c conda-forge oauthenticator
+   ```
 
 3. Dev install:
 
-```bash
-git clone https://github.com/jupyterhub/oauthenticator.git
-cd oauthenticator
-pip3 install -e .
-```
+   ```bash
+   git clone https://github.com/jupyterhub/oauthenticator.git
+   cd oauthenticator
+   pip3 install -e .
+   ```
