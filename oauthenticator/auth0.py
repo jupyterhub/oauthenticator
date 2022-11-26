@@ -64,10 +64,12 @@ class Auth0OAuthenticator(OAuthenticator):
         if domain:
             return domain
         if self.auth0_subdomain:
-            return '%s.auth0.com' % self.auth0_subdomain
+            return f"{self.auth0_subdomain}.auth0.com"
         raise ValueError(
-            "Please specify $AUTH0_DOMAIN env, $AUTH0_SUBDOMAIN env, %s.auth0_domain config, or %s.auth0_subdomain config"
-            % (self.__class__.__name__, self.__class__.__name__)
+            "Please specify $AUTH0_DOMAIN env, $AUTH0_SUBDOMAIN env, "
+            "{part}.auth0_domain config, or {part}.auth0_subdomain config".format(
+                part=self.__class__.__name__
+            )
         )
 
     username_key = Unicode(
@@ -85,19 +87,19 @@ class Auth0OAuthenticator(OAuthenticator):
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
-        return 'https://%s/v2/logout' % self.auth0_domain
+        return f"https://{self.auth0_domain}/v2/logout"
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "https://%s/authorize" % self.auth0_domain
+        return f"https://{self.auth0_domain}/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return "https://%s/oauth/token" % self.auth0_domain
+        return f"https://{self.auth0_domain}/oauth/token"
 
     @default("userdata_url")
     def _userdata_url_default(self):
-        return "https://%s/userinfo" % self.auth0_domain
+        return f"https://{self.auth0_domain}/userinfo"
 
 
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):

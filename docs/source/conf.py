@@ -80,9 +80,7 @@ def render_autodoc_modules():
     for mod, mod_content in modules.items():
         dest = os.path.join(api_gen, mod + ".rst")
         print(
-            "Autogenerating module documentation in {} with classes: {}".format(
-                dest, mod_content
-            )
+            f"Autogenerating module documentation in {dest} with classes: {mod_content}"
         )
 
         with open(dest, "w") as f:

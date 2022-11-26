@@ -57,7 +57,7 @@ class BitbucketOAuthenticator(OAuthenticator):
                 username, access_token, token_type
             )
             if not user_in_team:
-                self.log.warning("%s not in team allowed list of users", username)
+                self.log.warning(f"{username} not in team allowed list of users")
                 return False
 
         return True

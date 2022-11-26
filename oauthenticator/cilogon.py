@@ -71,15 +71,15 @@ class CILogonOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "https://%s/authorize" % self.cilogon_host
+        return f"https://{self.cilogon_host}/authorize"
 
     @default("token_url")
     def _token_url(self):
-        return "https://%s/oauth2/token" % self.cilogon_host
+        return f"https://{self.cilogon_host}/oauth2/token"
 
     @default("userdata_url")
     def _userdata_url_default(self):
-        return "https://%s/oauth2/userinfo" % self.cilogon_host
+        return f"https://{self.cilogon_host}/oauth2/userinfo"
 
     @default("username_claim")
     def _username_claim_default(self):
@@ -270,17 +270,14 @@ class CILogonOAuthenticator(OAuthenticator):
                 return username
 
         if not username:
+            user_info_keys = sorted(user_info.keys())
             if len(claimlist) < 2:
                 self.log.error(
-                    "Username claim %s not found in response: %s",
-                    self.username_claim,
-                    sorted(user_info.keys()),
+                    f"Username claim {user_info_keys} not found in response: {self.username_claim}"
                 )
             else:
                 self.log.error(
-                    "No username claim from %r in response: %s",
-                    claimlist,
-                    sorted(user_info.keys()),
+                    f"No username claim from {claimlist:r} in response: {user_info_keys}"
                 )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 

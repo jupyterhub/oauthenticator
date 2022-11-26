@@ -58,9 +58,7 @@ class MyServiceOAuthenticator(OAuthenticator):
         elif 'error_description' in resp_json:
             raise HTTPError(
                 403,
-                "An access token was not returned: {}".format(
-                    resp_json['error_description']
-                ),
+                f"An access token was not returned: {resp_json['error_description']}",
             )
         else:
             raise HTTPError(500, f"Bad response: {resp}")

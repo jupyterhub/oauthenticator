@@ -50,9 +50,8 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
         if state:
             await self.authenticator.revoke_service_tokens(state.get('tokens'))
             self.log.info(
-                'Logout: Revoked tokens for user "{}" services: {}'.format(
-                    user.name, ','.join(state['tokens'].keys())
-                )
+                f'Logout: Revoked tokens for user "{user.name}" services: '
+                ','.join(state['tokens'].keys())
             )
             state['tokens'] = {}
             await user.save_auth_state(state)
@@ -266,13 +265,10 @@ class GlobusOAuthenticator(OAuthenticator):
                 if not self.check_user_in_groups(
                     user_group_ids, self.admin_globus_groups
                 ):
-                    self.log.warning(
-                        '{} not in an allowed Globus Group'.format(
-                            self.user_info_to_username(
-                                auth_model["auth_state"][self.user_auth_state_key]
-                            )
-                        )
+                    username = self.user_info_to_username(
+                        auth_model["auth_state"][self.user_auth_state_key]
                     )
+                    self.log.warning(f"{username} not in an allowed Globus Group")
                     return False
 
         return True
@@ -307,12 +303,8 @@ class GlobusOAuthenticator(OAuthenticator):
         if self.identity_provider and domain != self.identity_provider:
             raise HTTPError(
                 403,
-                'This site is restricted to {} accounts. Please link your {}'
-                ' account at {}.'.format(
-                    self.identity_provider,
-                    self.identity_provider,
-                    'globus.org/app/account',
-                ),
+                f"This site is restricted to {self.identity_provider} accounts. "
+                "Please link your account at globus.org/app/account.",
             )
         return username
 

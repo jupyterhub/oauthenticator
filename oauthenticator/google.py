@@ -54,11 +54,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth2/v4/token" % (self.google_api_url)
+        return f"{self.google_api_url}/oauth2/v4/token"
 
     @default("userdata_url")
     def _userdata_url_default(self):
-        return "%s/oauth2/v1/userinfo" % self.google_api_url
+        return f"{self.google_api_url}/oauth2/v1/userinfo"
 
     google_service_account_keys = Dict(
         Unicode(),
@@ -131,19 +131,16 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_email_domain = user_email.split('@')[1]
 
         if not auth_model["auth_state"][self.user_auth_state_key]['verified_email']:
-            self.log.warning("Google OAuth unverified email attempt: %s", user_email)
+            self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
             raise HTTPError(403, f"Google email {user_email} not verified")
 
         if self.hosted_domain:
             if user_email_domain not in self.hosted_domain:
                 self.log.warning(
-                    "Google OAuth unauthorized domain attempt: %s", user_email
+                    f"Google OAuth unauthorized domain attempt: {user_email}"
                 )
                 raise HTTPError(
-                    403,
-                    "Google account domain @{} not authorized.".format(
-                        user_email_domain
-                    ),
+                    403, f"Google account domain @{user_email_domain} not authorized."
                 )
         return True
 
@@ -176,9 +173,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         gsuite_administrator_email = "{}@{}".format(
             self.gsuite_administrator[user_email_domain], user_email_domain
         )
-        self.log.debug(
-            "scopes are %s, user_email_domain is %s", scopes, user_email_domain
-        )
+        self.log.debug(f"scopes are {scopes}, user_email_domain is {user_email_domain}")
         credentials = service_account.Credentials.from_service_account_file(
             self.google_service_account_keys[user_email_domain], scopes=scopes
         )
@@ -200,7 +195,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             )
 
         self.log.debug(
-            "service_name is %s, service_version is %s", service_name, service_version
+            f"service_name is {service_name}, service_version is {service_version}"
         )
 
         return build(
@@ -226,7 +221,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         results = [
             g['email'].split('@')[0] for g in results.get('groups', [{'email': None}])
         ]
-        self.log.debug("user_email %s is a member of %s", user_email, results)
+        self.log.debug(f"user_email {user_email} is a member of {results}")
         return results
 
     async def _add_google_groups_info(self, user_info, google_groups=None):
@@ -234,9 +229,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_email = user_info['auth_state']['google_user']['email']
         if google_groups is None:
             credentials = self._service_client_credentials(
-                scopes=[
-                    '%s/auth/admin.directory.group.readonly' % (self.google_api_url)
-                ],
+                scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
                 user_email_domain=user_email_domain,
             )
             google_groups = await self._google_groups_for_user(
