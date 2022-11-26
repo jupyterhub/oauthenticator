@@ -17,7 +17,7 @@ def _api_headers(access_token):
     return {
         "Accept": "application/json",
         "User-Agent": "JupyterHub",
-        "Authorization": "Bearer {}".format(access_token),
+        "Authorization": f"Bearer {access_token}",
     }
 
 
@@ -60,10 +60,10 @@ class GitLabOAuthenticator(OAuthenticator):
             else:
                 # Hides common mistake of users which set the GITLAB_HOST
                 # without a protocol specification.
-                gitlab_url = 'https://{0}'.format(gitlab_host)
+                gitlab_url = f'https://{gitlab_host}'
                 warnings.warn(
                     'The https:// prefix has been added to GITLAB_HOST.'
-                    'Set GITLAB_URL="{0}" instead.'.format(gitlab_host)
+                    'Set GITLAB_URL="{}" instead.'.format(gitlab_host)
                 )
 
         # default to gitlab.com
@@ -82,7 +82,7 @@ class GitLabOAuthenticator(OAuthenticator):
 
     @default("gitlab_api")
     def _default_gitlab_api(self):
-        return '%s/api/v%s' % (self.gitlab_url, self.gitlab_api_version)
+        return f'{self.gitlab_url}/api/v{self.gitlab_api_version}'
 
     @default("authorize_url")
     def _authorize_url_default(self):

@@ -117,12 +117,12 @@ async def test_allowed_org_membership(github_client):
         urlmatch = org_membership_regex.match(urlinfo.path)
         org = urlmatch.group(1)
         username = urlmatch.group(2)
-        print('Request org = %s, username = %s' % (org, username))
+        print(f'Request org = {org}, username = {username}')
         if org not in orgs:
             print('Org not found: org = %s' % (org))
             return HTTPResponse(request, 404)
         if username not in orgs[org]:
-            print('Member not found: org = %s, username = %s' % (org, username))
+            print(f'Member not found: org = {org}, username = {username}')
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
 
@@ -134,12 +134,12 @@ async def test_allowed_org_membership(github_client):
         org = urlmatch.group(1)
         team = urlmatch.group(2)
         username = urlmatch.group(3)
-        print('Request org = %s, team = %s username = %s' % (org, team, username))
+        print(f'Request org = {org}, team = {team} username = {username}')
         if org not in orgs:
             print('Org not found: org = %s' % (org))
             return HTTPResponse(request, 404)
         if team not in org_teams[org]:
-            print('Team not found in org: team = %s, org = %s' % (team, org))
+            print(f'Team not found in org: team = {team}, org = {org}')
             return HTTPResponse(request, 404)
         if username not in org_teams[org][team]:
             print(

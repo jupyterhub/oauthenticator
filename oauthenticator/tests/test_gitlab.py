@@ -231,9 +231,7 @@ async def test_allowed_project_ids(gitlab_client):
                 headers={'Content-Type': 'application/json'},
             )
         else:
-            return HTTPResponse(
-                request=request, code=404, buffer=BytesIO(''.encode('utf8'))
-            )
+            return HTTPResponse(request=request, code=404, buffer=BytesIO(b''))
 
     client.hosts['gitlab.com'].append((member_regex, is_member))
 

@@ -63,7 +63,7 @@ class MyServiceOAuthenticator(OAuthenticator):
                 ),
             )
         else:
-            raise HTTPError(500, "Bad response: {}".format(resp))
+            raise HTTPError(500, f"Bad response: {resp}")
 
         # Determine who the logged in user is
         # by using the new access token to make a request

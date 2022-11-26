@@ -245,7 +245,7 @@ class GlobusOAuthenticator(OAuthenticator):
                 groups_token = token_dict['access_token']
         # Get list of user's Groups
         groups_headers = self.get_default_headers()
-        groups_headers['Authorization'] = 'Bearer {}'.format(groups_token)
+        groups_headers['Authorization'] = f'Bearer {groups_token}'
         req = HTTPRequest(self.globus_groups_url, method='GET', headers=groups_headers)
         groups_resp = await self.fetch(req)
         # Build set of Group IDs
@@ -322,7 +322,7 @@ class GlobusOAuthenticator(OAuthenticator):
     def get_client_credential_headers(self):
         headers = self.get_default_headers()
         b64key = base64.b64encode(
-            bytes("{}:{}".format(self.client_id, self.client_secret), "utf8")
+            bytes(f"{self.client_id}:{self.client_secret}", "utf8")
         )
         headers["Authorization"] = "Basic {}".format(b64key.decode("utf8"))
         return headers

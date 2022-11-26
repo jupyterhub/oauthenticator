@@ -73,7 +73,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             resp_json = await self.fetch(req)
             next_page = resp_json.get('next', None)
 
-            user_teams = set([entry["name"] for entry in resp_json["values"]])
+            user_teams = {entry["name"] for entry in resp_json["values"]}
             # check if any of the organizations seen thus far are in the allowed list
             if len(self.allowed_teams & user_teams) > 0:
                 return True

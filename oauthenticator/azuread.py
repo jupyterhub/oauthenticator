@@ -33,13 +33,13 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(
+        return 'https://login.microsoftonline.com/{}/oauth2/authorize'.format(
             self.tenant_id
         )
 
     @default("token_url")
     def _token_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(
+        return 'https://login.microsoftonline.com/{}/oauth2/token'.format(
             self.tenant_id
         )
 

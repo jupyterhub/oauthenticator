@@ -252,7 +252,7 @@ def mock_handler(Handler, uri='https://hub.example.com', method='GET', **setting
         ),
         cookie_secret=os.urandom(32),
         db=Mock(rollback=Mock(return_value=None)),
-        **settings
+        **settings,
     )
     request = HTTPServerRequest(
         method=method,

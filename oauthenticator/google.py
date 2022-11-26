@@ -132,7 +132,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if not auth_model["auth_state"][self.user_auth_state_key]['verified_email']:
             self.log.warning("Google OAuth unverified email attempt: %s", user_email)
-            raise HTTPError(403, "Google email {} not verified".format(user_email))
+            raise HTTPError(403, f"Google email {user_email} not verified")
 
         if self.hosted_domain:
             if user_email_domain not in self.hosted_domain:

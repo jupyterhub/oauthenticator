@@ -51,7 +51,7 @@ class GitHubOAuthenticator(OAuthenticator):
                     )
                 else:
                     protocol = "https"
-                github_url = "{}://{}".format(protocol, host)
+                github_url = f"{protocol}://{host}"
 
         if github_url:
             if '://' not in github_url:
