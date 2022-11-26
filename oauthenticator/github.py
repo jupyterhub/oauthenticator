@@ -292,5 +292,3 @@ class GitHubOAuthenticator(OAuthenticator):
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

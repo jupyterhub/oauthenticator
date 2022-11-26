@@ -340,5 +340,3 @@ class CILogonOAuthenticator(OAuthenticator):
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

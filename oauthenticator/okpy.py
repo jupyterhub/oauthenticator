@@ -45,5 +45,3 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
 
 class LocalOkpyOAuthenticator(LocalAuthenticator, OkpyOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

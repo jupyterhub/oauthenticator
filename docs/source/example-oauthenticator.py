@@ -106,5 +106,3 @@ class MyServiceOAuthenticator(OAuthenticator):
 
 class LocalMyServiceOAuthenticator(LocalAuthenticator, MyServiceOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

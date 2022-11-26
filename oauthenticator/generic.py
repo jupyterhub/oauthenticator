@@ -145,5 +145,3 @@ class GenericOAuthenticator(OAuthenticator):
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

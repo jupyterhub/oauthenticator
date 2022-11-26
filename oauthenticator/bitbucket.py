@@ -82,5 +82,3 @@ class BitbucketOAuthenticator(OAuthenticator):
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator, BitbucketOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

@@ -53,5 +53,3 @@ class AzureAdOAuthenticator(OAuthenticator):
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

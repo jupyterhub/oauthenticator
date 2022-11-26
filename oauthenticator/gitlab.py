@@ -222,5 +222,3 @@ class GitLabOAuthenticator(OAuthenticator):
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

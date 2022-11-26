@@ -267,5 +267,3 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

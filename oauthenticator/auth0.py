@@ -105,5 +105,3 @@ class Auth0OAuthenticator(OAuthenticator):
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass
