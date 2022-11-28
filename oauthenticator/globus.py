@@ -50,8 +50,9 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
         if state:
             await self.authenticator.revoke_service_tokens(state.get('tokens'))
             self.log.info(
-                f'Logout: Revoked tokens for user "{user.name}" services: '
-                ','.join(state['tokens'].keys())
+                'Logout: Revoked tokens for user "{}" services: {}'.format(
+                    user.name, ','.join(state['tokens'].keys())
+                )
             )
             state['tokens'] = {}
             await user.save_auth_state(state)
