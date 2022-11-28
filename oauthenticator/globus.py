@@ -304,7 +304,7 @@ class GlobusOAuthenticator(OAuthenticator):
             raise HTTPError(
                 403,
                 f"This site is restricted to {self.identity_provider} accounts. "
-                "Please link your account at globus.org/app/account.",
+                "Please link your account at app.globus.org/account.",
             )
         return username
 
