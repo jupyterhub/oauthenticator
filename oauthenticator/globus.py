@@ -245,7 +245,7 @@ class GlobusOAuthenticator(OAuthenticator):
                 groups_token = token_dict['access_token']
         # Get list of user's Groups
         groups_headers = self.get_default_headers()
-        groups_headers['Authorization'] = 'Bearer {}'.format(groups_token)
+        groups_headers['Authorization'] = f'Bearer {groups_token}'
         req = HTTPRequest(self.globus_groups_url, method='GET', headers=groups_headers)
         groups_resp = await self.fetch(req)
         # Build set of Group IDs
@@ -266,13 +266,10 @@ class GlobusOAuthenticator(OAuthenticator):
                 if not self.check_user_in_groups(
                     user_group_ids, self.admin_globus_groups
                 ):
-                    self.log.warning(
-                        '{} not in an allowed Globus Group'.format(
-                            self.user_info_to_username(
-                                auth_model["auth_state"][self.user_auth_state_key]
-                            )
-                        )
+                    username = self.user_info_to_username(
+                        auth_model["auth_state"][self.user_auth_state_key]
                     )
+                    self.log.warning(f"{username} not in an allowed Globus Group")
                     return False
 
         return True
@@ -307,12 +304,8 @@ class GlobusOAuthenticator(OAuthenticator):
         if self.identity_provider and domain != self.identity_provider:
             raise HTTPError(
                 403,
-                'This site is restricted to {} accounts. Please link your {}'
-                ' account at {}.'.format(
-                    self.identity_provider,
-                    self.identity_provider,
-                    'globus.org/app/account',
-                ),
+                f"This site is restricted to {self.identity_provider} accounts. "
+                "Please link your account at app.globus.org/account.",
             )
         return username
 
@@ -322,7 +315,7 @@ class GlobusOAuthenticator(OAuthenticator):
     def get_client_credential_headers(self):
         headers = self.get_default_headers()
         b64key = base64.b64encode(
-            bytes("{}:{}".format(self.client_id, self.client_secret), "utf8")
+            bytes(f"{self.client_id}:{self.client_secret}", "utf8")
         )
         headers["Authorization"] = "Basic {}".format(b64key.decode("utf8"))
         return headers
@@ -355,5 +348,3 @@ class GlobusOAuthenticator(OAuthenticator):
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

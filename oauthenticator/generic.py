@@ -100,9 +100,7 @@ class GenericOAuthenticator(OAuthenticator):
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         if self.allowed_groups:
             self.log.info(
-                'Validating if user claim groups match any of {}'.format(
-                    self.allowed_groups
-                )
+                f"Validating if user claim groups match any of {self.allowed_groups}"
             )
 
             if callable(self.claim_groups_key):
@@ -115,16 +113,12 @@ class GenericOAuthenticator(OAuthenticator):
                 except TypeError:
                     # This happens if a nested key does not exist (reduce trying to call None.get)
                     self.log.error(
-                        "The key {} does not exist in the user token, or it is set to null".format(
-                            self.claim_groups_key
-                        )
+                        f"The key {self.claim_groups_key} does not exist in the user token, or it is set to null"
                     )
                     groups = None
             if not groups:
                 self.log.error(
-                    "No claim groups found for user! Something wrong with the `claim_groups_key` {}? {}".format(
-                        self.claim_groups_key, user_info
-                    )
+                    f"No claim groups found for user! Something wrong with the `claim_groups_key` {self.claim_groups_key}? {user_info}"
                 )
                 return False
 
@@ -151,5 +145,3 @@ class GenericOAuthenticator(OAuthenticator):
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

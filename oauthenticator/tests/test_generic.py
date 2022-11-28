@@ -20,7 +20,7 @@ def _get_authenticator(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
         userdata_url='https://generic.horse/oauth/userinfo',
-        **kwargs
+        **kwargs,
     )
 
 

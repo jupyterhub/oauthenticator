@@ -52,7 +52,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     @default("openshift_auth_api_url")
     def _openshift_auth_api_url_default(self):
-        auth_info_url = '%s/.well-known/oauth-authorization-server' % self.openshift_url
+        auth_info_url = f"{self.openshift_url}/.well-known/oauth-authorization-server"
 
         resp = requests.get(auth_info_url, verify=self.ca_certs or self.validate_cert)
         resp_json = resp.json()
@@ -75,11 +75,11 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "%s/oauth/authorize" % self.openshift_auth_api_url
+        return f"{self.openshift_auth_api_url}/oauth/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth/token" % self.openshift_auth_api_url
+        return f"{self.openshift_auth_api_url}/oauth/token"
 
     @default("username_claim")
     def _username_claim_default(self):
@@ -87,7 +87,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     @default("userdata_url")
     def _userdata_url_default(self):
-        return "%s/apis/user.openshift.io/v1/users/~" % self.openshift_rest_api_url
+        return f"{self.openshift_rest_api_url}/apis/user.openshift.io/v1/users/~"
 
     @staticmethod
     def user_in_groups(user_groups: set, allowed_groups: set):
@@ -129,5 +129,3 @@ class OpenShiftOAuthenticator(OAuthenticator):
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

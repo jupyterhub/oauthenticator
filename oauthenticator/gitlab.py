@@ -17,7 +17,7 @@ def _api_headers(access_token):
     return {
         "Accept": "application/json",
         "User-Agent": "JupyterHub",
-        "Authorization": "Bearer {}".format(access_token),
+        "Authorization": f"Bearer {access_token}",
     }
 
 
@@ -60,10 +60,10 @@ class GitLabOAuthenticator(OAuthenticator):
             else:
                 # Hides common mistake of users which set the GITLAB_HOST
                 # without a protocol specification.
-                gitlab_url = 'https://{0}'.format(gitlab_host)
+                gitlab_url = f'https://{gitlab_host}'
                 warnings.warn(
-                    'The https:// prefix has been added to GITLAB_HOST.'
-                    'Set GITLAB_URL="{0}" instead.'.format(gitlab_host)
+                    "The https:// prefix has been added to GITLAB_HOST. "
+                    f'Set GITLAB_URL="{gitlab_host}" instead.'
                 )
 
         # default to gitlab.com
@@ -82,19 +82,19 @@ class GitLabOAuthenticator(OAuthenticator):
 
     @default("gitlab_api")
     def _default_gitlab_api(self):
-        return '%s/api/v%s' % (self.gitlab_url, self.gitlab_api_version)
+        return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "%s/oauth/authorize" % self.gitlab_url
+        return f"{self.gitlab_url}/oauth/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth/token" % self.gitlab_url
+        return f"{self.gitlab_url}/oauth/token"
 
     @default("userdata_url")
     def _userdata_url_default(self):
-        return "%s/user" % self.gitlab_api
+        return f"{self.gitlab_api}/user"
 
     gitlab_group_whitelist = Set(
         help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
@@ -154,13 +154,12 @@ class GitLabOAuthenticator(OAuthenticator):
             return True
 
         self.log.warning(
-            "%s not in group or project allowed list",
-            auth_model["name"],
+            f"{auth_model['name']} not in group or project allowed list",
         )
         return False
 
     async def _get_gitlab_version(self, access_token):
-        url = '%s/version' % self.gitlab_api
+        url = f"{self.gitlab_api}/version"
         req = HTTPRequest(
             url,
             method="GET",
@@ -223,5 +222,3 @@ class GitLabOAuthenticator(OAuthenticator):
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

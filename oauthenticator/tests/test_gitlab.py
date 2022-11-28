@@ -14,7 +14,7 @@ from traitlets.config import Config
 from ..gitlab import GitLabOAuthenticator
 from .mocks import setup_oauth_mock
 
-API_ENDPOINT = '/api/v%s' % (GitLabOAuthenticator().gitlab_api_version)
+API_ENDPOINT = f"/api/v{GitLabOAuthenticator().gitlab_api_version}"
 
 
 def user_model(username, id=1, is_admin=False):
@@ -70,9 +70,7 @@ async def test_gitlab(gitlab_client):
 
 def make_link_header(urlinfo, page):
     return {
-        'Link': '<{}://{}{}?page={}>;rel="next"'.format(
-            urlinfo.scheme, urlinfo.netloc, urlinfo.path, page
-        )
+        "Link": f'<{urlinfo.scheme}://{urlinfo.netloc}{urlinfo.path}?page={page}>;rel="next"'
     }
 
 
@@ -231,9 +229,7 @@ async def test_allowed_project_ids(gitlab_client):
                 headers={'Content-Type': 'application/json'},
             )
         else:
-            return HTTPResponse(
-                request=request, code=404, buffer=BytesIO(''.encode('utf8'))
-            )
+            return HTTPResponse(request=request, code=404, buffer=BytesIO(b''))
 
     client.hosts['gitlab.com'].append((member_regex, is_member))
 

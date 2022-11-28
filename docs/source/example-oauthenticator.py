@@ -58,12 +58,10 @@ class MyServiceOAuthenticator(OAuthenticator):
         elif 'error_description' in resp_json:
             raise HTTPError(
                 403,
-                "An access token was not returned: {}".format(
-                    resp_json['error_description']
-                ),
+                f"An access token was not returned: {resp_json['error_description']}",
             )
         else:
-            raise HTTPError(500, "Bad response: {}".format(resp))
+            raise HTTPError(500, f"Bad response: {resp}")
 
         # Determine who the logged in user is
         # by using the new access token to make a request
@@ -108,5 +106,3 @@ class MyServiceOAuthenticator(OAuthenticator):
 
 class LocalMyServiceOAuthenticator(LocalAuthenticator, MyServiceOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

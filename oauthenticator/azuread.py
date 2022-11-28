@@ -33,15 +33,11 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(
-            self.tenant_id
-        )
+        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(
-            self.tenant_id
-        )
+        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
 
     async def token_to_user(self, token_info):
         access_token = token_info['access_token']
@@ -57,5 +53,3 @@ class AzureAdOAuthenticator(OAuthenticator):
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

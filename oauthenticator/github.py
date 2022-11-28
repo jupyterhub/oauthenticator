@@ -43,15 +43,13 @@ class GitHubOAuthenticator(OAuthenticator):
                 if os.environ.get("GITHUB_HTTP"):
                     protocol = "http"
                     warnings.warn(
-                        'Use of GITHUB_HOST with GITHUB_HTTP might be deprecated in the future. '
-                        'Use GITHUB_URL=http://{} to set host and protocol together.'.format(
-                            host
-                        ),
+                        "Use of GITHUB_HOST with GITHUB_HTTP might be deprecated in the future. "
+                        f"Use GITHUB_URL=http://{host} to set host and protocol together.",
                         PendingDeprecationWarning,
                     )
                 else:
                     protocol = "https"
-                github_url = "{}://{}".format(protocol, host)
+                github_url = f"{protocol}://{host}"
 
         if github_url:
             if '://' not in github_url:
@@ -77,15 +75,15 @@ class GitHubOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "%s/login/oauth/authorize" % (self.github_url)
+        return f"{self.github_url}/login/oauth/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/login/oauth/access_token" % (self.github_url)
+        return f"{self.github_url}/login/oauth/access_token"
 
     @default("userdata_url")
     def _userdata_url_default(self):
-        return self.github_api + "/user"
+        return f"{self.github_api}/user"
 
     @default("username_claim")
     def _username_claim_default(self):
@@ -149,7 +147,7 @@ class GitHubOAuthenticator(OAuthenticator):
                     break
             else:  # User not found in member list for any organisation
                 self.log.warning(
-                    "User %s is not in allowed org list", auth_model["name"]
+                    f"User {auth_model['name']} is not in allowed org list",
                 )
                 return False
 
@@ -267,12 +265,10 @@ class GitHubOAuthenticator(OAuthenticator):
             headers=headers,
             validate_cert=self.validate_server_cert,
         )
-        self.log.debug(
-            "Checking GitHub organization membership: %s in %s?", username, org
-        )
+        self.log.debug(f"Checking GitHub organization membership: {username} in {org}?")
         resp = await self.fetch(req, raise_error=False, parse_json=False)
         if resp.code == 204:
-            self.log.info("Allowing %s as member of %s", username, org)
+            self.log.info(f"Allowing {username} as member of {org}")
             return True
         else:
             try:
@@ -281,11 +277,7 @@ class GitHubOAuthenticator(OAuthenticator):
             except ValueError:
                 message = ''
             self.log.debug(
-                "%s does not appear to be a member of %s (status=%s): %s",
-                username,
-                org,
-                resp.code,
-                message,
+                f"{username} does not appear to be a member of {org} (status={resp.code}): {message}",
             )
         return False
 
@@ -300,5 +292,3 @@ class GitHubOAuthenticator(OAuthenticator):
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

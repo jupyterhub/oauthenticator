@@ -9,6 +9,29 @@
 # - Register git hooks: pre-commit install --install-hooks
 #
 repos:
+  # Autoformat: Python code, syntax patterns are modernized
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.2.2
+    hooks:
+      - id: pyupgrade
+        args:
+          - --py36-plus
+
+  # Autoformat: Python code
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v1.7.7
+    hooks:
+      - id: autoflake
+        # args ref: https://github.com/PyCQA/autoflake#advanced-usage
+        args:
+          - --in-place
+
+  # Autoformat: python imports
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+
   # Autoformat: Python code
   - repo: https://github.com/psf/black
     rev: 22.10.0
@@ -20,12 +43,6 @@ repos:
     rev: v3.0.0-alpha.4
     hooks:
       - id: prettier
-
-  # Autoformat: python imports
-  - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
-    hooks:
-      - id: isort
 
   # Misc...
   - repo: https://github.com/pre-commit/pre-commit-hooks

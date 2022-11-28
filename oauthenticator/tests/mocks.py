@@ -56,7 +56,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         urlinfo = urlparse(request.url)
         host = urlinfo.hostname
         if host not in self.hosts:
-            app_log.warning("Not mocking request to %s", request.url)
+            app_log.warning(f"Not mocking request to {request.url}")
             return super().fetch_impl(request, response_callback)
         paths = self.hosts[host]
         response = None
@@ -161,18 +161,12 @@ def setup_oauth_mock(
                 return HTTPResponse(
                     request=request,
                     code=400,
-                    reason="No code in access token request: url=%s, body=%s"
-                    % (
-                        request.url,
-                        request.body,
-                    ),
+                    reason=f"No code in access token request: url={request.url}, body={request.body}",
                 )
             code = query['code'][0]
         if code not in oauth_codes:
             return HTTPResponse(
-                request=request,
-                code=403,
-                reason="No such code: %s" % code,
+                request=request, code=403, reason=f"No such code: {code}"
             )
 
         # consume code, allocate token
@@ -235,7 +229,7 @@ def setup_oauth_mock(
         handler.find_user = Mock(return_value=None)
         handler.get_argument = Mock(return_value=code)
         handler.request = HTTPServerRequest(
-            method='GET', uri='https://hub.example.com?code=%s' % code
+            method="GET", uri=f"https://hub.example.com?code={code}"
         )
         handler.hub = Mock(server=Mock(base_url='/hub/'), base_url='/hub/')
         return handler
@@ -252,7 +246,7 @@ def mock_handler(Handler, uri='https://hub.example.com', method='GET', **setting
         ),
         cookie_secret=os.urandom(32),
         db=Mock(rollback=Mock(return_value=None)),
-        **settings
+        **settings,
     )
     request = HTTPServerRequest(
         method=method,
