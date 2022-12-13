@@ -91,18 +91,21 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
                     f"Ignoring next_url {original_next_url}, using {next_url}"
                 )
         if self._state is None:
+            nonce = os.urandom(16).hex()
+            self.authenticator.extra_authorize_params["nonce"] = nonce
             self._state = _serialize_state(
-                {"state_id": uuid.uuid4().hex, "next_url": next_url}
+                {"state_id": uuid.uuid4().hex, "next_url": next_url, "nonce": nonce}
             )
         return self._state
 
     def get(self):
-        redirect_uri = self.authenticator.get_callback_url(self)
-        token_params = self.authenticator.extra_authorize_params.copy()
-        self.log.info(f"OAuth redirect: {redirect_uri}")
+        # get (and sets) state before we use extra_authorize_params to capture nonce
         state = self.get_state()
         self.set_state_cookie(state)
+        redirect_uri = self.authenticator.get_callback_url(self)
+        token_params = self.authenticator.extra_authorize_params.copy()
         token_params["state"] = state
+        self.log.info(f"OAuth redirect: {redirect_uri}")
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
@@ -714,6 +717,13 @@ class OAuthenticator(Authenticator):
         token_info = await self.get_token_info(handler, access_token_params)
         # use the access_token to get userdata info
         user_info = await self.token_to_user(token_info)
+        # validate nonce only if it is present
+        if "nonce" in user_info and user_info["nonce"] != self.extra_authorize_params["nonce"]:
+            self.log.error("OAuth user 'nonce' mismatch, expected '{}, got '{}'".format(
+                self.extra_authorize_params["nonce"],
+                user_info["nonce"]
+            ))
+            return None
         # extract the username out of the user_info dict
         username = self.user_info_to_username(user_info)
 
