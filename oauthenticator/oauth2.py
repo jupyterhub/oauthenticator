@@ -9,6 +9,7 @@ import os
 import uuid
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
+import jwt
 from jupyterhub.auth import Authenticator
 from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from jupyterhub.handlers import BaseHandler, LogoutHandler
@@ -715,8 +716,15 @@ class OAuthenticator(Authenticator):
         access_token_params = self.build_access_tokens_request_params(handler, data)
         # exchange the oauth code for an access token and get the JSON with info about it
         token_info = await self.get_token_info(handler, access_token_params)
-        # use the access_token to get userdata info
-        user_info = await self.token_to_user(token_info)
+        if "id_token" in token_info:
+            user_info = jwt.decode(
+                token_info["id_token"],
+                options={"verify_signature": False},
+                audience=self.client_id
+            )
+        else:
+            # use the access_token to get userdata info
+            user_info = await self.token_to_user(token_info)
         # validate nonce only if it is present
         if "nonce" in user_info and user_info["nonce"] != self.extra_authorize_params["nonce"]:
             self.log.error("OAuth user 'nonce' mismatch, expected '{}, got '{}'".format(

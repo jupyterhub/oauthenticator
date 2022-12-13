@@ -6,6 +6,11 @@ command line for details.
 
 ## [Unreleased]
 
+#### Other breaking changes
+
+- `pyjwt` version 2.4.0 or greater is now required when use with authentication
+  classes that needs it: `AzureAdOAuthenticator`, `MWOAuthenticator` and now also `GenericOAuthenticator`.
+
 ## 15.0
 
 ### 15.1.0 - 2022-09-08
