@@ -11,7 +11,7 @@ but you can write your own OAuthenticator by `oauthenticator.oauth2.OAuthenticat
 ```
 
 ## Get Started Guide
-These sections help you get started installing, using and working with the `oauthenticator` project.
+These section helps you get started installing, using and working with the `oauthenticator` project.
 through step-by-step tutorials.
 
 ```{toctree}
@@ -23,18 +23,28 @@ tutorials/general-setup
 tutorials/provider-specific-setup
 ```
 
-```{toctree}
-:maxdepth: 2
-:caption: Extending authenticators
+## How-to guides
 
-extending
+How-To guides answer the question 'How do I...?' for some relevant topics.}
+Things like how to write your own `oauthenticator` or how to migrate to a newer `oauthenticator` version.
+
+```{toctree}
+:maxdepth: 1
+:caption: How-to guides
+
+how-to/writing-an-oauthenticator
+how-to/migrations
 ```
+
+## Topic guides
+
+Topic guides go more in-depth on a particular topic.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Writing your own OAuthenticator
 
-writing-an-oauthenticator
+topic/extending
 ```
 
 ```{toctree}
@@ -43,11 +53,4 @@ writing-an-oauthenticator
 
 api/index
 changelog
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Migrations Guide
-
-migrations
 ```
