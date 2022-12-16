@@ -11,6 +11,7 @@ but you can write your own OAuthenticator by `oauthenticator.oauth2.OAuthenticat
 ```
 
 ## Get Started Guide
+
 These section helps you get started installing, using and working with the `oauthenticator` project.
 through step-by-step tutorials.
 

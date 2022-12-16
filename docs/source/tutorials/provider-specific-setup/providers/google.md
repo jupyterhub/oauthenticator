@@ -1,4 +1,3 @@
-
 # Google Setup
 
 Visit https://console.developers.google.com to set up an OAuth client ID

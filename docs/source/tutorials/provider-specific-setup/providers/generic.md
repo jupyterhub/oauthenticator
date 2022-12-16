@@ -3,7 +3,8 @@
 # Generic OAuthenticator setups for various identity providers
 
 (tutorials:provider-specific:generic:moodle)=
-## Generic OAuthenticator Setup for Moodle 
+
+## Generic OAuthenticator Setup for Moodle
 
 First install the [OAuth2 Server Plugin](https://github.com/projectestac/moodle-local_oauth) for
 Moodle.
@@ -56,6 +57,7 @@ OAUTH2_USERDATA_URL=https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2.php/cloud/user?form
 ```
 
 (tutorials:provider-specific:generic:yandex)=
+
 ## Generic OAuthenticator Setup for Yandex
 
 First visit [Yandex OAuth](https://oauth.yandex.com) to setup your

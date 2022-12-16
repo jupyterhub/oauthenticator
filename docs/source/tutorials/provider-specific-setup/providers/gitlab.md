@@ -1,4 +1,3 @@
-
 # GitLab Setup
 
 First, you’ll need to create a [GitLab OAuth application](https://docs.gitlab.com/ee/integration/oauth_provider.html).
