@@ -2,7 +2,7 @@
 
 # Installing
 
-oauthenticator is a package available on [PyPI](https://pypi.org/project/oauthenticator/) and
+`oauthenticator` is a package available on [PyPI](https://pypi.org/project/oauthenticator/) and
 [conda forge](https://conda-forge.org/) and can be installed using pip, conda or cloning the repository.
 
 1. Install with pip:
@@ -17,10 +17,10 @@ oauthenticator is a package available on [PyPI](https://pypi.org/project/oauthen
    conda install -c conda-forge oauthenticator
    ```
 
-3. Dev install:
+3. Development install:
 
    ```bash
    git clone https://github.com/jupyterhub/oauthenticator.git
    cd oauthenticator
-   pip3 install -e .
+   python3 -m pip install --editable .
    ```
