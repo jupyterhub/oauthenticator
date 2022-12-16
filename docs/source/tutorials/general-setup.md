@@ -1,6 +1,6 @@
 (tutorials:general-setup)=
 
-# Getting started
+# General setup
 
 The general steps to take when using `OAuthenticator`:
 
@@ -8,9 +8,7 @@ The general steps to take when using `OAuthenticator`:
 2. Configure JupyterHub to use an authenticator class compatible with the identity provider
 3. Configure the chosen authenticator class
 
-## General setup
-
-### 1. Set chosen OAuthenticator
+## Set chosen OAuthenticator
 
 The first step is to tell JupyterHub to use your chosen authenticator class.
 Each authenticator is provided in a submodule of `oauthenticator`, and
@@ -25,7 +23,7 @@ from oauthenticator.github import GitHubOAuthenticator
 c.JupyterHub.authenticator_class = GitHubOAuthenticator
 ```
 
-### 2. Set callback URL, client ID, and client secret
+## Set callback URL, client ID, and client secret
 
 All `OAuthenticators` require setting a callback URL, client ID, and
 client secret. You will generally get these when you register your OAuth
@@ -57,7 +55,7 @@ When JupyterHub runs, these values can also be retrieved from the
 But this approach is not recommended and might be deprecated in the future.
 ```
 
-### 3. (Optional) Use a custom 403 error
+## (Optional) Use a custom 403 error
 
 1. Custom message
 
