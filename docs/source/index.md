@@ -20,7 +20,7 @@ through step-by-step tutorials.
 
 tutorials/install
 tutorials/general-setup
-tutorials/provider-specific-setup
+tutorials/provider-specific-setup/index
 ```
 
 ## How-to guides
@@ -42,7 +42,7 @@ Topic guides go more in-depth on a particular topic.
 
 ```{toctree}
 :maxdepth: 2
-:caption: Writing your own OAuthenticator
+:caption: Topic guides
 
 topic/extending
 ```

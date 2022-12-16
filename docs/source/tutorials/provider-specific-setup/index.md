@@ -17,15 +17,15 @@ but unfortunately currently there are some that don't have their specific setups
 :maxdepth: 1
 :caption: OAuth providers specific setup guides
 
-oauth-providers-guides/awscognito.md
-oauth-providers-guides/azuread.md
-oauth-providers-guides/github.md
-oauth-providers-guides/gitlab.md
-oauth-providers-guides/globus.md
-oauth-providers-guides/google.md
-oauth-providers-guides/okpy.md
-oauth-providers-guides/openshift.md
-oauth-providers-guides/generic.md
+providers/awscognito.md
+providers/azuread.md
+providers/github.md
+providers/gitlab.md
+providers/globus.md
+providers/google.md
+providers/okpy.md
+providers/openshift.md
+providers/generic.md
 ```
 
 ## Examples
