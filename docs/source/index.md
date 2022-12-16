@@ -51,6 +51,6 @@ topic/extending
 :maxdepth: 2
 :caption: API Reference
 
-api/index
-changelog
+reference/api/index
+reference/changelog
 ```

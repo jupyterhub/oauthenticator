@@ -44,7 +44,7 @@ import jinja2
 def render_autodoc_modules():
     authenticator_entrypoints = entry_points(group="jupyterhub.authenticators")
 
-    api = os.path.join(source, "api")
+    api = os.path.join(source, "reference/api")
     api_gen = os.path.join(api, "gen")
 
     # modules is a dict of dicts of lists
