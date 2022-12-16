@@ -1,4 +1,4 @@
-(getting-started)=
+(tutorials:general-setup)=
 
 # Getting started
 

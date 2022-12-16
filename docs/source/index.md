@@ -10,20 +10,17 @@ The OAuthenticator package is not accepting new OAuth providers,
 but you can write your own OAuthenticator by `oauthenticator.oauth2.OAuthenticator`
 ```
 
-## Contents
+## Get Started Guide
+These sections help you get started installing, using and working with the `oauthenticator` project.
+through step-by-step tutorials.
 
 ```{toctree}
 :maxdepth: 1
-:caption: Installation Guide
-
-install
-```
-
-```{toctree}
-:maxdepth: 2
 :caption: Get Started Guide
 
-getting-started
+tutorials/install
+tutorials/general-setup
+tutorials/provider-specific-setup
 ```
 
 ```{toctree}

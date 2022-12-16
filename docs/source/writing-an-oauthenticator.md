@@ -28,7 +28,7 @@ c.GenericOAuthenticator.token_url = 'url-retrieving-access-token-oauth-completio
 c.GenericOAuthenticator.username_key = 'username-key-for-USERDATA-URL'
 ```
 
-Checkout [](getting-started:moodle-setup) and [](getting-started:yandex_setup) for how to configure
+Checkout [](tutorials:provider-specific:generic:moodle) and [](tutorials:provider-specific:generic:yandex) for how to configure
 GenericOAuthenticator for Moodle and Yandex.
 
 ## Writing your own OAuthenticator class

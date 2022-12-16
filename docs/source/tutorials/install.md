@@ -17,10 +17,7 @@
    conda install -c conda-forge oauthenticator
    ```
 
-3. Development install:
-
-   ```bash
-   git clone https://github.com/jupyterhub/oauthenticator.git
-   cd oauthenticator
-   python3 -m pip install --editable .
-   ```
+```{note}
+For a development install guide and instructions about how to start contributing to this repository,
+refer to [`CONTRIBUTING.md`](https://github.com/jupyterhub/oauthenticator/blob/main/CONTRIBUTING.md)
+```
