@@ -146,16 +146,17 @@ class GenericOAuthenticator(OAuthenticator):
 
         try:
             expires_in = int(token_response.get('expires_in'))
-            expires_at = time.time() + expires_in  # seconds
+            # Renew at 2/3 the token lifetime
+            renew_at = time.time() + (2 * expires_in / 3)
         except (KeyError, TypeError):
-            expires_at = None
+            renew_at = None
 
         return {
             'access_token': access_token,
             'refresh_token': refresh_token,
             'oauth_user': user_data_response,
             'scope': scope,
-            'expires_at': expires_at,
+            'renew_at': renew_at,
         }
 
     @staticmethod
@@ -228,7 +229,7 @@ class GenericOAuthenticator(OAuthenticator):
     async def refresh_user(self, user, handler=None):
         # Retrieve user authentication info and check if refresh is needed
         auth_state = await user.get_auth_state()
-        expires_at = auth_state.get('expires_at', None)
+        renew_at = auth_state.get('renew_at', None)
         refresh_token = auth_state.get('refresh_token', None)
 
         # If no refresh_token, return success
@@ -236,11 +237,11 @@ class GenericOAuthenticator(OAuthenticator):
             return True
 
         # If no expiration, return success
-        if not expires_at:
+        if not renew_at:
             return True
 
-        # If over 2x auth_refresh_age intervals from expiration, return success
-        if (time.time() + 2 * self.auth_refresh_age) < expires_at:
+        # If renewal isn't due, return success
+        if (time.time() < renew_at):
             return True
 
         self.log.info('Refreshing tokens for user %s', user.name)
