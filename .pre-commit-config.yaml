@@ -28,7 +28,7 @@ repos:
 
   # Autoformat: python imports
   - repo: https://github.com/pycqa/isort
-    rev: 5.11.1
+    rev: v5.11.3
     hooks:
       - id: isort
 
@@ -67,3 +67,7 @@ repos:
     rev: "6.0.0"
     hooks:
       - id: flake8
+
+# pre-commit.ci config reference: https://pre-commit.ci/#configuration
+ci:
+  autoupdate_schedule: monthly
