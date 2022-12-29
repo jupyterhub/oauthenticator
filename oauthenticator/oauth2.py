@@ -7,7 +7,7 @@ import base64
 import json
 import os
 import uuid
-from urllib.parse import quote, urlparse, urlunparse
+from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 from jupyterhub.auth import Authenticator
 from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
@@ -490,7 +490,7 @@ class OAuthenticator(Authenticator):
         Builds and returns the headers to be used in the access token request.
         Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
         """
-        headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
+        headers = {"Accept": "application/json", "User-Agent": "JupyterHub", "Content-Type": "application/x-www-form-urlencoded"}
 
         if self.basic_auth:
             b64key = base64.b64encode(
@@ -585,7 +585,7 @@ class OAuthenticator(Authenticator):
             url,
             method="POST",
             headers=self.build_token_info_request_headers(),
-            body=json.dumps(params),
+            body=urlencode(params).encode('utf-8'),
             validate_cert=self.validate_server_cert,
         )
 
