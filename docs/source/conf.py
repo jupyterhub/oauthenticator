@@ -109,6 +109,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinxext.rediraffe',
     'autodoc_traits',
     'myst_parser',
     'sphinx_copybutton',
@@ -169,3 +170,22 @@ linkcheck_anchors_ignore = [
     "/#!",
     "/#%21",
 ]
+
+# -- Options for the rediraffe extension -------------------------------------
+# ref: https://github.com/wpilibsuite/sphinxext-rediraffe#readme
+#
+# This extensions help us relocated content without breaking links. If a
+# document is moved internally, put its path as a dictionary key in the
+# redirects dictionary below and its new location in the value.
+#
+rediraffe_branch = "main"
+rediraffe_redirects = {
+    "geting-started": "tutorials/general-setup",
+    "install": "tutorials/install",
+    "changelog": "reference/changelog",
+    "cilogon": "topic/cilogon",
+    "extending": "topic/extending",
+    "google": "topic/google",
+    "github": "topic/github",
+    "gitlab": "topic/gitlab",
+}
