@@ -44,3 +44,11 @@ The skeleton of an OAuthenticator looks like this:
 ```
 
 where you will need to find and define the URLs and requests necessary to complete OAuth with your provider.
+
+````{note}
+For a visual of the requests and information exchanged during the JupyterHub's external OAuthentication process,
+checkout the diagram below and also the [JupyterHub docs](https://jupyterhub.readthedocs.io/en/stable/reference/oauth.html).
+
+```{image} /_static/images/JupyterHub-OAuth-external-flow.png
+```
+````
