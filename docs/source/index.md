@@ -26,7 +26,7 @@ tutorials/provider-specific-setup/index
 
 ## How-to guides
 
-How-To guides answer the question 'How do I...?' for some relevant topics.}
+How-To guides answer the question 'How do I...?' for some relevant topics.
 Things like how to write your own `oauthenticator` or how to migrate to a newer `oauthenticator` version.
 
 ```{toctree}
@@ -34,7 +34,7 @@ Things like how to write your own `oauthenticator` or how to migrate to a newer 
 :caption: How-to guides
 
 how-to/writing-an-oauthenticator
-how-to/migrations
+how-to/migrations/upgrade-to-15
 ```
 
 ## Topic guides
