@@ -17,3 +17,4 @@ OAuthenticators
    oauthenticator.okpy
    oauthenticator.openshift
    oauthenticator.mediawiki
+   

@@ -7,12 +7,20 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = _build
+# We generate this directory based on the template in `authenticator.rst.tpl`
+# so we should clean it up too
+GENDIR        = source/reference/api/gen/
 
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
 .PHONY: help Makefile
+
+clean:
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	@echo "Removing everything under $(GENDIR)..."
+	rm -rf "$(GENDIR)"
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.
@@ -27,7 +35,7 @@ help:
 # - builds and rebuilds html on changes to source
 # - starts a livereload enabled webserver and opens up a browser
 devenv:
-	sphinx-autobuild -b html --open-browser --ignore "*/api/*.rst" "$(SOURCEDIR)" "$(BUILDDIR)/html" $(SPHINXOPTS)
+	sphinx-autobuild -b html --open-browser "$(SOURCEDIR)" "$(BUILDDIR)/html" $(SPHINXOPTS)
 
 # For local development and CI:
 # - verifies that links are valid
