@@ -6,7 +6,7 @@ from functools import reduce
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import AsyncHTTPClient
-from traitlets import Bool, List, Dict, Unicode, Union, default
+from traitlets import Bool, Dict, List, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
 from .traitlets import Callable

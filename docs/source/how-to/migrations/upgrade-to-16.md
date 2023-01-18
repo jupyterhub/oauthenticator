@@ -23,18 +23,19 @@ This request is sent to [`userdata_url`](https://oauthenticator.readthedocs.io/e
 ## Deprecations
 
 1. `username_key` replaced by `username_claim` in _all oauthenticators_
+
 - [`GenericOAuthenticator.username_key`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.generic.html#oauthenticator.generic.GenericOAuthenticator.username_key) is deprecated and replaced by [`username_claim`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.username_claim).
 
 - [`Auth0OAuthenticator.username_key`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.auth0.html#oauthenticator.auth0.Auth0OAuthenticator.username_key) is deprecated and replaced by [`username_claim`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.username_claim).
 
-    ```{note}
-    The `username_claim` and the deprecated `username_key` refers to the field in the `userdata` response from which to get the JupyterHub username. Examples include: email, username, nickname. What keys are available depend on the scopes requested and the authenticator used.
-    ```
+  ```{note}
+  The `username_claim` and the deprecated `username_key` refers to the field in the `userdata` response from which to get the JupyterHub username. Examples include: email, username, nickname. What keys are available depend on the scopes requested and the authenticator used.
+  ```
 
 2. [`GenericOAuthenticator.extra_params`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.generic.html#oauthenticator.generic.GenericOAuthenticator.extra_params) is deprecated and replaced by [`token_params`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.token_params).
 
-
 3. The following public functions were removed:
+
 - `OkpyOAuthenticator.get_auth_request(self, code)`
 - `OkpyOAuthenticator.get_user_info_request(self, access_token)`
 
@@ -44,27 +45,26 @@ This request is sent to [`userdata_url`](https://oauthenticator.readthedocs.io/e
 
 2. The [`refresh_pre_spawn`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.refresh_pre_spawn) is enabled by default if [`enable_auth_state`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.enable_auth_state) is set.
 
-
 3. The userdata query parameters ([`userdata_params`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.userdata_params)) to be added to the request to [`userdata_url`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.userdata_url) to get user data login information is now a configurable feature of _all the oauthenticators_.
 
-    ```{note}
-    Previously, a GenericOAuthenticator only trait
-    ```
+   ```{note}
+   Previously, a GenericOAuthenticator only trait
+   ```
 
 4. The method used for sending the `access token` in the [userdata request](userdata_request), called [`userdata_token_method`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.userdata_token_method), is now a configurable feature of _all the oauthenticators_.
 
-    ```{note}
-    Previously, a GenericOAuthenticator only trait
-    ```
+   ```{note}
+   Previously, a GenericOAuthenticator only trait
+   ```
 
 5. It is now possible to pass extra parameters to the [token request](token_request), using [token_params](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.token_params)for _all of the oauthenticators_.
 
-    ```{note}
-    Previously, a GenericOAuthenticator only trait
-    ```
+   ```{note}
+   Previously, a GenericOAuthenticator only trait
+   ```
 
 6. It is now possible to set whether or not to use basic authentication for the access [token request](token_request) using the [`basic_auth`](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.basic_auth) for _all of the oauthenticators_.Currently it defaults to `False`.
 
-     ```{note}
-    Previously, a GenericOAuthenticator only trait
-    ```
+   ```{note}
+   Previously, a GenericOAuthenticator only trait
+   ```
