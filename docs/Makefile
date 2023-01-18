@@ -9,7 +9,8 @@ SOURCEDIR     = source
 BUILDDIR      = _build
 # We generate this directory based on the template in `authenticator.rst.tpl`
 # so we should clean it up too
-GENDIR        = source/reference/api/gen/
+APIDIR        = source/reference/api
+GENDIR        = source/reference/api/gen
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -19,8 +20,9 @@ help:
 
 clean:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
-	@echo "Removing everything under $(GENDIR)..."
-	rm -rf "$(GENDIR)"
+	@echo "Removing the generated docs from $(API)..."
+	rm -rf -v "$(GENDIR)"
+	rm -v "$(APIDIR)/index.rst"
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.

@@ -11,7 +11,8 @@ set SOURCEDIR=source
 set BUILDDIR=_build
 # We generate this directory based on the template in `authenticator.rst.tpl`
 # so we should clean it up too
-set GENDIR=source/reference/api/gen/
+set GENDIR=source/reference/api/gen
+set APIDIR=source/reference/api
 
 if "%1" == "" goto help
 if "%1" == "devenv" goto devenv
@@ -38,6 +39,7 @@ goto end
 :clean
 %SPHINXBUILD% -M %1 "%SOURCEDIR%" "%BUILDDIR%" %SPHINXOPTS%
 rmdir /s "%GENDIR%"
+del "%APIDIR%/index.rst"
 goto end
 
 :devenv
