@@ -492,7 +492,7 @@ class OAuthenticator(Authenticator):
         """
         headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
 
-        if self.basic_auth:
+        if not self.basic_auth:
             b64key = base64.b64encode(
                 bytes("{self.client_id}:{self.client_secret}", "utf8")
             )
@@ -561,11 +561,18 @@ class OAuthenticator(Authenticator):
         params = {
             "code": code,
             "grant_type": "authorization_code",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
             "redirect_uri": self.get_callback_url(handler),
             "data": data,
         }
+
+        # the client_id and client_secret should not be included in the access token request params
+        # when basic authentication is used
+        # ref: https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1
+        if self.basic_auth:
+            params.update(
+                [("client_id", self.client_id), ("client_secret", self.client_secret)]
+            )
+
         params.update(self.token_params)
 
         return params
