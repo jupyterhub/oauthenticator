@@ -6,7 +6,7 @@ from functools import reduce
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import AsyncHTTPClient
-from traitlets import Bool, List, Unicode, Union, default
+from traitlets import Bool, List, Dict, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
 from .traitlets import Callable
@@ -18,6 +18,10 @@ class GenericOAuthenticator(OAuthenticator):
         "extra_params": ("token_params", "16.0.0"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
+
+    extra_params = Dict(
+        help="Deprecated, use `GenericOAuthenticator.token_params`"
+    ).tag(config=True)
 
     login_service = Unicode("OAuth 2.0", config=True)
 
