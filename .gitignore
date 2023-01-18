@@ -1,8 +1,8 @@
 # Manually added parts to .gitignore
 # ----------------------------------
 #
-docs/source/api/gen
-docs/source/api/index.rst
+docs/source/reference/api/gen
+docs/source/reference/api/index.rst
 
 userlist
 ssl/ssl.cert

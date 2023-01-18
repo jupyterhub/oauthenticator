@@ -25,21 +25,9 @@ to create a new authenticator class when additional customization is needed.
 
 ## Installation
 
-The installation guide can be found in the [docs](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#installation).
+The installation guide can be found in the [docs](https://oauthenticator.readthedocs.io/en/latest/tutorials/install.html).
 
-The docs also provide example setups for different OAuth2 identity providers:
-
-- [General Setup](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#general-setup)
-- [Azure AD](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#azure-ad-setup)
-- [FeiShu](https://github.com/tezignlab/jupyterhub_feishu_authenticator)
-- [GitHub](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#github-setup)
-- [GitLab](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#gitlab-setup)
-- [Google](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#google-setup)
-- [OpenShift](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#openshift-setup)
-- [Okpy](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#okpyauthenticator)
-- [Globus](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#globus-setup)
-- [Moodle](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#moodle-setup)
-- [Yandex](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#yandex-setup)
+The [docs](https://oauthenticator.readthedocs.io/en/latest/tutorials/provider-specific-setup/index.html) also provide example setups for different OAuth2 identity providers.
 
 ## Running tests
 

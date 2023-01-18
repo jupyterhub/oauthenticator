@@ -44,7 +44,7 @@ import jinja2
 def render_autodoc_modules():
     authenticator_entrypoints = entry_points(group="jupyterhub.authenticators")
 
-    api = os.path.join(source, "api")
+    api = os.path.join(source, "reference/api")
     api_gen = os.path.join(api, "gen")
 
     # modules is a dict of dicts of lists
@@ -109,6 +109,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinxext.rediraffe',
     'autodoc_traits',
     'myst_parser',
     'sphinx_copybutton',
@@ -169,3 +170,36 @@ linkcheck_anchors_ignore = [
     "/#!",
     "/#%21",
 ]
+
+# -- Options for the rediraffe extension -------------------------------------
+# ref: https://github.com/wpilibsuite/sphinxext-rediraffe#readme
+#
+# This extensions help us relocated content without breaking links. If a
+# document is moved internally, put its path as a dictionary key in the
+# redirects dictionary below and its new location in the value.
+#
+rediraffe_branch = "main"
+rediraffe_redirects = {
+    "geting-started": "tutorials/general-setup",
+    "install": "tutorials/install",
+    "changelog": "reference/changelog",
+    "cilogon": "topic/cilogon",
+    "extending": "topic/extending",
+    "google": "topic/google",
+    "github": "topic/github",
+    "gitlab": "topic/gitlab",
+    "migrations": "how-to/migrations/upgrade-to-15",
+    "api/gen/oauthenticator.oauth2": "reference/api/gen/oauthenticator.oauth2",
+    "api/gen/oauthenticator.auth0": "reference/api/gen/oauthenticator.auth0",
+    "api/gen/oauthenticator.azuread": "reference/api/gen/oauthenticator.azuread",
+    "api/gen/oauthenticator.bitbucket": "reference/api/gen/oauthenticator.bitbucket",
+    "api/gen/oauthenticator.cilogon": "reference/api/gen/oauthenticator.cilogon",
+    "api/gen/oauthenticator.generic": "reference/api/gen/oauthenticator.generic",
+    "api/gen/oauthenticator.github": "reference/api/gen/oauthenticator.github",
+    "api/gen/oauthenticator.gitlab": "reference/api/gen/oauthenticator.gitlab",
+    "api/gen/oauthenticator.globus": "reference/api/gen/oauthenticator.globus",
+    "api/gen/oauthenticator.google": "reference/api/gen/oauthenticator.google",
+    "api/gen/oauthenticator.okpy": "reference/api/gen/oauthenticator.okpy",
+    "api/gen/oauthenticator.openshift": "reference/api/gen/oauthenticator.openshift",
+    "api/gen/oauthenticator.mediawiki": "reference/api/gen/oauthenticator.mediawiki",
+}

@@ -28,7 +28,7 @@ c.GenericOAuthenticator.token_url = 'url-retrieving-access-token-oauth-completio
 c.GenericOAuthenticator.username_key = 'username-key-for-USERDATA-URL'
 ```
 
-Checkout [](getting-started:moodle-setup) and [](getting-started:yandex_setup) for how to configure
+Checkout [](tutorials:provider-specific:generic:moodle) and [](tutorials:provider-specific:generic:yandex) for how to configure
 GenericOAuthenticator for Moodle and Yandex.
 
 ## Writing your own OAuthenticator class
@@ -44,3 +44,11 @@ The skeleton of an OAuthenticator looks like this:
 ```
 
 where you will need to find and define the URLs and requests necessary to complete OAuth with your provider.
+
+````{note}
+For a visual of the requests and information exchanged during the JupyterHub's external OAuthentication process,
+checkout the diagram below and also the [JupyterHub docs](https://jupyterhub.readthedocs.io/en/stable/reference/oauth.html).
+
+```{image} /_static/images/JupyterHub-OAuth-external-flow.png
+```
+````
