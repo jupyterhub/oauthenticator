@@ -657,7 +657,7 @@ class OAuthenticator(Authenticator):
                 - "id_token": the id_token, if available
                 - "scope": the scopes, if available
                 - "token_response": the full token_info response
-                - self.user_auth_state_key: the full user_info reponse
+                - self.user_auth_state_key: the full user_info response
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
@@ -689,15 +689,14 @@ class OAuthenticator(Authenticator):
         Updates `auth_model` dict if any fields have changed or additional information is available
         or returns the unchanged `auth_model`.
 
+        Returns the model unchanged by default.
+
         Should be overridden to take into account changes like group/admin membership.
 
-        Args:
-            auth_model: the auth model dictionary  dict instead, containing:
-                - the `name` key holding the username
-                - the `auth_state` key, the dictionary of of auth state
-                  returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
-
-        Returns the model unchanged by default.
+        Args: auth_model - the auth model dictionary  dict instead, containing:
+            - the `name` key holding the username
+            - the `auth_state` key, the dictionary of of auth state
+                returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
