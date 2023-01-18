@@ -300,6 +300,8 @@ class OAuthenticator(Authenticator):
         if self.enable_auth_state:
             return True
 
+        return False
+
     logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
 
     # Originally a GenericOAuthenticator only trait
