@@ -23,20 +23,20 @@ This request is sent to {attr}`.OAuthenticator.userdata_url` in {meth}`.OAuthent
 
 1. `username_key` replaced by `username_claim` in _all oauthenticators_
 
-    - {attr}`.GenericOAuthenticator.username_key` is deprecated and replaced by {attr}`.OAuthenticator.username_claim`.
+   - {attr}`.GenericOAuthenticator.username_key` is deprecated and replaced by {attr}`.OAuthenticator.username_claim`.
 
-    - {attr}`.Auth0OAuthenticator.username_key` is deprecated and replaced by {attr}`.OAuthenticator.username_claim`.
+   - {attr}`.Auth0OAuthenticator.username_key` is deprecated and replaced by {attr}`.OAuthenticator.username_claim`.
 
-    ```{note}
-    The `username_claim` and the deprecated `username_key` refers to the field in the `userdata` response from which to get the JupyterHub username. Examples include: email, username, nickname. What keys are available depend on the scopes requested and the authenticator used.
-    ```
+   ```{note}
+   The `username_claim` and the deprecated `username_key` refers to the field in the `userdata` response from which to get the JupyterHub username. Examples include: email, username, nickname. What keys are available depend on the scopes requested and the authenticator used.
+   ```
 
 2. {attr}`.GenericOAuthenticator.extra_params` is deprecated and replaced by {attr}`.OAuthenticator.token_params`.
 
 3. The following public functions were removed:
 
-    - `OkpyOAuthenticator.get_auth_request(self, code)`
-    - `OkpyOAuthenticator.get_user_info_request(self, access_token)`
+   - `OkpyOAuthenticator.get_auth_request(self, code)`
+   - `OkpyOAuthenticator.get_user_info_request(self, access_token)`
 
 ## New
 
@@ -44,7 +44,7 @@ This request is sent to {attr}`.OAuthenticator.userdata_url` in {meth}`.OAuthent
 
 2. The [`Authenticator.refresh_pre_spawn`](https://jupyterhub.readthedocs.io/en/stable/api/auth.html#jupyterhub.auth.Authenticator.refresh_pre_spawn) option is enabled by default if {attr}`.OAuthenticator.enable_auth_state` is set.
 
-3. The userdata query parameters {attr}`.OAuthenticator.userdata_params` to be added to the request sent to  {attr}`.OAuthenticator.userdata_url` to get user data login information is now a configurable feature of _all the oauthenticators_.
+3. The userdata query parameters {attr}`.OAuthenticator.userdata_params` to be added to the request sent to {attr}`.OAuthenticator.userdata_url` to get user data login information is now a configurable feature of _all the oauthenticators_.
 
    ```{note}
    Previously, a GenericOAuthenticator only trait.
@@ -63,7 +63,7 @@ This request is sent to {attr}`.OAuthenticator.userdata_url` in {meth}`.OAuthent
    ```
 
 6. It is now possible to set whether or not to use basic authentication for the access [token request](token_request) using {attr}`.OAuthenticator.basic_auth` for _all of the oauthenticators_.
-Currently it defaults to `False`.
+   Currently it defaults to `False`.
 
    ```{note}
    Previously, a GenericOAuthenticator only trait.
