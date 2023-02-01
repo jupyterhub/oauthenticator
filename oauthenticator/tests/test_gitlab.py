@@ -74,7 +74,7 @@ def make_link_header(urlinfo, page):
     }
 
 
-async def test_allowed_groups(gitlab_client):
+async def test_allowed_groups(gitlab_client, get_auth_model):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
     mock_api_version(client, '12.4.0-ee')
@@ -178,10 +178,17 @@ async def test_allowed_groups(gitlab_client):
         name = user_info['name']
         assert name == 'grif'
 
+        handler = client.handler_for_user(group_user_model('grif'))
+        auth_model = await get_auth_model(authenticator, handler)
+        is_authorized = await authenticator.user_is_authorized(
+            auth_model, allowed_gitlab_groups=['blue']
+        )
+        assert not is_authorized
+
         client.hosts['gitlab.com'].pop()
 
 
-async def test_allowed_project_ids(gitlab_client):
+async def test_allowed_project_ids(gitlab_client, get_auth_model):
     client = gitlab_client
     authenticator = GitLabOAuthenticator()
     mock_api_version(client, '12.4.0-pre')
@@ -265,6 +272,14 @@ async def test_allowed_project_ids(gitlab_client):
     user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'harry'
+
+    # Not authenticated since Harry doesn't have developer access to the project in the list
+    handler = client.handler_for_user(harry_user_model)
+    auth_model = await get_auth_model(authenticator, handler)
+    is_authorized = await authenticator.user_is_authorized(
+        auth_model, allowed_project_ids=[123123152543]
+    )
+    assert not is_authorized
 
 
 def test_deprecated_config(caplog):

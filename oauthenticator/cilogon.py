@@ -281,7 +281,7 @@ class CILogonOAuthenticator(OAuthenticator):
                 )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
         username = auth_model["name"]
         # Check if selected idp was marked as allowed
         if self.allowed_idps:

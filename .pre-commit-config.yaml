@@ -28,7 +28,7 @@ repos:
 
   # Autoformat: python imports
   - repo: https://github.com/pycqa/isort
-    rev: 5.11.4
+    rev: 5.11.5
     hooks:
       - id: isort
 

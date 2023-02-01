@@ -45,16 +45,24 @@ class BitbucketOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected teams"
     )
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
+        """Checks if user is authorized with bitbucket OAuth.
+        
+        Overrides:
+            - allowed_teams: Can override default self.allowed_teams
+
+        Returns: True if authorized
+        """
         access_token = auth_model["auth_state"]["token_response"]["access_token"]
         token_type = auth_model["auth_state"]["token_response"]["token_type"]
         username = auth_model["name"]
 
         # Check if user is a member of any allowed teams.
         # This check is performed here, as the check requires `access_token`.
-        if self.allowed_teams:
+        allowed_teams = overrides.pop("allowed_teams", self.allowed_teams)
+        if allowed_teams:
             user_in_team = await self._check_membership_allowed_teams(
-                username, access_token, token_type
+                username, access_token, token_type, set(allowed_teams)
             )
             if not user_in_team:
                 self.log.warning(f"{username} not in team allowed list of users")
@@ -62,7 +70,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         return True
 
-    async def _check_membership_allowed_teams(self, username, access_token, token_type):
+    async def _check_membership_allowed_teams(self, username, access_token, token_type, allowed_teams):
         headers = self.build_userdata_request_headers(access_token, token_type)
         # We verify the team membership by calling teams endpoint.
         next_page = url_concat(
@@ -75,9 +83,10 @@ class BitbucketOAuthenticator(OAuthenticator):
 
             user_teams = {entry["name"] for entry in resp_json["values"]}
             # check if any of the organizations seen thus far are in the allowed list
-            if len(self.allowed_teams & user_teams) > 0:
+            if len(allowed_teams & user_teams) > 0:
                 return True
         return False
+    
 
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator, BitbucketOAuthenticator):

@@ -254,14 +254,23 @@ class GlobusOAuthenticator(OAuthenticator):
 
         return user_group_ids
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
+        """Checks if user is authorized with globus OAuth.
+        
+        Overrides:
+            - allowed_globus_groups: Can override default self.allowed_globus_groups
+
+        Returns: True if authorized
+        """
+
         tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
 
-        if self.allowed_globus_groups or self.admin_globus_groups:
+        allowed_globus_groups = overrides.pop("allowed_globus_groups", self.allowed_globus_groups)
+        if allowed_globus_groups or self.admin_globus_groups:
             # If any of these configurations are set, user must be in the allowed or admin Globus Group
             user_group_ids = await self.get_users_groups_ids(tokens)
             if not self.check_user_in_groups(
-                user_group_ids, self.allowed_globus_groups
+                user_group_ids, set(allowed_globus_groups)
             ):
                 if not self.check_user_in_groups(
                     user_group_ids, self.admin_globus_groups

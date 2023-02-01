@@ -173,3 +173,17 @@ def test_deprecated_config(caplog):
 
     assert authenticator.allowed_google_groups == {'email.com': ['group']}
     assert authenticator.allowed_users == {"user1"}
+
+
+async def test_google_user_is_authorized_overrides(google_client, get_auth_model):
+    authenticator = GoogleOAuthenticator(
+        hosted_domain=['email.com', 'mycollege.edu'],
+        allowed_google_groups={'email.com': ['fakegroup'], ',mycollege.edu': []},
+    )
+    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
+
+    auth_model = await get_auth_model(authenticator, handler)
+    is_authorized = await authenticator.user_is_authorized(
+        auth_model, allowed_google_groups=['fakegroup2']
+    )
+    assert not is_authorized

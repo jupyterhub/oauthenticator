@@ -210,3 +210,28 @@ async def test_generic_callable_groups_claim_key_with_allowed_groups_and_admin_g
     user_info = await authenticator.authenticate(handler)
     assert user_info['name'] == 'zoe'
     assert user_info['admin'] is True
+
+
+
+async def test_generic_is_authenticated_overrides(
+    get_authenticator, generic_client, get_auth_model
+):
+    authenticator = get_authenticator(
+        username_key=lambda r: r['alternate_username'],
+        scope=['openid', 'profile', 'roles'],
+        claim_groups_key="roles",
+        allowed_groups=['user', 'public'],
+        admin_groups=['administrator'],
+    )
+    handler = generic_client.handler_for_user(
+        user_model(
+            'wash',
+            alternate_username='zoe',
+            roles=['public'],
+        )
+    )
+    auth_model = await get_auth_model(authenticator,handler)
+    is_authorized = await authenticator.user_is_authorized(
+        auth_model, allowed_groups=['auditor', 'user']
+    )
+    assert not is_authorized

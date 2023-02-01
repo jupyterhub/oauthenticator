@@ -59,7 +59,7 @@ def make_link_header(urlinfo, page):
     }
 
 
-async def test_allowed_org_membership(github_client):
+async def test_allowed_org_membership(github_client, get_auth_model):
     client = github_client
     authenticator = GitHubOAuthenticator()
 
@@ -189,6 +189,15 @@ async def test_allowed_org_membership(github_client):
         handler = client.handler_for_user(user_model('texas'))
         user = await authenticator.authenticate(handler)
         assert user is None
+
+        # test_google_user_is_authorized_overrides
+        handler = client.handler_for_user(user_model('grif'))
+        auth_model = await get_auth_model(authenticator, handler)
+        is_authorized = await authenticator.user_is_authorized(
+            auth_model, allowed_organizations=['blue:alpha']
+        )
+        assert not is_authorized
+
 
         client_hosts.pop()
         client_hosts.pop()

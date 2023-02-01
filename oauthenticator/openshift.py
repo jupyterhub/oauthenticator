@@ -108,23 +108,26 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         return auth_model
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
         """
         Use the group info stored on the OpenShift User object to determine if a user
         is authorized to login.
+
+        Overrides:
+            - allowed_groups: Can override default self.allowed_groups
         """
         user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
         username = auth_model['name']
+        allowed_groups = overrides.pop("allowed_groups", self.allowed_groups)
 
-        if self.allowed_groups or self.admin_groups:
+        if allowed_groups or self.admin_groups:
             msg = f"username:{username} User not in any of the allowed/admin groups"
-            if not self.user_in_groups(user_groups, self.allowed_groups):
+            if not self.user_in_groups(user_groups, allowed_groups):
                 if not self.user_in_groups(user_groups, self.admin_groups):
                     self.log.warning(msg)
                     return False
 
         return True
-
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
 

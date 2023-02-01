@@ -703,10 +703,11 @@ class OAuthenticator(Authenticator):
         """
         return auth_model
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
         """
         Checks if the user that is authenticating should be authorized or not and False otherwise.
-        Should be overridden with any relevant logic specific to each oauthenticator.
+        Should be overridden with any relevant logic specific to each oauthenticator. Overrides can be
+        passed to check user authorization against different conditions.
 
         Returns True by default.
 

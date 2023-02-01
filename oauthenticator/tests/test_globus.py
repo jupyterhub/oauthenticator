@@ -433,3 +433,14 @@ async def test_user_allowed_not_admin(globus_client):
     data = await authenticator.authenticate(handler)
     assert data['name'] == 'wash'
     assert data['admin'] == False
+
+
+async def test_globus_user_is_authorized_overrides(globus_client, get_auth_model):
+    authenticator = GlobusOAuthenticator()
+    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2', 'e01df78d-0607-482b-8b4b-8c37b85fbd07', '915dcd61-c842-4ea4-97c6-57396b936016'})
+    handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
+    auth_model = await get_auth_model(authenticator, handler)
+    is_authorized = await authenticator.user_is_authorized(
+        auth_model, allowed_globus_groups=['e01df78d-0607-482b-8b4b-8c37b85fbd07']
+    )
+    assert not is_authorized

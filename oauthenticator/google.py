@@ -126,14 +126,21 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def _username_claim_default(self):
         return 'email'
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
+        """Checks if user is authorized with google OAuth.
+        
+        Overrides:
+            - allowed_google_groups: Can override default self.allowed_google_groups
+
+        Returns: True if authorized
+        """
         user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
         user_email_domain = user_email.split('@')[1]
 
         if not auth_model["auth_state"][self.user_auth_state_key]['verified_email']:
             self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
             raise HTTPError(403, f"Google email {user_email} not verified")
-
+        
         if self.hosted_domain:
             if user_email_domain not in self.hosted_domain:
                 self.log.warning(
@@ -142,6 +149,12 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 raise HTTPError(
                     403, f"Google account domain @{user_email_domain} not authorized."
                 )
+
+        allowed_google_groups = overrides.pop("allowed_google_groups", None)
+        if allowed_google_groups:
+            # Only check if the override is passed so original authentication logic is not altered
+            return (await self._add_google_groups_info(auth_model, google_groups=allowed_google_groups)) is not None
+        
         return True
 
     async def update_auth_model(self, auth_model, google_groups=None):

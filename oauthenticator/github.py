@@ -133,13 +133,21 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True,
     )
 
-    async def user_is_authorized(self, auth_model):
+    async def user_is_authorized(self, auth_model, **overrides):
+        """Checks if user is authorized with github OAuth.
+        
+        Overrides:
+            - allowed_organizations: Can override default self.allowed_organizations
+
+        Returns: True if authorized
+        """
         # Check if user is a member of any allowed organizations.
         # This check is performed here, as it requires `access_token`.
         access_token = auth_model["auth_state"]["token_response"]["access_token"]
         token_type = auth_model["auth_state"]["token_response"]["token_type"]
-        if self.allowed_organizations:
-            for org in self.allowed_organizations:
+        allowed_organizations = overrides.pop("allowed_organizations", self.allowed_organizations)
+        if allowed_organizations:
+            for org in allowed_organizations:
                 user_in_org = await self._check_membership_allowed_organizations(
                     org, auth_model["name"], access_token, token_type
                 )
