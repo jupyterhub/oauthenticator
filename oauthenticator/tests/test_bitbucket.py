@@ -97,6 +97,7 @@ def test_deprecated_config(caplog):
     assert authenticator.allowed_teams == {"red"}
     assert authenticator.allowed_users == {"blue"}
 
+
 async def test_bitbucket_user_is_authorized_overrides(bitbucket_client, get_auth_model):
     client = bitbucket_client
     authenticator = BitbucketOAuthenticator()
@@ -122,6 +123,6 @@ async def test_bitbucket_user_is_authorized_overrides(bitbucket_client, get_auth
     auth_model = await get_auth_model(authenticator, handler)
 
     is_authorized = await authenticator.user_is_authorized(
-        auth_model, allowed_teams=['red'] # caboose is not red
+        auth_model, allowed_teams=['red']  # caboose is not red
     )
     assert not is_authorized

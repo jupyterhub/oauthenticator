@@ -98,7 +98,7 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def user_is_authorized(self, auth_model, **overrides):
         """Checks if user is authorized with generic OAuth.
-        
+
         Overrides:
             - allowed_groups: Can override default self.allowed_groups
             - claim_groups_key: Can override default self.claim_groups_key
@@ -118,9 +118,7 @@ class GenericOAuthenticator(OAuthenticator):
                 groups = claim_groups_key(user_info)
             else:
                 try:
-                    groups = reduce(
-                        dict.get, claim_groups_key.split("."), user_info
-                    )
+                    groups = reduce(dict.get, claim_groups_key.split("."), user_info)
                 except TypeError:
                     # This happens if a nested key does not exist (reduce trying to call None.get)
                     self.log.error(

@@ -198,7 +198,6 @@ async def test_allowed_org_membership(github_client, get_auth_model):
         )
         assert not is_authorized
 
-
         client_hosts.pop()
         client_hosts.pop()
 

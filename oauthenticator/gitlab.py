@@ -119,7 +119,7 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def user_is_authorized(self, auth_model, **overrides):
         """Checks if user is authorized with gitlab OAuth.
-        
+
         Overrides:
             - allowed_project_ids: Can override default self.allowed_project_ids
             - allowed_gitlab_groups: Can override default self.allowed_gitlab_groups
@@ -140,7 +140,9 @@ class GitLabOAuthenticator(OAuthenticator):
         user_in_group = user_in_project = False
         is_group_specified = is_project_id_specified = False
 
-        allowed_gitlab_groups = overrides.pop("allowed_gitlab_groups", self.allowed_gitlab_groups)
+        allowed_gitlab_groups = overrides.pop(
+            "allowed_gitlab_groups", self.allowed_gitlab_groups
+        )
         if allowed_gitlab_groups:
             is_group_specified = True
             user_in_group = await self._check_membership_allowed_groups(
@@ -148,7 +150,9 @@ class GitLabOAuthenticator(OAuthenticator):
             )
 
         # We skip project_id check if user is in allowed group.
-        allowed_project_ids = overrides.pop("allowed_project_ids", self.allowed_project_ids)
+        allowed_project_ids = overrides.pop(
+            "allowed_project_ids", self.allowed_project_ids
+        )
         if allowed_project_ids and not user_in_group:
             is_project_id_specified = True
             user_in_project = await self._check_membership_allowed_project_ids(
@@ -182,7 +186,9 @@ class GitLabOAuthenticator(OAuthenticator):
         version_ints = list(map(int, version_strings))
         return version_ints
 
-    async def _check_membership_allowed_groups(self, user_id, access_token, allowed_gitlab_groups):
+    async def _check_membership_allowed_groups(
+        self, user_id, access_token, allowed_gitlab_groups
+    ):
         headers = _api_headers(access_token)
         # Check if user is a member of any group in the allowed list
         for group in map(url_escape, allowed_gitlab_groups):
@@ -203,7 +209,9 @@ class GitLabOAuthenticator(OAuthenticator):
                 return True  # user _is_ in group
         return False
 
-    async def _check_membership_allowed_project_ids(self, user_id, access_token, allowed_project_ids):
+    async def _check_membership_allowed_project_ids(
+        self, user_id, access_token, allowed_project_ids
+    ):
         headers = _api_headers(access_token)
         # Check if user has developer access to any project in the allowed list
         for project in allowed_project_ids:

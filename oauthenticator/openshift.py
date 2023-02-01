@@ -129,6 +129,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         return True
 
+
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
 
     """A version that mixes in local system user creation"""

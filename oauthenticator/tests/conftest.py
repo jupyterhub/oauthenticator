@@ -40,15 +40,19 @@ def client(io_loop, request):
     assert isinstance(c, MockAsyncHTTPClient)
     return c
 
+
 @fixture
 def get_auth_model():
     async def mock_auth_model(authenticator, handler):
-        access_token_params = authenticator.build_access_tokens_request_params(handler, None)
+        access_token_params = authenticator.build_access_tokens_request_params(
+            handler, None
+        )
         token_info = await authenticator.get_token_info(handler, access_token_params)
         user_info = await authenticator.token_to_user(token_info)
         username = authenticator.user_info_to_username(user_info)
-        return  {
+        return {
             "name": username,
             "auth_state": authenticator.build_auth_state_dict(token_info, user_info),
         }
+
     return mock_auth_model

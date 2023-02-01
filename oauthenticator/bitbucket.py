@@ -47,7 +47,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
     async def user_is_authorized(self, auth_model, **overrides):
         """Checks if user is authorized with bitbucket OAuth.
-        
+
         Overrides:
             - allowed_teams: Can override default self.allowed_teams
 
@@ -70,7 +70,9 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         return True
 
-    async def _check_membership_allowed_teams(self, username, access_token, token_type, allowed_teams):
+    async def _check_membership_allowed_teams(
+        self, username, access_token, token_type, allowed_teams
+    ):
         headers = self.build_userdata_request_headers(access_token, token_type)
         # We verify the team membership by calling teams endpoint.
         next_page = url_concat(
@@ -86,7 +88,6 @@ class BitbucketOAuthenticator(OAuthenticator):
             if len(allowed_teams & user_teams) > 0:
                 return True
         return False
-    
 
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator, BitbucketOAuthenticator):

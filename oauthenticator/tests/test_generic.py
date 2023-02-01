@@ -212,7 +212,6 @@ async def test_generic_callable_groups_claim_key_with_allowed_groups_and_admin_g
     assert user_info['admin'] is True
 
 
-
 async def test_generic_is_authenticated_overrides(
     get_authenticator, generic_client, get_auth_model
 ):
@@ -230,7 +229,7 @@ async def test_generic_is_authenticated_overrides(
             roles=['public'],
         )
     )
-    auth_model = await get_auth_model(authenticator,handler)
+    auth_model = await get_auth_model(authenticator, handler)
     is_authorized = await authenticator.user_is_authorized(
         auth_model, allowed_groups=['auditor', 'user']
     )
