@@ -1,23 +1,6 @@
 # Upgrading your OAuthenticator to version 16.0
 
-The following section describes what to keep in mind when upgrading to OAuthenticator 16.0.
-
-````{important}
-(token_request)=
-
-```{rubric} The token request
-```
-Whenever _token request_ is used, it refers to the HTTP request exchanging the [oauth code](https://www.rfc-editor.org/rfc/rfc6749#section-1.3.1) for the [access token](https://www.rfc-editor.org/rfc/rfc6749#section-1.4).
-
-This request is sent to the {attr}`.OAuthenticator.token_url` in {meth}`.OAuthenticator.get_token_info` method.
-
-(userdata_request)=
-```{rubric} The userdata request
-```
-Whenever _userdata request_ is used, it refers to the HTTP request that's exchanging the the `access token` to get the `userdata`.
-
-This request is sent to {attr}`.OAuthenticator.userdata_url` in {meth}`.OAuthenticator.token_to_user` method.
-````
+The following section describes what to pay attention to when upgrading to OAuthenticator 16.0.
 
 ## Deprecations
 
@@ -50,21 +33,34 @@ This request is sent to {attr}`.OAuthenticator.userdata_url` in {meth}`.OAuthent
    Previously, a GenericOAuthenticator only trait.
    ```
 
-4. The method used for sending the `access token` in the [userdata request](userdata_request), called {attr}`.OAuthenticator.userdata_token_method`, is now a configurable feature of _all the oauthenticators_.
+4. The method used for sending the `access token` in the userdata request[^userdata_request], called {attr}`.OAuthenticator.userdata_token_method`, is now a configurable feature of _all the oauthenticators_.
 
    ```{note}
    Previously, a GenericOAuthenticator only trait.
    ```
 
-5. It is now possible to pass extra parameters to the [token request](token_request), using {attr}`.OAuthenticator.token_params` for _all of the oauthenticators_.
+5. It is now possible to pass extra parameters to the token request[^token_request], using {attr}`.OAuthenticator.token_params` for _all of the oauthenticators_.
 
    ```{note}
    Previously, a GenericOAuthenticator only trait.
    ```
 
-6. It is now possible to set whether or not to use basic authentication for the access [token request](token_request) using {attr}`.OAuthenticator.basic_auth` for _all of the oauthenticators_.
+6. It is now possible to set whether or not to use basic authentication for the access token request[^token_request] using {attr}`.OAuthenticator.basic_auth` for _all of the oauthenticators_.
    Currently it defaults to `False`.
 
    ```{note}
    Previously, a GenericOAuthenticator only trait.
    ```
+
+[^token_request]: **The token request.**
+
+    Whenever _token request_ is used, it refers to the HTTP request exchanging the [oauth code](https://www.rfc-editor.org/rfc/rfc6749#section-1.3.1) for the [access token](https://www.rfc-editor.org/rfc/rfc6749#section-1.4).
+
+    This request is sent to the {attr}`.OAuthenticator.token_url` in {meth}`.OAuthenticator.get_token_info` method.
+
+
+[^userdata_request]: **The userdata request.**
+
+    Whenever _userdata request_ is used, it refers to the HTTP request that's exchanging the the `access token` to get the `userdata`.
+
+    This request is sent to {attr}`.OAuthenticator.userdata_url` in {meth}`.OAuthenticator.token_to_user` method.
