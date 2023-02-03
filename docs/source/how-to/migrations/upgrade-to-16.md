@@ -2,7 +2,7 @@
 
 The following section describes what to pay attention to when upgrading to OAuthenticator 16.0.
 
-## Deprecations
+## Breaking changes
 
 1. `username_key` replaced by `username_claim` in _all oauthenticators_
 
