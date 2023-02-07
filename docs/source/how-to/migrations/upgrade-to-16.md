@@ -58,7 +58,6 @@ The following section describes what to pay attention to when upgrading to OAuth
 
     This request is sent to the {attr}`.OAuthenticator.token_url` in {meth}`.OAuthenticator.get_token_info` method.
 
-
 [^userdata_request]: **The userdata request.**
 
     Whenever _userdata request_ is used, it refers to the HTTP request that's exchanging the the `access token` to get the `userdata`.
