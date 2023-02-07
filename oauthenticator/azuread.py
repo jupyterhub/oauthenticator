@@ -20,11 +20,14 @@ class AzureAdOAuthenticator(OAuthenticator):
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
     user_auth_state_key = "user"
-    username_claim = "name"
 
     user_groups_claim = Unicode(
         "", config=True, help="Name of claim containing user group memberships"
     )
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "name"
 
     @default('tenant_id')
     def _tenant_id_default(self):
@@ -38,11 +41,13 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
 
-    def build_auth_state_dict(self, token_info, user_info):
-        auth_state = super().build_auth_state_dict(token_info, user_info)
-        auth_state["groups"] = token_info.get(self.user_groups_claim)
+    async def update_auth_model(self, auth_model, **kwargs):
+        auth_model = await super().update_auth_model(auth_model, **kwargs)
 
-        return auth_state
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        auth_model["groups"] = user_info.get(self.user_groups_claim)
+
+        return auth_model
 
     async def token_to_user(self, token_info):
         id_token = token_info['id_token']

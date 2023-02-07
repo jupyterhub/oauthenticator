@@ -39,6 +39,16 @@ def user_model(tenant_id, client_id, name):
             "tid": tenant_id,
             "nonce": "123523",
             "aio": "Df2UVXL1ix!lMCWMSOJBcFatzcGfvFGhjKv8q5g0x732dR5MB5BisvGQO7YWByjd8iQDLq!eGbIDakyp5mnOrcdqHeYSnltepQmRp6AIZ8jY",
+            "groups": [
+                "96000b2c-7333-4f6e-a2c3-e7608fa2d131",
+                "a992b3d5-1966-4af4-abed-6ef021417be4",
+                "ceb90a42-030f-44f1-a0c7-825b572a3b07",
+            ],
+            "grp": [
+                "96000b2c-7333-4f6e-a2c3-e7608fa2d131",
+                "a992b3d5-1966-4af4-abed-6ef021417be4",
+                "ceb90a42-030f-44f1-a0c7-825b572a3b07",
+            ],
         },
         os.urandom(5),
     )
@@ -61,26 +71,32 @@ def azure_client(client):
 
 
 @pytest.mark.parametrize(
-    'username_claim',
+    'username_claim, user_groups_claim, manage_groups',
     [
-        None,
-        'name',
-        'oid',
-        'preferred_username',
+        (None, None, False),
+        ('name', None, False),
+        ('oid', None, False),
+        ('preferred_username', None, False),
+        (None, None, True),
+        (None, "groups", True),
+        (None, "grp", True),
     ],
 )
-async def test_azuread(username_claim, azure_client):
+async def test_azuread(username_claim, user_groups_claim, manage_groups, azure_client):
     cfg = Config()
     cfg.AzureAdOAuthenticator = Config(
         {
             "tenant_id": str(uuid.uuid1()),
             "client_id": str(uuid.uuid1()),
             "client_secret": str(uuid.uuid1()),
+            "manage_groups": manage_groups,
         }
     )
 
     if username_claim:
         cfg.AzureAdOAuthenticator.username_claim = username_claim
+    if user_groups_claim:
+        cfg.AzureAdOAuthenticator.user_groups_claim = user_groups_claim
 
     authenticator = AzureAdOAuthenticator(config=cfg)
 
@@ -93,8 +109,7 @@ async def test_azuread(username_claim, azure_client):
     )
 
     user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-
+    assert sorted(user_info) == ['auth_state', 'groups', 'name']
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'user' in auth_state
@@ -108,3 +123,7 @@ async def test_azuread(username_claim, azure_client):
     else:
         # The default AzureADOAuthenticator `username_claim` is "name"
         assert username == auth_state_user_info["name"]
+
+    if user_groups_claim:
+        groups = user_info['groups']
+        assert groups == auth_state_user_info[user_groups_claim]
