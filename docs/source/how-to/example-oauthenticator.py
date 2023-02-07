@@ -1,12 +1,8 @@
 """
 Example OAuthenticator to use with My Service
 """
-import json
 
 from jupyterhub.auth import LocalAuthenticator
-from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient, HTTPError, HTTPRequest
-from tornado.httputil import url_concat
 
 from oauthenticator.oauth2 import OAuthenticator, OAuthLoginHandler
 
@@ -77,13 +73,13 @@ class MyServiceOAuthenticator(OAuthenticator):
     # and can be passed to the Spawner for e.g. authenticated data access/
     # Builds the `auth_state` dict that will be returned by a successful `authenticate` method call.
     # Returns:
-        # auth_state: a dictionary of auth state that should be persisted with the following keys:
-        #     - "access_token": the access_token
-        #     - "refresh_token": the refresh_token, if available
-        #     - "id_token": the id_token, if available
-        #     - "scope": the scopes, if available
-        #     - "token_response": the full token_info response
-        #     - self.user_auth_state_key: the full user_info response
+    # auth_state: a dictionary of auth state that should be persisted with the following keys:
+    #     - "access_token": the access_token
+    #     - "refresh_token": the refresh_token, if available
+    #     - "id_token": the id_token, if available
+    #     - "scope": the scopes, if available
+    #     - "token_response": the full token_info response
+    #     - self.user_auth_state_key: the full user_info response
     # Override this if you want more or less information to be returned after a successful `authenticate` method call.
     # These fields are up to you, and not interpreted by JupyterHub. See Authenticator.pre_spawn_start for how to use this information
     def build_auth_state_dict(self, token_info, user_info):
@@ -96,6 +92,7 @@ class MyServiceOAuthenticator(OAuthenticator):
     # if the OAuth provider has such a concept
     async def update_auth_model(self, auth_model, **kwargs):
         pass
+
 
 class LocalMyServiceOAuthenticator(LocalAuthenticator, MyServiceOAuthenticator):
     """A version that mixes in local system user creation"""
