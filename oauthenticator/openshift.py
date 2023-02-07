@@ -13,7 +13,6 @@ from oauthenticator.oauth2 import OAuthenticator
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
-
     login_service = "OpenShift"
 
     scope = ['user:info']

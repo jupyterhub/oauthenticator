@@ -38,7 +38,8 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
 
     async def handle_logout(self):
         """Overridden method for custom logout functionality. Should be called by
-        Jupyterhub on logout just before destroying the users session to log them out."""
+        Jupyterhub on logout just before destroying the users session to log them out.
+        """
         await super().handle_logout()
 
         if self.current_user and self.authenticator.revoke_tokens_on_logout:

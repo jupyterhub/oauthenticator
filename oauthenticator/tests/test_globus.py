@@ -130,6 +130,7 @@ def set_extended_token_response(client, host, access_token_path, new_token_respo
     url, func = next(
         filter(lambda host: host[0] == access_token_path, client.hosts[host])
     )
+
     # Wrap the built-in token response with our custom response, but only if
     # it returns successfully with an access token!
     def custom_token_response(request):
@@ -307,7 +308,6 @@ async def test_token_exclusion(globus_client):
 
 
 async def test_revoke_tokens(globus_client, mock_globus_user):
-
     # Wrap the revocation host to 'revoke' tokens by setting them in user auth
     # state. This way, we can get feedback to tell if the token was actually
     # sent to our 'host'
