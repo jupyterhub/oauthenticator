@@ -16,4 +16,4 @@ You can use your own Github Enterprise instance by setting the `GITHUB_HOST` env
 You can set `GITHUB_HTTP` environment variable to true or anything if
 your GitHub Enterprise supports http only.
 
-GitHub allows expanded capabilities by adding [](github:scopes) to the requested token.
+GitHub allows expanded capabilities by adding [](topic:github:specific-scopes) to the requested token.

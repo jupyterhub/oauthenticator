@@ -1,3 +1,5 @@
+(tutorials:provider-specific-setup:providers:google)=
+
 # Google Setup
 
 Visit https://console.developers.google.com to set up an OAuth client ID
@@ -30,6 +32,6 @@ c.GoogleOAuthenticator.login_service = 'My College'
 ```{note}
 Additional notes, that seem quite outdated at the time of writing May 2022,
 are available about authorizing users part of specific Google Groups are
-[available here](google:groups). Contributions to update these
+[available here](topic:google:extra-config). Contributions to update these
 and re-verify this functionality are most welcome.
 ```
