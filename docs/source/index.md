@@ -35,6 +35,7 @@ Things like how to write your own `oauthenticator` or how to migrate to a newer 
 
 how-to/writing-an-oauthenticator
 how-to/migrations/upgrade-to-15
+how-to/migrations/upgrade-to-16
 ```
 
 ## Topic guides

@@ -25,7 +25,7 @@ c.GenericOAuthenticator.client_secret = 'OAUTH-CLIENT-SECRET-KEY'
 c.GenericOAuthenticator.login_service = 'name-of-service-provider'
 c.GenericOAuthenticator.userdata_url = 'url-retrieving-user-data-with-access-token'
 c.GenericOAuthenticator.token_url = 'url-retrieving-access-token-oauth-completion'
-c.GenericOAuthenticator.username_key = 'username-key-for-USERDATA-URL'
+c.GenericOAuthenticator.username_claim = 'username-key-for-USERDATA-URL'
 ```
 
 Checkout [](tutorials:provider-specific:generic:moodle) and [](tutorials:provider-specific:generic:yandex) for how to configure

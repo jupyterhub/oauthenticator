@@ -322,13 +322,20 @@ class GlobusOAuthenticator(OAuthenticator):
         return headers
 
     async def revoke_service_tokens(self, services):
-        """Revoke live Globus access and refresh tokens. Revoking inert or
-        non-existent tokens does nothing. Services are defined by dicts
-        returned by tokens.by_resource_server, for example:
-        services = { 'transfer.api.globus.org': {'access_token': 'token'}, ...
-            <Additional services>...
-        }
         """
+        Revoke live Globus access and refresh tokens.
+
+        Revoking inert or non-existent tokens does nothing.
+        Services are defined by dicts returned by `tokens.by_resource_server`.
+
+        For example::
+
+            services = {
+                'transfer.api.globus.org': {'access_token': 'token'},
+                <Additional services>...
+            }
+        """
+
         access_tokens = [
             token_dict.get('access_token') for token_dict in services.values()
         ]

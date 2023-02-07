@@ -1,24 +1,13 @@
 """
 Example OAuthenticator to use with My Service
 """
-import json
 
 from jupyterhub.auth import LocalAuthenticator
-from tornado.auth import OAuth2Mixin
-from tornado.httpclient import AsyncHTTPClient, HTTPError, HTTPRequest
-from tornado.httputil import url_concat
 
 from oauthenticator.oauth2 import OAuthenticator, OAuthLoginHandler
 
 
-class MyServiceMixin(OAuth2Mixin):
-    # authorize is the URL users are redirected to to authorize your service
-    _OAUTH_AUTHORIZE_URL = "https://myservice.biz/login/oauth/authorize"
-    # token is the URL JupyterHub accesses to finish the OAuth process
-    _OAUTH_ACCESS_TOKEN_URL = "https://myservice.biz/login/oauth/access_token"
-
-
-class MyServiceLoginHandler(OAuthLoginHandler, MyServiceMixin):
+class MyServiceLoginHandler(OAuthLoginHandler):
     pass
 
 
@@ -28,79 +17,81 @@ class MyServiceOAuthenticator(OAuthenticator):
 
     login_handler = MyServiceLoginHandler
 
-    async def authenticate(self, handler, data=None):
-        """We set up auth_state based on additional My Service info if we
-        receive it.
-        """
-        code = handler.get_argument("code")
-        # TODO: Configure the curl_httpclient for tornado
-        http_client = AsyncHTTPClient()
+    # the URL users are redirected to logout
+    logout_redirect_url = "https://myservice.biz/logout"
+    # the URL users are redirected to authorize your service
+    authorize_url = "https://myservice.biz/login/oauth/authorize"
+    # the URL JupyterHub accesses to finish the OAuth process
+    token_url = "https://myservice.biz/login/oauth/access_token"
+    # the URL for retrieving user data with a completed access token
+    userdata_url = "https://myservice.biz/login/oauth/userinfo"
 
-        # Exchange the OAuth code for an Access Token
-        # this is the TOKEN URL in your provider
+    # The name of the user key expected to be present in `auth_state`
+    # Ex: github_user, auth0_user, google user, etc.
+    # Defaults to oauth_user.
+    user_auth_state_key = "oauth_user"
 
-        params = dict(
-            client_id=self.client_id, client_secret=self.client_secret, code=code
-        )
+    # Build the parameters to be used in the request exchanging the OAuth code for the Access Token.
+    # params = {
+    #     "code": code,
+    #     "grant_type": "authorization_code",
+    #     "redirect_uri": self.get_callback_url(handler),
+    #     "data": data,
+    # }
+    # self.client_id and self.client_secret are also included in the params when self.basic_auth == False
+    # Only override this method if you'd like other params passed
+    # or if any additional processing of this params is needed.
+    def build_access_tokens_request_params(self, handler, data=None):
+        pass
 
-        url = url_concat("https://myservice.biz/login/oauth/access_token", params)
+    # Exchange the OAuth code for an Access Token.
+    # Only override this method if your Service needs additional services in place,
+    # in order to send the request (see `MWOAuthenticator``)
+    # or you'd like additional processing of the HTTP status codes.
+    async def get_token_info(self, handler, params):
+        pass
 
-        req = HTTPRequest(
-            url, method="POST", headers={"Accept": "application/json"}, body=''
-        )
+    # Use the access_token to get userdata info.
+    # Determine who the logged in user is
+    # by using the new access token to make a request to self.userdata_url
+    # check with your OAuth provider for this URL.
+    # Only override this method if your Service needs additional services in place,
+    # in order to send the request (see `MWOAuthenticator``)
+    # or you'd like additional processing of the HTTP status codes.
+    async def token_to_user(self, token_info):
+        pass
 
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+    # Extract the username out of the user_info dict.
+    # Gets the self.username_claim key's value from the user_info dictionary.
+    # This will be the JupyterHub username.
+    # Should be overridden by the authenticators for which the hub username cannot
+    # be extracted this way and needs extra processing.
+    def user_info_to_username(self, user_info):
+        pass
 
-        if 'access_token' in resp_json:
-            access_token = resp_json['access_token']
-        elif 'error_description' in resp_json:
-            raise HTTPError(
-                403,
-                f"An access token was not returned: {resp_json['error_description']}",
-            )
-        else:
-            raise HTTPError(500, f"Bad response: {resp}")
+    # We can also persist auth state, which is information encrypted in the Jupyter database
+    # and can be passed to the Spawner for e.g. authenticated data access/
+    # Builds the `auth_state` dict that will be returned by a successful `authenticate` method call.
+    # Returns:
+    # auth_state: a dictionary of auth state that should be persisted with the following keys:
+    #     - "access_token": the access_token
+    #     - "refresh_token": the refresh_token, if available
+    #     - "id_token": the id_token, if available
+    #     - "scope": the scopes, if available
+    #     - "token_response": the full token_info response
+    #     - self.user_auth_state_key: the full user_info response
+    # Override this if you want more or less information to be returned after a successful `authenticate` method call.
+    # These fields are up to you, and not interpreted by JupyterHub. See Authenticator.pre_spawn_start for how to use this information
+    def build_auth_state_dict(self, token_info, user_info):
+        pass
 
-        # Determine who the logged in user is
-        # by using the new access token to make a request
-        # check with your OAuth provider for this URL.
-        # it could also be in the response to the token request,
-        # making this request unnecessary.
-
-        req = HTTPRequest(
-            "https://myservice.biz/api/user",
-            method="GET",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        resp = await http_client.fetch(req)
-        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-
-        # check the documentation for what field contains a unique username
-        # it might not be the 'username'!
-        username = resp_json["username"]
-
-        if not username:
-            # return None means that no user is authenticated
-            # and login has failed
-            return None
-
-        # here we can add additional checks such as against team allowed lists
-        # if the OAuth provider has such a concept
-
-        # 'name' is the JupyterHub username
-        user_info = {"name": username}
-
-        # We can also persist auth state,
-        # which is information encrypted in the Jupyter database
-        # and can be passed to the Spawner for e.g. authenticated data access
-        # these fields are up to you, and not interpreted by JupyterHub
-        # see Authenticator.pre_spawn_start for how to use this information
-        user_info["auth_state"] = auth_state = {}
-        auth_state['access_token'] = access_token
-        auth_state['auth_reply'] = resp_json
-
-        return user_info
+    # Updates `auth_model` dict if any fields have changed or additional information is available
+    # or returns the unchanged `auth_model`.
+    # Returns the model unchanged by default.
+    # Should be overridden to take into account  additional checks such as against group/admin/team membership.
+    # if the OAuth provider has such a concept
+    async def update_auth_model(self, auth_model, **kwargs):
+        pass
 
 
 class LocalMyServiceOAuthenticator(LocalAuthenticator, MyServiceOAuthenticator):

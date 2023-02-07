@@ -1,8 +1,8 @@
-(google:groups)=
+(topic:google:extra-config)=
 
 # Google specific configs
 
-**Note:** The instructions below are to be performed after [finishing setting up google](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#google-setup)
+**Note:** The instructions below are to be performed after [finishing setting up google](tutorials:provider-specific-setup:providers:google)
 
 If you'd like to rely on google groups for managing access to jupyterhub you'd have to do the following:
 
