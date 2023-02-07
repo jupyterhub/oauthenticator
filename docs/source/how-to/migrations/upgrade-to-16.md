@@ -1,3 +1,5 @@
+(migrations:upgrade-to-16)=
+
 # Upgrading your OAuthenticator to version 16.0
 
 The following section describes what to pay attention to when upgrading to OAuthenticator 16.0.

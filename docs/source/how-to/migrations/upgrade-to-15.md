@@ -1,3 +1,5 @@
+(migrations:upgrade-to-15)=
+
 # Upgrading CILogonOAuthenticator to version 15.0
 
 OAuthenticator [release of 15.0 version](changelog:version-15) introduced some breaking changes for the CILogonOAuthenticator. This is a description of what breaking changes have been made and a step by step guide on how to update your JupyterHub CILogonOAuthenticator to this version.
