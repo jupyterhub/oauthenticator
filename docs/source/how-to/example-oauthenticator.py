@@ -24,7 +24,7 @@ class MyServiceOAuthenticator(OAuthenticator):
     # the URL users are redirected to logout
     logout_redirect_url = "https://myservice.biz/logout"
     # the URL users are redirected to authorize your service
-    authorize_url = https://myservice.biz/login/oauth/authorize
+    authorize_url = "https://myservice.biz/login/oauth/authorize"
     # the URL JupyterHub accesses to finish the OAuth process
     token_url = "https://myservice.biz/login/oauth/access_token"
     # the URL for retrieving user data with a completed access token
