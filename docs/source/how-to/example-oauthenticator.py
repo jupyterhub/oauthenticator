@@ -23,7 +23,6 @@ class MyServiceLoginHandler(OAuthLoginHandler, MyServiceMixin):
 
 
 class MyServiceOAuthenticator(OAuthenticator):
-
     # login_service is the text displayed on the "Login with..." button
     login_service = "My Service"
 
