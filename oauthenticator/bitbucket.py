@@ -10,7 +10,6 @@ from .oauth2 import OAuthenticator
 
 
 class BitbucketOAuthenticator(OAuthenticator):
-
     _deprecated_oauth_aliases = {
         "team_whitelist": ("allowed_teams", "0.12.0"),
         **OAuthenticator._deprecated_oauth_aliases,

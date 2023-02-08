@@ -38,7 +38,8 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
 
     async def handle_logout(self):
         """Overridden method for custom logout functionality. Should be called by
-        Jupyterhub on logout just before destroying the users session to log them out."""
+        Jupyterhub on logout just before destroying the users session to log them out.
+        """
         await super().handle_logout()
 
         if self.current_user and self.authenticator.revoke_tokens_on_logout:
@@ -332,13 +333,20 @@ class GlobusOAuthenticator(OAuthenticator):
         return headers
 
     async def revoke_service_tokens(self, services):
-        """Revoke live Globus access and refresh tokens. Revoking inert or
-        non-existent tokens does nothing. Services are defined by dicts
-        returned by tokens.by_resource_server, for example:
-        services = { 'transfer.api.globus.org': {'access_token': 'token'}, ...
-            <Additional services>...
-        }
         """
+        Revoke live Globus access and refresh tokens.
+
+        Revoking inert or non-existent tokens does nothing.
+        Services are defined by dicts returned by `tokens.by_resource_server`.
+
+        For example::
+
+            services = {
+                'transfer.api.globus.org': {'access_token': 'token'},
+                <Additional services>...
+            }
+        """
+
         access_tokens = [
             token_dict.get('access_token') for token_dict in services.values()
         ]

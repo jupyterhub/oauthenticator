@@ -14,7 +14,6 @@ from .oauth2 import OAuthenticator
 
 
 class GitHubOAuthenticator(OAuthenticator):
-
     # see github_scopes.md for details about scope config
     # set scopes via config, e.g.
     # c.GitHubOAuthenticator.scope = ['read:org']

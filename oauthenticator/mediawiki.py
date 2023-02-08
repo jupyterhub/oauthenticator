@@ -20,6 +20,7 @@ from oauthenticator import OAuthCallbackHandler, OAuthenticator
 # login and authentication phase
 AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v2'
 
+
 # Helpers to jsonify/de-jsonify request_token
 # It is a named tuple with bytestrings, json.dumps balks
 def jsonify(request_token):

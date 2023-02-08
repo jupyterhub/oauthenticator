@@ -9,4 +9,5 @@
 
 {%- for cls in configurables %}
 .. autoconfigurable:: {{ cls }}
+    :members:
 {% endfor %}

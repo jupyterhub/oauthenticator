@@ -42,7 +42,6 @@ from .oauth2 import OAuthenticator
 
 
 class Auth0OAuthenticator(OAuthenticator):
-
     _deprecated_oauth_aliases = {
         "username_key": ("username_claim", "16.0.0"),
         **OAuthenticator._deprecated_oauth_aliases,
