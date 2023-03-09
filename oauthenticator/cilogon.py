@@ -31,14 +31,14 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
     def authorize_redirect(self, *args, **kwargs):
         """Add idp, skin to redirect params"""
-        token_params = kwargs.setdefault('token_params', {})
+        extra_params = kwargs.setdefault('extra_params', {})
         if self.authenticator.shown_idps:
             # selected_idp must be a string where idps are separated by commas, with no space between, otherwise it will get escaped
             # example: https://accounts.google.com/o/oauth2/auth,https://github.com/login/oauth/authorize
             idps = ",".join(self.authenticator.shown_idps)
-            token_params["selected_idp"] = idps
+            extra_params["selected_idp"] = idps
         if self.authenticator.skin:
-            token_params["skin"] = self.authenticator.skin
+            extra_params["skin"] = self.authenticator.skin
 
         return super().authorize_redirect(*args, **kwargs)
 
@@ -91,7 +91,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
     scope = List(
         Unicode(),
-        default_value=['openid', 'email', 'org.cilogon.userinfo'],
+        default_value=['openid', 'email', 'org.cilogon.userinfo', 'profile'],
         config=True,
         help="""The OAuth scopes to request.
 
@@ -273,7 +273,7 @@ class CILogonOAuthenticator(OAuthenticator):
             user_info_keys = sorted(user_info.keys())
             if len(claimlist) < 2:
                 self.log.error(
-                    f"Username claim {user_info_keys} not found in response: {self.username_claim}"
+                    f"Username claim {claimlist} not found in response: {user_info_keys}"
                 )
             else:
                 self.log.error(
