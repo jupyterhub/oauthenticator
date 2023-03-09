@@ -271,14 +271,9 @@ class CILogonOAuthenticator(OAuthenticator):
 
         if not username:
             user_info_keys = sorted(user_info.keys())
-            if len(claimlist) < 2:
-                self.log.error(
-                    f"Username claim {claimlist} not found in response: {user_info_keys}"
-                )
-            else:
-                self.log.error(
-                    f"No username claim from {claimlist:r} in response: {user_info_keys}"
-                )
+            self.log.error(
+                f"No username claim in the list at {claimlist} was found in the response {user_info_keys}"
+            )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
     async def user_is_authorized(self, auth_model):
