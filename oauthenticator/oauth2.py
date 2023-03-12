@@ -391,6 +391,20 @@ class OAuthenticator(Authenticator):
         else:
             return True
 
+    http_request_kwargs = Dict(
+        {},
+        help="""Extra default kwargs passed to all HTTPRequests.
+
+        For example, to use a HTTP proxy for all requests:
+
+        c.OAuthenticator.http_request_kwargs = {
+            "proxy_host": "proxy.example.com",
+            "proxy_port": 8080,
+        }
+        """,
+        config=True,
+    )
+
     http_client = Any()
 
     @default("http_client")
@@ -450,6 +464,7 @@ class OAuthenticator(Authenticator):
     ):
         """Wrapper for creating and fetching http requests
 
+        Includes http_request_kwargs in request kwargs
         logs error responses, parses successful JSON responses
 
         Args:
@@ -459,11 +474,14 @@ class OAuthenticator(Authenticator):
             parse_json (bool): whether to parse the response as JSON
             raise_error (bool): whether to raise an exception on HTTP errors
             **kwargs: remaining keyword args
-                passed to underlying `tornado.HTTPRequest`
+                passed to underlying `tornado.HTTPRequest`, overrides
+                `http_request_kwargs`
         Returns:
             parsed JSON response if `parse_json=True`, else `tornado.HTTPResponse`
         """
-        req = HTTPRequest(url, **kwargs)
+        request_kwargs = self.http_request_kwargs.copy()
+        request_kwargs.update(kwargs)
+        req = HTTPRequest(url, **request_kwargs)
         return await self.fetch(
             req, label=label, parse_json=parse_json, raise_error=raise_error
         )
