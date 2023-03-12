@@ -406,10 +406,11 @@ class OAuthenticator(Authenticator):
             req: tornado HTTPRequest
             label (str): label describing what is happening,
                 used in log message when the request fails.
+            parse_json (bool): whether to parse the response as JSON
             **kwargs: remaining keyword args
                 passed to underlying `client.fetch(req, **kwargs)`
         Returns:
-            r: parsed JSON response
+            parsed JSON response if `parse_json=True`, else `tornado.HTTPResponse`
         """
         try:
             resp = await self.http_client.fetch(req, **kwargs)
@@ -443,6 +444,29 @@ class OAuthenticator(Authenticator):
                     return None
             else:
                 return resp
+
+    async def httpfetch(
+        self, url, label="fetching", parse_json=True, raise_error=True, **kwargs
+    ):
+        """Wrapper for creating and fetching http requests
+
+        logs error responses, parses successful JSON responses
+
+        Args:
+            url (str): url to fetch
+            label (str): label describing what is happening,
+                used in log message when the request fails.
+            parse_json (bool): whether to parse the response as JSON
+            raise_error (bool): whether to raise an exception on HTTP errors
+            **kwargs: remaining keyword args
+                passed to underlying `tornado.HTTPRequest`
+        Returns:
+            parsed JSON response if `parse_json=True`, else `tornado.HTTPResponse`
+        """
+        req = HTTPRequest(url, **kwargs)
+        return await self.fetch(
+            req, label=label, parse_json=parse_json, raise_error=raise_error
+        )
 
     def login_url(self, base_url):
         return url_path_join(base_url, "oauth_login")
@@ -590,15 +614,13 @@ class OAuthenticator(Authenticator):
         """
         url = url_concat(self.token_url, params)
 
-        req = HTTPRequest(
+        token_info = await self.httpfetch(
             url,
             method="POST",
             headers=self.build_token_info_request_headers(),
             body=json.dumps(params),
             validate_cert=self.validate_server_cert,
         )
-
-        token_info = await self.fetch(req)
 
         if "error_description" in token_info:
             raise web.HTTPError(
@@ -635,14 +657,13 @@ class OAuthenticator(Authenticator):
         if self.userdata_token_method == "url":
             url = url_concat(url, dict(access_token=access_token))
 
-        req = HTTPRequest(
+        return await self.httpfetch(
             url,
+            "Fetching user info...",
             method="GET",
             headers=self.build_userdata_request_headers(access_token, token_type),
             validate_cert=self.validate_server_cert,
         )
-
-        return await self.fetch(req, "Fetching user info...")
 
     def build_auth_state_dict(self, token_info, user_info):
         """

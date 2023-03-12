@@ -2,7 +2,6 @@
 Custom Authenticator to use Bitbucket OAuth with JupyterHub
 """
 from jupyterhub.auth import LocalAuthenticator
-from tornado.httpclient import HTTPRequest
 from tornado.httputil import url_concat
 from traitlets import Set, default
 
@@ -68,8 +67,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             "https://api.bitbucket.org/2.0/workspaces", {'role': 'member'}
         )
         while next_page:
-            req = HTTPRequest(next_page, method="GET", headers=headers)
-            resp_json = await self.fetch(req)
+            resp_json = await self.httpfetch(next_page, method="GET", headers=headers)
             next_page = resp_json.get('next', None)
 
             user_teams = {entry["name"] for entry in resp_json["values"]}

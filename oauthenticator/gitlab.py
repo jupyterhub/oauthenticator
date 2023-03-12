@@ -160,13 +160,12 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _get_gitlab_version(self, access_token):
         url = f"{self.gitlab_api}/version"
-        req = HTTPRequest(
+        resp_json = await self.httpfetch(
             url,
             method="GET",
             headers=_api_headers(access_token),
             validate_cert=self.validate_server_cert,
         )
-        resp_json = await self.fetch(req)
         version_strings = resp_json['version'].split('-')[0].split('.')[:3]
         version_ints = list(map(int, version_strings))
         return version_ints
@@ -183,11 +182,15 @@ class GitLabOAuthenticator(OAuthenticator):
             )
             req = HTTPRequest(
                 url,
+            )
+            resp = await self.httpfetch(
+                url,
+                parse_json=False,
+                raise_error=False,
                 method="GET",
                 headers=headers,
                 validate_cert=self.validate_server_cert,
             )
-            resp = await self.fetch(req, raise_error=False, parse_json=False)
             if resp.code == 200:
                 return True  # user _is_ in group
         return False
@@ -202,13 +205,13 @@ class GitLabOAuthenticator(OAuthenticator):
                 self.member_api_variant,
                 user_id,
             )
-            req = HTTPRequest(
+            resp_json = await self.httpfetch(
                 url,
+                raise_error=False,
                 method="GET",
                 headers=headers,
                 validate_cert=self.validate_server_cert,
             )
-            resp_json = await self.fetch(req, raise_error=False)
             if resp_json:
                 access_level = resp_json.get('access_level', 0)
 
