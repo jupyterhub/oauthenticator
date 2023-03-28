@@ -698,8 +698,7 @@ class OAuthenticator(Authenticator):
 
     access_token_expiration_env = "OAUTH_ACCESS_TOKEN_EXPIRATION"
     access_token_expiration = Unicode(
-        config=True,
-        help="""Default expiration, in seconds, of the access token."""
+        config=True, help="""Default expiration, in seconds, of the access token."""
     )
 
     def _access_token_expiration_default(self):
@@ -1307,7 +1306,9 @@ class OAuthenticator(Authenticator):
             )
             return True
 
-        refresh_token_params = self.build_refresh_token_request_params(auth_state['refresh_token'])
+        refresh_token_params = self.build_refresh_token_request_params(
+            auth_state['refresh_token']
+        )
         return await self._oauth_call(handler, refresh_token_params)
 
     async def _oauth_call(self, handler, params, data=None):
