@@ -1281,7 +1281,7 @@ class OAuthenticator(Authenticator):
         # build the parameters to be used in the request exchanging the oauth code for the access token
         access_token_params = self.build_access_tokens_request_params(handler, data)
         # call the oauth endpoints
-        return await self._oauth_call(handler, access_token_params)
+        return await self._oauth_call(handler, access_token_params, **kwargs)
 
     async def refresh_user(self, user, handler=None, **kwargs):
         '''
@@ -1309,9 +1309,9 @@ class OAuthenticator(Authenticator):
         refresh_token_params = self.build_refresh_token_request_params(
             auth_state['refresh_token']
         )
-        return await self._oauth_call(handler, refresh_token_params)
+        return await self._oauth_call(handler, refresh_token_params, **kwargs)
 
-    async def _oauth_call(self, handler, params, data=None):
+    async def _oauth_call(self, handler, params, data=None, **kwargs):
         """
         Common logic shared by authenticate() and refresh_user()
         """
