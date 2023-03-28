@@ -7,6 +7,7 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 import base64
 import json
 import os
+import time
 import uuid
 from functools import reduce
 from inspect import isawaitable
@@ -695,6 +696,15 @@ class OAuthenticator(Authenticator):
                 return client_secret
         return os.getenv("OAUTH_CLIENT_SECRET", "")
 
+    access_token_expiration_env = "OAUTH_ACCESS_TOKEN_EXPIRATION"
+    access_token_expiration = Unicode(
+        config=True,
+        help="""Default expiration, in seconds, of the access token."""
+    )
+
+    def _access_token_expiration_default(self):
+        return os.getenv(self.access_token_expiration_env, "3600")
+
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
     validate_server_cert = Bool(
         config=True,
@@ -992,6 +1002,27 @@ class OAuthenticator(Authenticator):
 
         return params
 
+    def build_refresh_token_request_params(self, refresh_token):
+        """
+        Builds the parameters that should be passed to the URL request
+        that renew Access Token from Refresh Token.
+        Called by the :meth:`oauthenticator.OAuthenticator.refresh_user`.
+        """
+        params = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        }
+
+        # the client_id and client_secret should not be included in the access token request params
+        # when basic authentication is used
+        # ref: https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1
+        if self.basic_auth:
+            params.update(
+                [("client_id", self.client_id), ("client_secret", self.client_secret)]
+            )
+
+        return params
+
     async def get_token_info(self, handler, params):
         """
         Makes a "POST" request to `self.token_url`, with the parameters received as argument.
@@ -1082,6 +1113,38 @@ class OAuthenticator(Authenticator):
             validate_cert=self.validate_server_cert,
         )
 
+    def get_access_token_creation_date(self, token_info):
+        """
+        Returns the access token creation date, in seconds (Unix epoch time).
+
+        Example: 1679994631
+
+        Args:
+            token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
+
+        Returns:
+            creation_date: a number representing the access token creation date, in seconds (Unix epoch time)
+
+        Called by the :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
+        """
+        return token_info.get("created_at", time.time())
+
+    def get_access_token_lifetime(self, token_info):
+        """
+        Returns the access token lifetime, in seconds.
+
+        Example: 7200
+
+        Args:
+            token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
+
+        Returns:
+            lifetime: a number representing the access token lifetime, in seconds
+
+        Called by the :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
+        """
+        return token_info.get("expires_in", self.access_token_expiration)
+
     def build_auth_state_dict(self, token_info, user_info):
         """
         Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
@@ -1094,6 +1157,8 @@ class OAuthenticator(Authenticator):
         Returns:
             auth_state: a dictionary of auth state that should be persisted with the following keys:
                 - "access_token": the access_token
+                - "created_at": creation date, in seconds, of the access_token
+                - "expires_in": expiration date, in seconds, of the access_token
                 - "refresh_token": the refresh_token, if available
                 - "id_token": the id_token, if available
                 - "scope": the scopes, if available
@@ -1106,8 +1171,10 @@ class OAuthenticator(Authenticator):
             This method be async.
         """
 
-        # We know for sure the `access_token` key exists, oterwise we would have errored out already
+        # We know for sure the `access_token` key exists, otherwise we would have errored out already
         access_token = token_info["access_token"]
+        created_at = self.get_access_token_creation_date(token_info)
+        expires_in = self.get_access_token_lifetime(token_info)
 
         refresh_token = token_info.get("refresh_token", None)
         id_token = token_info.get("id_token", None)
@@ -1118,6 +1185,8 @@ class OAuthenticator(Authenticator):
 
         return {
             "access_token": access_token,
+            "created_at": created_at,
+            "expires_in": expires_in,
             "refresh_token": refresh_token,
             "id_token": id_token,
             "scope": scope,
@@ -1212,8 +1281,42 @@ class OAuthenticator(Authenticator):
         """
         # build the parameters to be used in the request exchanging the oauth code for the access token
         access_token_params = self.build_access_tokens_request_params(handler, data)
+        # call the oauth endpoints
+        return await self._oauth_call(handler, access_token_params)
+
+    async def refresh_user(self, user, handler=None, **kwargs):
+        '''
+        Renew the Access Token with a valid Refresh Token
+        '''
+
+        auth_state = await user.get_auth_state()
+        if not auth_state:
+            self.log.info(
+                "No auth_state found for user %s refresh, need full authentication",
+                user,
+            )
+            return False
+
+        created_at = auth_state.get('created_at', 0)
+        expires_in = auth_state.get('expires_in', 0)
+        is_expired = created_at + expires_in - time.time() < 0
+        if not is_expired:
+            self.log.info(
+                "access_token still valid for user %s, skip refresh",
+                user,
+            )
+            return True
+
+        refresh_token_params = self.build_refresh_token_request_params(auth_state['refresh_token'])
+        return await self._oauth_call(handler, refresh_token_params)
+
+    async def _oauth_call(self, handler, params, data=None):
+        """
+        Common logic shared by authenticate() and refresh_user()
+        """
+
         # exchange the oauth code for an access token and get the JSON with info about it
-        token_info = await self.get_token_info(handler, access_token_params)
+        token_info = await self.get_token_info(handler, params)
         # use the access_token to get userdata info
         user_info = await self.token_to_user(token_info)
         # extract the username out of the user_info dict and normalize it
