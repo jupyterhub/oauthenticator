@@ -1,9 +1,9 @@
 # Azure AD Setup
 
-1. Install `PyJWT>=2`
+1. Install oauthenticator with required dependency
 
    ```bash
-   pip3 install PyJWT
+   pip3 install "oauthenticator[azuread]"
    ```
 
 1. Set the `AAD_TENANT_ID` environment variable

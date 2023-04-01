@@ -101,6 +101,8 @@ with open('requirements.txt') as f:
 
 setup_args['extras_require'] = {
     'googlegroups': ['google-api-python-client', 'google-auth-oauthlib'],
+    'mediawiki': ['mwoauth>=0.3.8'],
+    'azuread': ['pyjwt>=2'],
 }
 
 
