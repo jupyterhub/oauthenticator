@@ -7,7 +7,6 @@ import warnings
 
 from jupyterhub.auth import LocalAuthenticator
 from requests.utils import parse_header_links
-from tornado.httpclient import HTTPRequest
 from traitlets import Bool, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -169,13 +168,13 @@ class GitHubOAuthenticator(OAuthenticator):
         if not auth_model["auth_state"]["github_user"]["email"] and (
             "user" in granted_scopes or "user:email" in granted_scopes
         ):
-            req = HTTPRequest(
+            resp_json = await self.httpfetch(
                 self.github_api + "/user/emails",
+                "fetching user emails",
                 method="GET",
                 headers=self.build_userdata_request_headers(access_token, token_type),
                 validate_cert=self.validate_server_cert,
             )
-            resp_json = await self.fetch(req, "fetching user emails")
             for val in resp_json:
                 if val["primary"]:
                     auth_model["auth_state"]["github_user"]["email"] = val["email"]
@@ -210,13 +209,14 @@ class GitHubOAuthenticator(OAuthenticator):
         url = api_url
         content = []
         while True:
-            req = HTTPRequest(
+            resp = await self.httpfetch(
                 url,
+                "fetching user teams",
+                parse_json=False,
                 method="GET",
                 headers=self.build_userdata_request_headers(access_token, token_type),
                 validate_cert=self.validate_server_cert,
             )
-            resp = await self.fetch(req, "fetching user teams", parse_json=False)
 
             resp_json = json.loads(resp.body.decode())
             content += resp_json
@@ -258,14 +258,15 @@ class GitHubOAuthenticator(OAuthenticator):
 
         check_membership_url = self._build_check_membership_url(org, username)
 
-        req = HTTPRequest(
+        self.log.debug(f"Checking GitHub organization membership: {username} in {org}?")
+        resp = await self.httpfetch(
             check_membership_url,
+            parse_json=False,
+            raise_error=False,
             method="GET",
             headers=headers,
             validate_cert=self.validate_server_cert,
         )
-        self.log.debug(f"Checking GitHub organization membership: {username} in {org}?")
-        resp = await self.fetch(req, raise_error=False, parse_json=False)
         if resp.code == 204:
             self.log.info(f"Allowing {username} as member of {org}")
             return True

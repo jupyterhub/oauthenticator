@@ -1,3 +1,4 @@
+import re
 import uuid
 from unittest.mock import Mock
 
@@ -41,3 +42,26 @@ async def test_custom_logout(monkeypatch):
     await logout_handler.get()
     assert logout_handler.clear_login_cookie.called
     logout_handler.clear_cookie.assert_called_once_with(STATE_COOKIE_NAME)
+
+
+async def test_httpfetch(client):
+    authenticator = OAuthenticator()
+    authenticator.http_request_kwargs = {
+        "proxy_host": "proxy.example.org",
+        "proxy_port": 8080,
+    }
+
+    # Return request fields as the response so we can examine it
+    client.add_host(
+        "example.org",
+        [
+            (
+                re.compile(".*"),
+                lambda req: [req.url, req.method, req.proxy_host, req.proxy_port],
+            ),
+        ],
+    )
+    authenticator.http_client = client
+
+    r = await authenticator.httpfetch("http://example.org/a")
+    assert r == ['http://example.org/a', 'GET', "proxy.example.org", 8080]

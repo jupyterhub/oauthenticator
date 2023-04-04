@@ -7,7 +7,6 @@ import pickle
 import urllib
 
 from jupyterhub.auth import LocalAuthenticator
-from tornado.httpclient import HTTPRequest
 from tornado.web import HTTPError
 from traitlets import Bool, List, Set, Unicode, default
 
@@ -247,8 +246,9 @@ class GlobusOAuthenticator(OAuthenticator):
         # Get list of user's Groups
         groups_headers = self.get_default_headers()
         groups_headers['Authorization'] = f'Bearer {groups_token}'
-        req = HTTPRequest(self.globus_groups_url, method='GET', headers=groups_headers)
-        groups_resp = await self.fetch(req)
+        groups_resp = await self.httpfetch(
+            self.globus_groups_url, method='GET', headers=groups_headers
+        )
         # Build set of Group IDs
         for group in groups_resp:
             user_group_ids.add(group['id'])
@@ -345,13 +345,12 @@ class GlobusOAuthenticator(OAuthenticator):
         all_tokens = [tok for tok in access_tokens + refresh_tokens if tok is not None]
 
         for token in all_tokens:
-            req = HTTPRequest(
+            await self.httpfetch(
                 self.revocation_url,
                 method="POST",
                 headers=self.get_client_credential_headers(),
                 body=urllib.parse.urlencode({'token': token}),
             )
-            await self.fetch(req)
 
 
 class LocalGlobusOAuthenticator(LocalAuthenticator, GlobusOAuthenticator):

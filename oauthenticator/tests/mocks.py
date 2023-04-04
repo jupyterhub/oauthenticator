@@ -33,7 +33,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
 
         Args:
             host (str): the host to mock (e.g. 'api.github.com')
-            paths (list(str|regex, callable)): a list of paths (or regexps for paths)
+            paths (list[(str|regex, callable)]): a list of paths (or regexps for paths)
                 and callables to be called for those paths.
                 The mock handlers will receive the request as their only argument.
 
@@ -47,7 +47,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         Example::
 
             client.add_host('api.github.com', [
-                ('/user': lambda request: {'login': 'name'})
+                ('/user', lambda request: {'login': 'name'})
             ])
         """
         self.hosts[host] = paths
