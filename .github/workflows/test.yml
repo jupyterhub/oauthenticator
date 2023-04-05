@@ -68,6 +68,4 @@ jobs:
         run: |
           pytest -v --color=yes --cov=oauthenticator oauthenticator
 
-      - name: Submit codecov report
-        run: |
-          codecov
+      - uses: codecov/codecov-action@v3
