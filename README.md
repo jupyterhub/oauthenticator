@@ -31,18 +31,17 @@ The [docs](https://oauthenticator.readthedocs.io/en/latest/tutorials/provider-sp
 
 ## Running tests
 
-To run the tests locally:
+To run the tests locally, first setup a development environment as described in
+[CONTRIBUTING.md], and then do:
 
 ```
-$ pip install --upgrade --pre -r test-requirements.txt
-```
-
-```
-$ pytest -v ./oauthenticator/tests/
+pytest -v ./oauthenticator/tests/
 ```
 
 Or you run a specific test file with:
 
 ```
-$ pytest -v ./oauthenticator/tests/<test-file-name>
+pytest -v ./oauthenticator/tests/<test-file-name>
 ```
+
+[contributing.md]: https://github.com/jupyterhub/oauthenticator/blob/main/CONTRIBUTING.md

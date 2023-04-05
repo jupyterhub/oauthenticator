@@ -100,9 +100,25 @@ with open('requirements.txt') as f:
 
 
 setup_args['extras_require'] = {
-    'googlegroups': ['google-api-python-client', 'google-auth-oauthlib'],
-    'mediawiki': ['mwoauth>=0.3.8'],
     'azuread': ['pyjwt>=2'],
+    'googlegroups': [
+        'google-api-python-client',
+        'google-auth-oauthlib',
+    ],
+    'mediawiki': ['mwoauth>=0.3.8'],
+    'test': [
+        'pytest>=2.8',
+        'pytest-asyncio',
+        'pytest-cov',
+        'requests-mock',
+        # dependencies from azuread:
+        'pyjwt>=2',
+        # dependencies from googlegroups:
+        'google-api-python-client',
+        'google-auth-oauthlib',
+        # dependencies from mediawiki:
+        'mwoauth>=0.3.8',
+    ],
 }
 
 

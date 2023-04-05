@@ -51,7 +51,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --upgrade . -r test-requirements.txt
+          pip install ".[test]"
           pip list
 
       - name: Downgrade to oldest dependencies
