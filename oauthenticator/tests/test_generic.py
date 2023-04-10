@@ -190,6 +190,27 @@ async def test_generic_groups_claim_key_with_allowed_groups_and_admin_groups_not
     assert user_info['admin'] is False
 
 
+async def test_generic_groups_claim_key_with_allowed_groups_and_no_admin_groups_but_admin_users(
+    get_authenticator, generic_client
+):
+    authenticator = get_authenticator(
+        scope=['openid', 'profile', 'roles'],
+        claim_groups_key='groups',
+        allowed_groups=['user'],
+        admin_groups=[],
+        admin_users=['wash'],
+    )
+    handler = generic_client.handler_for_user(
+        user_model('wash', alternate_username='zoe', groups=['user'])
+    )
+
+    # Assert that the authenticated user is actually an admin due to being listed in `admin_users`
+    # Even though admin_groups is empty
+    user_info = await authenticator.get_authenticated_user(handler, data=None)
+    assert user_info['name'] == 'wash'
+    assert user_info['admin'] is True
+
+
 async def test_generic_callable_groups_claim_key_with_allowed_groups_and_admin_groups(
     get_authenticator, generic_client
 ):

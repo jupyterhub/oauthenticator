@@ -99,6 +99,27 @@ class GenericOAuthenticator(OAuthenticator):
 
         return username
 
+    def get_user_groups(self, user_info):
+        if callable(self.claim_groups_key):
+            groups = self.claim_groups_key(user_info)
+        else:
+            try:
+                groups = reduce(
+                    dict.get, self.claim_groups_key.split("."), user_info
+                )
+            except TypeError:
+                # This happens if a nested key does not exist (reduce trying to call None.get)
+                self.log.error(
+                    f"The key {self.claim_groups_key} does not exist in the user token, or it is set to null"
+                )
+                groups = None
+
+        if not groups:
+            self.log.error(
+                f"No claim groups found for user! Something wrong with the `claim_groups_key` {self.claim_groups_key}? {user_info}"
+            )
+        return groups
+
     async def user_is_authorized(self, auth_model):
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         if self.allowed_groups:
@@ -106,23 +127,8 @@ class GenericOAuthenticator(OAuthenticator):
                 f"Validating if user claim groups match any of {self.allowed_groups}"
             )
 
-            if callable(self.claim_groups_key):
-                groups = self.claim_groups_key(user_info)
-            else:
-                try:
-                    groups = reduce(
-                        dict.get, self.claim_groups_key.split("."), user_info
-                    )
-                except TypeError:
-                    # This happens if a nested key does not exist (reduce trying to call None.get)
-                    self.log.error(
-                        f"The key {self.claim_groups_key} does not exist in the user token, or it is set to null"
-                    )
-                    groups = None
+            groups = self.get_user_groups(user_info)
             if not groups:
-                self.log.error(
-                    f"No claim groups found for user! Something wrong with the `claim_groups_key` {self.claim_groups_key}? {user_info}"
-                )
                 return False
 
             if not self.check_user_in_groups(groups, self.allowed_groups):
@@ -132,17 +138,15 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def update_auth_model(self, auth_model):
         user_info = auth_model["auth_state"][self.user_auth_state_key]
-        if self.allowed_groups:
-            if callable(self.claim_groups_key):
-                groups = self.claim_groups_key(user_info)
-            else:
-                groups = user_info.get(self.claim_groups_key)
-
-            # User has been checked to be in allowed_groups too if we're here
+        admin_status = True if auth_model['name'] in self.admin_users else None
+        # Check if user has been marked as admin by membership in self.admin_groups
+        if not admin_status and self.admin_groups:
+            groups = self.get_user_groups(user_info)
             if groups:
                 auth_model['admin'] = self.check_user_in_groups(
                     groups, self.admin_groups
                 )
+
         return auth_model
 
 
