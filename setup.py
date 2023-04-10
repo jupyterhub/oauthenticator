@@ -47,7 +47,7 @@ setup_args = dict(
     license="BSD",
     platforms="Linux, Mac OS X",
     keywords=['Interactive', 'Interpreter', 'Shell', 'Web'],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     include_package_data=True,
     entry_points={
         'jupyterhub.authenticators': [
