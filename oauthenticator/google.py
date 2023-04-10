@@ -140,19 +140,36 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 raise HTTPError(
                     403, f"Google account domain @{user_email_domain} not authorized."
                 )
+
+        if self.allowed_google_groups:
+            google_groups = self._google_groups_for_user(user_email, user_email_domain)
+            if not google_groups:
+                return False
+
+            auth_model['auth_state']['google_user']['google_groups'] = google_groups
+
+            # Check if user is a member of any allowed groups.
+            if user_email_domain in self.allowed_google_groups:
+                return check_user_in_groups(
+                    google_groups, self.allowed_google_groups[user_email_domain]
+                )
+
         return True
+
 
     async def update_auth_model(self, auth_model, google_groups=None):
         username = auth_model["name"]
-        user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
+        admin_status = True if username in self.admin_users else None
+        if admin_status:
+            auth_model['admin'] = is_admin
+        elif self.admin_google_groups:
+            user_email_domain = auth_model['auth_state'][self.user_auth_state_key]['hd']
 
-        if len(self.hosted_domain) == 1 and user_email == username:
-            # unambiguous domain, use only base name
-            username = user_email.split('@')[0]
-            auth_model["name"] = username
-
-        if self.admin_google_groups or self.allowed_google_groups:
-            auth_model = await self._add_google_groups_info(auth_model, google_groups)
+            # Check if user is a member of any admin groups.
+            is_admin = check_user_in_groups(
+                google_groups, self.admin_google_groups[user_email_domain]
+            )
+            auth_model['admin'] = is_admin
 
         return auth_model
 
@@ -204,10 +221,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             http=http,
         )
 
-    async def _google_groups_for_user(self, user_email, credentials, http=None):
+    def _google_groups_for_user(self, user_email, user_email_domain, http=None):
         """
         Return google groups a given user is a member of
         """
+        credentials = self._service_client_credentials(
+            scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
+            user_email_domain=user_email_domain,
+        )
         service = self._service_client(
             service_name='admin',
             service_version='directory_v1',
@@ -221,46 +242,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         ]
         self.log.debug(f"user_email {user_email} is a member of {results}")
         return results
-
-    async def _add_google_groups_info(self, user_info, google_groups=None):
-        user_email_domain = user_info['auth_state']['google_user']['hd']
-        user_email = user_info['auth_state']['google_user']['email']
-        if google_groups is None:
-            credentials = self._service_client_credentials(
-                scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
-                user_email_domain=user_email_domain,
-            )
-            google_groups = await self._google_groups_for_user(
-                user_email=user_email, credentials=credentials
-            )
-        user_info['auth_state']['google_user']['google_groups'] = google_groups
-
-        # Check if user is a member of any admin groups.
-        if self.admin_google_groups:
-            is_admin = check_user_in_groups(
-                google_groups, self.admin_google_groups[user_email_domain]
-            )
-
-        # Check if user is a member of any allowed groups.
-        allowed_groups = self.allowed_google_groups
-
-        if allowed_groups:
-            if user_email_domain in allowed_groups:
-                user_in_group = check_user_in_groups(
-                    google_groups, allowed_groups[user_email_domain]
-                )
-            else:
-                return None
-        else:
-            user_in_group = True
-
-        if self.admin_google_groups and (is_admin or user_in_group):
-            user_info['admin'] = is_admin
-            return user_info
-        elif user_in_group:
-            return user_info
-        else:
-            return None
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):

@@ -99,8 +99,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
         is an admin and update the auth_model with this info.
         """
         user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
+        admin_status = True if auth_model['name'] in self.admin_users else None
 
-        if self.admin_groups:
+        # Check if user has been marked as admin by membership in self.admin_groups
+        if not admin_status and self.admin_groups:
             auth_model['admin'] = self.user_in_groups(user_groups, self.admin_groups)
 
         return auth_model
