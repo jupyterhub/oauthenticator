@@ -116,7 +116,7 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def user_is_authorized(self, auth_model):
         user_info = auth_model["auth_state"][self.user_auth_state_key]
-        if self.allowed_groups:
+        if not self.allowed_users and (self.allowed_groups or self.admin_groups):
             self.log.info(
                 f"Validating if user claim groups match any of {self.allowed_groups}"
             )

@@ -113,7 +113,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
         user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
         username = auth_model['name']
 
-        if self.allowed_groups or self.admin_groups:
+        if not self.allowed_users and (self.allowed_groups or self.admin_groups):
             msg = f"username:{username} User not in any of the allowed/admin groups"
             # User is authorized if either in allowed_groups or in admin_groups
             if not self.user_groups_in_allowed_groups(
