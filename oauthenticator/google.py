@@ -13,14 +13,6 @@ from traitlets import Dict, List, Unicode, default, validate
 from .oauth2 import OAuthenticator
 
 
-def check_user_in_groups(member_groups, allowed_groups):
-    # Check if user is a member of any group in the allowed groups
-    if any(g in member_groups for g in allowed_groups):
-        return True  # user _is_ in group
-    else:
-        return False
-
-
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     _deprecated_oauth_aliases = {
         "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
@@ -148,28 +140,33 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
             auth_model['auth_state']['google_user']['google_groups'] = google_groups
 
-            # Check if user is a member of any allowed groups.
-            if user_email_domain in self.allowed_google_groups:
-                return check_user_in_groups(
-                    google_groups, self.allowed_google_groups[user_email_domain]
+            # Check if user is a member of any allowed or admin groups.
+            allowed_groups_per_domain = self.allowed_google_groups.get(user_email_domain, []) + self.admin_google_groups.get(user_email_domain, [])
+            print(allowed_groups_per_domain)
+            if not allowed_groups_per_domain:
+                return False
+            else:
+                return self.user_groups_in_allowed_groups(
+                    google_groups, allowed_groups_per_domain
                 )
 
         return True
 
 
-    async def update_auth_model(self, auth_model, google_groups=None):
+    async def update_auth_model(self, auth_model):
         username = auth_model["name"]
         admin_status = True if username in self.admin_users else None
-        if admin_status:
-            auth_model['admin'] = is_admin
-        elif self.admin_google_groups:
-            user_email_domain = auth_model['auth_state'][self.user_auth_state_key]['hd']
+        if not admin_status and self.admin_google_groups:
+            user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
+            user_email_domain = user_email.split('@')[1]
 
-            # Check if user is a member of any admin groups.
-            is_admin = check_user_in_groups(
-                google_groups, self.admin_google_groups[user_email_domain]
-            )
-            auth_model['admin'] = is_admin
+            if user_email_domain in self.admin_google_groups.keys():
+                # Check if user is a member of any admin groups.
+                google_groups = self._google_groups_for_user(user_email, user_email_domain)
+                if google_groups:
+                    auth_model['admin'] = check_user_in_groups(
+                        google_groups, self.admin_google_groups[user_email_domain]
+                    )
 
         return auth_model
 
