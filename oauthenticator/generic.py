@@ -100,9 +100,7 @@ class GenericOAuthenticator(OAuthenticator):
             groups = self.claim_groups_key(user_info)
         else:
             try:
-                groups = reduce(
-                    dict.get, self.claim_groups_key.split("."), user_info
-                )
+                groups = reduce(dict.get, self.claim_groups_key.split("."), user_info)
             except TypeError:
                 # This happens if a nested key does not exist (reduce trying to call None.get)
                 self.log.error(
@@ -127,7 +125,9 @@ class GenericOAuthenticator(OAuthenticator):
             if not groups:
                 return False
 
-            if not self.user_groups_in_allowed_groups(groups, self.allowed_groups + self.admin_groups):
+            if not self.user_groups_in_allowed_groups(
+                groups, self.allowed_groups + self.admin_groups
+            ):
                 return False
 
         return True

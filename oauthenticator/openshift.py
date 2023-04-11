@@ -99,7 +99,9 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         # Check if user has been marked as admin by membership in self.admin_groups
         if not admin_status and self.admin_groups:
-            auth_model['admin'] = self.user_groups_in_allowed_groups(user_groups, self.admin_groups)
+            auth_model['admin'] = self.user_groups_in_allowed_groups(
+                user_groups, self.admin_groups
+            )
 
         return auth_model
 
@@ -114,7 +116,9 @@ class OpenShiftOAuthenticator(OAuthenticator):
         if self.allowed_groups or self.admin_groups:
             msg = f"username:{username} User not in any of the allowed/admin groups"
             # User is authorized if either in allowed_groups or in admin_groups
-            if not self.user_groups_in_allowed_groups(user_groups, self.allowed_groups.union(self.admin_groups)):
+            if not self.user_groups_in_allowed_groups(
+                user_groups, self.allowed_groups.union(self.admin_groups)
+            ):
                 self.log.warning(msg)
                 return False
 

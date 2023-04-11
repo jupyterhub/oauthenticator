@@ -93,6 +93,7 @@ async def test_openshift_in_allowed_groups_and_is_not_admin(openshift_client):
     assert sorted(user_info) == ['admin', 'auth_state', 'name']
     assert user_info['admin'] == False
 
+
 async def test_openshift_not_in_admin_users_but_not_in_admin_groups(openshift_client):
     authenticator = OpenShiftOAuthenticator()
     authenticator.allowed_groups = {'group1'}

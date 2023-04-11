@@ -141,7 +141,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             auth_model['auth_state']['google_user']['google_groups'] = google_groups
 
             # Check if user is a member of any allowed or admin groups.
-            allowed_groups_per_domain = self.allowed_google_groups.get(user_email_domain, []) + self.admin_google_groups.get(user_email_domain, [])
+            allowed_groups_per_domain = self.allowed_google_groups.get(
+                user_email_domain, []
+            ) + self.admin_google_groups.get(user_email_domain, [])
             if not allowed_groups_per_domain:
                 return False
             else:
@@ -150,7 +152,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 )
 
         return True
-
 
     async def update_auth_model(self, auth_model):
         username = auth_model["name"]
@@ -161,7 +162,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
             if user_email_domain in self.admin_google_groups.keys():
                 # Check if user is a member of any admin groups.
-                google_groups = self._google_groups_for_user(user_email, user_email_domain)
+                google_groups = self._google_groups_for_user(
+                    user_email, user_email_domain
+                )
                 if google_groups:
                     auth_model['admin'] = self.user_groups_in_allowed_groups(
                         google_groups, self.admin_google_groups[user_email_domain]
