@@ -73,12 +73,12 @@ class GlobusOAuthenticator(OAuthenticator):
     revocation_url = Unicode(
         "https://auth.globus.org/v2/oauth2/token/revoke",
         help="Globus URL to revoke live tokens.",
-        config=True
+        config=True,
     )
     globus_groups_url = Unicode(
         "https://groups.api.globus.org/v2/groups/my_groups",
         help="Globus URL to get list of user's Groups.",
-        config=True
+        config=True,
     )
 
     identity_provider = Unicode(
@@ -96,7 +96,7 @@ class GlobusOAuthenticator(OAuthenticator):
         help="""Create username from email address, not preferred username. If
         an identity provider is specified, email address must be from the same
         domain. Email scope will be set automatically.""",
-        config=True
+        config=True,
     )
 
     @default("username_claim")

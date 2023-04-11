@@ -1,10 +1,10 @@
 """Py.Test fixtures"""
-import inspect
 
 from pytest import fixture
 from tornado.httpclient import AsyncHTTPClient
 
 from .mocks import MockAsyncHTTPClient
+
 
 @fixture
 def client(request):

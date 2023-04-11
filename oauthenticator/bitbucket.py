@@ -3,7 +3,7 @@ Custom Authenticator to use Bitbucket OAuth with JupyterHub
 """
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httputil import url_concat
-from traitlets import Set, default
+from traitlets import Set
 
 from .oauth2 import OAuthenticator
 
