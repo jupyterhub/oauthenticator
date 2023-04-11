@@ -92,11 +92,12 @@ class GlobusOAuthenticator(OAuthenticator):
         return os.getenv('IDENTITY_PROVIDER', '')
 
     username_from_email = Bool(
+        False,
         help="""Create username from email address, not preferred username. If
         an identity provider is specified, email address must be from the same
         domain. Email scope will be set automatically.""",
-        default=False
-    ).tag(config=True)
+        config=True
+    )
 
     @default("username_claim")
     def _username_claim_default(self):

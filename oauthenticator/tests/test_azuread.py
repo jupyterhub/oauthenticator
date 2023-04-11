@@ -12,7 +12,7 @@ from ..azuread import AzureAdOAuthenticator
 from .mocks import setup_oauth_mock
 
 
-def test_tenant_id_from_env():
+async def test_tenant_id_from_env():
     tenant_id = "some_random_id"
     with mock.patch.dict(os.environ, {"AAD_TENANT_ID": tenant_id}):
         aad = AzureAdOAuthenticator()

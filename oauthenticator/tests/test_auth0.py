@@ -83,7 +83,7 @@ async def test_custom_logout(monkeypatch):
     logout_handler.redirect.assert_called_with(custom_logout_url)
 
 
-def test_deprecated_config(caplog):
+async def test_deprecated_config(caplog):
     cfg = Config()
     cfg.Auth0OAuthenticator.username_key = 'nickname'
     log = logging.getLogger("testlog")

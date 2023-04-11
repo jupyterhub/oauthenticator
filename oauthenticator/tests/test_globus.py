@@ -202,7 +202,7 @@ async def test_globus_pre_spawn_start(mock_globus_user):
     assert 'GLOBUS_DATA' in spawner.environment
 
 
-def test_globus_defaults():
+async def test_globus_defaults():
     authenticator = GlobusOAuthenticator()
     print(f"userdata_url: {authenticator.userdata_url}")
     print(f"authorize_url: {authenticator.authorize_url}")
