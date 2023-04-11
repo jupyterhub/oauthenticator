@@ -127,7 +127,7 @@ class GenericOAuthenticator(OAuthenticator):
             if not groups:
                 return False
 
-            if not self.user_groups_in_allowed_groups(groups, self.allowed_groups):
+            if not self.user_groups_in_allowed_groups(groups, self.allowed_groups + self.admin_groups):
                 return False
 
         return True

@@ -142,7 +142,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
             # Check if user is a member of any allowed or admin groups.
             allowed_groups_per_domain = self.allowed_google_groups.get(user_email_domain, []) + self.admin_google_groups.get(user_email_domain, [])
-            print(allowed_groups_per_domain)
             if not allowed_groups_per_domain:
                 return False
             else:

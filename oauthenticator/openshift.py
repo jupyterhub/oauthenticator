@@ -113,10 +113,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         if self.allowed_groups or self.admin_groups:
             msg = f"username:{username} User not in any of the allowed/admin groups"
-            if not self.user_in_groups(user_groups, self.allowed_groups):
-                if not self.user_in_groups(user_groups, self.admin_groups):
-                    self.log.warning(msg)
-                    return False
+            # User is authorized if either in allowed_groups or in admin_groups
+            if not self.user_in_groups(user_groups, self.allowed_groups + self.admin_groups):
+                self.log.warning(msg)
+                return False
 
         return True
 
