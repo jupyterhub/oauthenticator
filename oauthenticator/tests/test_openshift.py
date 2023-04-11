@@ -92,3 +92,13 @@ async def test_openshift_in_allowed_groups_and_is_not_admin(openshift_client):
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['admin', 'auth_state', 'name']
     assert user_info['admin'] == False
+
+async def test_openshift_not_in_admin_users_but_not_in_admin_groups(openshift_client):
+    authenticator = OpenShiftOAuthenticator()
+    authenticator.allowed_groups = {'group1'}
+    authenticator.admin_users = ['wash']
+    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
+    handler = openshift_client.handler_for_user(user_model('wash'))
+    user_info = await authenticator.get_authenticated_user(handler, data=None)
+    assert sorted(user_info) == ['admin', 'auth_state', 'name']
+    assert user_info['admin'] == True
