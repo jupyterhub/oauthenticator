@@ -204,6 +204,11 @@ async def test_globus_pre_spawn_start(mock_globus_user):
 
 def test_globus_defaults():
     authenticator = GlobusOAuthenticator()
+    print(f"userdata_url: {authenticator.userdata_url}")
+    print(f"authorize_url: {authenticator.authorize_url}")
+    print(f"revocation_url: {authenticator.revocation_url}")
+    print(f"token_url: {authenticator.token_url}")
+
     assert all(
         'https://auth.globus.org' in url
         for url in [

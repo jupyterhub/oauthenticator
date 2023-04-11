@@ -61,13 +61,12 @@ class CILogonOAuthenticator(OAuthenticator):
 
     client_id_env = 'CILOGON_CLIENT_ID'
     client_secret_env = 'CILOGON_CLIENT_SECRET'
+
+    user_auth_state_key = "cilogon_user"
+
     login_handler = CILogonLoginHandler
 
     cilogon_host = Unicode(os.environ.get("CILOGON_HOST") or "cilogon.org", config=True)
-
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "cilogon_user"
 
     @default("authorize_url")
     def _authorize_url_default(self):

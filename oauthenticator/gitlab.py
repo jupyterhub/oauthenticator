@@ -33,13 +33,10 @@ class GitLabOAuthenticator(OAuthenticator):
     }
 
     login_service = "GitLab"
+    user_auth_state_key = "gitlab_user"
 
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
-
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "gitlab_user"
 
     gitlab_url = Unicode("https://gitlab.com", config=True)
 

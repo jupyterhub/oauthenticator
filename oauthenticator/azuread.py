@@ -19,17 +19,12 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "user"
+    user_auth_state_key = "user"
+    username_claim = "name"
 
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
-
-    @default('username_claim')
-    def _username_claim_default(self):
-        return 'name'
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -40,7 +35,6 @@ class AzureAdOAuthenticator(OAuthenticator):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
 
     async def token_to_user(self, token_info):
-        access_token = token_info['access_token']
         id_token = token_info['id_token']
         decoded = jwt.decode(
             id_token,
