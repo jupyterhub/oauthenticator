@@ -83,10 +83,6 @@ class GenericOAuthenticator(OAuthenticator):
             force_instance=True, defaults=dict(validate_cert=self.tls_verify)
         )
 
-    @staticmethod
-    def check_user_in_groups(member_groups, allowed_groups):
-        return bool(set(member_groups) & set(allowed_groups))
-
     def user_info_to_username(self, user_info):
         if callable(self.username_claim):
             username = self.username_claim(user_info)
@@ -131,7 +127,7 @@ class GenericOAuthenticator(OAuthenticator):
             if not groups:
                 return False
 
-            if not self.check_user_in_groups(groups, self.allowed_groups):
+            if not self.user_groups_in_allowed_groups(groups, self.allowed_groups):
                 return False
 
         return True

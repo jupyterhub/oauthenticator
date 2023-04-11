@@ -86,10 +86,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return f"{self.openshift_rest_api_url}/apis/user.openshift.io/v1/users/~"
 
-    @staticmethod
-    def user_in_groups(user_groups: set, allowed_groups: set):
-        return any(user_groups.intersection(allowed_groups))
-
     def user_info_to_username(self, user_info):
         return user_info['metadata']['name']
 
@@ -103,7 +99,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         # Check if user has been marked as admin by membership in self.admin_groups
         if not admin_status and self.admin_groups:
-            auth_model['admin'] = self.user_in_groups(user_groups, self.admin_groups)
+            auth_model['admin'] = self.user_groups_in_allowed_groups(user_groups, self.admin_groups)
 
         return auth_model
 
