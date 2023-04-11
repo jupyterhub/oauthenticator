@@ -733,7 +733,7 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
-    async def update_auth_model(self, auth_model, **kwargs):
+    async def update_auth_model(self, auth_model):
         """
         Updates `auth_model` dict if any fields have changed or additional information is available
         or returns the unchanged `auth_model`.
@@ -806,7 +806,7 @@ class OAuthenticator(Authenticator):
             return None
 
         # update the auth model with any info if available
-        return await self.update_auth_model(auth_model, **kwargs)
+        return await self.update_auth_model(auth_model)
 
     _deprecated_oauth_aliases = {}
 
