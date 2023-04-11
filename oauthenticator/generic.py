@@ -139,7 +139,7 @@ class GenericOAuthenticator(OAuthenticator):
         if not admin_status and self.admin_groups:
             groups = self.get_user_groups(user_info)
             if groups:
-                auth_model['admin'] = self.check_user_in_groups(
+                auth_model['admin'] = self.user_groups_in_allowed_groups(
                     groups, self.admin_groups
                 )
 

@@ -163,7 +163,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 # Check if user is a member of any admin groups.
                 google_groups = self._google_groups_for_user(user_email, user_email_domain)
                 if google_groups:
-                    auth_model['admin'] = check_user_in_groups(
+                    auth_model['admin'] = self.user_groups_in_allowed_groups(
                         google_groups, self.admin_google_groups[user_email_domain]
                     )
 
@@ -219,7 +219,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     def _google_groups_for_user(self, user_email, user_email_domain, http=None):
         """
-        Return google groups a given user is a member of
+        Return a list with the google groups a given user is a member of
         """
         credentials = self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],

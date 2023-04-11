@@ -763,12 +763,16 @@ class OAuthenticator(Authenticator):
         return True
 
     @staticmethod
-    def user_groups_in_allowed_groups(user_groups: set, allowed_groups: set):
+    def user_groups_in_allowed_groups(user_groups, allowed_groups):
         """
         Returns True if user is a member of any group in the allowed groups,
         and False otherwise
         """
-        return any(user_groups.intersection(allowed_groups))
+        if not isinstance(user_groups, set):
+            user_groups = set(user_groups)
+        if not isinstance(allowed_groups, set):
+            allowed_groups = set(allowed_groups)
+        return any((user_groups).intersection(allowed_groups))
 
     async def authenticate(self, handler, data=None, **kwargs):
         # build the parameters to be used in the request exchanging the oauth code for the access token
