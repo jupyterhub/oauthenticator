@@ -145,7 +145,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 user_email_domain, []
             )
             if self.admin_google_groups:
-                allowed_groups_per_domain += self.admin_google_groups.get(user_email_domain, [])
+                allowed_groups_per_domain += self.admin_google_groups.get(
+                    user_email_domain, []
+                )
             if not allowed_groups_per_domain:
                 return False
             else:
