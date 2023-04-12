@@ -65,35 +65,21 @@ class GlobusOAuthenticator(OAuthenticator):
     login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
 
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "globus_user"
+    user_auth_state_key = "globus_user"
+    userdata_url = "https://auth.globus.org/v2/oauth2/userinfo"
+    authorize_url = "https://auth.globus.org/v2/oauth2/authorize"
+    token_url = "https://auth.globus.org/v2/oauth2/token"
 
-    @default("userdata_url")
-    def _userdata_url_default(self):
-        return "https://auth.globus.org/v2/oauth2/userinfo"
-
-    @default("authorize_url")
-    def _authorize_url_default(self):
-        return "https://auth.globus.org/v2/oauth2/authorize"
-
-    @default("revocation_url")
-    def _revocation_url_default(self):
-        return "https://auth.globus.org/v2/oauth2/token/revoke"
-
-    revocation_url = Unicode(help="Globus URL to revoke live tokens.").tag(config=True)
-
-    @default("token_url")
-    def _token_url_default(self):
-        return "https://auth.globus.org/v2/oauth2/token"
-
-    globus_groups_url = Unicode(help="Globus URL to get list of user's Groups.").tag(
-        config=True
+    revocation_url = Unicode(
+        "https://auth.globus.org/v2/oauth2/token/revoke",
+        help="Globus URL to revoke live tokens.",
+        config=True,
     )
-
-    @default("globus_groups_url")
-    def _globus_groups_url_default(self):
-        return "https://groups.api.globus.org/v2/groups/my_groups"
+    globus_groups_url = Unicode(
+        "https://groups.api.globus.org/v2/groups/my_groups",
+        help="Globus URL to get list of user's Groups.",
+        config=True,
+    )
 
     identity_provider = Unicode(
         help="""Restrict which institution a user
@@ -106,14 +92,12 @@ class GlobusOAuthenticator(OAuthenticator):
         return os.getenv('IDENTITY_PROVIDER', '')
 
     username_from_email = Bool(
+        False,
         help="""Create username from email address, not preferred username. If
         an identity provider is specified, email address must be from the same
-        domain. Email scope will be set automatically."""
-    ).tag(config=True)
-
-    @default("username_from_email")
-    def _username_from_email_default(self):
-        return False
+        domain. Email scope will be set automatically.""",
+        config=True,
+    )
 
     @default("username_claim")
     def _username_claim_default(self):

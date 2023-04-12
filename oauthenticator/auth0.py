@@ -48,6 +48,8 @@ class Auth0OAuthenticator(OAuthenticator):
     }
 
     login_service = "Auth0"
+    user_auth_state_key = "auth0_user"
+    username_claim = "email"
 
     auth0_subdomain = Unicode(config=True)
     auth0_domain = Unicode(config=True)
@@ -75,14 +77,6 @@ class Auth0OAuthenticator(OAuthenticator):
         config=True,
         help="Deprecated, use `Auth0OAuthenticator.username_claim`",
     )
-
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "auth0_user"
-
-    @default("username_claim")
-    def _username_claim_default(self):
-        return "email"
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):

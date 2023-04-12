@@ -87,7 +87,7 @@ async def test_cilogon_missing_alternate_claim(cilogon_client):
         user_info = await authenticator.authenticate(handler)
 
 
-def test_deprecated_config(caplog):
+async def test_deprecated_config(caplog):
     cfg = Config()
     cfg.CILogonOAuthenticator.idp_whitelist = ['pink']
 
@@ -111,7 +111,7 @@ def test_deprecated_config(caplog):
     assert expected_deprecation_error in log_msgs
 
 
-def test_allowed_idps_wrong_type(caplog):
+async def test_allowed_idps_wrong_type(caplog):
     # Test alllowed_idps is a dict
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = ['pink']
@@ -131,7 +131,7 @@ async def test_allowed_idps_required_username_derivation(caplog):
         CILogonOAuthenticator(config=cfg)
 
 
-def test_allowed_idps_invalid_entity_id(caplog):
+async def test_allowed_idps_invalid_entity_id(caplog):
     # Test allowed_idps keys cannot be domains, but only valid CILogon entity ids,
     # i.e. only fully formed URLs
     cfg = Config()
