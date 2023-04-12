@@ -1,5 +1,4 @@
 """Py.Test fixtures"""
-
 from pytest import fixture
 from tornado.httpclient import AsyncHTTPClient
 

@@ -36,5 +36,6 @@ target_version = [
 [tool.pytest.ini_options]
 addopts = "--verbose --color=yes --durations=10"
 asyncio_mode = "auto"
-# Ignore thousands of tests in dependencies installed in a virtual environment
-norecursedirs = "lib lib64"
+testpaths = [
+    "oauthenticator/tests"
+]
