@@ -133,7 +133,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                     403, f"Google account domain @{user_email_domain} not authorized."
                 )
 
-        if self.allowed_google_groups:
+        allowed_status = True if auth_model['name'] in self.allowed_users else None
+        if not allowed_status and self.allowed_google_groups:
             google_groups = self._google_groups_for_user(user_email, user_email_domain)
             if not google_groups:
                 return False
