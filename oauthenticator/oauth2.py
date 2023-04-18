@@ -533,7 +533,8 @@ class OAuthenticator(Authenticator):
         Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
         """
         headers = {
-            "Accept": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
             "User-Agent": "JupyterHub",
         }
 
