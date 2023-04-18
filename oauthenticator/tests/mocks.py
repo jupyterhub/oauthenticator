@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import urllib
 import uuid
 from io import BytesIO
 from unittest.mock import Mock
@@ -143,7 +144,7 @@ def setup_oauth_mock(
         if token_request_style == 'json':
             body = request.body.decode('utf8')
             try:
-                body = json.loads(body)
+                body = dict(urllib.parse.parse_qsl(body))
             except ValueError:
                 return HTTPResponse(
                     request=request,

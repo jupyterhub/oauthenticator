@@ -532,7 +532,10 @@ class OAuthenticator(Authenticator):
         Builds and returns the headers to be used in the access token request.
         Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
         """
-        headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
+        headers = {
+            "Accept": "application/x-www-form-urlencoded",
+            "User-Agent": "JupyterHub",
+        }
 
         if not self.basic_auth:
             b64key = base64.b64encode(
@@ -540,13 +543,6 @@ class OAuthenticator(Authenticator):
             )
             headers.update({"Authorization": f'Basic {b64key.decode("utf8")}'})
         return headers
-
-    def build_token_info_body(self, params):
-        """
-        Builds and returns the body to be used in the access token request.
-        Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
-        """
-        return json.dumps(params)
 
     def user_info_to_username(self, user_info):
         """
@@ -641,7 +637,9 @@ class OAuthenticator(Authenticator):
             url,
             method="POST",
             headers=self.build_token_info_request_headers(),
-            body=self.build_token_info_body(params),
+            body="&".join(
+                [f"{k}={v}" for k, v in params.items()]
+            ),  # convert params to a string with urlencoded key-value pairs
             validate_cert=self.validate_server_cert,
         )
 

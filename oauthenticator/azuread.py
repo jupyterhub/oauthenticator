@@ -34,16 +34,6 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
 
-    def build_token_info_request_headers(self):
-        return {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json",
-        }
-
-    def build_token_info_body(self, params):
-        # convert params to a string with urlencoded key-value pairs
-        return "&".join([f"{k}={v}" for k, v in params.items()])
-
     async def token_to_user(self, token_info):
         id_token = token_info['id_token']
         decoded = jwt.decode(
