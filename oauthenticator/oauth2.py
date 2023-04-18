@@ -541,6 +541,13 @@ class OAuthenticator(Authenticator):
             headers.update({"Authorization": f'Basic {b64key.decode("utf8")}'})
         return headers
 
+    def build_token_info_body(self, params):
+        """
+        Builds and returns the body to be used in the access token request.
+        Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
+        """
+        return json.dumps(params)
+
     def user_info_to_username(self, user_info):
         """
         Gets the self.username_claim key's value from the user_info dictionary.
@@ -634,7 +641,7 @@ class OAuthenticator(Authenticator):
             url,
             method="POST",
             headers=self.build_token_info_request_headers(),
-            body=json.dumps(params),
+            body=self.build_token_info_body(params),
             validate_cert=self.validate_server_cert,
         )
 
