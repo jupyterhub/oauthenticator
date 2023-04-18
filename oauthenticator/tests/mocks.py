@@ -2,7 +2,6 @@
 import json
 import os
 import re
-import urllib
 import uuid
 from io import BytesIO
 from unittest.mock import Mock
@@ -141,30 +140,17 @@ def setup_oauth_mock(
         Replies with JSON model for the token.
         """
         assert request.method == 'POST', request.method
-        if token_request_style == 'json':
-            body = request.body.decode('utf8')
-            try:
-                body = dict(urllib.parse.parse_qsl(body))
-            except ValueError:
-                return HTTPResponse(
-                    request=request,
-                    code=400,
-                    reason="Body not JSON: %r" % body,
-                )
-            else:
-                code = body['code']
-        else:
-            query = urlparse(request.url).query
-            if not query:
-                query = request.body.decode('utf8')
-            query = parse_qs(query)
-            if 'code' not in query:
-                return HTTPResponse(
-                    request=request,
-                    code=400,
-                    reason=f"No code in access token request: url={request.url}, body={request.body}",
-                )
-            code = query['code'][0]
+        query = urlparse(request.url).query
+        if not query:
+            query = request.body.decode('utf8')
+        query = parse_qs(query)
+        if 'code' not in query:
+            return HTTPResponse(
+                request=request,
+                code=400,
+                reason=f"No code in access token request: url={request.url}, body={request.body}",
+            )
+        code = query['code'][0]
         if code not in oauth_codes:
             return HTTPResponse(
                 request=request, code=403, reason=f"No such code: {code}"
