@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import urllib
 import uuid
 from io import BytesIO
 from unittest.mock import Mock
