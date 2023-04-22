@@ -29,7 +29,6 @@ def auth0_client(client):
         host=auth0_domain,
         access_token_path='/oauth/token',
         user_path='/userinfo',
-        token_request_style='json',
     )
     return client
 
