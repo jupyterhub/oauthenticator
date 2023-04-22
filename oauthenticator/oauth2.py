@@ -522,7 +522,6 @@ class OAuthenticator(Authenticator):
         """
         return {
             "Accept": "application/json",
-            "Content-Type": "application/json",
             "User-Agent": "JupyterHub",
             "Authorization": f"{token_type} {access_token}",
         }
