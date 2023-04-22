@@ -7,7 +7,7 @@ import base64
 import json
 import os
 import uuid
-from urllib.parse import quote, urlparse, urlunparse
+from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 from jupyterhub.auth import Authenticator
 from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
@@ -643,9 +643,7 @@ class OAuthenticator(Authenticator):
             url,
             method="POST",
             headers=self.build_token_info_request_headers(),
-            body="&".join(
-                [f"{k}={v}" for k, v in params.items()]
-            ),  # convert params to a string with urlencoded key-value pairs
+            body=urlencode(params).encode("utf-8"),
             validate_cert=self.validate_server_cert,
         )
 
