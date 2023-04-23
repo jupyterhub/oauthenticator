@@ -5,11 +5,11 @@ import os
 from functools import reduce
 
 from jupyterhub.auth import LocalAuthenticator
+from jupyterhub.traitlets import Callable
 from tornado.httpclient import AsyncHTTPClient
 from traitlets import Bool, Dict, List, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
-from .traitlets import Callable
 
 
 class GenericOAuthenticator(OAuthenticator):
