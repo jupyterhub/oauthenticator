@@ -733,6 +733,17 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
+    async def user_is_authorized(self, auth_model):
+        """
+        Checks if the user that is authenticating should be authorized or not and False otherwise.
+        Should be overridden with any relevant logic specific to each oauthenticator.
+
+        Returns True by default.
+
+        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        return True
+
     async def update_auth_model(self, auth_model):
         """
         Updates `auth_model` dict if any fields have changed or additional information is available
@@ -751,30 +762,17 @@ class OAuthenticator(Authenticator):
         """
         return auth_model
 
-    async def user_is_authorized(self, auth_model):
-        """
-        Checks if the user that is authenticating should be authorized or not and False otherwise.
-        Should be overridden with any relevant logic specific to each oauthenticator.
-
-        Returns True by default.
-
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
-        """
-        return True
-
-    @staticmethod
-    def user_groups_in_allowed_groups(user_groups, allowed_groups):
-        """
-        Returns True if user is a member of any group in the allowed groups,
-        and False otherwise
-        """
-        if not isinstance(user_groups, set):
-            user_groups = set(user_groups)
-        if not isinstance(allowed_groups, set):
-            allowed_groups = set(allowed_groups)
-        return any((user_groups).intersection(allowed_groups))
-
     async def authenticate(self, handler, data=None, **kwargs):
+        """
+        A JupyterHub Authenticator's authenticate method's job is:
+
+        - return None if the user isn't successfully authenticated
+        - return a dictionary of if authentication is successful with name,
+          admin (optional), and auth_state (optional)
+
+        ref: https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authenticator-authenticate-method
+        ref: https://github.com/jupyterhub/jupyterhub/blob/4.0.0/jupyterhub/auth.py#L581-L611
+        """
         # build the parameters to be used in the request exchanging the oauth code for the access token
         access_token_params = self.build_access_tokens_request_params(handler, data)
         # exchange the oauth code for an access token and get the JSON with info about it
@@ -794,15 +792,17 @@ class OAuthenticator(Authenticator):
             if refresh_token:
                 token_info["refresh_token"] = refresh_token
 
-        # build the auth model to be persisted if authentication goes right
+        # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
+            "admin": None,
             "auth_state": self.build_auth_state_dict(token_info, user_info),
         }
 
         # check if the username that's authenticating should be authorized
         authorized = await self.user_is_authorized(auth_model)
         if not authorized:
+            self.log.warning(f"User {username} wasn't authorized")
             return None
 
         # update the auth model with any info if available

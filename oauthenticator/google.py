@@ -8,7 +8,7 @@ import os
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
-from traitlets import Dict, List, Unicode, default, validate
+from traitlets import Dict, List, Set, Unicode, default, validate
 
 from .oauth2 import OAuthenticator
 
@@ -70,11 +70,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     )
 
     allowed_google_groups = Dict(
-        List(Unicode()), help="Automatically allow members of selected groups"
+        Set(Unicode()), help="Automatically allow members of selected groups"
     ).tag(config=True)
 
     admin_google_groups = Dict(
-        List(Unicode()),
+        Set(Unicode()),
         help="Groups whose members should have Jupyterhub admin privileges",
     ).tag(config=True)
 
@@ -117,65 +117,55 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     )
 
     async def user_is_authorized(self, auth_model):
-        user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
-        user_email_domain = user_email.split('@')[1]
+        """
+        Checks that the google user has a verified email and is part of
+        `hosted_domain` if set.
 
-        if not auth_model["auth_state"][self.user_auth_state_key]['verified_email']:
+        Authorizes users part of: `allowed_users`, `admin_users`,
+        `allowed_google_groups`, or `admin_google_groups`.
+
+        Note that this function also updates the auth_model with admin status
+        and the user's google groups if either `allowed_google_groups` or
+        `admin_google_groups` are configured.
+        """
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        user_email = user_info["email"]
+        user_domain = user_email.split("@")[1]
+
+        if not user_info["verified_email"]:
             self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
             raise HTTPError(403, f"Google email {user_email} not verified")
 
-        if self.hosted_domain:
-            if user_email_domain not in self.hosted_domain:
-                self.log.warning(
-                    f"Google OAuth unauthorized domain attempt: {user_email}"
-                )
-                raise HTTPError(
-                    403, f"Google account domain @{user_email_domain} not authorized."
-                )
+        if self.hosted_domain and user_domain not in self.hosted_domain:
+            self.log.warning(f"Google OAuth unauthorized domain attempt: {user_email}")
+            raise HTTPError(403, f"Google account domain @{user_domain} not authorized")
 
-        allowed_status = True if auth_model['name'] in self.allowed_users else None
-        if not allowed_status and self.allowed_google_groups:
-            google_groups = self._google_groups_for_user(user_email, user_email_domain)
-            if not google_groups:
-                return False
-
-            auth_model['auth_state']['google_user']['google_groups'] = google_groups
-
-            # Check if user is a member of any allowed or admin groups.
-            allowed_groups_per_domain = self.allowed_google_groups.get(
-                user_email_domain, []
-            )
-            if self.admin_google_groups:
-                allowed_groups_per_domain += self.admin_google_groups.get(
-                    user_email_domain, []
-                )
-            if not allowed_groups_per_domain:
-                return False
-            else:
-                return self.user_groups_in_allowed_groups(
-                    google_groups, allowed_groups_per_domain
-                )
-
-        return True
-
-    async def update_auth_model(self, auth_model):
         username = auth_model["name"]
-        admin_status = True if username in self.admin_users else None
-        if not admin_status and self.admin_google_groups:
-            user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
-            user_email_domain = user_email.split('@')[1]
+        if username in self.admin_users:
+            auth_model["admin"] = True
 
-            if user_email_domain in self.admin_google_groups.keys():
-                # Check if user is a member of any admin groups.
-                google_groups = self._google_groups_for_user(
-                    user_email, user_email_domain
-                )
-                if google_groups:
-                    auth_model['admin'] = self.user_groups_in_allowed_groups(
-                        google_groups, self.admin_google_groups[user_email_domain]
-                    )
+        # always set google_groups if associated config is provided, and to a
+        # list rather than set, for backward compatibility
+        if self.allowed_google_groups or self.admin_google_groups:
+            # FIXME: _google_groups_for_user is a non-async function that blocks
+            #        JupyterHub, and it also doesn't have any cache. If this is
+            #        solved, we could also let this function not modify the
+            #        auth_model.
+            #
+            user_groups = self._google_groups_for_user(user_email, user_domain)
+            user_info["google_groups"] = list(user_groups)
 
-        return auth_model
+            allowed_groups = self.allowed_google_groups.get(user_domain, set())
+            admin_groups = self.admin_google_groups.get(user_domain, set())
+
+            # only set admin if not already set
+            if not auth_model["admin"]:
+                auth_model["admin"] = any(user_groups & admin_groups)
+
+            if any(user_groups & (allowed_groups | admin_groups)):
+                return True
+
+        return username in (self.allowed_users | self.admin_users)
 
     def _service_client_credentials(self, scopes, user_email_domain):
         """
@@ -227,7 +217,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     def _google_groups_for_user(self, user_email, user_email_domain, http=None):
         """
-        Return a list with the google groups a given user is a member of
+        Return a set with the google groups a given user is a member of
         """
         credentials = self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
@@ -241,9 +231,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         )
 
         results = service.groups().list(userKey=user_email).execute()
-        results = [
+        results = {
             g['email'].split('@')[0] for g in results.get('groups', [{'email': None}])
-        ]
+        }
         self.log.debug(f"user_email {user_email} is a member of {results}")
         return results
 

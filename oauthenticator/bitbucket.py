@@ -43,23 +43,23 @@ class BitbucketOAuthenticator(OAuthenticator):
     async def user_is_authorized(self, auth_model):
         access_token = auth_model["auth_state"]["token_response"]["access_token"]
         token_type = auth_model["auth_state"]["token_response"]["token_type"]
-        username = auth_model["name"]
 
-        # Check if user is a member of any allowed teams.
-        # This check is performed here, as the check requires `access_token`.
+        username = auth_model["name"]
+        if username in (self.allowed_users | self.admin_users):
+            return True
+
         if self.allowed_teams:
-            user_in_team = await self._check_membership_allowed_teams(
+            return await self._check_membership_allowed_teams(
                 username, access_token, token_type
             )
-            if not user_in_team:
-                self.log.warning(f"{username} not in team allowed list of users")
-                return False
 
-        return True
+        return False
 
     async def _check_membership_allowed_teams(self, username, access_token, token_type):
+        """
+        Verify team membership by calling bitbucket API.
+        """
         headers = self.build_userdata_request_headers(access_token, token_type)
-        # We verify the team membership by calling teams endpoint.
         next_page = url_concat(
             "https://api.bitbucket.org/2.0/workspaces", {'role': 'member'}
         )
@@ -68,8 +68,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             next_page = resp_json.get('next', None)
 
             user_teams = {entry["name"] for entry in resp_json["values"]}
-            # check if any of the organizations seen thus far are in the allowed list
-            if len(self.allowed_teams & user_teams) > 0:
+            if any(user_teams & self.allowed_team):
                 return True
         return False
 

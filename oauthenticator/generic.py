@@ -7,7 +7,7 @@ from functools import reduce
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.traitlets import Callable
 from tornado.httpclient import AsyncHTTPClient
-from traitlets import Bool, Dict, List, Unicode, Union, default
+from traitlets import Bool, Dict, Set, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
 
@@ -36,13 +36,13 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    allowed_groups = List(
+    allowed_groups = Set(
         Unicode(),
         config=True,
         help="Automatically allow members of selected groups",
     )
 
-    admin_groups = List(
+    admin_groups = Set(
         Unicode(),
         config=True,
         help="Groups whose members should have Jupyterhub admin privileges",
@@ -96,55 +96,58 @@ class GenericOAuthenticator(OAuthenticator):
         return username
 
     def get_user_groups(self, user_info):
-        if callable(self.claim_groups_key):
-            groups = self.claim_groups_key(user_info)
-        else:
-            try:
-                groups = reduce(dict.get, self.claim_groups_key.split("."), user_info)
-            except TypeError:
-                # This happens if a nested key does not exist (reduce trying to call None.get)
-                self.log.error(
-                    f"The key {self.claim_groups_key} does not exist in the user token, or it is set to null"
-                )
-                groups = None
+        """
+        Returns a set of groups the user belongs to based on claim_groups_key
+        and provided user_info.
 
-        if not groups:
+        - If claim_groups_key is a callable, it is meant to return the groups
+          directly.
+        - If claim_groups_key is a nested dictionary key like
+          "permissions.groups", this function returns
+          user_info["permissions"]["groups"].
+        """
+        if callable(self.claim_groups_key):
+            return set(self.claim_groups_key(user_info))
+        try:
+            return reduce(dict.get, self.claim_groups_key.split("."), user_info)
+        except TypeError:
             self.log.error(
-                f"No claim groups found for user! Something wrong with the `claim_groups_key` {self.claim_groups_key}? {user_info}"
+                f"The claim_groups_key {self.claim_groups_key} does not exist in the user token"
             )
-        return groups
+            return set()
 
     async def user_is_authorized(self, auth_model):
+        """
+        A user is authorized by being part of allowed_users, admin_users,
+        allowed_groups, or admin_groups.
+        """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
-        allowed_status = True if auth_model['name'] in self.allowed_users else None
 
-        if not allowed_status and self.allowed_groups:
-            self.log.info(
-                f"Validating if user claim groups match any of {self.allowed_groups}"
-            )
+        username = auth_model["name"]
+        if username in (self.allowed_users | self.admin_users):
+            return True
 
-            groups = self.get_user_groups(user_info)
-            if not groups:
-                return False
-
-            all_allowed_groups = self.allowed_groups
-            if self.admin_groups:
-                all_allowed_groups += self.admin_groups
-            if not self.user_groups_in_allowed_groups(groups, all_allowed_groups):
-                return False
-
-        return True
+        user_groups = self.get_user_groups(user_info)
+        return any(user_groups & (self.allowed_groups | self.admin_groups))
 
     async def update_auth_model(self, auth_model):
+        """
+        Set the admin status based on finding the username in `admin_users` or
+        finding a user group part of `admin_groups`.
+        """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
-        admin_status = True if auth_model['name'] in self.admin_users else None
-        # Check if user has been marked as admin by membership in self.admin_groups
-        if not admin_status and self.admin_groups:
-            groups = self.get_user_groups(user_info)
-            if groups:
-                auth_model['admin'] = self.user_groups_in_allowed_groups(
-                    groups, self.admin_groups
-                )
+
+        username = auth_model["name"]
+        if username in self.admin_users:
+            auth_model["admin"] = True
+            return auth_model
+
+        if self.admin_groups:
+            # admin_groups are declared and the user wasn't part of admin_users,
+            # so we set admin to True or False to allow a user removed from an
+            # admin_groups to no longer be an admin.
+            user_groups = self.get_user_groups(user_info)
+            auth_model["admin"] = any(user_groups & self.admin_groups)
 
         return auth_model
 
