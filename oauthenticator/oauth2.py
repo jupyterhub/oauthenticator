@@ -555,7 +555,6 @@ class OAuthenticator(Authenticator):
     def user_info_to_username(self, user_info):
         """
         Gets the self.username_claim key's value from the user_info dictionary.
-        This is equivalent to the JupyterHub username.
 
         Should be overridden by the authenticators for which the hub username cannot
         be extracted this way and needs extra processing.
@@ -733,29 +732,17 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
-    async def user_is_authorized(self, auth_model):
+    async def update_auth_model(self, username, auth_model):
         """
-        Checks if the user that is authenticating should be authorized or not and False otherwise.
-        Should be overridden with any relevant logic specific to each oauthenticator.
+        Updates and returns the `auth_model` dict.
 
-        Returns True by default.
+        Should be overridden to collect information required for check_allowed.
 
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
-        """
-        return True
-
-    async def update_auth_model(self, auth_model):
-        """
-        Updates `auth_model` dict if any fields have changed or additional information is available
-        or returns the unchanged `auth_model`.
-
-        Returns the model unchanged by default.
-
-        Should be overridden to take into account changes like group/admin membership.
-
-        Args: auth_model - the auth model dictionary  dict instead, containing:
-            - the `name` key holding the username
-            - the `auth_state` key, the dictionary of of auth state
+        Args: auth_model - the auth model dictionary, containing:
+            - `name`: the normalized username
+            - `admin`: the admin status (True/False/None), where None means it
+                should be unchanged.
+            - `auth_state`: the dictionary of of auth state
                 returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
@@ -767,8 +754,10 @@ class OAuthenticator(Authenticator):
         A JupyterHub Authenticator's authenticate method's job is:
 
         - return None if the user isn't successfully authenticated
-        - return a dictionary of if authentication is successful with name,
-          admin (optional), and auth_state (optional)
+        - return a dictionary if authentication is successful with name, admin
+          (optional), and auth_state (optional)
+
+        Subclasses should not override this method.
 
         ref: https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authenticator-authenticate-method
         ref: https://github.com/jupyterhub/jupyterhub/blob/4.0.0/jupyterhub/auth.py#L581-L611
@@ -779,8 +768,9 @@ class OAuthenticator(Authenticator):
         token_info = await self.get_token_info(handler, access_token_params)
         # use the access_token to get userdata info
         user_info = await self.token_to_user(token_info)
-        # extract the username out of the user_info dict
+        # extract the username out of the user_info dict and normalize it
         username = self.user_info_to_username(user_info)
+        username = self.normalize_username(username)
 
         # check if there any refresh_token in the token_info dict
         refresh_token = token_info.get("refresh_token", None)
@@ -795,18 +785,37 @@ class OAuthenticator(Authenticator):
         # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
-            "admin": None,
+            "admin": True if username in self.admin_users else None,
             "auth_state": self.build_auth_state_dict(token_info, user_info),
         }
 
-        # check if the username that's authenticating should be authorized
-        authorized = await self.user_is_authorized(auth_model)
-        if not authorized:
-            self.log.warning(f"User {username} wasn't authorized")
-            return None
-
-        # update the auth model with any info if available
+        # update the auth_model with info to later authorize the user in
+        # check_allowed, such as admin status and group memberships
         return await self.update_auth_model(auth_model)
+
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized
+
+        Overrides Authenticator.check_allowed that is called from
+        `Authenticator.get_authenticated_user` after
+        `OAuthenticator.authenticate` has been called, and therefore also after
+        `update_auth_model` has been called.
+
+        Subclasses with authorization logic involving allowed groups should
+        override this.
+        """
+        # authorize users to become admins by admin_users or logic in
+        # update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        # if allowed_users is configured, authorize/unauthorize based on that
+        if self.allowed_users:
+            return username in self.allowed_users
+
+        # otherwise, authorize all users
+        return True
 
     _deprecated_oauth_aliases = {}
 

@@ -275,35 +275,6 @@ class CILogonOAuthenticator(OAuthenticator):
             )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-    async def user_is_authorized(self, auth_model):
-        username = auth_model["name"]
-        # Check if selected idp was marked as allowed
-        if self.allowed_idps:
-            selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
-            # Fail hard if idp wasn't allowed
-            if selected_idp not in self.allowed_idps.keys():
-                self.log.error(
-                    f"Trying to login from an identity provider that was not allowed {selected_idp}",
-                )
-                raise web.HTTPError(
-                    500,
-                    "Trying to login using an identity provider that was not allowed",
-                )
-
-            allowed_domains = self.allowed_idps[selected_idp].get(
-                "allowed_domains", None
-            )
-
-            if allowed_domains:
-                gotten_name, gotten_domain = username.split('@')
-                if gotten_domain not in allowed_domains:
-                    raise web.HTTPError(
-                        500,
-                        "Trying to login using a domain that was not allowed",
-                    )
-
-        return True
-
     async def update_auth_model(self, auth_model):
         selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
 
@@ -329,6 +300,34 @@ class CILogonOAuthenticator(OAuthenticator):
 
         auth_model["name"] = username
         return auth_model
+
+    async def check_allowed(self, username, auth_model):
+        # Check if selected idp was marked as allowed
+        if self.allowed_idps:
+            selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
+            # Fail hard if idp wasn't allowed
+            if selected_idp not in self.allowed_idps:
+                self.log.error(
+                    f"Trying to login from an identity provider that was not allowed {selected_idp}",
+                )
+                raise web.HTTPError(
+                    500,
+                    "Trying to login using an identity provider that was not allowed",
+                )
+
+            allowed_domains = self.allowed_idps[selected_idp].get(
+                "allowed_domains", None
+            )
+
+            if allowed_domains:
+                gotten_domain = username.split('@')[1]
+                if gotten_domain not in allowed_domains:
+                    raise web.HTTPError(
+                        500,
+                        "Trying to login using a domain that was not allowed",
+                    )
+
+        return True
 
 
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):

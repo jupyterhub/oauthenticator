@@ -40,37 +40,64 @@ class BitbucketOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected teams"
     )
 
-    async def user_is_authorized(self, auth_model):
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        token_type = auth_model["auth_state"]["token_response"]["token_type"]
-
-        username = auth_model["name"]
-        if username in (self.allowed_users | self.admin_users):
-            return True
-
-        if self.allowed_teams:
-            return await self._check_membership_allowed_teams(
-                username, access_token, token_type
-            )
-
-        return False
-
-    async def _check_membership_allowed_teams(self, username, access_token, token_type):
+    async def _fetch_user_teams(self, access_token, token_type):
         """
-        Verify team membership by calling bitbucket API.
+        Get user's team memberships via bitbucket's API.
         """
         headers = self.build_userdata_request_headers(access_token, token_type)
         next_page = url_concat(
             "https://api.bitbucket.org/2.0/workspaces", {'role': 'member'}
         )
+
+        user_teams = set()
         while next_page:
             resp_json = await self.httpfetch(next_page, method="GET", headers=headers)
             next_page = resp_json.get('next', None)
+            user_teams |= {entry["name"] for entry in resp_json["values"]}
+        return user_teams
 
-            user_teams = {entry["name"] for entry in resp_json["values"]}
-            if any(user_teams & self.allowed_team):
+    async def update_auth_model(self, auth_model):
+        """
+        Set the admin status based on finding the username in `admin_users` and
+        fetch user teams if `allowed_teams` is configured.
+        """
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        token_type = auth_model["auth_state"]["token_response"]["token_type"]
+
+        username = auth_model["name"]
+        if username in self.admin_users:
+            auth_model["admin"] = True
+
+        if self.allowed_teams:
+            user_teams = self._fetch_user_teams(access_token, token_type)
+            auth_model["auth_state"]["user_teams"] = user_teams
+
+        return auth_model
+
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized.
+
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users` or `allowed_teams`, and not just those
+        part of `allowed_users`.
+        """
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        # if allowed_users or allowed_teams is configured, we deny users not
+        # part of either
+        if self.allowed_users or self.allowed_teams:
+            user_teams = auth_model["auth_state"]["user_teams"]
+            if username in self.allowed_users:
                 return True
-        return False
+            if any(user_teams & self.allowed_teams):
+                return True
+            return False
+
+        # otherwise, authorize all users
+        return True
 
 
 class LocalBitbucketOAuthenticator(LocalAuthenticator, BitbucketOAuthenticator):
