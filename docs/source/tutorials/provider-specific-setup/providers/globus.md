@@ -130,7 +130,7 @@ included in the default list of scopes. When
 `c.GlobusOAuthenticator.admin_globus_groups` is set, only members of
 those groups will be JupyterHub admins.
 
-To block users, the [`c.Authenticator.blocked_users`](https://jupyterhub.readthedocs.io/en/stable/api/auth.html#jupyterhub.auth.Authenticator.blocked_users)
+To block users, the [`c.Authenticator.blocked_users`](https://jupyterhub.readthedocs.io/en/stable/reference/api/auth.html#jupyterhub.auth.Authenticator.blocked_users)
 configuration can be used. Or, users can be removed from the allowed
 Globus Groups, and the Group set require approval, so the user cannot
 rejoin it without action by an administrator.
