@@ -156,7 +156,6 @@ def globus_client(client, mock_globus_token_response):
         access_token_path='/v2/oauth2/token',
         user_path='/v2/oauth2/userinfo',
         token_type='bearer',
-        token_request_style='post',
     )
     set_extended_token_response(
         client, 'auth.globus.org', '/v2/oauth2/token', mock_globus_token_response

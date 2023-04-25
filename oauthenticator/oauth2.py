@@ -7,7 +7,7 @@ import base64
 import json
 import os
 import uuid
-from urllib.parse import quote, urlparse, urlunparse
+from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 from jupyterhub.auth import Authenticator
 from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
@@ -522,7 +522,6 @@ class OAuthenticator(Authenticator):
         """
         return {
             "Accept": "application/json",
-            "Content-Type": "application/json",
             "User-Agent": "JupyterHub",
             "Authorization": f"{token_type} {access_token}",
         }
@@ -531,8 +530,18 @@ class OAuthenticator(Authenticator):
         """
         Builds and returns the headers to be used in the access token request.
         Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
+
+        The Content-Type header is specified by the OAuth 2.0 RFC in
+        https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3. utf-8 is also
+        required according to https://www.rfc-editor.org/rfc/rfc6749#appendix-B,
+        and that can be specified with a Content-Type directive according to
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type#directives.
         """
-        headers = {"Accept": "application/json", "User-Agent": "JupyterHub"}
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+            "User-Agent": "JupyterHub",
+        }
 
         if self.basic_auth:
             b64key = base64.b64encode(
@@ -634,7 +643,7 @@ class OAuthenticator(Authenticator):
             url,
             method="POST",
             headers=self.build_token_info_request_headers(),
-            body=json.dumps(params),
+            body=urlencode(params).encode("utf-8"),
             validate_cert=self.validate_server_cert,
         )
 
