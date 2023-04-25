@@ -38,11 +38,10 @@ def cilogon_client(client):
 async def test_cilogon(cilogon_client):
     authenticator = CILogonOAuthenticator()
     handler = cilogon_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    print(json.dumps(user_info, sort_keys=True, indent=4))
-    name = user_info['name']
-    assert name == 'wash@serenity.space'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    print(json.dumps(auth_model, sort_keys=True, indent=4))
+    assert auth_model['name'] == 'wash@serenity.space'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'token_response' in auth_state
     assert auth_state["cilogon_user"] == user_model('wash')
@@ -53,11 +52,10 @@ async def test_cilogon_alternate_claim(cilogon_client):
     handler = cilogon_client.handler_for_user(
         alternative_user_model('jtkirk@ufp.gov', 'uid')
     )
-    user_info = await authenticator.authenticate(handler)
-    print(json.dumps(user_info, sort_keys=True, indent=4))
-    name = user_info['name']
-    assert name == 'jtkirk@ufp.gov'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    print(json.dumps(auth_model, sort_keys=True, indent=4))
+    assert auth_model['name'] == 'jtkirk@ufp.gov'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'token_response' in auth_state
     assert auth_state["cilogon_user"] == alternative_user_model('jtkirk@ufp.gov', 'uid')
@@ -68,11 +66,10 @@ async def test_cilogon_additional_claim(cilogon_client):
     handler = cilogon_client.handler_for_user(
         alternative_user_model('jtkirk@ufp.gov', 'uid')
     )
-    user_info = await authenticator.authenticate(handler)
-    print(json.dumps(user_info, sort_keys=True, indent=4))
-    name = user_info['name']
-    assert name == 'jtkirk@ufp.gov'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    print(json.dumps(auth_model, sort_keys=True, indent=4))
+    assert auth_model['name'] == 'jtkirk@ufp.gov'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'token_response' in auth_state
     assert auth_state["cilogon_user"] == alternative_user_model('jtkirk@ufp.gov', 'uid')
@@ -84,7 +81,7 @@ async def test_cilogon_missing_alternate_claim(cilogon_client):
         alternative_user_model('jtkirk@ufp.gov', 'uid')
     )
     with raises(HTTPError):
-        user_info = await authenticator.authenticate(handler)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
 
 
 async def test_deprecated_config(caplog):
@@ -273,10 +270,9 @@ async def test_strip_and_prefix_username(cilogon_client):
             'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
         )
     )
-    user_info = await authenticator.authenticate(handler)
-    print(json.dumps(user_info, sort_keys=True, indent=4))
-    name = user_info['name']
-    assert name == 'jtkirk'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    print(json.dumps(auth_model, sort_keys=True, indent=4))
+    assert auth_model['name'] == 'jtkirk'
 
     # Test appending prefixes
     handler = cilogon_client.handler_for_user(
@@ -284,10 +280,9 @@ async def test_strip_and_prefix_username(cilogon_client):
             'jtkirk', 'nickname', idp='https://another-idp.com/login/oauth/authorize'
         )
     )
-    user_info = await authenticator.authenticate(handler)
-    print(json.dumps(user_info, sort_keys=True, indent=4))
-    name = user_info['name']
-    assert name == 'idp:jtkirk'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    print(json.dumps(auth_model, sort_keys=True, indent=4))
+    assert auth_model['name'] == 'idp:jtkirk'
 
 
 async def test_no_action_specified(cilogon_client):
@@ -308,9 +303,8 @@ async def test_no_action_specified(cilogon_client):
             'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
         )
     )
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'jtkirk@uni.edu'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'jtkirk@uni.edu'
 
 
 async def test_not_allowed_domains_and_stripping(cilogon_client):
@@ -337,7 +331,7 @@ async def test_not_allowed_domains_and_stripping(cilogon_client):
 
     # The domain to be stripped isn't allowed, so it should fail
     with raises(HTTPError):
-        user_info = await authenticator.authenticate(handler)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
 
 
 async def test_allowed_domains_and_stripping(cilogon_client):
@@ -363,9 +357,8 @@ async def test_allowed_domains_and_stripping(cilogon_client):
     )
 
     # The domain to be stripped is allowed, so it should be stripped
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'jtkirk'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'jtkirk'
 
 
 async def test_allowed_domains_no_stripping(cilogon_client):
@@ -389,7 +382,7 @@ async def test_allowed_domains_no_stripping(cilogon_client):
     )
 
     with raises(HTTPError):
-        user_info = await authenticator.authenticate(handler)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
 
     # Test allowed domain login
     handler = cilogon_client.handler_for_user(
@@ -398,6 +391,5 @@ async def test_allowed_domains_no_stripping(cilogon_client):
         )
     )
 
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'jtkirk@pink.org'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'jtkirk@pink.org'

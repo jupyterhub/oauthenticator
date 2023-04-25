@@ -92,17 +92,17 @@ async def test_azuread(username_claim, azure_client):
         )
     )
 
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
+    auth_model = await authenticator.authenticate(handler)
+    assert sorted(auth_model) == ['admin', 'auth_state', 'name']
 
-    auth_state = user_info['auth_state']
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'user' in auth_state
 
     auth_state_user_info = auth_state['user']
     assert auth_state_user_info['aud'] == authenticator.client_id
 
-    username = user_info['name']
+    username = auth_model['name']
     if username_claim:
         assert username == auth_state_user_info[username_claim]
     else:

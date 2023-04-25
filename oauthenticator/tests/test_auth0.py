@@ -42,11 +42,10 @@ async def test_auth0(config, auth0_client):
     authenticator = Auth0OAuthenticator(config=cfg)
 
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-    name = user_info['name']
-    assert name == 'kaylee@serenity.now'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert sorted(auth_model) == ['admin', 'auth_state', 'name']
+    assert auth_model['name'] == 'kaylee@serenity.now'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'auth0_user' in auth_state
 
@@ -60,9 +59,8 @@ async def test_username_key(config, auth0_client):
     authenticator = Auth0OAuthenticator(config=cfg)
     authenticator.username_key = 'nickname'
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now', 'kayle'))
-    user_info = await authenticator.authenticate(handler)
-
-    assert user_info['name'] == 'kayle'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'kayle'
 
 
 async def test_custom_logout(monkeypatch):

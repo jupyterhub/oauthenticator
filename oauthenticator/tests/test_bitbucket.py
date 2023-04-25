@@ -28,11 +28,10 @@ def bitbucket_client(client):
 async def test_bitbucket(bitbucket_client):
     authenticator = BitbucketOAuthenticator()
     handler = bitbucket_client.handler_for_user(user_model('yorba'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-    name = user_info['name']
-    assert name == 'yorba'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert sorted(auth_model) == ['admin', 'auth_state', 'name']
+    assert auth_model['name'] == 'yorba'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'bitbucket_user' in auth_state
 
@@ -59,25 +58,23 @@ async def test_allowed_teams(bitbucket_client):
     client.hosts['api.bitbucket.org'].append(('/2.0/workspaces', list_teams))
 
     handler = client.handler_for_user(user_model('caboose'))
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'caboose'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'caboose'
 
     handler = client.handler_for_user(user_model('donut'))
-    name = await authenticator.authenticate(handler)
-    assert name is None
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model is None
 
     # reverse it, just to be safe
     authenticator.allowed_teams = ['red']
 
     handler = client.handler_for_user(user_model('caboose'))
-    name = await authenticator.authenticate(handler)
-    assert name is None
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model is None
 
     handler = client.handler_for_user(user_model('donut'))
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'donut'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'donut'
 
 
 async def test_deprecated_config(caplog):
