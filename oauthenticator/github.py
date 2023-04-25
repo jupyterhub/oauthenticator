@@ -23,10 +23,13 @@ class GitHubOAuthenticator(OAuthenticator):
     }
 
     login_service = "GitHub"
-    username_claim = "login"
     user_auth_state_key = "github_user"
 
     github_url = Unicode("https://github.com", config=True)
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "login"
 
     @default("github_url")
     def _github_url_default(self):
