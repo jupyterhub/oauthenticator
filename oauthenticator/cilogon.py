@@ -298,15 +298,14 @@ class CILogonOAuthenticator(OAuthenticator):
         if auth_model["admin"]:
             return True
 
-        # FIXME: This needs to be thought over very carefully.
+        # FIXME: I chatted with Georgiana and we concluded that the user must be
+        #        part of allowed_idps no matter what, following that, the user
+        #        must either be part of allowed_users or allowed_domains to be
+        #        authorized if either is configured, and otherwise all users are
+        #        authorized.
         #
-        #        Is there or isn't there a commonly agreed "excepted behavior"
-        #        for when considering a combination of allowed_users,
-        #        allowed_idps, and allowed_idps allowed_domains?
+        #        The drafted implementation doesn't reflect this yet.
         #
-
-        # if allowed_users or allowed_idps is configured, we deny users not
-        # part of either
         if self.allowed_users or self.allowed_idps:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             selected_idp = user_info["idp"]

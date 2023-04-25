@@ -785,6 +785,8 @@ class OAuthenticator(Authenticator):
         # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
+            # FIXME: Think about is_admin override, should we call is_admin from
+            #        here or possibly after update_auth_model?
             "admin": True if username in self.admin_users else None,
             "auth_state": self.build_auth_state_dict(token_info, user_info),
         }
