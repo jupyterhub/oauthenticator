@@ -732,7 +732,7 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
-    async def update_auth_model(self, username, auth_model):
+    async def update_auth_model(self, auth_model):
         """
         Updates and returns the `auth_model` dict.
 

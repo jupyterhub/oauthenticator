@@ -69,7 +69,7 @@ class BitbucketOAuthenticator(OAuthenticator):
             auth_model["admin"] = True
 
         if self.allowed_teams:
-            user_teams = self._fetch_user_teams(access_token, token_type)
+            user_teams = await self._fetch_user_teams(access_token, token_type)
             auth_model["auth_state"]["user_teams"] = user_teams
 
         return auth_model

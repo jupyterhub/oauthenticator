@@ -109,7 +109,7 @@ class GenericOAuthenticator(OAuthenticator):
         if callable(self.claim_groups_key):
             return set(self.claim_groups_key(user_info))
         try:
-            return reduce(dict.get, self.claim_groups_key.split("."), user_info)
+            return set(reduce(dict.get, self.claim_groups_key.split("."), user_info))
         except TypeError:
             self.log.error(
                 f"The claim_groups_key {self.claim_groups_key} does not exist in the user token"

@@ -249,12 +249,11 @@ class CILogonOAuthenticator(OAuthenticator):
     )
 
     def user_info_to_username(self, user_info):
-        selected_idp = user_info["idp"]
-
         username_claims = [self.username_claim]
         if self.additional_username_claims:
             username_claims.extend(self.additional_username_claims)
         if self.allowed_idps:
+            selected_idp = user_info["idp"]
             # The username_claim which should be used for this idp
             username_claims = [
                 self.allowed_idps[selected_idp]["username_derivation"]["username_claim"]
