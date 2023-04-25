@@ -249,64 +249,93 @@ class CILogonOAuthenticator(OAuthenticator):
     )
 
     def user_info_to_username(self, user_info):
-        claimlist = [self.username_claim]
+        selected_idp = user_info["idp"]
+
+        username_claims = [self.username_claim]
         if self.additional_username_claims:
-            claimlist.extend(self.additional_username_claims)
-
+            username_claims.extend(self.additional_username_claims)
         if self.allowed_idps:
-            selected_idp = user_info.get("idp")
-            if selected_idp:
-                # The username_claim which should be used for this idp
-                claimlist = [
-                    self.allowed_idps[selected_idp]["username_derivation"][
-                        "username_claim"
-                    ]
-                ]
+            # The username_claim which should be used for this idp
+            username_claims = [
+                self.allowed_idps[selected_idp]["username_derivation"]["username_claim"]
+            ]
 
-        for claim in claimlist:
+        username = None
+        for claim in username_claims:
             username = user_info.get(claim)
             if username:
-                return username
+                break
 
         if not username:
             user_info_keys = sorted(user_info.keys())
             self.log.error(
-                f"No username claim in the list at {claimlist} was found in the response {user_info_keys}"
+                f"No username claim in the list at {username_claims} was found in the response {user_info_keys}"
             )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-    async def update_auth_model(self, auth_model):
-        selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
-
-        # Check if the requested username_claim exists in the response from the provider
-        username = auth_model["name"]
-
-        # Check if we need to strip/prefix username
+        # Optionally strip idp domain or prefix the username
         if self.allowed_idps:
-            username_derivation_config = self.allowed_idps[selected_idp][
-                "username_derivation"
-            ]
-            action = username_derivation_config.get("action", None)
-            allowed_domains = self.allowed_idps[selected_idp].get(
-                "allowed_domains", None
-            )
+            username_derivation = self.allowed_idps[selected_idp]["username_derivation"]
+            action = username_derivation.get("action")
 
             if action == "strip_idp_domain":
-                gotten_name, gotten_domain = username.split('@')
-                username = gotten_name
+                username = username.split("@")[0]
             elif action == "prefix":
-                prefix = username_derivation_config["prefix"]
+                prefix = username_derivation["prefix"]
                 username = f"{prefix}:{username}"
 
-        auth_model["name"] = username
-        return auth_model
+        return username
 
     async def check_allowed(self, username, auth_model):
-        # Check if selected idp was marked as allowed
-        if self.allowed_idps:
-            selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
-            # Fail hard if idp wasn't allowed
-            if selected_idp not in self.allowed_idps:
+        """
+        Returns True for users allowed to be authorized, raises errors for users
+        denied authorization.
+
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users` or `allowed_idps`, and not just those
+        part of `allowed_users`.
+        """
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        # FIXME: This needs to be thought over very carefully.
+        #
+        #        Is there or isn't there a commonly agreed "excepted behavior"
+        #        for when considering a combination of allowed_users,
+        #        allowed_idps, and allowed_idps allowed_domains?
+        #
+
+        # if allowed_users or allowed_idps is configured, we deny users not
+        # part of either
+        if self.allowed_users or self.allowed_idps:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            selected_idp = user_info["idp"]
+
+            if username in self.allowed_users:
+                return True
+
+            if self.allowed_idps and selected_idp in self.allowed_idps:
+                allowed_domains = self.allowed_idps[selected_idp].get("allowed_domains")
+                if allowed_domains:
+                    # FIXME: check allowed is called after username is stripped /
+                    #        prefixed, so we don't know the username's email domain
+                    #        anymore.
+                    #
+                    #        An idea to resolve this is to break apart
+                    #        user_info_to_username in a piece before and after the
+                    #        optional domain stripping operation, allowing us to
+                    #        call it again without the strip operation.
+                    #
+                    user_domain = username.split("@")[1]
+                    if user_domain in allowed_domains:
+                        return True
+                    else:
+                        raise web.HTTPError(
+                            500,
+                            "Trying to login using a domain that was not allowed",
+                        )
+            else:
                 self.log.error(
                     f"Trying to login from an identity provider that was not allowed {selected_idp}",
                 )
@@ -315,18 +344,9 @@ class CILogonOAuthenticator(OAuthenticator):
                     "Trying to login using an identity provider that was not allowed",
                 )
 
-            allowed_domains = self.allowed_idps[selected_idp].get(
-                "allowed_domains", None
-            )
+            return False
 
-            if allowed_domains:
-                gotten_domain = username.split('@')[1]
-                if gotten_domain not in allowed_domains:
-                    raise web.HTTPError(
-                        500,
-                        "Trying to login using a domain that was not allowed",
-                    )
-
+        # otherwise, authorize all users
         return True
 
 

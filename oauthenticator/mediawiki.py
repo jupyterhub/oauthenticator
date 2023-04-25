@@ -102,6 +102,7 @@ class MWOAuthenticator(OAuthenticator):
         """
         Override normalize_username to avoid lowercasing usernames
         """
+        username = username.replace(' ', '_')
         return username
 
     def _executor_default(self):
@@ -137,12 +138,7 @@ class MWOAuthenticator(OAuthenticator):
             self.executor.submit(handshaker.identify, token_info["access_token"])
         )
 
-    async def update_auth_model(self, auth_model):
-        auth_model['name'] = auth_model['name'].replace(' ', '_')
-        return auth_model
-
     def build_auth_state_dict(self, token_info, user_info):
-        username = self.user_info_to_username(user_info)
         # this shouldn't be necessary anymore,
         # but keep for backward-compatibility
         return {
