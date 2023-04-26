@@ -20,7 +20,8 @@ class AzureAdOAuthenticator(OAuthenticator):
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
     user_auth_state_key = "user"
-    @default('username_claim')
+
+    @default("username_claim")
     def _username_claim_default(self):
         return "name"
 
