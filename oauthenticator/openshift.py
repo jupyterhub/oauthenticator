@@ -91,18 +91,14 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     async def update_auth_model(self, auth_model):
         """
-        Set the admin status based on finding the username in `admin_users` or
-        finding a user group part of `admin_groups`.
+        Update admin status based on `admin_groups` if its configured.
         """
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-
-        username = auth_model["name"]
-        if username in self.admin_users:
-            auth_model["admin"] = True
-        elif self.admin_groups:
-            # if admin_groups is configured, we must either set or unset admin
-            # status and never leave it at None, otherwise removing a user from
-            # the admin_groups won't have an effect
+        if self.admin_groups:
+            # if admin_groups is configured and the user wasn't part of
+            # admin_users, we must set the admin status to True or False,
+            # otherwise removing a user from the admin_groups won't have an
+            # effect
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = set(user_info["groups"])
             auth_model["admin"] = any(user_groups & self.admin_groups)
 

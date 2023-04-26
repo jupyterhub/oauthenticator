@@ -58,17 +58,12 @@ class BitbucketOAuthenticator(OAuthenticator):
 
     async def update_auth_model(self, auth_model):
         """
-        Set the admin status based on finding the username in `admin_users` and
-        fetch user teams if `allowed_teams` is configured.
+        Fetch and store `user_teams` in auth state if `allowed_teams` is
+        configured.
         """
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        token_type = auth_model["auth_state"]["token_response"]["token_type"]
-
-        username = auth_model["name"]
-        if username in self.admin_users:
-            auth_model["admin"] = True
-
         if self.allowed_teams:
+            access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            token_type = auth_model["auth_state"]["token_response"]["token_type"]
             user_teams = await self._fetch_user_teams(access_token, token_type)
             auth_model["auth_state"]["user_teams"] = user_teams
 
