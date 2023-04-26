@@ -11,21 +11,13 @@ from .oauth2 import OAuthenticator
 class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
     login_service = "OK"
 
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "okpy_user"
+    user_auth_state_key = "okpy_user"
 
-    @default("authorize_url")
-    def _authorize_url_default(self):
-        return "https://okpy.org/oauth/authorize"
+    authorize_url = "https://okpy.org/oauth/authorize"
 
-    @default("token_url")
-    def _token_url_default(self):
-        return "https://okpy.org/oauth/token"
+    token_url = "https://okpy.org/oauth/token"
 
-    @default("userdata_url")
-    def _userdata_url_default(self):
-        return "https://okpy.org/api/v3/user"
+    userdata_url = "https://okpy.org/api/v3/user"
 
     @default("scope")
     def _default_scope(self):
