@@ -4,11 +4,10 @@ import re
 import time
 import uuid
 from unittest import mock
-from traitlets.config import Config
-
 
 import jwt
 import pytest
+from traitlets.config import Config
 
 from ..azuread import AzureAdOAuthenticator
 from .mocks import setup_oauth_mock
@@ -72,11 +71,13 @@ def azure_client(client):
 )
 async def test_azuread(username_claim, azure_client):
     cfg = Config()
-    cfg.AzureAdOAuthenticator = Config({
-        "tenant_id": str(uuid.uuid1()),
-        "client_id": str(uuid.uuid1()),
-        "client_secret": str(uuid.uuid1()),
-    })
+    cfg.AzureAdOAuthenticator = Config(
+        {
+            "tenant_id": str(uuid.uuid1()),
+            "client_id": str(uuid.uuid1()),
+            "client_secret": str(uuid.uuid1()),
+        }
+    )
 
     if username_claim:
         cfg.AzureAdOAuthenticator.username_claim = username_claim
@@ -107,4 +108,3 @@ async def test_azuread(username_claim, azure_client):
     else:
         # The default AzureADOAuthenticator `username_claim` is "name"
         assert username == auth_state_user_info["name"]
-
