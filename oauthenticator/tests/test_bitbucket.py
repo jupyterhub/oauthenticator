@@ -80,7 +80,7 @@ async def test_allowed_teams(bitbucket_client):
     assert name == 'donut'
 
 
-async def test_deprecated_config(caplog):
+def test_deprecated_config(caplog):
     cfg = Config()
     cfg.BitbucketOAuthenticator.team_whitelist = ['red']
     cfg.BitbucketOAuthenticator.whitelist = {"blue"}

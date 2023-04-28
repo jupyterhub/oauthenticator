@@ -27,12 +27,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    user_auth_state_key = "google_user"
-    scope = ["openid", "email"]
-    username_claim = "email"
-    authorize_url = "https://accounts.google.com/o/oauth2/v2/auth"
-
     google_api_url = Unicode("https://www.googleapis.com", config=True)
+
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "google_user"
 
     @default('google_api_url')
     def _google_api_url(self):
@@ -44,6 +43,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             google_api_url = 'https://www.googleapis.com'
 
         return google_api_url
+
+    @default('scope')
+    def _scope_default(self):
+        return ['openid', 'email']
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
 
     @default("token_url")
     def _token_url_default(self):
@@ -114,6 +121,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True,
         help="""Google Apps hosted domain string, e.g. My College""",
     )
+
+    @default('username_claim')
+    def _username_claim_default(self):
+        return 'email'
 
     async def user_is_authorized(self, auth_model):
         user_email = auth_model["auth_state"][self.user_auth_state_key]['email']

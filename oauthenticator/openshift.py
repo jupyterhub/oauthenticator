@@ -17,9 +17,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     scope = ['user:info']
 
-    user_auth_state_key = "openshift_user"
-    username_claim = "name"
-
     openshift_url = Unicode(
         os.environ.get('OPENSHIFT_URL')
         or 'https://openshift.default.svc.cluster.local',
@@ -67,6 +64,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
         config=True,
     )
 
+    @default("user_auth_state_key")
+    def _user_auth_state_key_default(self):
+        return "openshift_user"
+
     @default("openshift_rest_api_url")
     def _openshift_rest_api_url_default(self):
         return self.openshift_url
@@ -78,6 +79,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url_default(self):
         return f"{self.openshift_auth_api_url}/oauth/token"
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "name"
 
     @default("userdata_url")
     def _userdata_url_default(self):

@@ -12,7 +12,7 @@ from ..oauth2 import (
 from .mocks import mock_handler
 
 
-async def test_serialize_state():
+def test_serialize_state():
     state1 = {
         'state_id': uuid.uuid4().hex,
         'next': 'url',

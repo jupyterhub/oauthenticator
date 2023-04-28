@@ -32,10 +32,3 @@ target_version = [
     "py310",
     "py311",
 ]
-
-[tool.pytest.ini_options]
-addopts = "--verbose --color=yes --durations=10"
-asyncio_mode = "auto"
-testpaths = [
-    "oauthenticator/tests"
-]

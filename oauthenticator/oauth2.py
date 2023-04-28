@@ -397,7 +397,9 @@ class OAuthenticator(Authenticator):
 
         For example, to use a HTTP proxy for all requests:
 
-        `c.OAuthenticator.http_request_kwargs = {"proxy_host": "proxy.example.com", "proxy_port": 8080}`
+        c.OAuthenticator.http_request_kwargs = {
+            "proxy_host": "proxy.example.com",
+            "proxy_port": 8080,
         }
         """,
         config=True,

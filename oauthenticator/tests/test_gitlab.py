@@ -267,7 +267,7 @@ async def test_allowed_project_ids(gitlab_client):
     assert name == 'harry'
 
 
-async def test_deprecated_config(caplog):
+def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GitLabOAuthenticator.gitlab_group_whitelist = {'red'}
     cfg.GitLabOAuthenticator.whitelist = {"blue"}

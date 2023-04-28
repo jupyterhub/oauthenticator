@@ -206,12 +206,12 @@ async def test_allowed_org_membership(github_client):
         ("red", "grif", "https://api.github.com/orgs/red/members/grif"),
     ],
 )
-async def test_build_check_membership_url(org, username, expected):
+def test_build_check_membership_url(org, username, expected):
     output = GitHubOAuthenticator()._build_check_membership_url(org, username)
     assert output == expected
 
 
-async def test_deprecated_config(caplog):
+def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GitHubOAuthenticator.github_organization_whitelist = ["jupy"]
     cfg.Authenticator.whitelist = {"user1"}
