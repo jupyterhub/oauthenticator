@@ -34,7 +34,7 @@ def user_model(tenant_id, client_id, name):
             "iat": now,
             "nbf": now,
             "name": name,
-            "preferred_username": "preffered",
+            "preferred_username": "preferred",
             "oid": str(uuid.uuid1()),
             "tid": tenant_id,
             "nonce": "123523",

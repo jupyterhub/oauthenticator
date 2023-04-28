@@ -28,7 +28,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     }
 
     user_auth_state_key = "google_user"
-    authorize_url = "https://accounts.google.com/o/oauth2/v2/auth"
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
 
     @default("scope")
     def _scope_default(self):

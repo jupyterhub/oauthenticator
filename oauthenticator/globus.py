@@ -66,9 +66,18 @@ class GlobusOAuthenticator(OAuthenticator):
     logout_handler = GlobusLogoutHandler
 
     user_auth_state_key = "globus_user"
-    userdata_url = "https://auth.globus.org/v2/oauth2/userinfo"
-    authorize_url = "https://auth.globus.org/v2/oauth2/authorize"
-    token_url = "https://auth.globus.org/v2/oauth2/token"
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "https://auth.globus.org/v2/oauth2/userinfo"
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://auth.globus.org/v2/oauth2/authorize"
+
+    @default("token_url")
+    def _token_url_default(self):
+        return "https://auth.globus.org/v2/oauth2/token"
 
     revocation_url = Unicode(
         "https://auth.globus.org/v2/oauth2/token/revoke",
