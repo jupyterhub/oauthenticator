@@ -13,11 +13,17 @@ class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
 
     user_auth_state_key = "okpy_user"
 
-    authorize_url = "https://okpy.org/oauth/authorize"
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://okpy.org/oauth/authorize"
 
-    token_url = "https://okpy.org/oauth/token"
+    @default("token_url")
+    def _token_url_default(self):
+        return "https://okpy.org/oauth/token"
 
-    userdata_url = "https://okpy.org/api/v3/user"
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return "https://okpy.org/api/v3/user"
 
     @default("scope")
     def _default_scope(self):
