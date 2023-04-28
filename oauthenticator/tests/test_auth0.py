@@ -37,7 +37,10 @@ def auth0_client(client):
     'config', [{"auth0_domain": auth0_domain}, {"auth0_subdomain": auth0_subdomain}]
 )
 async def test_auth0(config, auth0_client):
-    authenticator = Auth0OAuthenticator(**config)
+    cfg = Config()
+    cfg.Auth0OAuthenticator = Config(config)
+    authenticator = Auth0OAuthenticator(config=cfg)
+
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
@@ -52,7 +55,9 @@ async def test_auth0(config, auth0_client):
     'config', [{"auth0_domain": auth0_domain}, {"auth0_subdomain": auth0_subdomain}]
 )
 async def test_username_key(config, auth0_client):
-    authenticator = Auth0OAuthenticator(**config)
+    cfg = Config()
+    cfg.Auth0OAuthenticator = Config(config)
+    authenticator = Auth0OAuthenticator(config=cfg)
     authenticator.username_key = 'nickname'
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now', 'kayle'))
     user_info = await authenticator.authenticate(handler)

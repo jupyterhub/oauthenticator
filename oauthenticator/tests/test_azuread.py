@@ -7,6 +7,7 @@ from unittest import mock
 
 import jwt
 import pytest
+from traitlets.config import Config
 
 from ..azuread import AzureAdOAuthenticator
 from .mocks import setup_oauth_mock
@@ -33,7 +34,7 @@ def user_model(tenant_id, client_id, name):
             "iat": now,
             "nbf": now,
             "name": name,
-            "preferred_username": name,
+            "preferred_username": "preferred",
             "oid": str(uuid.uuid1()),
             "tid": tenant_id,
             "nonce": "123523",
@@ -69,13 +70,19 @@ def azure_client(client):
     ],
 )
 async def test_azuread(username_claim, azure_client):
-    authenticator = AzureAdOAuthenticator(
-        tenant_id=str(uuid.uuid1()),
-        client_id=str(uuid.uuid1()),
-        client_secret=str(uuid.uuid1()),
+    cfg = Config()
+    cfg.AzureAdOAuthenticator = Config(
+        {
+            "tenant_id": str(uuid.uuid1()),
+            "client_id": str(uuid.uuid1()),
+            "client_secret": str(uuid.uuid1()),
+        }
     )
+
     if username_claim:
-        authenticator.username_claim = username_claim
+        cfg.AzureAdOAuthenticator.username_claim = username_claim
+
+    authenticator = AzureAdOAuthenticator(config=cfg)
 
     handler = azure_client.handler_for_user(
         user_model(
@@ -87,11 +94,17 @@ async def test_azuread(username_claim, azure_client):
 
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
+
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'user' in auth_state
-    jwt_user = auth_state['user']
-    assert jwt_user['aud'] == authenticator.client_id
 
-    name = user_info['name']
-    assert name == jwt_user[authenticator.username_claim]
+    auth_state_user_info = auth_state['user']
+    assert auth_state_user_info['aud'] == authenticator.client_id
+
+    username = user_info['name']
+    if username_claim:
+        assert username == auth_state_user_info[username_claim]
+    else:
+        # The default AzureADOAuthenticator `username_claim` is "name"
+        assert username == auth_state_user_info["name"]

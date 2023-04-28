@@ -28,13 +28,22 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     }
 
     user_auth_state_key = "google_user"
-    scope = ["openid", "email"]
-    username_claim = "email"
-    authorize_url = "https://accounts.google.com/o/oauth2/v2/auth"
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
+
+    @default("scope")
+    def _scope_default(self):
+        return ["openid", "email"]
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "email"
 
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
-    @default('google_api_url')
+    @default("google_api_url")
     def _google_api_url(self):
         """get default google apis url from env"""
         google_api_url = os.getenv('GOOGLE_API_URL')

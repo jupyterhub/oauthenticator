@@ -49,7 +49,10 @@ class Auth0OAuthenticator(OAuthenticator):
 
     login_service = "Auth0"
     user_auth_state_key = "auth0_user"
-    username_claim = "email"
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "email"
 
     auth0_subdomain = Unicode(config=True)
     auth0_domain = Unicode(config=True)

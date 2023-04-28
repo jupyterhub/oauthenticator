@@ -251,11 +251,9 @@ class OAuthenticator(Authenticator):
     callback_handler = OAuthCallbackHandler
     logout_handler = OAuthLogoutHandler
 
-    user_auth_state_key = Unicode(
-        "oauth_user",
-        config=True,
-        help="""The name of the user key expected to be present in `auth_state`.""",
-    )
+    # The name of the user key expected to be present in `auth_state`
+    # To be overridden by each oauthenticator
+    user_auth_state_key = "oauth_user"
 
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""

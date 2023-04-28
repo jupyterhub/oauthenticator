@@ -18,7 +18,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
     scope = ['user:info']
 
     user_auth_state_key = "openshift_user"
-    username_claim = "name"
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "name"
 
     openshift_url = Unicode(
         os.environ.get('OPENSHIFT_URL')

@@ -11,9 +11,7 @@ from .oauth2 import OAuthenticator
 class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
     login_service = "OK"
 
-    @default("user_auth_state_key")
-    def _user_auth_state_key_default(self):
-        return "okpy_user"
+    user_auth_state_key = "okpy_user"
 
     @default("authorize_url")
     def _authorize_url_default(self):
