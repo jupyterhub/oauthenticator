@@ -128,24 +128,44 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True,
     )
 
-    async def user_is_authorized(self, auth_model):
-        # Check if user is a member of any allowed organizations.
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        token_type = auth_model["auth_state"]["token_response"]["token_type"]
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized.
 
-        if self.allowed_organizations:
-            for org in self.allowed_organizations:
-                user_in_org = await self._check_membership_allowed_organizations(
-                    org, auth_model["name"], access_token, token_type
-                )
-                if user_in_org:
-                    break
-            else:  # User not found in member list for any organisation
-                self.log.warning(
-                    f"User {auth_model['name']} is not in allowed org list",
-                )
-                return False
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users` or `allowed_organizations`, and not just those
+        part of `allowed_users`.
+        """
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
 
+        # if allowed_users or allowed_organizations is configured, we deny users not
+        # part of either
+        if self.allowed_users or self.allowed_organizations:
+            if username in self.allowed_users:
+                return True
+
+            if self.allowed_organizations:
+                access_token = auth_model["auth_state"]["token_response"][
+                    "access_token"
+                ]
+                token_type = auth_model["auth_state"]["token_response"]["token_type"]
+                for org in self.allowed_organizations:
+                    user_in_org = await self._check_membership_allowed_organizations(
+                        org, auth_model["name"], access_token, token_type
+                    )
+                    if user_in_org:
+                        return True
+                else:
+                    # User not found in member list for any organi`ation
+                    self.log.warning(
+                        f"User {auth_model['name']} is not in allowed org list",
+                    )
+
+            return False
+
+        # otherwise, authorize all users
         return True
 
     async def update_auth_model(self, auth_model):
