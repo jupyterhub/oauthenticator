@@ -248,7 +248,19 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
-    def user_info_to_username(self, user_info):
+    def _get_final_username_claim_list(self, user_info):
+        """
+        The username claims that will be used to determine the hub username can be set through:
+         - `CILogonOAutnenticator.username_claim`, that can be extended through `CILogonOAutnenticator.additional_username_claims`
+         or
+         - `CILogonOAuthenticator.allowed_idps.<idp>.username_claim`, that
+            will overwrite any value set through CILogonOAuthenticator.username_claim
+            for this identity provider.
+
+        This function returns the username claim list that will be used for the current user trying to login
+        based on the idp that they have selected. If no `CILogonOAutnenticator.allowed_idps` is set, then
+        `CILogonOAutnenticator.username_claim` will be used.
+        """
         username_claims = [self.username_claim]
         if self.additional_username_claims:
             username_claims.extend(self.additional_username_claims)
@@ -258,12 +270,20 @@ class CILogonOAuthenticator(OAuthenticator):
             username_claims = [
                 self.allowed_idps[selected_idp]["username_derivation"]["username_claim"]
             ]
+        return username_claims
 
+    def _get_username_from_claim_list(self, user_info, username_claims):
         username = None
         for claim in username_claims:
             username = user_info.get(claim)
             if username:
                 break
+
+        return username
+
+    def user_info_to_username(self, user_info):
+        username_claims = self._get_final_username_claim_list(user_info)
+        username = self._get_username_from_claim_list(user_info, username_claims)
 
         if not username:
             user_info_keys = sorted(user_info.keys())
@@ -274,6 +294,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         # Optionally strip idp domain or prefix the username
         if self.allowed_idps:
+            selected_idp = user_info["idp"]
             username_derivation = self.allowed_idps[selected_idp]["username_derivation"]
             action = username_derivation.get("action")
 
@@ -298,42 +319,18 @@ class CILogonOAuthenticator(OAuthenticator):
         if auth_model["admin"]:
             return True
 
-        # FIXME: I chatted with Georgiana and we concluded that the user must be
+        # FIXME: Erik and Georgiana chatted and concluded that the user must be
         #        part of allowed_idps no matter what, following that, the user
         #        must either be part of allowed_users or allowed_domains to be
         #        authorized if either is configured, and otherwise all users are
         #        authorized.
         #
-        #        The drafted implementation doesn't reflect this yet.
-        #
-        if self.allowed_users or self.allowed_idps:
+        #        Updated to reflect the discussion.
+        # TODO:  Validate the implementation
+        if self.allowed_idps:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             selected_idp = user_info["idp"]
-
-            if username in self.allowed_users:
-                return True
-
-            if self.allowed_idps and selected_idp in self.allowed_idps:
-                allowed_domains = self.allowed_idps[selected_idp].get("allowed_domains")
-                if allowed_domains:
-                    # FIXME: check allowed is called after username is stripped /
-                    #        prefixed, so we don't know the username's email domain
-                    #        anymore.
-                    #
-                    #        An idea to resolve this is to break apart
-                    #        user_info_to_username in a piece before and after the
-                    #        optional domain stripping operation, allowing us to
-                    #        call it again without the strip operation.
-                    #
-                    user_domain = username.split("@")[1]
-                    if user_domain in allowed_domains:
-                        return True
-                    else:
-                        raise web.HTTPError(
-                            500,
-                            "Trying to login using a domain that was not allowed",
-                        )
-            else:
+            if selected_idp not in self.allowed_idps.keys():
                 self.log.error(
                     f"Trying to login from an identity provider that was not allowed {selected_idp}",
                 )
@@ -342,6 +339,38 @@ class CILogonOAuthenticator(OAuthenticator):
                     "Trying to login using an identity provider that was not allowed",
                 )
 
+            allowed_domains = self.allowed_idps[selected_idp].get("allowed_domains")
+            if self.allowed_users or allowed_domains:
+                if username in self.allowed_users:
+                    return True
+
+                if allowed_domains:
+                    # TODO:  broke apart
+                    #        user_info_to_username in multiple functions
+                    #        allowing us to get the username before the optional
+                    #        stripping operation and use it here.
+                    #        Validate implementation
+                    #
+                    username_claims = self._get_final_username_claim_list(user_info)
+                    username_with_domain = self._get_username_from_claim_list(
+                        user_info, username_claims
+                    )
+                    user_domain = username_with_domain.split("@")[1]
+                    if user_domain in allowed_domains:
+                        return True
+                    else:
+                        raise web.HTTPError(
+                            500,
+                            "Trying to login using a domain that was not allowed",
+                        )
+
+                return False
+        # Although not recommended, it might be that `allowed_idps` is not specified
+        # In this case we need to make sure we still check `allowed_users` and don't assume
+        # everyone should be authorized
+        elif self.allowed_users:
+            if username in self.allowed_users:
+                return True
             return False
 
         # otherwise, authorize all users
