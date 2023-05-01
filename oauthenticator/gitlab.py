@@ -138,8 +138,8 @@ class GitLabOAuthenticator(OAuthenticator):
             if username in self.allowed_users:
                 return True
 
-            await self._set_gitlab_version(access_token)
             access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            await self._set_gitlab_version(access_token)
             user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
 
             if self.allowed_gitlab_groups:
