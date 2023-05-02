@@ -299,7 +299,7 @@ class CILogonOAuthenticator(OAuthenticator):
             action = username_derivation.get("action")
 
             if action == "strip_idp_domain":
-                username = username.split("@")[0]
+                username = username.split("@", 1)[0]
             elif action == "prefix":
                 prefix = username_derivation["prefix"]
                 username = f"{prefix}:{username}"
@@ -335,7 +335,7 @@ class CILogonOAuthenticator(OAuthenticator):
                     f"Trying to login from an identity provider that was not allowed {selected_idp}",
                 )
                 raise web.HTTPError(
-                    500,
+                    403,
                     "Trying to login using an identity provider that was not allowed",
                 )
 
@@ -355,7 +355,7 @@ class CILogonOAuthenticator(OAuthenticator):
                     username_with_domain = self._get_username_from_claim_list(
                         user_info, username_claims
                     )
-                    user_domain = username_with_domain.split("@")[1]
+                    user_domain = username_with_domain.split("@", 1)[1]
                     if user_domain in allowed_domains:
                         return True
                     else:

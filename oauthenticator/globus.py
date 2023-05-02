@@ -274,6 +274,19 @@ class GlobusOAuthenticator(OAuthenticator):
                 auth_model["admin"] = True
                 return True
 
+        if self.identity_provider:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            domain = user_info.get(self.username_claim).split('@', 1)[-1]
+            if domain != self.identity_provider:
+                self.log.error(
+                    f"Trying to login from an identity provider that was not allowed {domain}",
+                )
+                raise HTTPError(
+                    403,
+                    f"This site is restricted to {self.identity_provider} accounts. "
+                    "Please link your account at app.globus.org/account.",
+                )
+
         # if allowed_users or allowed_globus_groups is configured, we deny users not part of either
         if self.allowed_users or self.allowed_globus_groups:
             if username in self.allowed_users:
@@ -320,14 +333,7 @@ class GlobusOAuthenticator(OAuthenticator):
 
         # It's possible for identity provider domains to be namespaced
         # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username, domain = user_info.get(self.username_claim).split('@', 1)
-        if self.identity_provider and domain != self.identity_provider:
-            raise HTTPError(
-                403,
-                f"This site is restricted to {self.identity_provider} accounts. "
-                "Please link your account at app.globus.org/account.",
-            )
-        return username
+        return user_info.get(self.username_claim).split('@')[0]
 
     def get_default_headers(self):
         return {"Accept": "application/json", "User-Agent": "JupyterHub"}
