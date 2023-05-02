@@ -109,6 +109,10 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected organizations"
     )
 
+    # FIXME: when set saves the user teams inside the auth state under a `teams` key.
+    #        Should we standardize the `teams` key?
+    #        (In bitbucket.py the key is called `user_teams` and we set it by default without any flag)
+    #        What about allowed orgs. Should we update the auth_model with these too?
     populate_teams_in_auth_state = Bool(
         False,
         help="""
