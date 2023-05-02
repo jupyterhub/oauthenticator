@@ -229,7 +229,7 @@ async def test_restricted_domain(globus_client):
     authenticator.identity_provider = 'alliance.gov'
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     with raises(web.HTTPError) as exc:
-        authenticator.get_authenticated_user(handler, None)
+        await authenticator.get_authenticated_user(handler, None)
     assert exc.value.status_code == 403
 
 
@@ -294,7 +294,7 @@ async def test_username_from_email_restricted_fail(globus_client):
     um = user_model('wash@serenity.com', 'alan@tudyk.org')
     handler = globus_client.handler_for_user(um)
     with raises(web.HTTPError) as exc:
-        authenticator.get_authenticated_user(handler, None)
+        await authenticator.get_authenticated_user(handler, None)
     assert exc.value.status_code == 403
 
 

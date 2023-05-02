@@ -182,7 +182,7 @@ class GlobusOAuthenticator(OAuthenticator):
 
     def get_globus_tokens(self, token_info):
         # Each token should have these attributes. Resource server is optional,
-        # and likely won't be present.
+        # and likely xwon't be present.
         token_attrs = [
             'expires_in',
             'resource_server',
@@ -230,6 +230,9 @@ class GlobusOAuthenticator(OAuthenticator):
             self.user_auth_state_key: user_info,
         }
 
+    # FIXME: Should we persist info about user groups in auth model
+    #        to be consistent with what's happening in bitbucket.py
+    #        where the `auth_model`` is updated with `user_teams`.
     async def get_users_groups_ids(self, tokens):
         user_group_ids = set()
         # Get Groups access token, may not be in dict headed to auth state
@@ -248,33 +251,56 @@ class GlobusOAuthenticator(OAuthenticator):
 
         return user_group_ids
 
-    async def user_is_authorized(self, auth_model):
+    # TODO: Mark this as breaking change because before globus_admin_groups and globus_user_groups
+    #       were the ones that were being considered to determine the admin and access status of a user
+    #       and not their union with the generic admin_users and allowed_users like it is happening now.
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized.
+
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users` or `allowed_organizations`, and not just those
+        part of `allowed_users`.
+        """
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        # FIXME: consider overriding the `is_admin`` and add this logic there
         tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+        user_group_ids = await self.get_users_groups_ids(tokens)
+        if self.admin_globus_groups:
+            if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
+                auth_model["admin"] = True
+                return True
 
-        if self.allowed_globus_groups or self.admin_globus_groups:
-            # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            user_group_ids = await self.get_users_groups_ids(tokens)
-            if not self.check_user_in_groups(
-                user_group_ids, self.allowed_globus_groups
-            ):
-                if not self.check_user_in_groups(
-                    user_group_ids, self.admin_globus_groups
+        # if allowed_users or allowed_globus_groups is configured, we deny users not part of either
+        if self.allowed_users or self.allowed_globus_groups:
+            if username in self.allowed_users:
+                return True
+
+            if self.allowed_globus_groups:
+                if self.check_user_in_groups(
+                    user_group_ids, self.allowed_globus_groups
                 ):
-                    username = self.user_info_to_username(
-                        auth_model["auth_state"][self.user_auth_state_key]
-                    )
-                    self.log.warning(f"{username} not in an allowed Globus Group")
-                    return False
+                    return True
 
+                self.log.warning(f"{username} not in an allowed Globus Group")
+
+            return False
+
+        # otherwise, authorize all users
         return True
 
     async def update_auth_model(self, auth_model):
-        username = self.user_info_to_username(
-            auth_model["auth_state"][self.user_auth_state_key]
-        )
-        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+        # If users is already marked as an admin, it means that
+        # they are present in the `admin_users`` list
+        # no need to check groups membership
+        if auth_model['admin'] is True:
+            return auth_model
 
         if self.admin_globus_groups:
+            tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
             # If any of these configurations are set, user must be in the allowed or admin Globus Group
             user_group_ids = await self.get_users_groups_ids(tokens)
             # Admin users are being managed via Globus Groups

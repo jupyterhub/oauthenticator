@@ -155,6 +155,7 @@ class GitLabOAuthenticator(OAuthenticator):
                 )
                 if user_in_project:
                     return True
+
             return False
 
         # otherwise, authorize all users
