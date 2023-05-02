@@ -635,10 +635,9 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-        url = url_concat(self.token_url, params)
 
         token_info = await self.httpfetch(
-            url,
+            self.token_url,
             method="POST",
             headers=self.build_token_info_request_headers(),
             body=urlencode(params).encode("utf-8"),
