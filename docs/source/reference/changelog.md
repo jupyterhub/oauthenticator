@@ -10,6 +10,73 @@ command line for details.
 
 ## 15.0
 
+# 15.2.0 - 2023-05-04
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/15.1.0...15.2.0))
+
+## New features added
+
+- [All] Add `http_request_kwargs` config option [#578](https://github.com/jupyterhub/oauthenticator/pull/578) ([@manics](https://github.com/manics))
+- [CILogonOAuthenticator] Add profile to default scope, fix detail following recent refactoring [#575](https://github.com/jupyterhub/oauthenticator/pull/575) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Refactor oauthenticators [#526](https://github.com/jupyterhub/oauthenticator/pull/526) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+## Bugs fixed
+
+- Don't send POST params on query string also [#610](https://github.com/jupyterhub/oauthenticator/pull/610) ([@jabbera](https://github.com/jabbera))
+- Fix Content-Type header, should be x-www-form-urlencoded for token request, and not passed for other GET requests [#599](https://github.com/jupyterhub/oauthenticator/pull/599) ([@jabbera](https://github.com/jabbera))
+- Adjust the params of the access token request when basic auth is enabled [#568](https://github.com/jupyterhub/oauthenticator/pull/568) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- [OAuthLoginHandler] Fix tornado.auth.OAuth2Mixin.authorize_redirect `extra_params` parameter's name [#551](https://github.com/jupyterhub/oauthenticator/pull/551) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+## Maintenance and upkeep improvements
+
+- Reverts unreleased changes making scope, username_claim, ...\_url not configurable [#608](https://github.com/jupyterhub/oauthenticator/pull/608) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- maint: import Callable traitlet from jupyterhub [#603](https://github.com/jupyterhub/oauthenticator/pull/603) ([@consideRatio](https://github.com/consideRatio))
+- maint: cleanup already removed awscogito, azureadb2c, yandex [#602](https://github.com/jupyterhub/oauthenticator/pull/602) ([@consideRatio](https://github.com/consideRatio))
+- Fix bug in implementation of not yet released basic_auth config [#601](https://github.com/jupyterhub/oauthenticator/pull/601) ([@consideRatio](https://github.com/consideRatio))
+- [Maintainance] Remove dynamic defaults when not needed and rm the io_loop [#595](https://github.com/jupyterhub/oauthenticator/pull/595) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- maint: replace test-requirements.txt with opt. dependencies [#590](https://github.com/jupyterhub/oauthenticator/pull/590) ([@consideRatio](https://github.com/consideRatio))
+- dependabot: monthly updates of github actions [#588](https://github.com/jupyterhub/oauthenticator/pull/588) ([@consideRatio](https://github.com/consideRatio))
+- maint: declare optional dependencies for version constraints [#581](https://github.com/jupyterhub/oauthenticator/pull/581) ([@consideRatio](https://github.com/consideRatio))
+- Add missing requirements [#577](https://github.com/jupyterhub/oauthenticator/pull/577) ([@manics](https://github.com/manics))
+- maint: drop support for python 3.6 [#559](https://github.com/jupyterhub/oauthenticator/pull/559) ([@consideRatio](https://github.com/consideRatio))
+- Update .gitignore [#558](https://github.com/jupyterhub/oauthenticator/pull/558) ([@consideRatio](https://github.com/consideRatio))
+- maint: add and run pre-commit hooks pyupgrade and autoflake [#555](https://github.com/jupyterhub/oauthenticator/pull/555) ([@consideRatio](https://github.com/consideRatio))
+- use importlib-metadata to load entrypoints for docs [#542](https://github.com/jupyterhub/oauthenticator/pull/542) ([@minrk](https://github.com/minrk))
+
+## Documentation improvements
+
+- docs: update broken links [#604](https://github.com/jupyterhub/oauthenticator/pull/604) ([@consideRatio](https://github.com/consideRatio))
+- docs: fix readme badge for tests [#597](https://github.com/jupyterhub/oauthenticator/pull/597) ([@consideRatio](https://github.com/consideRatio))
+- Fix broken link about GCP service account keys [#586](https://github.com/jupyterhub/oauthenticator/pull/586) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Document the notable changes of the refactorization [#569](https://github.com/jupyterhub/oauthenticator/pull/569) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Refactor the documentation structure [#561](https://github.com/jupyterhub/oauthenticator/pull/561) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- All docs to MyST markdown 🚀 [#554](https://github.com/jupyterhub/oauthenticator/pull/554) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+## Other merged PRs
+
+- [pre-commit.ci] pre-commit autoupdate [#611](https://github.com/jupyterhub/oauthenticator/pull/611) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- Bump pypa/gh-action-pypi-publish from 1.8.4 to 1.8.5 [#592](https://github.com/jupyterhub/oauthenticator/pull/592) ([@dependabot](https://github.com/dependabot))
+- ci: transition to use codecov github action [#589](https://github.com/jupyterhub/oauthenticator/pull/589) ([@consideRatio](https://github.com/consideRatio))
+- [pre-commit.ci] pre-commit autoupdate [#587](https://github.com/jupyterhub/oauthenticator/pull/587) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- Bump pypa/gh-action-pypi-publish from 1.6.4 to 1.8.4 [#580](https://github.com/jupyterhub/oauthenticator/pull/580) ([@dependabot](https://github.com/dependabot))
+- [pre-commit.ci] pre-commit autoupdate [#574](https://github.com/jupyterhub/oauthenticator/pull/574) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#572](https://github.com/jupyterhub/oauthenticator/pull/572) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- ci: add dependabot for github actions and update misc versions in workflows [#566](https://github.com/jupyterhub/oauthenticator/pull/566) ([@consideRatio](https://github.com/consideRatio))
+- [pre-commit.ci] pre-commit autoupdate [#563](https://github.com/jupyterhub/oauthenticator/pull/563) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#562](https://github.com/jupyterhub/oauthenticator/pull/562) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#560](https://github.com/jupyterhub/oauthenticator/pull/560) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#557](https://github.com/jupyterhub/oauthenticator/pull/557) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#556](https://github.com/jupyterhub/oauthenticator/pull/556) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#543](https://github.com/jupyterhub/oauthenticator/pull/543) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#541](https://github.com/jupyterhub/oauthenticator/pull/541) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- [pre-commit.ci] pre-commit autoupdate [#539](https://github.com/jupyterhub/oauthenticator/pull/539) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+
+## Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2022-09-08&to=2023-05-03&type=c))
+
+[@Bougakov](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ABougakov+updated%3A2022-09-08..2023-05-03&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2022-09-08..2023-05-03&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adependabot+updated%3A2022-09-08..2023-05-03&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2022-09-08..2023-05-03&type=Issues) | [@jabbera](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajabbera+updated%3A2022-09-08..2023-05-03&type=Issues) | [@jimdigriz](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajimdigriz+updated%3A2022-09-08..2023-05-03&type=Issues) | [@kianaf](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Akianaf+updated%3A2022-09-08..2023-05-03&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2022-09-08..2023-05-03&type=Issues) | [@meeseeksmachine](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ameeseeksmachine+updated%3A2022-09-08..2023-05-03&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2022-09-08..2023-05-03&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Apre-commit-ci+updated%3A2022-09-08..2023-05-03&type=Issues) | [@Sheila-nk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ASheila-nk+updated%3A2022-09-08..2023-05-03&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awelcome+updated%3A2022-09-08..2023-05-03&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2022-09-08..2023-05-03&type=Issues)
+
 ### 15.1.0 - 2022-09-08
 
 #### New features added
