@@ -8,11 +8,11 @@ command line for details.
 
 (changelog:version-15)=
 
-## 15.0
+## 16.0
 
-# 15.2.0 - 2023-05-04
+# 16.0.0 - 2023-MM-DD
 
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/15.1.0...15.2.0))
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/15.1.0...16.0.0))
 
 ## New features added
 
@@ -76,6 +76,8 @@ command line for details.
 ([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2022-09-08&to=2023-05-03&type=c))
 
 [@Bougakov](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ABougakov+updated%3A2022-09-08..2023-05-03&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2022-09-08..2023-05-03&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adependabot+updated%3A2022-09-08..2023-05-03&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2022-09-08..2023-05-03&type=Issues) | [@jabbera](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajabbera+updated%3A2022-09-08..2023-05-03&type=Issues) | [@jimdigriz](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajimdigriz+updated%3A2022-09-08..2023-05-03&type=Issues) | [@kianaf](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Akianaf+updated%3A2022-09-08..2023-05-03&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2022-09-08..2023-05-03&type=Issues) | [@meeseeksmachine](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ameeseeksmachine+updated%3A2022-09-08..2023-05-03&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2022-09-08..2023-05-03&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Apre-commit-ci+updated%3A2022-09-08..2023-05-03&type=Issues) | [@Sheila-nk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ASheila-nk+updated%3A2022-09-08..2023-05-03&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awelcome+updated%3A2022-09-08..2023-05-03&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2022-09-08..2023-05-03&type=Issues)
+
+## 15.0
 
 ### 15.1.0 - 2022-09-08
 
