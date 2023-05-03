@@ -116,56 +116,78 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
-    async def user_is_authorized(self, auth_model):
-        """
-        Checks that the google user has a verified email and is part of
-        `hosted_domain` if set.
+    # async def user_is_authorized(self, auth_model):
+    #     """
+    #     Checks that the google user has a verified email and is part of
+    #     `hosted_domain` if set.
 
-        Authorizes users part of: `allowed_users`, `admin_users`,
-        `allowed_google_groups`, or `admin_google_groups`.
+    #     Authorizes users part of: `allowed_users`, `admin_users`,
+    #     `allowed_google_groups`, or `admin_google_groups`.
 
-        Note that this function also updates the auth_model with admin status
-        and the user's google groups if either `allowed_google_groups` or
-        `admin_google_groups` are configured.
+    #     Note that this function also updates the auth_model with admin status
+    #     and the user's google groups if either `allowed_google_groups` or
+    #     `admin_google_groups` are configured.
+    #     """
+    async def check_allowed(self, username, auth_model):
         """
+        Returns True for users allowed to be authorized.
+
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users` or `allowed_organizations`, and not just those
+        part of `allowed_users`.
+        """
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
         user_domain = user_email.split("@")[1]
+        user_groups = set(self._google_groups_for_user(user_email, user_domain))
+        # FIXME: consider overriding the `is_admin` and add this logic there
+        admin_groups = self.admin_google_groups.get(user_domain, set())
+
+        if any(user_groups & admin_groups):
+            auth_model["admin"] = True
+            return True
 
         if not user_info["verified_email"]:
             self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
             raise HTTPError(403, f"Google email {user_email} not verified")
 
-        if self.hosted_domain and user_domain not in self.hosted_domain:
-            self.log.warning(f"Google OAuth unauthorized domain attempt: {user_email}")
-            raise HTTPError(403, f"Google account domain @{user_domain} not authorized")
+        if self.hosted_domain:
+            if user_domain not in self.hosted_domain:
+                self.log.error(
+                    f"Google OAuth unauthorized domain attempt: {user_email}"
+                )
+                raise HTTPError(
+                    403, f"Google account domain @{user_domain} not authorized"
+                )
 
-        username = auth_model["name"]
-        if username in self.admin_users:
-            auth_model["admin"] = True
-
-        # always set google_groups if associated config is provided, and to a
-        # list rather than set, for backward compatibility
-        if self.allowed_google_groups or self.admin_google_groups:
-            # FIXME: _google_groups_for_user is a non-async function that blocks
-            #        JupyterHub, and it also doesn't have any cache. If this is
-            #        solved, we could also let this function not modify the
-            #        auth_model.
-            #
-            user_groups = self._google_groups_for_user(user_email, user_domain)
-            user_info["google_groups"] = list(user_groups)
-
-            allowed_groups = self.allowed_google_groups.get(user_domain, set())
-            admin_groups = self.admin_google_groups.get(user_domain, set())
-
-            # only set admin if not already set
-            if not auth_model["admin"]:
-                auth_model["admin"] = any(user_groups & admin_groups)
-
-            if any(user_groups & (allowed_groups | admin_groups)):
+        # if allowed_users or allowed_google_groups is configured, we deny users not part of either
+        if self.allowed_users or self.allowed_google_groups:
+            if username in self.allowed_users:
                 return True
 
-        return username in (self.allowed_users | self.admin_users)
+            # FIXME: Decide on the following:
+            #        always set google_groups if associated config is provided, and to a
+            #        list rather than set, for backward compatibility
+            if self.allowed_google_groups or self.admin_google_groups:
+                # FIXME: _google_groups_for_user is a non-async function that blocks
+                #        JupyterHub, and it also doesn't have any cache. If this is
+                #        solved, we could also let this function not modify the
+                #        auth_model.
+                #        It is called one time either way, why store it?
+                #
+                user_info["google_groups"] = list(user_groups)
+                allowed_groups = self.allowed_google_groups.get(user_domain, set())
+
+                if any(user_groups & allowed_groups):
+                    return True
+            return False
+
+        # otherwise, authorize all users
+        return True
 
     def _service_client_credentials(self, scopes, user_email_domain):
         """
