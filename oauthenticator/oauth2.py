@@ -396,7 +396,11 @@ class OAuthenticator(Authenticator):
         For example, to use a HTTP proxy for all requests:
 
         `c.OAuthenticator.http_request_kwargs = {"proxy_host": "proxy.example.com", "proxy_port": 8080}`
-        }
+
+        See the `tornado.httpclient.HTTPRequest` documentation for all options and limitations:
+        https://www.tornadoweb.org/en/stable/httpclient.html#tornado.httpclient.HTTPRequest
+
+        Note that some of these are dependent on the httpclient implementation.
         """,
         config=True,
     )
