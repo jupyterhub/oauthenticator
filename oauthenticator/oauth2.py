@@ -232,31 +232,27 @@ class OAuthLogoutHandler(LogoutHandler):
 
     async def render_logout_page(self):
         if self.authenticator.logout_redirect_url:
-            redirect_uri = await self.get_post_redirect_uri()
-            self.redirect(redirect_uri)
+            redirect_uri_params = await self.get_redirect_uri_params()
+            url = url_concat(self.authenticator.logout_redirect_url, redirect_uri_params)
+            self.redirect(url)
             return
 
         return await super().render_logout_page()
 
-    async def get_post_redirect_uri(self):
-        redirect_uri = self.authenticator.logout_redirect_url
+    async def get_redirect_uri_params(self):
+        redirect_uri_params = dict()
         user = list(self.users.values())
         if not user:
-            return redirect_uri
+            return redirect_uri_params
 
         auth_state = await user[0].get_auth_state()
-        if not auth_state['id_token']:
-            return redirect_uri
+        if auth_state['id_token']:
+            redirect_uri_params['id_token_hint'] = auth_state['id_token']
 
-        redirect_uri = f"{redirect_uri}?id_token_hint={auth_state['id_token']}"
-        if not self.authenticator.post_logout_redirect_uri:
-            return redirect_uri
+        if self.authenticator.post_logout_redirect_uri:
+            redirect_uri_params['post_logout_redirect_uri'] = self.authenticator.post_logout_redirect_uri
 
-        redirect_uri = (
-            f"{redirect_uri}&post_logout_redirect_uri="
-            f"{self.authenticator.post_logout_redirect_uri}"
-        )
-        return redirect_uri
+        return redirect_uri_params
 
 
 class OAuthenticator(Authenticator):
@@ -489,7 +485,7 @@ class OAuthenticator(Authenticator):
                 return resp
 
     async def httpfetch(
-        self, url, label="fetching", parse_json=True, raise_error=True, **kwargs
+            self, url, label="fetching", parse_json=True, raise_error=True, **kwargs
     ):
         """Wrapper for creating and fetching http requests
 
