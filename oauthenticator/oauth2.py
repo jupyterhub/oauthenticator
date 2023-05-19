@@ -233,7 +233,9 @@ class OAuthLogoutHandler(LogoutHandler):
     async def render_logout_page(self):
         if self.authenticator.logout_redirect_url:
             redirect_uri_params = await self.get_redirect_uri_params()
-            url = url_concat(self.authenticator.logout_redirect_url, redirect_uri_params)
+            url = url_concat(
+                self.authenticator.logout_redirect_url, redirect_uri_params
+            )
             self.redirect(url)
             return
 
@@ -250,7 +252,9 @@ class OAuthLogoutHandler(LogoutHandler):
             redirect_uri_params['id_token_hint'] = auth_state['id_token']
 
         if self.authenticator.post_logout_redirect_uri:
-            redirect_uri_params['post_logout_redirect_uri'] = self.authenticator.post_logout_redirect_uri
+            redirect_uri_params[
+                'post_logout_redirect_uri'
+            ] = self.authenticator.post_logout_redirect_uri
 
         return redirect_uri_params
 
@@ -485,7 +489,7 @@ class OAuthenticator(Authenticator):
                 return resp
 
     async def httpfetch(
-            self, url, label="fetching", parse_json=True, raise_error=True, **kwargs
+        self, url, label="fetching", parse_json=True, raise_error=True, **kwargs
     ):
         """Wrapper for creating and fetching http requests
 
