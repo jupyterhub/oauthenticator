@@ -8,7 +8,6 @@ from urllib.parse import quote
 from jupyterhub.auth import LocalAuthenticator
 from tornado.escape import url_escape
 from tornado.httpclient import HTTPRequest
-from tornado.httputil import url_concat
 from traitlets import CUnicode, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -18,7 +17,7 @@ def _api_headers(access_token):
     return {
         "Accept": "application/json",
         "User-Agent": "JupyterHub",
-        "Authorization": "Bearer {}".format(access_token),
+        "Authorization": f"Bearer {access_token}",
     }
 
 
@@ -34,6 +33,7 @@ class GitLabOAuthenticator(OAuthenticator):
     }
 
     login_service = "GitLab"
+    user_auth_state_key = "gitlab_user"
 
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
@@ -57,10 +57,10 @@ class GitLabOAuthenticator(OAuthenticator):
             else:
                 # Hides common mistake of users which set the GITLAB_HOST
                 # without a protocol specification.
-                gitlab_url = 'https://{0}'.format(gitlab_host)
+                gitlab_url = f'https://{gitlab_host}'
                 warnings.warn(
-                    'The https:// prefix has been added to GITLAB_HOST.'
-                    'Set GITLAB_URL="{0}" instead.'.format(gitlab_host)
+                    "The https:// prefix has been added to GITLAB_HOST. "
+                    f'Set GITLAB_URL="{gitlab_host}" instead.'
                 )
 
         # default to gitlab.com
@@ -79,15 +79,19 @@ class GitLabOAuthenticator(OAuthenticator):
 
     @default("gitlab_api")
     def _default_gitlab_api(self):
-        return '%s/api/v%s' % (self.gitlab_url, self.gitlab_api_version)
+        return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return "%s/oauth/authorize" % self.gitlab_url
+        return f"{self.gitlab_url}/oauth/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth/access_token" % self.gitlab_url
+        return f"{self.gitlab_url}/oauth/token"
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return f"{self.gitlab_api}/user"
 
     gitlab_group_whitelist = Set(
         help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
@@ -110,54 +114,14 @@ class GitLabOAuthenticator(OAuthenticator):
 
     gitlab_version = None
 
-    async def authenticate(self, handler, data=None):
-        code = handler.get_argument("code")
-
-        # Exchange the OAuth code for a GitLab Access Token
-        #
-        # See: https://github.com/gitlabhq/gitlabhq/blob/HEAD/doc/api/oauth2.md
-
-        # GitLab specifies a POST request yet requires URL parameters
-        params = dict(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            code=code,
-            grant_type="authorization_code",
-            redirect_uri=self.get_callback_url(handler),
-        )
-
-        validate_server_cert = self.validate_server_cert
-
-        url = url_concat("%s/oauth/token" % self.gitlab_url, params)
-
-        req = HTTPRequest(
-            url,
-            method="POST",
-            headers={"Accept": "application/json"},
-            validate_cert=validate_server_cert,
-            body='',  # Body is required for a POST...
-        )
-
-        resp_json = await self.fetch(req, label="getting access token")
-        access_token = resp_json['access_token']
+    async def user_is_authorized(self, auth_model):
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
 
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
             self.gitlab_version = await self._get_gitlab_version(access_token)
             self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
-
-        # Determine who the logged in user is
-        req = HTTPRequest(
-            "%s/user" % self.gitlab_api,
-            method="GET",
-            validate_cert=validate_server_cert,
-            headers=_api_headers(access_token),
-        )
-        resp_json = await self.fetch(req, label="getting gitlab user")
-
-        username = resp_json["username"]
-        user_id = resp_json["id"]
-        is_admin = resp_json.get("is_admin", False)
 
         # Check if user is a member of any allowed groups or projects.
         # These checks are performed here, as it requires `access_token`.
@@ -184,23 +148,21 @@ class GitLabOAuthenticator(OAuthenticator):
             or (is_project_id_specified and user_in_project)
             or no_config_specified
         ):
-            return {
-                'name': username,
-                'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
-            }
-        else:
-            self.log.warning("%s not in group or project allowed list", username)
-            return None
+            return True
+
+        self.log.warning(
+            f"{auth_model['name']} not in group or project allowed list",
+        )
+        return False
 
     async def _get_gitlab_version(self, access_token):
-        url = '%s/version' % self.gitlab_api
-        req = HTTPRequest(
+        url = f"{self.gitlab_api}/version"
+        resp_json = await self.httpfetch(
             url,
             method="GET",
             headers=_api_headers(access_token),
             validate_cert=self.validate_server_cert,
         )
-        resp_json = await self.fetch(req)
         version_strings = resp_json['version'].split('-')[0].split('.')[:3]
         version_ints = list(map(int, version_strings))
         return version_ints
@@ -217,11 +179,15 @@ class GitLabOAuthenticator(OAuthenticator):
             )
             req = HTTPRequest(
                 url,
+            )
+            resp = await self.httpfetch(
+                url,
+                parse_json=False,
+                raise_error=False,
                 method="GET",
                 headers=headers,
                 validate_cert=self.validate_server_cert,
             )
-            resp = await self.fetch(req, raise_error=False, parse_json=False)
             if resp.code == 200:
                 return True  # user _is_ in group
         return False
@@ -236,13 +202,13 @@ class GitLabOAuthenticator(OAuthenticator):
                 self.member_api_variant,
                 user_id,
             )
-            req = HTTPRequest(
+            resp_json = await self.httpfetch(
                 url,
+                raise_error=False,
                 method="GET",
                 headers=headers,
                 validate_cert=self.validate_server_cert,
             )
-            resp_json = await self.fetch(req, raise_error=False)
             if resp_json:
                 access_level = resp_json.get('access_level', 0)
 
@@ -256,5 +222,3 @@ class GitLabOAuthenticator(OAuthenticator):
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
 
     """A version that mixes in local system user creation"""
-
-    pass

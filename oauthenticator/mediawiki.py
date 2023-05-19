@@ -20,6 +20,7 @@ from oauthenticator import OAuthCallbackHandler, OAuthenticator
 # login and authentication phase
 AUTH_REQUEST_COOKIE_NAME = 'mw_oauth_request_token_v2'
 
+
 # Helpers to jsonify/de-jsonify request_token
 # It is a named tuple with bytestrings, json.dumps balks
 def jsonify(request_token):
@@ -106,7 +107,14 @@ class MWOAuthenticator(OAuthenticator):
     def _executor_default(self):
         return ThreadPoolExecutor(self.executor_threads)
 
-    async def authenticate(self, handler, data=None):
+    # We're overriding this method because mediawiki it's more special
+    # and needs a Handshaker object to send the tokes request.
+    # So, we're building the params directly in the `get_token_info`.
+    def build_access_tokens_request_params(self, handler, data=None):
+        return None
+
+    async def get_token_info(self, handler, params):
+        # Exchange the OAuth code for an Access Token
         consumer_token = ConsumerToken(
             self.client_id,
             self.client_secret,
@@ -120,20 +128,25 @@ class MWOAuthenticator(OAuthenticator):
                 handshaker.complete, request_token, handler.request.query
             )
         )
+        return {"access_token": access_token, "consumer_token": consumer_token}
 
-        identity = await wrap_future(
-            self.executor.submit(handshaker.identify, access_token)
+    async def token_to_user(self, token_info):
+        handshaker = Handshaker(self.mw_index_url, token_info["consumer_token"])
+
+        return await wrap_future(
+            self.executor.submit(handshaker.identify, token_info["access_token"])
         )
-        if identity and 'username' in identity:
-            # this shouldn't be necessary anymore,
-            # but keep for backward-compatibility
-            return {
-                'name': identity['username'].replace(' ', '_'),
-                'auth_state': {
-                    'ACCESS_TOKEN_KEY': access_token.key,
-                    'ACCESS_TOKEN_SECRET': access_token.secret,
-                    'MEDIAWIKI_USER_IDENTITY': identity,
-                },
-            }
-        else:
-            self.log.error("No username found in %s", identity)
+
+    async def update_auth_model(self, auth_model):
+        auth_model['name'] = auth_model['name'].replace(' ', '_')
+        return auth_model
+
+    def build_auth_state_dict(self, token_info, user_info):
+        username = self.user_info_to_username(user_info)
+        # this shouldn't be necessary anymore,
+        # but keep for backward-compatibility
+        return {
+            'ACCESS_TOKEN_KEY': token_info["access_token"].key,
+            'ACCESS_TOKEN_SECRET': token_info["access_token"].secret,
+            'MEDIAWIKI_USER_IDENTITY': user_info,
+        }

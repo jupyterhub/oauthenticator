@@ -1,7 +1,7 @@
 # OAuth + JupyterHub Authenticator = OAuthenticator :heart:
 
 [![Documentation build status](https://img.shields.io/readthedocs/oauthenticator?logo=read-the-docs)](https://oauthenticator.readthedocs.org/en/latest)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jupyterhub/oauthenticator/Tests?logo=github)](https://github.com/jupyterhub/oauthenticator/actions)
+[![GitHub Workflow Status - Test](https://img.shields.io/github/actions/workflow/status/jupyterhub/oauthenticator/test.yml?logo=github&label=tests)](https://github.com/jupyterhub/oauthenticator/actions)
 [![Latest PyPI version](https://img.shields.io/pypi/v/oauthenticator?logo=pypi)](https://pypi.python.org/pypi/oauthenticator)
 [![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/oauthenticator?logo=conda-forge)](https://anaconda.org/conda-forge/oauthenticator)
 [![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/oauthenticator/issues)
@@ -25,36 +25,23 @@ to create a new authenticator class when additional customization is needed.
 
 ## Installation
 
-The installation guide can be found in the [docs](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#installation).
+The installation guide can be found in the [docs](https://oauthenticator.readthedocs.io/en/latest/tutorials/install.html).
 
-The docs also provide example setups for different OAuth2 identity providers:
-
-- [General Setup](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#general-setup)
-- [Azure AD](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#azure-ad-setup)
-- [FeiShu](https://github.com/tezignlab/jupyterhub_feishu_authenticator)
-- [GitHub](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#github-setup)
-- [GitLab](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#gitlab-setup)
-- [Google](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#google-setup)
-- [OpenShift](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#openshift-setup)
-- [Okpy](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#okpyauthenticator)
-- [Globus](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#globus-setup)
-- [Moodle](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#moodle-setup)
-- [Yandex](https://oauthenticator.readthedocs.io/en/latest/getting-started.html#yandex-setup)
+The [docs](https://oauthenticator.readthedocs.io/en/latest/tutorials/provider-specific-setup/index.html) also provide example setups for different OAuth2 identity providers.
 
 ## Running tests
 
-To run the tests locally:
+To run the tests locally, first setup a development environment as described in
+[CONTRIBUTING.md], and then do:
 
 ```
-$ pip install --upgrade --pre -r test-requirements.txt
-```
-
-```
-$ pytest -v ./oauthenticator/tests/
+pytest -v ./oauthenticator/tests/
 ```
 
 Or you run a specific test file with:
 
 ```
-$ pytest -v ./oauthenticator/tests/<test-file-name>
+pytest -v ./oauthenticator/tests/<test-file-name>
 ```
+
+[contributing.md]: https://github.com/jupyterhub/oauthenticator/blob/main/CONTRIBUTING.md

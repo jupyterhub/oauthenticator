@@ -1,4 +1,4 @@
-(github-scopes-label)=
+(topic:github:specific-scopes)=
 
 # GitHub-specific scopes
 

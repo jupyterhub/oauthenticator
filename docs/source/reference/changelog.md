@@ -1,4 +1,4 @@
-# Changes in oauthenticator
+# Changelog
 
 For detailed changes from the prior release, click on the version number, and
 its link will bring up a GitHub listing of changes. Use `git log` on the
@@ -6,7 +6,30 @@ command line for details.
 
 ## [Unreleased]
 
+(changelog:version-15)=
+
 ## 15.0
+
+### 15.1.0 - 2022-09-08
+
+#### New features added
+
+- [Auth0] Add `auth0_domain` config [#534](https://github.com/jupyterhub/oauthenticator/pull/534) ([@drhagen](https://github.com/drhagen))
+- [CILogon] Add allowed_domains to allowed_idps config for a possiblity to restrict access based on idp + domain [#518](https://github.com/jupyterhub/oauthenticator/pull/518) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Enhancements made
+
+- [Generic] Allow passing a string separated by periods for `claim_groups_key` [#537](https://github.com/jupyterhub/oauthenticator/pull/537) ([@dingobar](https://github.com/dingobar))
+
+#### Documentation improvements
+
+- Update documentation theme and fix autodoc [#524](https://github.com/jupyterhub/oauthenticator/pull/524) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2022-06-09&to=2022-09-08&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2022-06-09..2022-09-08&type=Issues) | [@dingobar](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adingobar+updated%3A2022-06-09..2022-09-08&type=Issues) | [@drhagen](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adrhagen+updated%3A2022-06-09..2022-09-08&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2022-06-09..2022-09-08&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2022-06-09..2022-09-08&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2022-06-09..2022-09-08&type=Issues) | [@terrencegf](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aterrencegf+updated%3A2022-06-09..2022-09-08&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2022-06-09..2022-09-08&type=Issues)
 
 ### 15.0.1
 
@@ -30,7 +53,7 @@ read about the breaking changes.
 #### Breaking security change
 
 - `CILogonOAuthenticator` has breaking changes and come with a [migration
-  guide](https://oauthenticator.readthedocs.io/en/latest/migrations.html#migrating-cilogonoauthenticator-to-version-15-0).
+  guide](migrations:upgrade-to-15).
   These changes resolve the known vulnerability
   [GHSA-r7v4-jwx9-wx43](https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-r7v4-jwx9-wx43).
   **Your hub will fail to start if you do not follow the migration guide**.

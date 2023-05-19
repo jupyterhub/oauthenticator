@@ -45,11 +45,7 @@ async def test_cilogon(cilogon_client):
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'token_response' in auth_state
-    assert auth_state == {
-        'access_token': auth_state['access_token'],
-        'cilogon_user': user_model('wash'),
-        'token_response': auth_state['token_response'],
-    }
+    assert auth_state["cilogon_user"] == user_model('wash')
 
 
 async def test_cilogon_alternate_claim(cilogon_client):
@@ -64,11 +60,7 @@ async def test_cilogon_alternate_claim(cilogon_client):
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'token_response' in auth_state
-    assert auth_state == {
-        'access_token': auth_state['access_token'],
-        'cilogon_user': alternative_user_model('jtkirk@ufp.gov', 'uid'),
-        'token_response': auth_state['token_response'],
-    }
+    assert auth_state["cilogon_user"] == alternative_user_model('jtkirk@ufp.gov', 'uid')
 
 
 async def test_cilogon_additional_claim(cilogon_client):
@@ -83,11 +75,7 @@ async def test_cilogon_additional_claim(cilogon_client):
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'token_response' in auth_state
-    assert auth_state == {
-        'access_token': auth_state['access_token'],
-        'cilogon_user': alternative_user_model('jtkirk@ufp.gov', 'uid'),
-        'token_response': auth_state['token_response'],
-    }
+    assert auth_state["cilogon_user"] == alternative_user_model('jtkirk@ufp.gov', 'uid')
 
 
 async def test_cilogon_missing_alternate_claim(cilogon_client):
@@ -99,7 +87,7 @@ async def test_cilogon_missing_alternate_claim(cilogon_client):
         user_info = await authenticator.authenticate(handler)
 
 
-def test_deprecated_config(caplog):
+async def test_deprecated_config(caplog):
     cfg = Config()
     cfg.CILogonOAuthenticator.idp_whitelist = ['pink']
 
@@ -123,7 +111,7 @@ def test_deprecated_config(caplog):
     assert expected_deprecation_error in log_msgs
 
 
-def test_allowed_idps_wrong_type(caplog):
+async def test_allowed_idps_wrong_type(caplog):
     # Test alllowed_idps is a dict
     cfg = Config()
     cfg.CILogonOAuthenticator.allowed_idps = ['pink']
@@ -143,7 +131,7 @@ async def test_allowed_idps_required_username_derivation(caplog):
         CILogonOAuthenticator(config=cfg)
 
 
-def test_allowed_idps_invalid_entity_id(caplog):
+async def test_allowed_idps_invalid_entity_id(caplog):
     # Test allowed_idps keys cannot be domains, but only valid CILogon entity ids,
     # i.e. only fully formed URLs
     cfg = Config()

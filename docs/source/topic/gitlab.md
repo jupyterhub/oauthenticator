@@ -1,4 +1,4 @@
-(gitlab-scopes-label)=
+(topic:gitlab:specific-scopes)=
 
 # GitLab-specific scopes
 

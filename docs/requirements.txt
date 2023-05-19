@@ -4,8 +4,10 @@
 -e ./
 
 autodoc-traits
+importlib_metadata>=3.6; python_version < '3.10'
 myst-parser
 sphinx>=2
 sphinx-autobuild
 sphinx-book-theme
 sphinx-copybutton
+sphinxext-rediraffe

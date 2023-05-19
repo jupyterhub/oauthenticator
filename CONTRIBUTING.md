@@ -15,22 +15,17 @@ To set up a development environment for this repository:
 
    ```
    cd oauthenticator
-   pip install -e .
+   pip install -e ".[test]"
    ```
 
-3. Install test dependencies
+3. Install pre-commit hooks that checks formatting before commits are made.
 
    ```
-   pip install -r test-requirements.txt
+   pip install pre-commit
+   pre-commit install --install-hooks
    ```
 
-4. Install pre-commit hooks that checks formatting before commits are made.
-
-   ```
-   pre-commit install
-   ```
-
-5. Run tests
+4. Run tests
 
    ```
    pytest

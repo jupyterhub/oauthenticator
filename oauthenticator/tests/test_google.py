@@ -44,7 +44,9 @@ async def test_google(google_client):
 
 
 async def test_google_username_claim(google_client):
-    authenticator = GoogleOAuthenticator(username_claim="sub")
+    cfg = Config()
+    cfg.GoogleOAuthenticator.username_claim = "sub"
+    authenticator = GoogleOAuthenticator(config=cfg)
     handler = google_client.handler_for_user(user_model('fake@email.com'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']

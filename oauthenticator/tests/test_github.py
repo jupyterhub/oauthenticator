@@ -44,23 +44,18 @@ async def test_github(github_client):
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
-
-    assert auth_state == {
-        'access_token': auth_state['access_token'],
-        'github_user': {
-            'email': 'dinosaurs@space',
-            'id': 5,
-            'login': name,
-            'name': 'Hoban Washburn',
-        },
+    assert 'github_user' in auth_state
+    assert auth_state["github_user"] == {
+        'email': 'dinosaurs@space',
+        'id': 5,
+        'login': name,
+        'name': 'Hoban Washburn',
     }
 
 
 def make_link_header(urlinfo, page):
     return {
-        'Link': '<{}://{}{}?page={}>;rel="next"'.format(
-            urlinfo.scheme, urlinfo.netloc, urlinfo.path, page
-        )
+        "Link": f'<{urlinfo.scheme}://{urlinfo.netloc}{urlinfo.path}?page={page}>;rel="next"'
     }
 
 
@@ -120,12 +115,12 @@ async def test_allowed_org_membership(github_client):
         urlmatch = org_membership_regex.match(urlinfo.path)
         org = urlmatch.group(1)
         username = urlmatch.group(2)
-        print('Request org = %s, username = %s' % (org, username))
+        print(f"Request org = {org}, username = {username}")
         if org not in orgs:
-            print('Org not found: org = %s' % (org))
+            print(f"Org not found: org = {org}")
             return HTTPResponse(request, 404)
         if username not in orgs[org]:
-            print('Member not found: org = %s, username = %s' % (org, username))
+            print(f"Member not found: org = {org}, username = {username}")
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
 
@@ -137,17 +132,16 @@ async def test_allowed_org_membership(github_client):
         org = urlmatch.group(1)
         team = urlmatch.group(2)
         username = urlmatch.group(3)
-        print('Request org = %s, team = %s username = %s' % (org, team, username))
+        print(f"Request org = {org}, team = {team} username = {username}")
         if org not in orgs:
-            print('Org not found: org = %s' % (org))
+            print(f"Org not found: org = {org}")
             return HTTPResponse(request, 404)
         if team not in org_teams[org]:
-            print('Team not found in org: team = %s, org = %s' % (team, org))
+            print(f"Team not found in org: team = {team}, org = {org}")
             return HTTPResponse(request, 404)
         if username not in org_teams[org][team]:
             print(
-                'Member not found: org = %s, team = %s, username = %s'
-                % (org, team, username)
+                f"Member not found: org = {org}, team = {team}, username = {username}"
             )
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
@@ -212,12 +206,12 @@ async def test_allowed_org_membership(github_client):
         ("red", "grif", "https://api.github.com/orgs/red/members/grif"),
     ],
 )
-def test_build_check_membership_url(org, username, expected):
+async def test_build_check_membership_url(org, username, expected):
     output = GitHubOAuthenticator()._build_check_membership_url(org, username)
     assert output == expected
 
 
-def test_deprecated_config(caplog):
+async def test_deprecated_config(caplog):
     cfg = Config()
     cfg.GitHubOAuthenticator.github_organization_whitelist = ["jupy"]
     cfg.Authenticator.whitelist = {"user1"}

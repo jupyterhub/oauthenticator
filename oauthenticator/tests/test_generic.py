@@ -20,7 +20,7 @@ def _get_authenticator(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
         userdata_url='https://generic.horse/oauth/userinfo',
-        **kwargs
+        **kwargs,
     )
 
 
@@ -57,6 +57,17 @@ async def test_generic(get_authenticator, generic_client):
     assert 'oauth_user' in auth_state
     assert 'refresh_token' in auth_state
     assert 'scope' in auth_state
+
+
+async def test_generic_data(get_authenticator, generic_client):
+    authenticator = get_authenticator()
+
+    handler = get_simple_handler(generic_client)
+    data = {'testing': 'data'}
+    user_info = await authenticator.authenticate(handler, data)
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
+    assert name == 'wash'
 
 
 async def test_generic_callable_username_key(get_authenticator, generic_client):
@@ -96,6 +107,38 @@ async def test_generic_groups_claim_key_with_allowed_groups(
     )
     user_info = await authenticator.authenticate(handler)
     assert user_info['name'] == 'wash'
+
+
+async def test_generic_groups_claim_key_nested_strings(
+    get_authenticator, generic_client
+):
+    authenticator = get_authenticator(
+        scope=['openid', 'profile', 'roles'],
+        claim_groups_key='permissions.groups',
+        allowed_groups=['super_user'],
+    )
+    handler = generic_client.handler_for_user(
+        user_model(
+            'wash', alternate_username='zoe', permissions={"groups": ['super_user']}
+        )
+    )
+    user_info = await authenticator.authenticate(handler)
+    assert user_info['name'] == 'wash'
+
+
+async def test_generic_groups_claim_key_nested_strings_nonexistant_key(
+    get_authenticator, generic_client
+):
+    authenticator = get_authenticator(
+        scope=['openid', 'profile', 'roles'],
+        claim_groups_key='permissions.groups',
+        allowed_groups=['super_user'],
+    )
+    handler = generic_client.handler_for_user(
+        user_model('wash', alternate_username='zoe')
+    )
+    user_info = await authenticator.authenticate(handler)
+    assert user_info is None
 
 
 async def test_generic_groups_claim_key_with_allowed_groups_unauthorized(

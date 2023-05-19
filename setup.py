@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-# coding: utf-8
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 # -----------------------------------------------------------------------------
 # Minimal Python version sanity check (from IPython/Jupyterhub)
 # -----------------------------------------------------------------------------
-from __future__ import print_function
 
 import os
 import sys
@@ -49,7 +47,7 @@ setup_args = dict(
     license="BSD",
     platforms="Linux, Mac OS X",
     keywords=['Interactive', 'Interpreter', 'Shell', 'Web'],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     include_package_data=True,
     entry_points={
         'jupyterhub.authenticators': [
@@ -102,7 +100,31 @@ with open('requirements.txt') as f:
 
 
 setup_args['extras_require'] = {
-    'googlegroups': ['google-api-python-client', 'google-auth-oauthlib'],
+    # azuread is required for use of AzureADOAuthenticator
+    'azuread': ['pyjwt>=2'],
+    # googlegroups is required for use of GoogleOAuthenticator configured with
+    # either admin_google_groups and/or allowed_google_groups.
+    'googlegroups': [
+        'google-api-python-client',
+        'google-auth-oauthlib',
+    ],
+    # mediawiki is required for use of MWOAuthenticator
+    'mediawiki': ['mwoauth>=0.3.8'],
+    # test is required to run tests, and includes all authenticator specific
+    # dependencies above.
+    'test': [
+        'pytest>=2.8',
+        'pytest-asyncio',
+        'pytest-cov',
+        'requests-mock',
+        # dependencies from azuread:
+        'pyjwt>=2',
+        # dependencies from googlegroups:
+        'google-api-python-client',
+        'google-auth-oauthlib',
+        # dependencies from mediawiki:
+        'mwoauth>=0.3.8',
+    ],
 }
 
 

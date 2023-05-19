@@ -34,16 +34,17 @@ release = oauthenticator.__version__
 
 from collections import defaultdict
 
-import entrypoints
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 import jinja2
 
 
 def render_autodoc_modules():
-    authenticator_entrypoints = entrypoints.get_group_named(
-        "jupyterhub.authenticators"
-    ).values()
+    authenticator_entrypoints = entry_points(group="jupyterhub.authenticators")
 
-    api = os.path.join(source, "api")
+    api = os.path.join(source, "reference/api")
     api_gen = os.path.join(api, "gen")
 
     # modules is a dict of dicts of lists
@@ -64,8 +65,9 @@ def render_autodoc_modules():
 
     # load Authenticator classes from entrypoints
     for ep in authenticator_entrypoints:
-        if ep.module_name and ep.module_name.startswith('oauthenticator.'):
-            modules[ep.module_name]['configurables'].append(ep.object_name)
+        if ep.value and ep.value.startswith('oauthenticator.'):
+            module_name, _, object_name = ep.value.partition(":")
+            modules[module_name]['configurables'].append(object_name)
 
     with open(os.path.join(api, "authenticator.rst.tpl")) as f:
         tpl = jinja2.Template(f.read())
@@ -78,9 +80,7 @@ def render_autodoc_modules():
     for mod, mod_content in modules.items():
         dest = os.path.join(api_gen, mod + ".rst")
         print(
-            "Autogenerating module documentation in {} with classes: {}".format(
-                dest, mod_content
-            )
+            f"Autogenerating module documentation in {dest} with classes: {mod_content}"
         )
 
         with open(dest, "w") as f:
@@ -109,6 +109,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinxext.rediraffe',
     'autodoc_traits',
     'myst_parser',
     'sphinx_copybutton',
@@ -169,3 +170,36 @@ linkcheck_anchors_ignore = [
     "/#!",
     "/#%21",
 ]
+
+# -- Options for the rediraffe extension -------------------------------------
+# ref: https://github.com/wpilibsuite/sphinxext-rediraffe#readme
+#
+# This extensions help us relocated content without breaking links. If a
+# document is moved internally, put its path as a dictionary key in the
+# redirects dictionary below and its new location in the value.
+#
+rediraffe_branch = "main"
+rediraffe_redirects = {
+    "geting-started": "tutorials/general-setup",
+    "install": "tutorials/install",
+    "changelog": "reference/changelog",
+    "cilogon": "topic/cilogon",
+    "extending": "topic/extending",
+    "google": "topic/google",
+    "github": "topic/github",
+    "gitlab": "topic/gitlab",
+    "migrations": "how-to/migrations/upgrade-to-15",
+    "api/gen/oauthenticator.oauth2": "reference/api/gen/oauthenticator.oauth2",
+    "api/gen/oauthenticator.auth0": "reference/api/gen/oauthenticator.auth0",
+    "api/gen/oauthenticator.azuread": "reference/api/gen/oauthenticator.azuread",
+    "api/gen/oauthenticator.bitbucket": "reference/api/gen/oauthenticator.bitbucket",
+    "api/gen/oauthenticator.cilogon": "reference/api/gen/oauthenticator.cilogon",
+    "api/gen/oauthenticator.generic": "reference/api/gen/oauthenticator.generic",
+    "api/gen/oauthenticator.github": "reference/api/gen/oauthenticator.github",
+    "api/gen/oauthenticator.gitlab": "reference/api/gen/oauthenticator.gitlab",
+    "api/gen/oauthenticator.globus": "reference/api/gen/oauthenticator.globus",
+    "api/gen/oauthenticator.google": "reference/api/gen/oauthenticator.google",
+    "api/gen/oauthenticator.okpy": "reference/api/gen/oauthenticator.okpy",
+    "api/gen/oauthenticator.openshift": "reference/api/gen/oauthenticator.openshift",
+    "api/gen/oauthenticator.mediawiki": "reference/api/gen/oauthenticator.mediawiki",
+}

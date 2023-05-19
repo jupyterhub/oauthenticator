@@ -33,7 +33,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
 
         Args:
             host (str): the host to mock (e.g. 'api.github.com')
-            paths (list(str|regex, callable)): a list of paths (or regexps for paths)
+            paths (list[(str|regex, callable)]): a list of paths (or regexps for paths)
                 and callables to be called for those paths.
                 The mock handlers will receive the request as their only argument.
 
@@ -47,7 +47,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         Example::
 
             client.add_host('api.github.com', [
-                ('/user': lambda request: {'login': 'name'})
+                ('/user', lambda request: {'login': 'name'})
             ])
         """
         self.hosts[host] = paths
@@ -56,7 +56,7 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         urlinfo = urlparse(request.url)
         host = urlinfo.hostname
         if host not in self.hosts:
-            app_log.warning("Not mocking request to %s", request.url)
+            app_log.warning(f"Not mocking request to {request.url}")
             return super().fetch_impl(request, response_callback)
         paths = self.hosts[host]
         response = None
@@ -140,39 +140,20 @@ def setup_oauth_mock(
         Replies with JSON model for the token.
         """
         assert request.method == 'POST', request.method
-        if token_request_style == 'json':
-            body = request.body.decode('utf8')
-            try:
-                body = json.loads(body)
-            except ValueError:
-                return HTTPResponse(
-                    request=request,
-                    code=400,
-                    reason="Body not JSON: %r" % body,
-                )
-            else:
-                code = body['code']
-        else:
-            query = urlparse(request.url).query
-            if not query:
-                query = request.body.decode('utf8')
-            query = parse_qs(query)
-            if 'code' not in query:
-                return HTTPResponse(
-                    request=request,
-                    code=400,
-                    reason="No code in access token request: url=%s, body=%s"
-                    % (
-                        request.url,
-                        request.body,
-                    ),
-                )
-            code = query['code'][0]
-        if code not in oauth_codes:
+        query = urlparse(request.url).query
+        if not query:
+            query = request.body.decode('utf8')
+        query = parse_qs(query)
+        if 'code' not in query:
             return HTTPResponse(
                 request=request,
-                code=403,
-                reason="No such code: %s" % code,
+                code=400,
+                reason=f"No code in access token request: url={request.url}, body={request.body}",
+            )
+        code = query['code'][0]
+        if code not in oauth_codes:
+            return HTTPResponse(
+                request=request, code=403, reason=f"No such code: {code}"
             )
 
         # consume code, allocate token
@@ -235,7 +216,7 @@ def setup_oauth_mock(
         handler.find_user = Mock(return_value=None)
         handler.get_argument = Mock(return_value=code)
         handler.request = HTTPServerRequest(
-            method='GET', uri='https://hub.example.com?code=%s' % code
+            method="GET", uri=f"https://hub.example.com?code={code}"
         )
         handler.hub = Mock(server=Mock(base_url='/hub/'), base_url='/hub/')
         return handler
@@ -252,7 +233,7 @@ def mock_handler(Handler, uri='https://hub.example.com', method='GET', **setting
         ),
         cookie_secret=os.urandom(32),
         db=Mock(rollback=Mock(return_value=None)),
-        **settings
+        **settings,
     )
     request = HTTPServerRequest(
         method=method,

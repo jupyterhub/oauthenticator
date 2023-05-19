@@ -1,13 +1,16 @@
+import logging
 from unittest.mock import Mock
 
-from pytest import fixture
+from pytest import fixture, mark
 from tornado import web
+from traitlets.config import Config
 
 from ..auth0 import Auth0OAuthenticator
 from ..oauth2 import OAuthLogoutHandler
 from .mocks import mock_handler, setup_oauth_mock
 
 auth0_subdomain = "jupyterhub-test"
+auth0_domain = "jupyterhub-test.auth0.com"
 
 
 def user_model(email, nickname=None):
@@ -23,16 +26,21 @@ def user_model(email, nickname=None):
 def auth0_client(client):
     setup_oauth_mock(
         client,
-        host='%s.auth0.com' % auth0_subdomain,
+        host=auth0_domain,
         access_token_path='/oauth/token',
         user_path='/userinfo',
-        token_request_style='json',
     )
     return client
 
 
-async def test_auth0(auth0_client):
-    authenticator = Auth0OAuthenticator(auth0_subdomain=auth0_subdomain)
+@mark.parametrize(
+    'config', [{"auth0_domain": auth0_domain}, {"auth0_subdomain": auth0_subdomain}]
+)
+async def test_auth0(config, auth0_client):
+    cfg = Config()
+    cfg.Auth0OAuthenticator = Config(config)
+    authenticator = Auth0OAuthenticator(config=cfg)
+
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now'))
     user_info = await authenticator.authenticate(handler)
     assert sorted(user_info) == ['auth_state', 'name']
@@ -43,8 +51,13 @@ async def test_auth0(auth0_client):
     assert 'auth0_user' in auth_state
 
 
-async def test_username_key(auth0_client):
-    authenticator = Auth0OAuthenticator(auth0_subdomain=auth0_subdomain)
+@mark.parametrize(
+    'config', [{"auth0_domain": auth0_domain}, {"auth0_subdomain": auth0_subdomain}]
+)
+async def test_username_key(config, auth0_client):
+    cfg = Config()
+    cfg.Auth0OAuthenticator = Config(config)
+    authenticator = Auth0OAuthenticator(config=cfg)
     authenticator.username_key = 'nickname'
     handler = auth0_client.handler_for_user(user_model('kaylee@serenity.now', 'kayle'))
     user_info = await authenticator.authenticate(handler)
@@ -53,7 +66,6 @@ async def test_username_key(auth0_client):
 
 
 async def test_custom_logout(monkeypatch):
-    auth0_subdomain = 'auth0-domain.org'
     authenticator = Auth0OAuthenticator()
     logout_handler = mock_handler(OAuthLogoutHandler, authenticator=authenticator)
     monkeypatch.setattr(web.RequestHandler, 'redirect', Mock())
@@ -69,7 +81,23 @@ async def test_custom_logout(monkeypatch):
     assert authenticator.logout_url('http://myhost') == 'http://myhost/logout'
 
     # Check redirection to the custom logout url
-    authenticator.auth0_subdomain = auth0_subdomain
+    authenticator.auth0_domain = auth0_domain
     await logout_handler.get()
-    custom_logout_url = f'https://{auth0_subdomain}.auth0.com/v2/logout'
+    custom_logout_url = f'https://{auth0_domain}/v2/logout'
     logout_handler.redirect.assert_called_with(custom_logout_url)
+
+
+async def test_deprecated_config(caplog):
+    cfg = Config()
+    cfg.Auth0OAuthenticator.username_key = 'nickname'
+    log = logging.getLogger("testlog")
+    authenticator = Auth0OAuthenticator(config=cfg, log=log)
+
+    assert (
+        log.name,
+        logging.WARNING,
+        'Auth0OAuthenticator.username_key is deprecated in Auth0OAuthenticator 16.0.0, use '
+        'Auth0OAuthenticator.username_claim instead',
+    ) in caplog.record_tuples
+
+    assert authenticator.username_claim == 'nickname'

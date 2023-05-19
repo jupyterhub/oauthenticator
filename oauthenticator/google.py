@@ -4,13 +4,9 @@ Custom Authenticator to use Google OAuth with JupyterHub.
 Derived from the GitHub OAuth authenticator.
 """
 import os
-import urllib.parse
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from tornado.auth import GoogleOAuth2Mixin
-from tornado.httpclient import HTTPRequest
-from tornado.httputil import url_concat
 from tornado.web import HTTPError
 from traitlets import Dict, List, Unicode, default, validate
 
@@ -31,9 +27,23 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
+    user_auth_state_key = "google_user"
+
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
+
+    @default("scope")
+    def _scope_default(self):
+        return ["openid", "email"]
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "email"
+
     google_api_url = Unicode("https://www.googleapis.com", config=True)
 
-    @default('google_api_url')
+    @default("google_api_url")
     def _google_api_url(self):
         """get default google apis url from env"""
         google_api_url = os.getenv('GOOGLE_API_URL')
@@ -44,17 +54,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return google_api_url
 
-    @default('scope')
-    def _scope_default(self):
-        return ['openid', 'email']
-
-    @default("authorize_url")
-    def _authorize_url_default(self):
-        return "https://accounts.google.com/o/oauth2/v2/auth"
-
     @default("token_url")
     def _token_url_default(self):
-        return "%s/oauth2/v4/token" % (self.google_api_url)
+        return f"{self.google_api_url}/oauth2/v4/token"
+
+    @default("userdata_url")
+    def _userdata_url_default(self):
+        return f"{self.google_api_url}/oauth2/v1/userinfo"
 
     google_service_account_keys = Dict(
         Unicode(),
@@ -118,106 +124,37 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
-    username_claim = Unicode(
-        "email",
-        help="""Field in userinfo reply to use for username
-
-        Default: 'email'
-        Also reasonable: 'sub' for the opaque unique id
-        """,
-        config=True,
-    )
-
-    @default('username_claim')
-    def _username_claim_default(self):
-        return 'email'
-
-    async def authenticate(self, handler, data=None, google_groups=None):
-        code = handler.get_argument("code")
-        body = urllib.parse.urlencode(
-            dict(
-                code=code,
-                redirect_uri=self.get_callback_url(handler),
-                client_id=self.client_id,
-                client_secret=self.client_secret,
-                grant_type="authorization_code",
-            )
-        )
-
-        req = HTTPRequest(
-            self.token_url,
-            method="POST",
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            body=body,
-        )
-        user = await self.fetch(req, "completing oauth")
-        access_token = str(user['access_token'])
-        refresh_token = user.get('refresh_token', None)
-
-        req = HTTPRequest(
-            url_concat(
-                self.user_info_url,
-                {'access_token': access_token},
-            )
-        )
-        bodyjs = await self.fetch(req, "fetching user info")
-        user_email = bodyjs['email']
+    async def user_is_authorized(self, auth_model):
+        user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
         user_email_domain = user_email.split('@')[1]
-        username = bodyjs[self.username_claim]
 
-        if not bodyjs['verified_email']:
-            self.log.warning("Google OAuth unverified email attempt: %s", user_email)
-            raise HTTPError(403, "Google email {} not verified".format(user_email))
+        if not auth_model["auth_state"][self.user_auth_state_key]['verified_email']:
+            self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
+            raise HTTPError(403, f"Google email {user_email} not verified")
 
         if self.hosted_domain:
             if user_email_domain not in self.hosted_domain:
                 self.log.warning(
-                    "Google OAuth unauthorized domain attempt: %s", user_email
+                    f"Google OAuth unauthorized domain attempt: {user_email}"
                 )
                 raise HTTPError(
-                    403,
-                    "Google account domain @{} not authorized.".format(
-                        user_email_domain
-                    ),
+                    403, f"Google account domain @{user_email_domain} not authorized."
                 )
-            if len(self.hosted_domain) == 1 and user_email == username:
-                # unambiguous domain, use only base name
-                username = user_email.split('@')[0]
+        return True
 
-        if refresh_token is None:
-            self.log.debug(
-                "Refresh token was empty, will try to pull refresh_token from previous auth_state"
-            )
-            user = handler.find_user(username)
+    async def update_auth_model(self, auth_model, google_groups=None):
+        username = auth_model["name"]
+        user_email = auth_model["auth_state"][self.user_auth_state_key]['email']
 
-            if user and user.encrypted_auth_state:
-                self.log.debug(
-                    "encrypted_auth_state was found, will try to decrypt and pull refresh_token from it"
-                )
-                try:
-                    encrypted = user.encrypted_auth_state
-                    auth_state = await decrypt(encrypted)
-                    refresh_token = auth_state.get('refresh_token')
-                except (ValueError, InvalidToken, EncryptionUnavailable) as e:
-                    self.log.warning(
-                        "Failed to retrieve encrypted auth_state for %s because %s",
-                        username,
-                        e,
-                    )
-
-        user_info = {
-            'name': username,
-            'auth_state': {
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'google_user': bodyjs,
-            },
-        }
+        if len(self.hosted_domain) == 1 and user_email == username:
+            # unambiguous domain, use only base name
+            username = user_email.split('@')[0]
+            auth_model["name"] = username
 
         if self.admin_google_groups or self.allowed_google_groups:
-            user_info = await self._add_google_groups_info(user_info, google_groups)
+            auth_model = await self._add_google_groups_info(auth_model, google_groups)
 
-        return user_info
+        return auth_model
 
     def _service_client_credentials(self, scopes, user_email_domain):
         """
@@ -234,9 +171,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         gsuite_administrator_email = "{}@{}".format(
             self.gsuite_administrator[user_email_domain], user_email_domain
         )
-        self.log.debug(
-            "scopes are %s, user_email_domain is %s", scopes, user_email_domain
-        )
+        self.log.debug(f"scopes are {scopes}, user_email_domain is {user_email_domain}")
         credentials = service_account.Credentials.from_service_account_file(
             self.google_service_account_keys[user_email_domain], scopes=scopes
         )
@@ -258,7 +193,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             )
 
         self.log.debug(
-            "service_name is %s, service_version is %s", service_name, service_version
+            f"service_name is {service_name}, service_version is {service_version}"
         )
 
         return build(
@@ -284,7 +219,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         results = [
             g['email'].split('@')[0] for g in results.get('groups', [{'email': None}])
         ]
-        self.log.debug("user_email %s is a member of %s", user_email, results)
+        self.log.debug(f"user_email {user_email} is a member of {results}")
         return results
 
     async def _add_google_groups_info(self, user_info, google_groups=None):
@@ -292,9 +227,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_email = user_info['auth_state']['google_user']['email']
         if google_groups is None:
             credentials = self._service_client_credentials(
-                scopes=[
-                    '%s/auth/admin.directory.group.readonly' % (self.google_api_url)
-                ],
+                scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
                 user_email_domain=user_email_domain,
             )
             google_groups = await self._google_groups_for_user(
@@ -332,5 +265,3 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
     """A version that mixes in local system user creation"""
-
-    pass

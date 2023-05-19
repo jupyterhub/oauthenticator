@@ -130,6 +130,7 @@ def set_extended_token_response(client, host, access_token_path, new_token_respo
     url, func = next(
         filter(lambda host: host[0] == access_token_path, client.hosts[host])
     )
+
     # Wrap the built-in token response with our custom response, but only if
     # it returns successfully with an access token!
     def custom_token_response(request):
@@ -155,7 +156,6 @@ def globus_client(client, mock_globus_token_response):
         access_token_path='/v2/oauth2/token',
         user_path='/v2/oauth2/userinfo',
         token_type='bearer',
-        token_request_style='post',
     )
     set_extended_token_response(
         client, 'auth.globus.org', '/v2/oauth2/token', mock_globus_token_response
@@ -201,8 +201,13 @@ async def test_globus_pre_spawn_start(mock_globus_user):
     assert 'GLOBUS_DATA' in spawner.environment
 
 
-def test_globus_defaults():
+async def test_globus_defaults():
     authenticator = GlobusOAuthenticator()
+    print(f"userdata_url: {authenticator.userdata_url}")
+    print(f"authorize_url: {authenticator.authorize_url}")
+    print(f"revocation_url: {authenticator.revocation_url}")
+    print(f"token_url: {authenticator.token_url}")
+
     assert all(
         'https://auth.globus.org' in url
         for url in [
@@ -307,7 +312,6 @@ async def test_token_exclusion(globus_client):
 
 
 async def test_revoke_tokens(globus_client, mock_globus_user):
-
     # Wrap the revocation host to 'revoke' tokens by setting them in user auth
     # state. This way, we can get feedback to tell if the token was actually
     # sent to our 'host'

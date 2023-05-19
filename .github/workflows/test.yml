@@ -26,7 +26,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
 
     strategy:
@@ -34,24 +34,24 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          - "3.6"
           - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
+          - "3.11"
         include:
           - python: "3.9"
             oldest_dependencies: oldest_dependencies
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: "${{ matrix.python }}"
 
       - name: Install Python dependencies
         run: |
-          pip install --upgrade . -r test-requirements.txt
+          pip install ".[test]"
           pip list
 
       - name: Downgrade to oldest dependencies
@@ -68,6 +68,4 @@ jobs:
         run: |
           pytest -v --color=yes --cov=oauthenticator oauthenticator
 
-      - name: Submit codecov report
-        run: |
-          codecov
+      - uses: codecov/codecov-action@v3

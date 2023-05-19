@@ -5,3 +5,5 @@ jupyterhub>=1.2
 requests
 # ruamel.yaml is used to read and write .yaml files.
 ruamel.yaml
+tornado
+traitlets
