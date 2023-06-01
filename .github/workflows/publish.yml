@@ -43,7 +43,7 @@ jobs:
           ls -l dist
 
       - name: publish to pypi
-        uses: pypa/gh-action-pypi-publish@v1.8.5
+        uses: pypa/gh-action-pypi-publish@v1.8.6
         if: startsWith(github.ref, 'refs/tags/')
         with:
           user: __token__
