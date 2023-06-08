@@ -182,9 +182,14 @@ class GitLabOAuthenticator(OAuthenticator):
         if (
             (is_group_specified and user_in_group)
             or (is_project_id_specified and user_in_project)
+        ):
+              self.allowed_users.add(username)
+        
+        if (
+            (is_group_specified and user_in_group)
+            or (is_project_id_specified and user_in_project)
             or no_config_specified
         ):
-            self.allowed_users.add(username)
             return {
                 'name': username,
                 'auth_state': {'access_token': access_token, 'gitlab_user': resp_json},
