@@ -179,12 +179,11 @@ class GitLabOAuthenticator(OAuthenticator):
 
         no_config_specified = not (is_group_specified or is_project_id_specified)
 
-        if (
-            (is_group_specified and user_in_group)
-            or (is_project_id_specified and user_in_project)
+        if (is_group_specified and user_in_group) or (
+            is_project_id_specified and user_in_project
         ):
-              self.allowed_users.add(username)
-        
+            self.allowed_users.add(username)
+
         if (
             (is_group_specified and user_in_group)
             or (is_project_id_specified and user_in_project)
