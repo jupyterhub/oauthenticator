@@ -25,13 +25,12 @@ class AzureAdOAuthenticator(OAuthenticator):
         "", config=True, help="Name of claim containing user group memberships"
     )
 
-    @default("username_claim")
-    def _username_claim_default(self):
-        return "name"
-
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
+    @default('username_claim')
+    def _username_claim_default(self):
+        return 'name'
 
     @default("authorize_url")
     def _authorize_url_default(self):
