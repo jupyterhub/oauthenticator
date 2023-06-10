@@ -28,6 +28,7 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
+
     @default('username_claim')
     def _username_claim_default(self):
         return 'name'
@@ -44,7 +45,8 @@ class AzureAdOAuthenticator(OAuthenticator):
         auth_model = await super().update_auth_model(auth_model, **kwargs)
 
         user_info = auth_model["auth_state"][self.user_auth_state_key]
-        auth_model["groups"] = user_info.get(self.user_groups_claim)
+        if self.user_groups_claim:
+            auth_model["groups"] = user_info.get(self.user_groups_claim)
 
         return auth_model
 
