@@ -53,3 +53,22 @@
 1. See `run.sh` for an [example](https://github.com/jupyterhub/oauthenticator/tree/main/examples/azuread)
 
 1. [Source Code](https://github.com/jupyterhub/oauthenticator/blob/HEAD/oauthenticator/azuread.py)
+
+## Loading user groups
+
+The `AzureAdOAuthenticator` can load the group-membership of users from the access token.
+This is done by setting the `AzureAdOAuthenticator.groups_claim` to the name of the claim that contains the
+group-membership.
+
+```python
+import os
+from oauthenticator.azuread import AzureAdOAuthenticator
+
+c.JupyterHub.authenticator_class = AzureAdOAuthenticator
+
+# {...} other settings (see above)
+
+c.AzureAdOAuthenticator.user_groups_claim = 'groups'
+```
+
+This requires Azure AD to be configured to include the group-membership in the access token.
