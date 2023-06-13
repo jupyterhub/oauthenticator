@@ -105,6 +105,9 @@ class GenericOAuthenticator(OAuthenticator):
         - If claim_groups_key is a nested dictionary key like
           "permissions.groups", this function returns
           user_info["permissions"]["groups"].
+
+        Note that this method is introduced by GenericOAuthenticator and not
+        present in the base class.
         """
         if callable(self.claim_groups_key):
             return set(self.claim_groups_key(user_info))
