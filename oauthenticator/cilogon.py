@@ -308,25 +308,20 @@ class CILogonOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized, raises errors for users
+        Returns True for authorized users, raises errors for users
         denied authorization.
 
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_idps`, and not just those
-        part of `allowed_users`.
+        Overrides the `OAuthenticator.check_allowed` implementation to only allow users
+        logging in using a provider that is  part of `allowed_idps`.
+        Following this, the user must either be part of `allowed_users` or `allowed_domains`
+        to be authorized if either is configured, otherwise all users are
+        authorized.
         """
+
         # allow admin users recognized via admin_users or update_auth_model
         if auth_model["admin"]:
             return True
 
-        # FIXME: Erik and Georgiana chatted and concluded that the user must be
-        #        part of allowed_idps no matter what, following that, the user
-        #        must either be part of allowed_users or allowed_domains to be
-        #        authorized if either is configured, and otherwise all users are
-        #        authorized.
-        #
-        #        Updated to reflect the discussion.
-        # TODO:  Validate the implementation
         if self.allowed_idps:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             selected_idp = user_info["idp"]
@@ -345,12 +340,6 @@ class CILogonOAuthenticator(OAuthenticator):
                     return True
 
                 if allowed_domains:
-                    # TODO:  broke apart
-                    #        user_info_to_username in multiple functions
-                    #        allowing us to get the username before the optional
-                    #        stripping operation and use it here.
-                    #        Validate implementation
-                    #
                     username_claims = self._get_final_username_claim_list(user_info)
                     username_with_domain = self._get_username_from_claim_list(
                         user_info, username_claims
