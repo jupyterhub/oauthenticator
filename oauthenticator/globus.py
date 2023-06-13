@@ -182,7 +182,7 @@ class GlobusOAuthenticator(OAuthenticator):
 
     def get_globus_tokens(self, token_info):
         # Each token should have these attributes. Resource server is optional,
-        # and likely xwon't be present.
+        # and likely won't be present.
         token_attrs = [
             'expires_in',
             'resource_server',
