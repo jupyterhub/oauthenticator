@@ -275,6 +275,8 @@ class GlobusOAuthenticator(OAuthenticator):
                 return True
 
         if self.identity_provider:
+            # It's possible for identity provider domains to be namespaced
+            # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             domain = user_info.get(self.username_claim).split('@', 1)[-1]
             if domain != self.identity_provider:
@@ -331,8 +333,6 @@ class GlobusOAuthenticator(OAuthenticator):
         will have the 'foouser' account in Jupyterhub.
         """
 
-        # It's possible for identity provider domains to be namespaced
-        # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
         return user_info.get(self.username_claim).split('@')[0]
 
     def get_default_headers(self):
