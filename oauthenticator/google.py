@@ -131,7 +131,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return auth_model
 
-
     async def check_allowed(self, username, auth_model):
         """
         Returns True for users allowed to be authorized.

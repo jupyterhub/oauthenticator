@@ -284,7 +284,9 @@ class GlobusOAuthenticator(OAuthenticator):
                 return True
 
             if self.allowed_globus_groups:
-                tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+                tokens = self.get_globus_tokens(
+                    auth_model["auth_state"]["token_response"]
+                )
                 user_group_ids = await self.get_users_groups_ids(tokens)
 
                 if self.check_user_in_groups(
