@@ -157,14 +157,14 @@ class GitHubOAuthenticator(OAuthenticator):
                 token_type = auth_model["auth_state"]["token_response"]["token_type"]
                 for org in self.allowed_organizations:
                     user_in_org = await self._check_membership_allowed_organizations(
-                        org, auth_model["name"], access_token, token_type
+                        org, username, access_token, token_type
                     )
                     if user_in_org:
                         return True
                 else:
                     # User not found in member list for any organi`ation
                     self.log.warning(
-                        f"User {auth_model['name']} is not in allowed org list",
+                        f"User {username} is not in allowed org list",
                     )
 
             return False
