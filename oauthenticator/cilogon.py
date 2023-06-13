@@ -246,6 +246,7 @@ class CILogonOAuthenticator(OAuthenticator):
         This is useful for linked identities where not all of them return
         the primary username_claim.
         """,
+        default_value=["email"],
     )
 
     def _get_final_username_claim_list(self, user_info):
@@ -266,10 +267,15 @@ class CILogonOAuthenticator(OAuthenticator):
             username_claims.extend(self.additional_username_claims)
         if self.allowed_idps:
             selected_idp = user_info["idp"]
-            # The username_claim which should be used for this idp
-            username_claims = [
-                self.allowed_idps[selected_idp]["username_derivation"]["username_claim"]
-            ]
+            if selected_idp in self.allowed_idps.keys():
+                # The username_claim which should be used for this idp
+                return [
+                    self.allowed_idps[selected_idp]["username_derivation"][
+                        "username_claim"
+                    ]
+                ]
+            else:
+                return username_claims
         return username_claims
 
     def _get_username_from_claim_list(self, user_info, username_claims):
@@ -295,14 +301,17 @@ class CILogonOAuthenticator(OAuthenticator):
         # Optionally strip idp domain or prefix the username
         if self.allowed_idps:
             selected_idp = user_info["idp"]
-            username_derivation = self.allowed_idps[selected_idp]["username_derivation"]
-            action = username_derivation.get("action")
+            if selected_idp in self.allowed_idps.keys():
+                username_derivation = self.allowed_idps[selected_idp][
+                    "username_derivation"
+                ]
+                action = username_derivation.get("action")
 
-            if action == "strip_idp_domain":
-                username = username.split("@", 1)[0]
-            elif action == "prefix":
-                prefix = username_derivation["prefix"]
-                username = f"{prefix}:{username}"
+                if action == "strip_idp_domain":
+                    username = username.split("@", 1)[0]
+                elif action == "prefix":
+                    prefix = username_derivation["prefix"]
+                    username = f"{prefix}:{username}"
 
         return username
 
