@@ -139,7 +139,6 @@ class GitLabOAuthenticator(OAuthenticator):
                 return True
 
             access_token = auth_model["auth_state"]["token_response"]["access_token"]
-            await self._set_gitlab_version(access_token)
             user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
 
             if self.allowed_gitlab_groups:
@@ -175,6 +174,8 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _check_membership_allowed_groups(self, user_id, access_token):
         headers = _api_headers(access_token)
+        await self._set_gitlab_version(access_token)
+
         # Check if user is a member of any group in the allowed list
         for group in map(url_escape, self.allowed_gitlab_groups):
             url = "%s/groups/%s/members/%s%d" % (
@@ -197,6 +198,8 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _check_membership_allowed_project_ids(self, user_id, access_token):
         headers = _api_headers(access_token)
+        await self._set_gitlab_version(access_token)
+
         # Check if user has developer access to any project in the allowed list
         for project in self.allowed_project_ids:
             url = "%s/projects/%s/members/%s%d" % (
