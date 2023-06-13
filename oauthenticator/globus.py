@@ -259,7 +259,7 @@ class GlobusOAuthenticator(OAuthenticator):
         Returns True for users allowed to be authorized.
 
         Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_organizations`, and not just those
+        either part of `allowed_users` or `allowed_globus_groups`, and not just those
         part of `allowed_users`.
         """
         # allow admin users recognized via admin_users or update_auth_model
