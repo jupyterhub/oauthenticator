@@ -251,9 +251,6 @@ class GlobusOAuthenticator(OAuthenticator):
 
         return user_group_ids
 
-    # TODO: Mark this as breaking change because before globus_admin_groups and globus_user_groups
-    #       were the ones that were being considered to determine the admin and access status of a user
-    #       and not their union with the generic admin_users and allowed_users like it is happening now.
     async def check_allowed(self, username, auth_model):
         """
         Returns True for users allowed to be authorized.
