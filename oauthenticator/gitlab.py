@@ -125,8 +125,8 @@ class GitLabOAuthenticator(OAuthenticator):
         Returns True for users allowed to be authorized.
 
         Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_organizations`, and not just those
-        part of `allowed_users`.
+        either part of `allowed_users`, `allowed_gitlab_groups`, or `allowed_project_ids`,
+        and not just those part of `allowed_users`.
         """
         # allow admin users recognized via admin_users or update_auth_model
         if auth_model["admin"]:
