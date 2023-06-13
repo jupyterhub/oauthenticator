@@ -232,7 +232,7 @@ class GlobusOAuthenticator(OAuthenticator):
 
     # FIXME: Should we persist info about user groups in auth model
     #        to be consistent with what's happening in bitbucket.py
-    #        where the `auth_model`` is updated with `user_teams`.
+    #        where the `auth_model` is updated with `user_teams`.
     async def get_users_groups_ids(self, tokens):
         user_group_ids = set()
         # Get Groups access token, may not be in dict headed to auth state
