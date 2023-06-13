@@ -263,14 +263,6 @@ class GlobusOAuthenticator(OAuthenticator):
         if auth_model["admin"]:
             return True
 
-        # FIXME: consider overriding the `is_admin`` and add this logic there
-        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
-        user_group_ids = await self.get_users_groups_ids(tokens)
-        if self.admin_globus_groups:
-            if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
-                auth_model["admin"] = True
-                return True
-
         if self.identity_provider:
             # It's possible for identity provider domains to be namespaced
             # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces
@@ -292,6 +284,9 @@ class GlobusOAuthenticator(OAuthenticator):
                 return True
 
             if self.allowed_globus_groups:
+                tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+                user_group_ids = await self.get_users_groups_ids(tokens)
+
                 if self.check_user_in_groups(
                     user_group_ids, self.allowed_globus_groups
                 ):
@@ -308,7 +303,7 @@ class GlobusOAuthenticator(OAuthenticator):
         # If users is already marked as an admin, it means that
         # they are present in the `admin_users`` list
         # no need to check groups membership
-        if auth_model['admin'] is True:
+        if auth_model["admin"] is True:
             return auth_model
 
         if self.admin_globus_groups:
@@ -317,10 +312,9 @@ class GlobusOAuthenticator(OAuthenticator):
             user_group_ids = await self.get_users_groups_ids(tokens)
             # Admin users are being managed via Globus Groups
             # Default to False
-            auth_model['admin'] = False
+            auth_model["admin"] = False
             if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
-                auth_model['admin'] = True
-
+                auth_model["admin"] = True
         return auth_model
 
     def user_info_to_username(self, user_info):

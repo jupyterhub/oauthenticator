@@ -116,24 +116,28 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""Google Apps hosted domain string, e.g. My College""",
     )
 
-    # async def user_is_authorized(self, auth_model):
-    #     """
-    #     Checks that the google user has a verified email and is part of
-    #     `hosted_domain` if set.
+    async def update_auth_model(self, auth_model):
+        """
+        Updates the `auth_model` dict with info about the admin status.
+        """
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        user_email = user_info["email"]
+        user_domain = user_email.split("@")[1]
+        user_groups = set(self._google_groups_for_user(user_email, user_domain))
+        admin_groups = self.admin_google_groups.get(user_domain, set())
 
-    #     Authorizes users part of: `allowed_users`, `admin_users`,
-    #     `allowed_google_groups`, or `admin_google_groups`.
+        if any(user_groups & admin_groups):
+            auth_model["admin"] = True
 
-    #     Note that this function also updates the auth_model with admin status
-    #     and the user's google groups if either `allowed_google_groups` or
-    #     `admin_google_groups` are configured.
-    #     """
+        return auth_model
+
+
     async def check_allowed(self, username, auth_model):
         """
         Returns True for users allowed to be authorized.
 
         Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_organizations`, and not just those
+        either part of `allowed_users` or `allowed_google_groups`, and not just those
         part of `allowed_users`.
         """
         # allow admin users recognized via admin_users or update_auth_model
@@ -144,12 +148,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_email = user_info["email"]
         user_domain = user_email.split("@")[1]
         user_groups = set(self._google_groups_for_user(user_email, user_domain))
-        # FIXME: consider overriding the `is_admin` and add this logic there
-        admin_groups = self.admin_google_groups.get(user_domain, set())
-
-        if any(user_groups & admin_groups):
-            auth_model["admin"] = True
-            return True
 
         if not user_info["verified_email"]:
             self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
