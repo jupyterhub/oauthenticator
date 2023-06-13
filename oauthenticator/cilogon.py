@@ -360,7 +360,7 @@ class CILogonOAuthenticator(OAuthenticator):
                         return True
                     else:
                         raise web.HTTPError(
-                            500,
+                            403,
                             "Trying to login using a domain that was not allowed",
                         )
 
