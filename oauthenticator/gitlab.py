@@ -128,6 +128,12 @@ class GitLabOAuthenticator(OAuthenticator):
         either part of `allowed_users`, `allowed_gitlab_groups`, or `allowed_project_ids`,
         and not just those part of `allowed_users`.
         """
+        # Workaround situation when JupyterHub.load_roles or
+        # JupyterHub.load_groups is used to create a user, see discussion in
+        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        if auth_model is None:
+            return True
+
         # allow admin users recognized via admin_users or update_auth_model
         if auth_model["admin"]:
             return True

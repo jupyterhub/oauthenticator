@@ -807,6 +807,12 @@ class OAuthenticator(Authenticator):
         Subclasses with authorization logic involving allowed groups should
         override this.
         """
+        # Workaround situation when JupyterHub.load_roles or
+        # JupyterHub.load_groups is used to create a user, see discussion in
+        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        if auth_model is None:
+            return True
+
         # authorize users to become admins by admin_users or logic in
         # update_auth_model
         if auth_model["admin"]:
