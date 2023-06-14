@@ -8,7 +8,7 @@ command line for details.
 
 ### Breaking changes
 
-- [All] Users are now authorized based on *either* being part of
+- [All] Users are now authorized based on _either_ being part of
   `Authenticator.admin_users`, `Authenticator.allowed_users`, an Authenticator
   specific allowed team/group/organization, or declared in
   `JupyterHub.load_roles` or `JupyterHub.load_groups`.
