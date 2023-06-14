@@ -6,6 +6,20 @@ command line for details.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- [All] Users are now authorized based on *either* being part of
+  `Authenticator.admin_users`, `Authenticator.allowed_users`, an Authenticator
+  specific allowed team/group/organization, or declared in
+  `JupyterHub.load_roles` or `JupyterHub.load_groups`.
+- [Generic, Google] `GenericOAuthenticator.allowed_groups`,
+  `GenericOAuthenticator.allowed_groups`
+  `GoogleOAuthenticator.allowed_google_groups`, and
+  `GoogleOAuthenticatoradmin_google_groups` are now Set based configuration
+  instead of List based configuration. It is still possible to set these with
+  lists as as they are converted to sets automatically, but anyone reading and
+  adding entries must now use set logic and not list logic.
+
 (changelog:version-15)=
 
 ## 15.0
