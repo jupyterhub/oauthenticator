@@ -129,12 +129,23 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
-        user_domain = user_email.split("@")[1]
-        user_groups = self._fetch_user_groups(user_email, user_domain)
-        admin_groups = self.admin_google_groups.get(user_domain, set())
+        user_domain = user_info["domain"] = user_email.split("@")[1]
 
-        if any(user_groups & admin_groups):
-            auth_model["admin"] = True
+        user_groups = set()
+        if self.allowed_google_groups or self.admin_google_groups:
+            user_groups = user_info["google_groups"] = self._fetch_user_groups(
+                user_email, user_domain
+            )
+        user_info["google_groups"] = user_groups
+
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
+            return auth_model
+
+        if self.admin_google_groups:
+            # admin status should in this case be True or False, not None
+            admin_groups = self.admin_google_groups.get(user_domain, set())
+            auth_model["admin"] = any(user_groups & admin_groups)
 
         return auth_model
 
@@ -157,8 +168,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
-        user_domain = user_email.split("@")[1]
-        user_groups = set(self._google_groups_for_user(user_email, user_domain))
+        user_domain = user_info["domain"]
+        user_groups = user_info["google_groups"]
 
         if not user_info["verified_email"]:
             self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
@@ -173,7 +184,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         #
         if self.hosted_domain:
             if user_domain not in self.hosted_domain:
-                self.log.error(
+                self.log.warning(
                     f"Google OAuth unauthorized domain attempt: {user_email}"
                 )
                 raise HTTPError(
@@ -185,18 +196,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if self.allowed_users or self.allowed_google_groups:
             if username in self.allowed_users:
                 return True
-
-            # FIXME: Decide on the following:
-            #        always set google_groups if associated config is provided, and to a
-            #        list rather than set, for backward compatibility
-            if self.allowed_google_groups or self.admin_google_groups:
-                # FIXME: _google_groups_for_user is a non-async function that blocks
-                #        JupyterHub, and it also doesn't have any cache. If this is
-                #        solved, we could also let this function not modify the
-                #        auth_model.
-                #        It is called one time either way, why store it?
-                #
-                user_info["google_groups"] = list(user_groups)
+            if self.allowed_google_groups:
                 allowed_groups = self.allowed_google_groups.get(user_domain, set())
                 if any(user_groups & allowed_groups):
                     return True

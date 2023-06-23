@@ -12,6 +12,9 @@ command line for details.
   `Authenticator.admin_users`, `Authenticator.allowed_users`, an Authenticator
   specific allowed team/group/organization, or declared in
   `JupyterHub.load_roles` or `JupyterHub.load_groups`.
+- [Google] If `GoogleOAuthenticator.admin_google_groups` is configured, users
+  logging in not explicitly there or in `Authenticator.admin_users` will get
+  their admin status revoked.
 - [Generic, Google] `GenericOAuthenticator.allowed_groups`,
   `GenericOAuthenticator.allowed_groups`
   `GoogleOAuthenticator.allowed_google_groups`, and
@@ -19,6 +22,7 @@ command line for details.
   instead of List based configuration. It is still possible to set these with
   lists as as they are converted to sets automatically, but anyone reading and
   adding entries must now use set logic and not list logic.
+- [Google] Authentication state's `google_groups` is now a set, not a list.
 
 (changelog:version-15)=
 

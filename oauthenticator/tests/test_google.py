@@ -135,7 +135,7 @@ async def test_admin_google_groups(google_client):
         ]
         admin_user = allowed_user_info['admin']
         assert 'fakegroup' in allowed_user_groups
-        assert not admin_user
+        assert admin_user is False
     handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
     with mock.patch.object(
         authenticator,
