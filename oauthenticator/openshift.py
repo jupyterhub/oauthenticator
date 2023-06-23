@@ -124,10 +124,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
         # if allowed_users or allowed_groups is configured, we deny users not
         # part of either
         if self.allowed_users or self.allowed_groups:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = set(user_info["groups"])
             if username in self.allowed_users:
                 return True
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = set(user_info["groups"])
             if any(user_groups & self.allowed_groups):
                 return True
             return False
