@@ -395,7 +395,7 @@ async def test_logout_revokes_tokens(globus_client, monkeypatch, mock_globus_use
 
 async def test_group_scope_added(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.allowed_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
     assert authenticator.scope == [
         'openid',
         'profile',
@@ -406,7 +406,7 @@ async def test_group_scope_added(globus_client):
 
 async def test_user_in_allowed_group(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.allowed_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model['name'] == 'wash'
@@ -414,7 +414,7 @@ async def test_user_in_allowed_group(globus_client):
 
 async def test_user_not_allowed(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+    authenticator.allowed_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model == None
@@ -422,7 +422,7 @@ async def test_user_not_allowed(globus_client):
 
 async def test_user_is_admin(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.admin_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.admin_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model['name'] == 'wash'
@@ -431,8 +431,8 @@ async def test_user_is_admin(globus_client):
 
 async def test_user_allowed_not_admin(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
-    authenticator.admin_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+    authenticator.allowed_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
+    authenticator.admin_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model['name'] == 'wash'

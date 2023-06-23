@@ -165,10 +165,6 @@ class GlobusOAuthenticator(OAuthenticator):
         their UUIDs. Setting this will add the Globus Groups scope."""
     ).tag(config=True)
 
-    @staticmethod
-    def check_user_in_groups(member_groups, allowed_groups):
-        return bool(set(member_groups) & set(allowed_groups))
-
     async def pre_spawn_start(self, user, spawner):
         """Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
@@ -230,11 +226,8 @@ class GlobusOAuthenticator(OAuthenticator):
             self.user_auth_state_key: user_info,
         }
 
-    # FIXME: Should we persist info about user groups in auth model
-    #        to be consistent with what's happening in bitbucket.py
-    #        where the `auth_model` is updated with `user_teams`.
-    async def get_users_groups_ids(self, tokens):
-        user_group_ids = set()
+    async def _fetch_users_groups(self, tokens):
+        user_groups = set()
         # Get Groups access token, may not be in dict headed to auth state
         for token_dict in tokens:
             if token_dict['resource_server'] == 'groups.api.globus.org':
@@ -247,9 +240,9 @@ class GlobusOAuthenticator(OAuthenticator):
         )
         # Build set of Group IDs
         for group in groups_resp:
-            user_group_ids.add(group['id'])
+            user_groups.add(group['id'])
 
-        return user_group_ids
+        return user_groups
 
     async def check_allowed(self, username, auth_model):
         """
@@ -274,7 +267,7 @@ class GlobusOAuthenticator(OAuthenticator):
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             domain = user_info.get(self.username_claim).split('@', 1)[-1]
             if domain != self.identity_provider:
-                self.log.error(
+                self.log.warning(
                     f"Trying to login from an identity provider that was not allowed {domain}",
                 )
                 raise HTTPError(
@@ -289,14 +282,8 @@ class GlobusOAuthenticator(OAuthenticator):
             if username in self.allowed_users:
                 return True
             if self.allowed_globus_groups:
-                tokens = self.get_globus_tokens(
-                    auth_model["auth_state"]["token_response"]
-                )
-                user_group_ids = await self.get_users_groups_ids(tokens)
-
-                if self.check_user_in_groups(
-                    user_group_ids, self.allowed_globus_groups
-                ):
+                user_groups = auth_model["auth_state"]["globus_groups"]
+                if any(user_groups & self.allowed_globus_groups):
                     return True
                 self.log.warning(f"{username} not in an allowed Globus Group")
 
@@ -315,18 +302,20 @@ class GlobusOAuthenticator(OAuthenticator):
         `admin_globus_groups`. Note that leaving it at None makes users able to
         retain an admin status while setting it to False makes it be revoked.
         """
-        if auth_model["admin"] is True:
+        user_groups = set()
+        if self.allowed_globus_groups or self.admin_globus_groups:
+            tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+            user_groups = await self._fetch_users_groups(tokens)
+        auth_model["auth_state"]["globus_groups"] = user_groups
+
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
             return auth_model
 
         if self.admin_globus_groups:
-            tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
-            # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            user_group_ids = await self.get_users_groups_ids(tokens)
-            # Admin users are being managed via Globus Groups
-            # Default to False
-            auth_model["admin"] = False
-            if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
-                auth_model["admin"] = True
+            # admin status should in this case be True or False, not None
+            auth_model["admin"] = any(user_groups & self.admin_globus_groups)
+
         return auth_model
 
     def user_info_to_username(self, user_info):
