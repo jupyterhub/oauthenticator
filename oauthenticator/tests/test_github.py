@@ -5,7 +5,7 @@ import re
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
-from pytest import fixture, mark
+from pytest import fixture
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
@@ -191,23 +191,6 @@ async def test_allowed_org_membership(github_client):
 
         client_hosts.pop()
         client_hosts.pop()
-
-
-@mark.parametrize(
-    "org, username, expected",
-    [
-        ("blue", "texas", "https://api.github.com/orgs/blue/members/texas"),
-        (
-            "blue:alpha",
-            "tucker",
-            "https://api.github.com/orgs/blue/teams/alpha/members/tucker",
-        ),
-        ("red", "grif", "https://api.github.com/orgs/red/members/grif"),
-    ],
-)
-async def test_build_check_membership_url(org, username, expected):
-    output = GitHubOAuthenticator()._build_check_membership_url(org, username)
-    assert output == expected
 
 
 async def test_deprecated_config(caplog):
