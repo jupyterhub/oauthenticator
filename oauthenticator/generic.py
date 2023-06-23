@@ -121,16 +121,17 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def update_auth_model(self, auth_model):
         """
-        Update admin status based on `admin_groups` if its configured.
+        Sets admin status to True or False if `admin_groups` is configured and
+        the user isn't part of `admin_users` or `admin_groups`. Note that
+        leaving it at None makes users able to retain an admin status while
+        setting it to False makes it be revoked.
         """
         if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
             return auth_model
 
         if self.admin_groups:
-            # if admin_groups is configured and the user wasn't part of
-            # admin_users, we must set the admin status to True or False,
-            # otherwise removing a user from the admin_groups won't have an
-            # effect
+            # admin status should in this case be True or False, not None
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = self.get_user_groups(user_info)
             auth_model["admin"] = any(user_groups & self.admin_groups)
@@ -145,9 +146,8 @@ class GenericOAuthenticator(OAuthenticator):
         either part of `allowed_users` or `allowed_groups`, and not just those
         part of `allowed_users`.
         """
-        # Workaround situation when JupyterHub.load_roles or
-        # JupyterHub.load_groups is used to create a user, see discussion in
-        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 

@@ -326,9 +326,8 @@ class CILogonOAuthenticator(OAuthenticator):
         to be authorized if either is configured, otherwise all users are
         authorized.
         """
-        # Workaround situation when JupyterHub.load_roles or
-        # JupyterHub.load_groups is used to create a user, see discussion in
-        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 

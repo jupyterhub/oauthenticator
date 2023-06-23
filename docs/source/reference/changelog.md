@@ -15,7 +15,7 @@ command line for details.
 - [Generic, Google] `GenericOAuthenticator.allowed_groups`,
   `GenericOAuthenticator.allowed_groups`
   `GoogleOAuthenticator.allowed_google_groups`, and
-  `GoogleOAuthenticatoradmin_google_groups` are now Set based configuration
+  `GoogleOAuthenticator.admin_google_groups` are now Set based configuration
   instead of List based configuration. It is still possible to set these with
   lists as as they are converted to sets automatically, but anyone reading and
   adding entries must now use set logic and not list logic.

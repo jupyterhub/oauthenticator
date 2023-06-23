@@ -785,8 +785,6 @@ class OAuthenticator(Authenticator):
         # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
-            # FIXME: Think about is_admin override, should we call is_admin from
-            #        here or possibly after update_auth_model?
             "admin": True if username in self.admin_users else None,
             "auth_state": self.build_auth_state_dict(token_info, user_info),
         }
@@ -807,9 +805,8 @@ class OAuthenticator(Authenticator):
         Subclasses with authorization logic involving allowed groups should
         override this.
         """
-        # Workaround situation when JupyterHub.load_roles or
-        # JupyterHub.load_groups is used to create a user, see discussion in
-        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 

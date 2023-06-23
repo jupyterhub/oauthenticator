@@ -259,9 +259,8 @@ class GlobusOAuthenticator(OAuthenticator):
         either part of `allowed_users` or `allowed_globus_groups`, and not just those
         part of `allowed_users`.
         """
-        # Workaround situation when JupyterHub.load_roles or
-        # JupyterHub.load_groups is used to create a user, see discussion in
-        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 
@@ -284,11 +283,11 @@ class GlobusOAuthenticator(OAuthenticator):
                     "Please link your account at app.globus.org/account.",
                 )
 
-        # if allowed_users or allowed_globus_groups is configured, we deny users not part of either
+        # if allowed_users or allowed_globus_groups is configured, we deny users
+        # not part of either
         if self.allowed_users or self.allowed_globus_groups:
             if username in self.allowed_users:
                 return True
-
             if self.allowed_globus_groups:
                 tokens = self.get_globus_tokens(
                     auth_model["auth_state"]["token_response"]
@@ -299,7 +298,6 @@ class GlobusOAuthenticator(OAuthenticator):
                     user_group_ids, self.allowed_globus_groups
                 ):
                     return True
-
                 self.log.warning(f"{username} not in an allowed Globus Group")
 
             return False
@@ -308,9 +306,15 @@ class GlobusOAuthenticator(OAuthenticator):
         return True
 
     async def update_auth_model(self, auth_model):
-        # If users is already marked as an admin, it means that
-        # they are present in the `admin_users`` list
-        # no need to check groups membership
+        """
+        Fetch and store `globus_groups` in auth state if `allowed_globus_groups`
+        or `admin_globus_groups` is configured.
+
+        Sets admin status to True or False if `admin_globus_groups` is
+        configured and the user isn't part of `admin_users` or
+        `admin_globus_groups`. Note that leaving it at None makes users able to
+        retain an admin status while setting it to False makes it be revoked.
+        """
         if auth_model["admin"] is True:
             return auth_model
 

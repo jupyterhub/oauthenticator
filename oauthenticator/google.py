@@ -118,7 +118,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     async def update_auth_model(self, auth_model):
         """
-        Updates the `auth_model` dict with info about the admin status.
+        Fetch and store `google_groups` in auth state if `allowed_google_groups`
+        or `admin_google_groups` is configured. Also declare the user an admin
+        if part of `admin_google_groups`.
+
+        Sets admin status to True or False if `admin_google_groups` is
+        configured and the user isn't part of `admin_users` or
+        `admin_google_groups`. Note that leaving it at None makes users able to
+        retain an admin status while setting it to False makes it be revoked.
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
@@ -139,9 +146,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         either part of `allowed_users` or `allowed_google_groups`, and not just those
         part of `allowed_users`.
         """
-        # Workaround situation when JupyterHub.load_roles or
-        # JupyterHub.load_groups is used to create a user, see discussion in
-        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 
@@ -158,6 +164,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
             raise HTTPError(403, f"Google email {user_email} not verified")
 
+        # NOTE: If hosted_domain is configured as ["a.com", "b.com"], and
+        #       allowed_google_groups is declared as {"a.com": {"a-group"}}, a
+        #       "b.com" user won't be authorized unless allowed in another way.
+        #
+        #       This means that its not possible to allow all users of a given
+        #       domain if one wants to restrict another.
+        #
         if self.hosted_domain:
             if user_domain not in self.hosted_domain:
                 self.log.error(
@@ -167,7 +180,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                     403, f"Google account domain @{user_domain} not authorized"
                 )
 
-        # if allowed_users or allowed_google_groups is configured, we deny users not part of either
+        # if allowed_users or allowed_google_groups is configured, we deny users
+        # not part of either
         if self.allowed_users or self.allowed_google_groups:
             if username in self.allowed_users:
                 return True
@@ -184,7 +198,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 #
                 user_info["google_groups"] = list(user_groups)
                 allowed_groups = self.allowed_google_groups.get(user_domain, set())
-
                 if any(user_groups & allowed_groups):
                     return True
             return False
@@ -244,6 +257,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         Return a set with the google groups a given user is a member of
         """
+        # FIXME: When this function is used and waiting for web request
+        #        responses, JupyterHub gets blocked from doing other things.
+        #        Ideally the web requests should be made using an async client
+        #        that can be awaited while JupyterHub handles other things.
+        #
         credentials = self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
             user_email_domain=user_email_domain,

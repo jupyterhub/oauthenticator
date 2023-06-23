@@ -13,10 +13,6 @@ from .oauth2 import OAuthenticator
 
 
 class GitHubOAuthenticator(OAuthenticator):
-    # see github_scopes.md for details about scope config
-    # set scopes via config, e.g.
-    # c.GitHubOAuthenticator.scope = ['read:org']
-
     _deprecated_oauth_aliases = {
         "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
         **OAuthenticator._deprecated_oauth_aliases,
@@ -106,7 +102,14 @@ class GitHubOAuthenticator(OAuthenticator):
     )
 
     allowed_organizations = Set(
-        config=True, help="Automatically allow members of selected organizations"
+        help="""
+        Allow members of organizations or organizations' teams by specifying
+        strings like `org-a` and/or `org-b:team-1`.
+
+        Requires `read:org` to be set in `scope` to not just allow based on
+        public membership.
+        """,
+        config=True,
     )
 
     populate_teams_in_auth_state = Bool(
@@ -133,12 +136,11 @@ class GitHubOAuthenticator(OAuthenticator):
         Returns True for users allowed to be authorized.
 
         Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_organizations`, and not just those
-        part of `allowed_users`.
+        either part of `allowed_users` or `allowed_organizations`, and not just
+        those part of `allowed_users`.
         """
-        # Workaround situation when JupyterHub.load_roles or
-        # JupyterHub.load_groups is used to create a user, see discussion in
-        # https://github.com/jupyterhub/jupyterhub/issues/4461.
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 
@@ -175,6 +177,14 @@ class GitHubOAuthenticator(OAuthenticator):
         return True
 
     async def update_auth_model(self, auth_model):
+        """
+        Fetch and store `email` in auth state if the user's only was: private,
+        not part of the initial response, and we was granted a scope to fetch
+        the private email.
+
+        Also fetch and store `teams` in auth state if
+        `populate_teams_in_auth_state` is configured.
+        """
         # If a public email is not available, an extra API call has to be made
         # to a /user/emails using the access token to retrieve emails. The
         # scopes relevant for this are checked based on this documentation:
@@ -205,7 +215,8 @@ class GitHubOAuthenticator(OAuthenticator):
 
         if self.populate_teams_in_auth_state:
             if "read:org" not in self.scope:
-                # This means the "read:org" scope was not set, and we can"t fetch teams
+                # This means the "read:org" scope was not set, and we can't
+                # fetch teams
                 self.log.error(
                     "read:org scope is required for populate_teams_in_auth_state functionality to work"
                 )
@@ -271,14 +282,16 @@ class GitHubOAuthenticator(OAuthenticator):
     async def _check_membership_allowed_organizations(
         self, org, username, access_token, token_type
     ):
-        headers = self.build_userdata_request_headers(access_token, token_type)
-        # Check membership of user `username` for organization `org` via api [check-membership](https://docs.github.com/en/rest/orgs/members#check-membership)
-        # With empty scope (even if authenticated by an org member), this
-        # will only await public org members.  You want 'read:org' in order
-        # to be able to iterate through all members. If you would only like to
-        # allow certain teams within an organisation, specify
-        # allowed_organisations = {org_name:team_name}
+        """
+        Checks if a user is part of an organization or organization's team via
+        GitHub's REST API. The `read:org` scope is required to not only check
+        for public org/team membership.
 
+        The `org` parameter accepts values like `org-a` or `org-b:team-1`,
+        and will adjust to use a the relevant REST API to check either org or
+        team membership.
+        """
+        headers = self.build_userdata_request_headers(access_token, token_type)
         check_membership_url = self._build_check_membership_url(org, username)
 
         self.log.debug(f"Checking GitHub organization membership: {username} in {org}?")
@@ -313,5 +326,4 @@ class GitHubOAuthenticator(OAuthenticator):
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
-
     """A version that mixes in local system user creation"""
