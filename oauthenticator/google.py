@@ -130,7 +130,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
         user_domain = user_email.split("@")[1]
-        user_groups = set(self._google_groups_for_user(user_email, user_domain))
+        user_groups = self._fetch_user_groups(user_email, user_domain)
         admin_groups = self.admin_google_groups.get(user_domain, set())
 
         if any(user_groups & admin_groups):
@@ -253,7 +253,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             http=http,
         )
 
-    def _google_groups_for_user(self, user_email, user_email_domain, http=None):
+    def _fetch_user_groups(self, user_email, user_email_domain, http=None):
         """
         Return a set with the google groups a given user is a member of
         """
@@ -273,12 +273,12 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             http=http,
         )
 
-        results = service.groups().list(userKey=user_email).execute()
-        results = {
-            g['email'].split('@')[0] for g in results.get('groups', [{'email': None}])
+        resp = service.groups().list(userKey=user_email).execute()
+        user_groups = {
+            g['email'].split('@')[0] for g in resp.get('groups', [{'email': None}])
         }
-        self.log.debug(f"user_email {user_email} is a member of {results}")
-        return results
+        self.log.debug(f"user_email {user_email} is a member of {user_groups}")
+        return user_groups
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
