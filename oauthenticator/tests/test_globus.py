@@ -187,9 +187,9 @@ def mock_globus_user(globus_tokens_by_resource_server):
 async def test_globus(globus_client):
     authenticator = GlobusOAuthenticator()
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
-    tokens = list(data['auth_state']['tokens'].keys())
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
+    tokens = list(auth_model['auth_state']['tokens'].keys())
     assert tokens == ['transfer.api.globus.org']
 
 
@@ -229,7 +229,7 @@ async def test_restricted_domain(globus_client):
     authenticator.identity_provider = 'alliance.gov'
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
     with raises(web.HTTPError) as exc:
-        await authenticator.authenticate(handler)
+        await authenticator.get_authenticated_user(handler, None)
     assert exc.value.status_code == 403
 
 
@@ -239,8 +239,8 @@ async def test_namespaced_domain(globus_client):
     authenticator.identity_provider = ''
     um = user_model('wash@legitshipping.com@serenity.com')
     handler = globus_client.handler_for_user(um)
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
 
 
 async def test_username_from_email(globus_client):
@@ -250,8 +250,8 @@ async def test_username_from_email(globus_client):
     authenticator.username_from_email = True
     um = user_model('wash@legitshipping.com@serenity.com', 'alan@tudyk.org')
     handler = globus_client.handler_for_user(um)
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'alan'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'alan'
 
 
 async def test_username_not_from_email(globus_client):
@@ -260,8 +260,8 @@ async def test_username_not_from_email(globus_client):
     authenticator.identity_provider = ''
     um = user_model('wash@legitshipping.com@serenity.com', 'alan@tudyk.org')
     handler = globus_client.handler_for_user(um)
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
 
 
 async def test_email_scope_added(globus_client):
@@ -282,8 +282,8 @@ async def test_username_from_email_restricted_pass(globus_client):
     authenticator.username_from_email = True
     um = user_model('wash@serenity.com', 'alan@serenity.com')
     handler = globus_client.handler_for_user(um)
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'alan'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'alan'
 
 
 async def test_username_from_email_restricted_fail(globus_client):
@@ -294,7 +294,7 @@ async def test_username_from_email_restricted_fail(globus_client):
     um = user_model('wash@serenity.com', 'alan@tudyk.org')
     handler = globus_client.handler_for_user(um)
     with raises(web.HTTPError) as exc:
-        await authenticator.authenticate(handler)
+        await authenticator.get_authenticated_user(handler, None)
     assert exc.value.status_code == 403
 
 
@@ -306,9 +306,9 @@ async def test_token_exclusion(globus_client):
         'groups.api.globus.org',
     ]
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
-    assert list(data['auth_state']['tokens'].keys()) == []
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
+    assert list(auth_model['auth_state']['tokens'].keys()) == []
 
 
 async def test_revoke_tokens(globus_client, mock_globus_user):
@@ -395,7 +395,7 @@ async def test_logout_revokes_tokens(globus_client, monkeypatch, mock_globus_use
 
 async def test_group_scope_added(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.allowed_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
     assert authenticator.scope == [
         'openid',
         'profile',
@@ -406,34 +406,34 @@ async def test_group_scope_added(globus_client):
 
 async def test_user_in_allowed_group(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.allowed_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
 
 
 async def test_user_not_allowed(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+    authenticator.allowed_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
-    data = await authenticator.authenticate(handler)
-    assert data == None
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model == None
 
 
 async def test_user_is_admin(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.admin_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
+    authenticator.admin_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
-    assert data['admin'] == True
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
+    assert auth_model['admin'] == True
 
 
 async def test_user_allowed_not_admin(globus_client):
     authenticator = GlobusOAuthenticator()
-    authenticator.allowed_globus_groups = set({'21c6bc5d-fc12-4f60-b999-76766cd596c2'})
-    authenticator.admin_globus_groups = set({'3f1f85c4-f084-4173-9efb-7c7e0b44291a'})
+    authenticator.allowed_globus_groups = {'21c6bc5d-fc12-4f60-b999-76766cd596c2'}
+    authenticator.admin_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
     handler = globus_client.handler_for_user(user_model('wash@uflightacademy.edu'))
-    data = await authenticator.authenticate(handler)
-    assert data['name'] == 'wash'
-    assert data['admin'] == False
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
+    assert auth_model['admin'] == False

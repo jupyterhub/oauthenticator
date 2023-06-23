@@ -246,89 +246,137 @@ class CILogonOAuthenticator(OAuthenticator):
         This is useful for linked identities where not all of them return
         the primary username_claim.
         """,
+        default_value=["email"],
     )
 
-    def user_info_to_username(self, user_info):
-        claimlist = [self.username_claim]
-        if self.additional_username_claims:
-            claimlist.extend(self.additional_username_claims)
+    def _get_final_username_claim_list(self, user_info):
+        """
+        The username claims that will be used to determine the hub username can be set through:
+         - `CILogonOAutnenticator.username_claim`, that can be extended through `CILogonOAutnenticator.additional_username_claims`
+         or
+         - `CILogonOAuthenticator.allowed_idps.<idp>.username_claim`, that
+            will overwrite any value set through CILogonOAuthenticator.username_claim
+            for this identity provider.
 
+        This function returns the username claim list that will be used for the current user trying to login
+        based on the idp that they have selected. If no `CILogonOAutnenticator.allowed_idps` is set, then
+        `CILogonOAutnenticator.username_claim` will be used.
+        """
+        username_claims = [self.username_claim]
+        if self.additional_username_claims:
+            username_claims.extend(self.additional_username_claims)
         if self.allowed_idps:
-            selected_idp = user_info.get("idp")
-            if selected_idp:
+            selected_idp = user_info["idp"]
+            if selected_idp in self.allowed_idps.keys():
                 # The username_claim which should be used for this idp
-                claimlist = [
+                return [
                     self.allowed_idps[selected_idp]["username_derivation"][
                         "username_claim"
                     ]
                 ]
+            else:
+                return username_claims
+        return username_claims
 
-        for claim in claimlist:
+    def _get_username_from_claim_list(self, user_info, username_claims):
+        username = None
+        for claim in username_claims:
             username = user_info.get(claim)
             if username:
-                return username
+                break
+
+        return username
+
+    def user_info_to_username(self, user_info):
+        username_claims = self._get_final_username_claim_list(user_info)
+        username = self._get_username_from_claim_list(user_info, username_claims)
 
         if not username:
             user_info_keys = sorted(user_info.keys())
             self.log.error(
-                f"No username claim in the list at {claimlist} was found in the response {user_info_keys}"
+                f"No username claim in the list at {username_claims} was found in the response {user_info_keys}"
             )
             raise web.HTTPError(500, "Failed to get username from CILogon")
 
-    async def user_is_authorized(self, auth_model):
-        username = auth_model["name"]
-        # Check if selected idp was marked as allowed
+        # Optionally strip idp domain or prefix the username
         if self.allowed_idps:
-            selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
-            # Fail hard if idp wasn't allowed
+            selected_idp = user_info["idp"]
+            if selected_idp in self.allowed_idps.keys():
+                username_derivation = self.allowed_idps[selected_idp][
+                    "username_derivation"
+                ]
+                action = username_derivation.get("action")
+
+                if action == "strip_idp_domain":
+                    username = username.split("@", 1)[0]
+                elif action == "prefix":
+                    prefix = username_derivation["prefix"]
+                    username = f"{prefix}:{username}"
+
+        return username
+
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for authorized users, raises errors for users
+        denied authorization.
+
+        Overrides the `OAuthenticator.check_allowed` implementation to only allow users
+        logging in using a provider that is  part of `allowed_idps`.
+        Following this, the user must either be part of `allowed_users` or `allowed_domains`
+        to be authorized if either is configured, otherwise all users are
+        authorized.
+        """
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
+
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        if self.allowed_idps:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            selected_idp = user_info["idp"]
             if selected_idp not in self.allowed_idps.keys():
                 self.log.error(
                     f"Trying to login from an identity provider that was not allowed {selected_idp}",
                 )
                 raise web.HTTPError(
-                    500,
+                    403,
                     "Trying to login using an identity provider that was not allowed",
                 )
 
-            allowed_domains = self.allowed_idps[selected_idp].get(
-                "allowed_domains", None
-            )
+            allowed_domains = self.allowed_idps[selected_idp].get("allowed_domains")
+            if self.allowed_users or allowed_domains:
+                if username in self.allowed_users:
+                    return True
 
-            if allowed_domains:
-                gotten_name, gotten_domain = username.split('@')
-                if gotten_domain not in allowed_domains:
-                    raise web.HTTPError(
-                        500,
-                        "Trying to login using a domain that was not allowed",
+                if allowed_domains:
+                    username_claims = self._get_final_username_claim_list(user_info)
+                    username_with_domain = self._get_username_from_claim_list(
+                        user_info, username_claims
                     )
+                    user_domain = username_with_domain.split("@", 1)[1]
+                    if user_domain in allowed_domains:
+                        return True
+                    else:
+                        raise web.HTTPError(
+                            403,
+                            "Trying to login using a domain that was not allowed",
+                        )
 
+                return False
+        # Although not recommended, it might be that `allowed_idps` is not specified
+        # In this case we need to make sure we still check `allowed_users` and don't assume
+        # everyone should be authorized
+        elif self.allowed_users:
+            if username in self.allowed_users:
+                return True
+            return False
+
+        # otherwise, authorize all users
         return True
-
-    async def update_auth_model(self, auth_model):
-        selected_idp = auth_model["auth_state"][self.user_auth_state_key].get("idp")
-
-        # Check if the requested username_claim exists in the response from the provider
-        username = auth_model["name"]
-
-        # Check if we need to strip/prefix username
-        if self.allowed_idps:
-            username_derivation_config = self.allowed_idps[selected_idp][
-                "username_derivation"
-            ]
-            action = username_derivation_config.get("action", None)
-            allowed_domains = self.allowed_idps[selected_idp].get(
-                "allowed_domains", None
-            )
-
-            if action == "strip_idp_domain":
-                gotten_name, gotten_domain = username.split('@')
-                username = gotten_name
-            elif action == "prefix":
-                prefix = username_derivation_config["prefix"]
-                username = f"{prefix}:{username}"
-
-        auth_model["name"] = username
-        return auth_model
 
 
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):

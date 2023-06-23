@@ -165,10 +165,6 @@ class GlobusOAuthenticator(OAuthenticator):
         their UUIDs. Setting this will add the Globus Groups scope."""
     ).tag(config=True)
 
-    @staticmethod
-    def check_user_in_groups(member_groups, allowed_groups):
-        return bool(set(member_groups) & set(allowed_groups))
-
     async def pre_spawn_start(self, user, spawner):
         """Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
@@ -230,8 +226,8 @@ class GlobusOAuthenticator(OAuthenticator):
             self.user_auth_state_key: user_info,
         }
 
-    async def get_users_groups_ids(self, tokens):
-        user_group_ids = set()
+    async def _fetch_users_groups(self, tokens):
+        user_groups = set()
         # Get Groups access token, may not be in dict headed to auth state
         for token_dict in tokens:
             if token_dict['resource_server'] == 'groups.api.globus.org':
@@ -244,44 +240,81 @@ class GlobusOAuthenticator(OAuthenticator):
         )
         # Build set of Group IDs
         for group in groups_resp:
-            user_group_ids.add(group['id'])
+            user_groups.add(group['id'])
 
-        return user_group_ids
+        return user_groups
 
-    async def user_is_authorized(self, auth_model):
-        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized.
 
-        if self.allowed_globus_groups or self.admin_globus_groups:
-            # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            user_group_ids = await self.get_users_groups_ids(tokens)
-            if not self.check_user_in_groups(
-                user_group_ids, self.allowed_globus_groups
-            ):
-                if not self.check_user_in_groups(
-                    user_group_ids, self.admin_globus_groups
-                ):
-                    username = self.user_info_to_username(
-                        auth_model["auth_state"][self.user_auth_state_key]
-                    )
-                    self.log.warning(f"{username} not in an allowed Globus Group")
-                    return False
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users` or `allowed_globus_groups`, and not just those
+        part of `allowed_users`.
+        """
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
 
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        if self.identity_provider:
+            # It's possible for identity provider domains to be namespaced
+            # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            domain = user_info.get(self.username_claim).split('@', 1)[-1]
+            if domain != self.identity_provider:
+                self.log.warning(
+                    f"Trying to login from an identity provider that was not allowed {domain}",
+                )
+                raise HTTPError(
+                    403,
+                    f"This site is restricted to {self.identity_provider} accounts. "
+                    "Please link your account at app.globus.org/account.",
+                )
+
+        # if allowed_users or allowed_globus_groups is configured, we deny users
+        # not part of either
+        if self.allowed_users or self.allowed_globus_groups:
+            if username in self.allowed_users:
+                return True
+            if self.allowed_globus_groups:
+                user_groups = auth_model["auth_state"]["globus_groups"]
+                if any(user_groups & self.allowed_globus_groups):
+                    return True
+                self.log.warning(f"{username} not in an allowed Globus Group")
+
+            return False
+
+        # otherwise, authorize all users
         return True
 
     async def update_auth_model(self, auth_model):
-        username = self.user_info_to_username(
-            auth_model["auth_state"][self.user_auth_state_key]
-        )
-        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+        """
+        Fetch and store `globus_groups` in auth state if `allowed_globus_groups`
+        or `admin_globus_groups` is configured.
+
+        Sets admin status to True or False if `admin_globus_groups` is
+        configured and the user isn't part of `admin_users` or
+        `admin_globus_groups`. Note that leaving it at None makes users able to
+        retain an admin status while setting it to False makes it be revoked.
+        """
+        user_groups = set()
+        if self.allowed_globus_groups or self.admin_globus_groups:
+            tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+            user_groups = await self._fetch_users_groups(tokens)
+        auth_model["auth_state"]["globus_groups"] = user_groups
+
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
+            return auth_model
 
         if self.admin_globus_groups:
-            # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            user_group_ids = await self.get_users_groups_ids(tokens)
-            # Admin users are being managed via Globus Groups
-            # Default to False
-            auth_model['admin'] = False
-            if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
-                auth_model['admin'] = True
+            # admin status should in this case be True or False, not None
+            auth_model["admin"] = any(user_groups & self.admin_globus_groups)
 
         return auth_model
 
@@ -292,16 +325,7 @@ class GlobusOAuthenticator(OAuthenticator):
         will have the 'foouser' account in Jupyterhub.
         """
 
-        # It's possible for identity provider domains to be namespaced
-        # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username, domain = user_info.get(self.username_claim).split('@', 1)
-        if self.identity_provider and domain != self.identity_provider:
-            raise HTTPError(
-                403,
-                f"This site is restricted to {self.identity_provider} accounts. "
-                "Please link your account at app.globus.org/account.",
-            )
-        return username
+        return user_info.get(self.username_claim).split('@')[0]
 
     def get_default_headers(self):
         return {"Accept": "application/json", "User-Agent": "JupyterHub"}

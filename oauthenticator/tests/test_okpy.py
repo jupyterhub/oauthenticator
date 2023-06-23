@@ -26,8 +26,8 @@ def okpy_client(client):
 async def test_okpy(okpy_client):
     authenticator = OkpyOAuthenticator()
     handler = okpy_client.handler_for_user(user_model('testing@example.com'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
+    user_info = await authenticator.get_authenticated_user(handler, None)
+    assert sorted(user_info) == ['admin', 'auth_state', 'name']
     name = user_info['name']
     assert name == 'testing@example.com'
     auth_state = user_info['auth_state']

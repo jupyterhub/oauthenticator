@@ -60,7 +60,7 @@ async def test_mediawiki(mediawiki):
         request=Mock(query='oauth_token=key&oauth_verifier=me'),
         find_user=Mock(return_value=None),
     )
-    user = await authenticator.authenticate(handler)
+    user = await authenticator.get_authenticated_user(handler, None)
     assert user['name'] == 'wash'
     auth_state = user['auth_state']
     assert auth_state['ACCESS_TOKEN_KEY'] == 'key'

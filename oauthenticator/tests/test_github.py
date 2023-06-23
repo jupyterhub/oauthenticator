@@ -5,7 +5,7 @@ import re
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
-from pytest import fixture, mark
+from pytest import fixture
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
@@ -39,16 +39,15 @@ def github_client(client):
 async def test_github(github_client):
     authenticator = GitHubOAuthenticator()
     handler = github_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model['name'] == 'wash'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'github_user' in auth_state
     assert auth_state["github_user"] == {
         'email': 'dinosaurs@space',
         'id': 5,
-        'login': name,
+        'login': auth_model['name'],
         'name': 'Hoban Washburn',
     }
 
@@ -157,58 +156,41 @@ async def test_allowed_org_membership(github_client):
         authenticator.allowed_organizations = ['blue']
 
         handler = client.handler_for_user(user_model('caboose'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'caboose'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'caboose'
 
         handler = client.handler_for_user(user_model('donut'))
-        user = await authenticator.authenticate(handler)
-        assert user is None
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
         # reverse it, just to be safe
         authenticator.allowed_organizations = ['red']
 
         handler = client.handler_for_user(user_model('caboose'))
-        user = await authenticator.authenticate(handler)
-        assert user is None
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
         handler = client.handler_for_user(user_model('donut'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'donut'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'donut'
 
         # test team membership
         authenticator.allowed_organizations = ['blue:alpha', 'red']
 
         handler = client.handler_for_user(user_model('tucker'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'tucker'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'tucker'
 
         handler = client.handler_for_user(user_model('grif'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'grif'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'grif'
 
         handler = client.handler_for_user(user_model('texas'))
-        user = await authenticator.authenticate(handler)
-        assert user is None
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
         client_hosts.pop()
         client_hosts.pop()
-
-
-@mark.parametrize(
-    "org, username, expected",
-    [
-        ("blue", "texas", "https://api.github.com/orgs/blue/members/texas"),
-        (
-            "blue:alpha",
-            "tucker",
-            "https://api.github.com/orgs/blue/teams/alpha/members/tucker",
-        ),
-        ("red", "grif", "https://api.github.com/orgs/red/members/grif"),
-    ],
-)
-async def test_build_check_membership_url(org, username, expected):
-    output = GitHubOAuthenticator()._build_check_membership_url(org, username)
-    assert output == expected
 
 
 async def test_deprecated_config(caplog):

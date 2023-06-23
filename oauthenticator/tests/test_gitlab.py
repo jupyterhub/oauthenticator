@@ -59,11 +59,10 @@ async def test_gitlab(gitlab_client):
     authenticator = GitLabOAuthenticator()
     mock_api_version(gitlab_client, '12.3.1-ee')
     handler = gitlab_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert sorted(auth_model) == ['admin', 'auth_state', 'name']
+    assert auth_model['name'] == 'wash'
+    auth_state = auth_model['auth_state']
     assert 'access_token' in auth_state
     assert 'gitlab_user' in auth_state
 
@@ -149,34 +148,31 @@ async def test_allowed_groups(gitlab_client):
         authenticator.allowed_gitlab_groups = ['blue']
 
         handler = client.handler_for_user(group_user_model('caboose'))
-        user_info = await authenticator.authenticate(handler)
-        name = user_info['name']
-        assert name == 'caboose'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'caboose'
 
         handler = client.handler_for_user(group_user_model('burns', is_admin=True))
-        user_info = await authenticator.authenticate(handler)
-        name = user_info['name']
-        assert name == 'burns'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'burns'
 
         handler = client.handler_for_user(group_user_model('grif'))
-        name = await authenticator.authenticate(handler)
-        assert name is None
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
         handler = client.handler_for_user(group_user_model('simmons', is_admin=True))
-        name = await authenticator.authenticate(handler)
-        assert name is None
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
         # reverse it, just to be safe
         authenticator.allowed_gitlab_groups = ['red']
 
         handler = client.handler_for_user(group_user_model('caboose'))
-        name = await authenticator.authenticate(handler)
-        assert name is None
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
         handler = client.handler_for_user(group_user_model('grif'))
-        user_info = await authenticator.authenticate(handler)
-        name = user_info['name']
-        assert name == 'grif'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model['name'] == 'grif'
 
         client.hosts['gitlab.com'].pop()
 
@@ -237,33 +233,33 @@ async def test_allowed_project_ids(gitlab_client):
 
     # Forbidden since John has guest access
     handler = client.handler_for_user(john_user_model)
-    user_info = await authenticator.authenticate(handler)
-    assert user_info is None
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model is None
 
     # Authenticated since Harry has developer access to the project
     handler = client.handler_for_user(harry_user_model)
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    name = auth_model['name']
     assert name == 'harry'
 
     # Forbidden since Sheila doesn't have access to the project
     handler = client.handler_for_user(sheila_user_model)
-    user_info = await authenticator.authenticate(handler)
-    assert user_info is None
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model is None
 
     authenticator.allowed_project_ids = [123123152543]
 
     # Forbidden since the project does not exist.
     handler = client.handler_for_user(harry_user_model)
-    user_info = await authenticator.authenticate(handler)
-    assert user_info is None
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model is None
 
     authenticator.allowed_project_ids = [123123152543, 1231231]
 
     # Authenticated since Harry has developer access to one of the project in the list
     handler = client.handler_for_user(harry_user_model)
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    name = auth_model['name']
     assert name == 'harry'
 
 

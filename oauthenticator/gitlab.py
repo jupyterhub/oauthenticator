@@ -7,7 +7,6 @@ from urllib.parse import quote
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.escape import url_escape
-from tornado.httpclient import HTTPRequest
 from traitlets import CUnicode, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -113,47 +112,58 @@ class GitLabOAuthenticator(OAuthenticator):
     )
 
     gitlab_version = None
+    member_api_variant = None
 
-    async def user_is_authorized(self, auth_model):
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
-
+    async def _set_gitlab_version(self, access_token):
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
             self.gitlab_version = await self._get_gitlab_version(access_token)
             self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
 
-        # Check if user is a member of any allowed groups or projects.
-        # These checks are performed here, as it requires `access_token`.
-        user_in_group = user_in_project = False
-        is_group_specified = is_project_id_specified = False
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized.
 
-        if self.allowed_gitlab_groups:
-            is_group_specified = True
-            user_in_group = await self._check_membership_allowed_groups(
-                user_id, access_token
-            )
-
-        # We skip project_id check if user is in allowed group.
-        if self.allowed_project_ids and not user_in_group:
-            is_project_id_specified = True
-            user_in_project = await self._check_membership_allowed_project_ids(
-                user_id, access_token
-            )
-
-        no_config_specified = not (is_group_specified or is_project_id_specified)
-
-        if (
-            (is_group_specified and user_in_group)
-            or (is_project_id_specified and user_in_project)
-            or no_config_specified
-        ):
+        Overrides the OAuthenticator.check_allowed implementation to allow users
+        either part of `allowed_users`, `allowed_gitlab_groups`, or `allowed_project_ids`,
+        and not just those part of `allowed_users`.
+        """
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
             return True
 
-        self.log.warning(
-            f"{auth_model['name']} not in group or project allowed list",
-        )
-        return False
+        # allow admin users recognized via admin_users or update_auth_model
+        if auth_model["admin"]:
+            return True
+
+        # if allowed_users, allowed_gitlab_groups, or allowed_project_ids is
+        # configured, we deny users not part of either
+        if self.allowed_users or self.allowed_gitlab_groups or self.allowed_project_ids:
+            if username in self.allowed_users:
+                return True
+
+            access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
+
+            if self.allowed_gitlab_groups:
+                user_in_group = await self._check_membership_allowed_groups(
+                    user_id, access_token
+                )
+                if user_in_group:
+                    return True
+
+            if self.allowed_project_ids:
+                user_in_project = await self._check_membership_allowed_project_ids(
+                    user_id, access_token
+                )
+                if user_in_project:
+                    return True
+
+            return False
+
+        # otherwise, authorize all users
+        return True
 
     async def _get_gitlab_version(self, access_token):
         url = f"{self.gitlab_api}/version"
@@ -169,6 +179,8 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _check_membership_allowed_groups(self, user_id, access_token):
         headers = _api_headers(access_token)
+        await self._set_gitlab_version(access_token)
+
         # Check if user is a member of any group in the allowed list
         for group in map(url_escape, self.allowed_gitlab_groups):
             url = "%s/groups/%s/members/%s%d" % (
@@ -176,9 +188,6 @@ class GitLabOAuthenticator(OAuthenticator):
                 quote(group, safe=''),
                 self.member_api_variant,
                 user_id,
-            )
-            req = HTTPRequest(
-                url,
             )
             resp = await self.httpfetch(
                 url,
@@ -194,6 +203,8 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _check_membership_allowed_project_ids(self, user_id, access_token):
         headers = _api_headers(access_token)
+        await self._set_gitlab_version(access_token)
+
         # Check if user has developer access to any project in the allowed list
         for project in self.allowed_project_ids:
             url = "%s/projects/%s/members/%s%d" % (
