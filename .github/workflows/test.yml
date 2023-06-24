@@ -66,6 +66,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -v --color=yes --cov=oauthenticator oauthenticator
+          pytest
 
+      # GitHub action reference: https://github.com/codecov/codecov-action
       - uses: codecov/codecov-action@v3
