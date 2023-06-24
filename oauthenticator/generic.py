@@ -140,34 +140,20 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized.
-
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_groups`, and not just those
-        part of `allowed_users`.
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_groups`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
+        if await super().check_allowed(username, auth_model):
             return True
 
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
-
-        # if allowed_users or allowed_groups is configured, we deny users not
-        # part of either
-        if self.allowed_users or self.allowed_groups:
+        if self.allowed_groups:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = self.get_user_groups(user_info)
-            if username in self.allowed_users:
-                return True
             if any(user_groups & self.allowed_groups):
                 return True
-            return False
 
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):

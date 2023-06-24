@@ -320,68 +320,38 @@ class CILogonOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for authorized users, raises errors for users
-        denied authorization.
-
-        Overrides the `OAuthenticator.check_allowed` implementation to only allow users
-        logging in using a provider that is  part of `allowed_idps`.
-        Following this, the user must either be part of `allowed_users` or `allowed_domains`
-        to be authorized if either is configured, otherwise all users are
-        authorized.
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        an `allowed_domains` as configured under `allowed_idps`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
+        # before considering allowing a username by being recognized in a list
+        # of usernames or similar, we must ensure that the authenticated user is
+        # from an allowed idp
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        user_idp = user_info["idp"]
+        if user_idp not in self.allowed_idps:
+            message = f"Login with identity provider {user_idp} is not allowed"
+            self.log.warning(message)
+            raise web.HTTPError(403, message)
+
+        if await super().check_allowed(username, auth_model):
             return True
 
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
-
-        if self.allowed_idps:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            selected_idp = user_info["idp"]
-            if selected_idp not in self.allowed_idps.keys():
-                self.log.error(
-                    f"Trying to login from an identity provider that was not allowed {selected_idp}",
-                )
-                raise web.HTTPError(
-                    403,
-                    "Trying to login using an identity provider that was not allowed",
-                )
-
-            allowed_domains = self.allowed_idps[selected_idp].get("allowed_domains")
-            if self.allowed_users or allowed_domains:
-                if username in self.allowed_users:
-                    return True
-
-                if allowed_domains:
-                    username_claims = self._get_final_username_claim_list(user_info)
-                    username_with_domain = self._get_username_from_claim_list(
-                        user_info, username_claims
-                    )
-                    user_domain = username_with_domain.split("@", 1)[1]
-                    if user_domain in allowed_domains:
-                        return True
-                    else:
-                        raise web.HTTPError(
-                            403,
-                            "Trying to login using a domain that was not allowed",
-                        )
-
-                return False
-        # Although not recommended, it might be that `allowed_idps` is not specified
-        # In this case we need to make sure we still check `allowed_users` and don't assume
-        # everyone should be authorized
-        elif self.allowed_users:
-            if username in self.allowed_users:
+        idp_allowed_domains = self.allowed_idps[user_idp].get("allowed_domains")
+        if idp_allowed_domains:
+            username_claims = self._get_final_username_claim_list(user_info)
+            username_with_domain = self._get_username_from_claim_list(
+                user_info, username_claims
+            )
+            user_domain = username_with_domain.split("@", 1)[1]
+            if user_domain in idp_allowed_domains:
                 return True
-            return False
+            message = f"Login with domain @{user_domain} is not allowed"
+            self.log.warning(message)
+            raise web.HTTPError(403, message)
 
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
 
 class LocalCILogonOAuthenticator(LocalAuthenticator, CILogonOAuthenticator):
-
     """A version that mixes in local system user creation"""

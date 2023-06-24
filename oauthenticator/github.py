@@ -133,46 +133,25 @@ class GitHubOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized.
-
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_organizations`, and not just
-        those part of `allowed_users`.
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_organizations`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
+        if await super().check_allowed(username, auth_model):
             return True
 
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
+        if self.allowed_organizations:
+            access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            token_type = auth_model["auth_state"]["token_response"]["token_type"]
+            for org_team in self.allowed_organizations:
+                if await self._check_membership_allowed_organizations(
+                    org_team, username, access_token, token_type
+                ):
+                    return True
+            message = f"User {username} is not part of allowed_organizations"
+            self.log.warning(message)
 
-        # if allowed_users or allowed_organizations is configured, we deny users not
-        # part of either
-        if self.allowed_users or self.allowed_organizations:
-            if username in self.allowed_users:
-                return True
-
-            if self.allowed_organizations:
-                access_token = auth_model["auth_state"]["token_response"][
-                    "access_token"
-                ]
-                token_type = auth_model["auth_state"]["token_response"]["token_type"]
-                for org in self.allowed_organizations:
-                    user_in_org = await self._check_membership_allowed_organizations(
-                        org, username, access_token, token_type
-                    )
-                    if user_in_org:
-                        return True
-                self.log.warning(
-                    f"User {username} is not part of allowed_organizations"
-                )
-
-            return False
-
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     async def update_auth_model(self, auth_model):
         """

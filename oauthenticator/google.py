@@ -85,7 +85,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     hosted_domain = List(
         Unicode(),
         config=True,
-        help="""List of domains used to restrict sign-in, e.g. mycollege.edu""",
+        help="""
+        Restrict sign-in to a list of email domain names, such as
+        `["mycollege.edu"]`.
+
+        Note that users with email domains in this list must still be allowed
+        via another config, such as `allow_all`.
+        """,
     )
 
     @default('hosted_domain')
@@ -119,13 +125,12 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     async def update_auth_model(self, auth_model):
         """
         Fetch and store `google_groups` in auth state if `allowed_google_groups`
-        or `admin_google_groups` is configured. Also declare the user an admin
-        if part of `admin_google_groups`.
+        or `admin_google_groups` is configured.
 
         Sets admin status to True or False if `admin_google_groups` is
-        configured and the user isn't part of `admin_users` or
-        `admin_google_groups`. Note that leaving it at None makes users able to
-        retain an admin status while setting it to False makes it be revoked.
+        configured and the user isn't part of `admin_users`. Note that leaving
+        it at None makes users able to retain an admin status while setting it
+        to False makes it be revoked.
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
@@ -151,29 +156,20 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized.
-
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_google_groups`, and not just those
-        part of `allowed_users`.
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_google_groups`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
-            return True
-
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
-
+        # before considering allowing a username by being recognized in a list
+        # of usernames or similar, we must ensure that the authenticated user
+        # has a verified email and is part of hosted_domain if configured.
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
         user_domain = user_info["domain"]
-        user_groups = user_info["google_groups"]
 
         if not user_info["verified_email"]:
-            self.log.warning(f"Google OAuth unverified email attempt: {user_email}")
-            raise HTTPError(403, f"Google email {user_email} not verified")
+            message = f"Login with unverified email {user_email} is not allowed"
+            self.log.warning(message)
+            raise HTTPError(403, message)
 
         # NOTE: If hosted_domain is configured as ["a.com", "b.com"], and
         #       allowed_google_groups is declared as {"a.com": {"a-group"}}, a
@@ -184,26 +180,21 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         #
         if self.hosted_domain:
             if user_domain not in self.hosted_domain:
-                self.log.warning(
-                    f"Google OAuth unauthorized domain attempt: {user_email}"
-                )
-                raise HTTPError(
-                    403, f"Google account domain @{user_domain} not authorized"
-                )
+                message = f"Login with domain @{user_domain} is not allowed"
+                self.log.warning(message)
+                raise HTTPError(403, message)
 
-        # if allowed_users or allowed_google_groups is configured, we deny users
-        # not part of either
-        if self.allowed_users or self.allowed_google_groups:
-            if username in self.allowed_users:
+        if await super().check_allowed(username, auth_model):
+            return True
+
+        if self.allowed_google_groups:
+            user_groups = user_info["google_groups"]
+            allowed_groups = self.allowed_google_groups.get(user_domain, set())
+            if any(user_groups & allowed_groups):
                 return True
-            if self.allowed_google_groups:
-                allowed_groups = self.allowed_google_groups.get(user_domain, set())
-                if any(user_groups & allowed_groups):
-                    return True
-            return False
 
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     def _service_client_credentials(self, scopes, user_email_domain):
         """
