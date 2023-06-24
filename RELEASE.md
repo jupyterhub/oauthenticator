@@ -1,76 +1,60 @@
 # How to make a release
 
-`oauthenticator` is a package [available on
-PyPI](https://pypi.org/project/oauthenticator/) and
-[conda-forge](https://conda-forge.org/). These are instructions on how to make a
-release on PyPI. The PyPI release is done automatically by TravisCI when a tag
-is pushed.
+`oauthenticator` is a package available on [PyPI] and on [conda-forge].
 
-For you to follow along according to these instructions, you need:
+These are the instructions on how to make a release.
 
-- To have push rights to the [oauthenticator GitHub
-  repository](https://github.com/jupyterhub/oauthenticator).
+## Pre-requisites
+
+- Push rights to this GitHub repository
 
 ## Steps to make a release
 
-1. Checkout main and make sure it is up to date.
+1. Create a PR updating `CHANGELOG.md` with [github-activity] and continue when
+   its merged.
+
+   Advice on this procedure can be found in [this team compass
+   issue](https://github.com/jupyterhub/team-compass/issues/563).
+
+2. Checkout main and make sure it is up to date.
 
    ```shell
-   ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
    git checkout main
-   git fetch $ORIGIN main
-   git reset --hard $ORIGIN/main
-   # WARNING! This next command deletes any untracked files in the repo
-   git clean -xfd
+   git fetch origin main
+   git reset --hard origin/main
    ```
 
-1. Update [CHANGELOG.md](CHANGELOG.md). Doing this can be made easier with the
-   help of the
-   [choldgraf/github-activity](https://github.com/choldgraf/github-activity)
-   utility.
-
-1. Set the `version_info` variable in [\_version.py](oauthenticator/_version.py)
-   appropriately and make a commit.
-
-   ```
-   git add oauthenticator/_version.py
-   VERSION=...  # e.g. 1.2.3
-   git commit -m "release $VERSION"
-   ```
-
-1. Reset the `version_info` variable in
-   [\_version.py](oauthenticator/_version.py) appropriately with an incremented
-   patch version and a `dev` element, then make a commit.
-
-   ```
-   git add oauthenticator/_version.py
-   git commit -m "back to dev"
-   ```
-
-1. Push your two commits to main.
+3. Update the version, make commits, and push a git tag with `tbump`.
 
    ```shell
-   # first push commits without a tags to ensure the
-   # commits comes through, because a tag can otherwise
-   # be pushed all alone without company of rejected
-   # commits, and we want have our tagged release coupled
-   # with a specific commit in main
-   git push $ORIGIN main
+   pip install tbump
    ```
 
-1. Create a git tag for the pushed release commit and push it.
+   `tbump` will ask for confirmation before doing anything.
 
    ```shell
-   git tag -a $VERSION -m $VERSION HEAD~1
-
-   # then verify you tagged the right commit
-   git log
-
-   # then push it
-   git push $ORIGIN refs/tags/$VERSION
+   # Example versions to set: 1.0.0, 1.0.0b1
+   VERSION=
+   tbump ${VERSION}
    ```
 
-1. Following the release to PyPI, an automated PR should arrive to
-   [conda-forge/oauthenticator-feedstock](https://github.com/conda-forge/oauthenticator-feedstock),
-   check for the tests to succeed on this PR and then merge it to successfully
-   update the package for `conda` on the conda-forge channel.
+   Following this, the [CI system] will build and publish a release.
+
+4. Reset the version back to dev, e.g. `1.0.1.dev` after releasing `1.0.0`.
+
+   ```shell
+   # Example version to set: 1.0.1.dev
+   NEXT_VERSION=
+   tbump --no-tag ${NEXT_VERSION}.dev
+   ```
+
+5. Following the release to PyPI, an automated PR should arrive within 24 hours
+   to [conda-forge/oauthenticator-feedstock] with instructions on releasing to
+   conda-forge. You are welcome to volunteer doing this, but aren't required as
+   part of making this release to PyPI.
+
+[github-activity]: https://github.com/executablebooks/github-activity
+[pypi]: https://pypi.org/project/oauthenticator/
+[ci system]: https://github.com/jupyterhub/oauthenticator/actions/workflows/release.yaml
+[conda-forge]: https://anaconda.org/conda-forge/oauthenticator
+[conda-forge/oauthenticator-feedstock]: https://github.com/conda-forge/oauthenticator-feedstock

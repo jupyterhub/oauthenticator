@@ -5,7 +5,6 @@
 # Minimal Python version sanity check (from IPython/Jupyterhub)
 # -----------------------------------------------------------------------------
 
-import os
 import sys
 
 from setuptools import find_packages, setup
@@ -25,19 +24,10 @@ class bdist_egg_disabled(bdist_egg):
         )
 
 
-pjoin = os.path.join
-here = os.path.abspath(os.path.dirname(__file__))
-
-# Get the current package version.
-version_ns = {}
-with open(pjoin(here, 'oauthenticator', '_version.py')) as f:
-    exec(f.read(), {}, version_ns)
-
-
 setup_args = dict(
     name='oauthenticator',
     packages=find_packages(),
-    version=version_ns['__version__'],
+    version="15.1.1.dev",
     description="OAuthenticator: Authenticate JupyterHub users with common OAuth providers",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
