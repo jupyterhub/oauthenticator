@@ -180,6 +180,9 @@ class CILogonOAuthenticator(OAuthenticator):
     def _validate_allowed_idps(self, proposal):
         idps = proposal.value
 
+        if not idps:
+            raise ValueError("One or more allowed_idps must be configured")
+
         for entity_id, username_derivation in idps.items():
             # Validate `username_derivation` config using the schema
             root_dir = os.path.dirname(os.path.abspath(__file__))
