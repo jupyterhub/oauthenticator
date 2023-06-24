@@ -91,10 +91,12 @@ class GlobusOAuthenticator(OAuthenticator):
     )
 
     identity_provider = Unicode(
-        help="""Restrict which institution a user
-    can use to login (GlobusID, University of Hogwarts, etc.). This should
-    be set in the app at developers.globus.org, but this acts as an additional
-    check to prevent unnecessary account creation."""
+        help="""
+        Restrict which institution (domain) a user can use to login (GlobusID,
+        University of Hogwarts, etc.). This should be set in the app at
+        developers.globus.org, but this acts as an additional check to prevent
+        unnecessary account creation.
+        """
     ).tag(config=True)
 
     def _identity_provider_default(self):
@@ -102,9 +104,11 @@ class GlobusOAuthenticator(OAuthenticator):
 
     username_from_email = Bool(
         False,
-        help="""Create username from email address, not preferred username. If
-        an identity provider is specified, email address must be from the same
-        domain. Email scope will be set automatically.""",
+        help="""
+        Create username from email address, not preferred username. If an
+        identity provider is specified, email address must be from the same
+        domain. Email scope will be set automatically.
+        """,
         config=True,
     )
 
@@ -115,8 +119,10 @@ class GlobusOAuthenticator(OAuthenticator):
         return "preferred_username"
 
     exclude_tokens = List(
-        help="""Exclude tokens from being passed into user environments
-        when they start notebooks, Terminals, etc."""
+        help="""
+        Exclude tokens from being passed into user environments when they start
+        notebooks, Terminals, etc.
+        """
     ).tag(config=True)
 
     def _exclude_tokens_default(self):
@@ -137,32 +143,40 @@ class GlobusOAuthenticator(OAuthenticator):
         return scopes
 
     globus_local_endpoint = Unicode(
-        help="""If Jupyterhub is also a Globus
-    endpoint, its endpoint id can be specified here."""
+        help="""
+        If JupyterHub is also a Globus endpoint, its endpoint id can be
+        specified here.
+        """
     ).tag(config=True)
 
     def _globus_local_endpoint_default(self):
         return os.getenv('GLOBUS_LOCAL_ENDPOINT', '')
 
     revoke_tokens_on_logout = Bool(
-        help="""Revoke tokens so they cannot be used again. Single-user servers
-        MUST be restarted after logout in order to get a fresh working set of
-        tokens."""
+        help="""
+        Revoke tokens so they cannot be used again. Single-user servers MUST be
+        restarted after logout in order to get a fresh working set of tokens.
+        """
     ).tag(config=True)
 
     def _revoke_tokens_on_logout_default(self):
         return False
 
     allowed_globus_groups = Set(
-        help="""Allow members of defined Globus Groups to access JupyterHub. Users in an
-        admin Globus Group are also automatically allowed. Groups are specified with their UUIDs. Setting this will
-        add the Globus Groups scope."""
+        help="""
+        Allow members of defined Globus Groups to access JupyterHub. Users in an
+        admin Globus Group are also automatically allowed. Groups are specified
+        with their UUIDs. Setting this will add the Globus Groups scope.
+        """
     ).tag(config=True)
 
     admin_globus_groups = Set(
-        help="""Set members of defined Globus Groups as JupyterHub admin users.
-        These users are automatically allowed to login to JupyterHub. Groups are specified with
-        their UUIDs. Setting this will add the Globus Groups scope."""
+        help="""
+        Set members of defined Globus Groups as JupyterHub admin users. These
+        users are automatically allowed to login to JupyterHub. Groups are
+        specified with their UUIDs. Setting this will add the Globus Groups
+        scope.
+        """
     ).tag(config=True)
 
     async def pre_spawn_start(self, user, spawner):
@@ -208,7 +222,6 @@ class GlobusOAuthenticator(OAuthenticator):
         accounts) will correspond to a Globus User ID, so foouser@globusid.org
         will have the 'foouser' account in Jupyterhub.
         """
-
         tokens = self.get_globus_tokens(token_info)
         # historically, tokens have been organized by resource server for convenience.
         # If multiple scopes are requested from the same resource server, they will be
@@ -324,7 +337,6 @@ class GlobusOAuthenticator(OAuthenticator):
         accounts) will correspond to a Globus User ID, so foouser@globusid.org
         will have the 'foouser' account in Jupyterhub.
         """
-
         return user_info.get(self.username_claim).split('@')[0]
 
     def get_default_headers(self):
@@ -352,7 +364,6 @@ class GlobusOAuthenticator(OAuthenticator):
                 <Additional services>...
             }
         """
-
         access_tokens = [
             token_dict.get('access_token') for token_dict in services.values()
         ]
