@@ -80,6 +80,7 @@ class MWOAuthenticator(OAuthenticator):
     login_service = 'MediaWiki'
     login_handler = MWLoginHandler
     callback_handler = MWCallbackHandler
+    user_auth_state_key = "MEDIAWIKI_USER_IDENTITY"
 
     mw_index_url = Unicode(
         os.environ.get('MW_INDEX_URL', 'https://meta.wikimedia.org/w/index.php'),
@@ -144,5 +145,5 @@ class MWOAuthenticator(OAuthenticator):
         return {
             'ACCESS_TOKEN_KEY': token_info["access_token"].key,
             'ACCESS_TOKEN_SECRET': token_info["access_token"].secret,
-            'MEDIAWIKI_USER_IDENTITY': user_info,
+            self.user_auth_state_key: user_info,
         }
