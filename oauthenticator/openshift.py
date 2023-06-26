@@ -87,6 +87,10 @@ class OpenShiftOAuthenticator(OAuthenticator):
         return f"{self.openshift_rest_api_url}/apis/user.openshift.io/v1/users/~"
 
     def user_info_to_username(self, user_info):
+        """
+        Overrides OAuthenticator.user_info_to_username instead of setting
+        username_claim as the username is nested inside another dictionary.
+        """
         return user_info['metadata']['name']
 
     async def update_auth_model(self, auth_model):
@@ -110,7 +114,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Overrides the OAuthenticator.check_allowed to also allow users part of
+        Overrides OAuthenticator.check_allowed to also allow users part of
         `allowed_groups`.
         """
         if await super().check_allowed(username, auth_model):

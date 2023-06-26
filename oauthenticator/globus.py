@@ -91,6 +91,7 @@ class GlobusOAuthenticator(OAuthenticator):
     )
 
     identity_provider = Unicode(
+        config=True,
         help="""
         Restrict which institution (domain) a user can use to login (GlobusID,
         University of Hogwarts, etc.). This should be set in the app at
@@ -99,8 +100,8 @@ class GlobusOAuthenticator(OAuthenticator):
 
         Note that users with an associated email domains must still be allowed
         via another config, such as `allow_all`.
-        """
-    ).tag(config=True)
+        """,
+    )
 
     def _identity_provider_default(self):
         return os.getenv('IDENTITY_PROVIDER', '')
@@ -122,11 +123,12 @@ class GlobusOAuthenticator(OAuthenticator):
         return "preferred_username"
 
     exclude_tokens = List(
+        config=True,
         help="""
         Exclude tokens from being passed into user environments when they start
         notebooks, Terminals, etc.
-        """
-    ).tag(config=True)
+        """,
+    )
 
     def _exclude_tokens_default(self):
         return ['auth.globus.org', 'groups.api.globus.org']
@@ -146,41 +148,50 @@ class GlobusOAuthenticator(OAuthenticator):
         return scopes
 
     globus_local_endpoint = Unicode(
+        config=True,
         help="""
         If JupyterHub is also a Globus endpoint, its endpoint id can be
         specified here.
-        """
-    ).tag(config=True)
+        """,
+    )
 
     def _globus_local_endpoint_default(self):
         return os.getenv('GLOBUS_LOCAL_ENDPOINT', '')
 
     revoke_tokens_on_logout = Bool(
+        config=True,
         help="""
         Revoke tokens so they cannot be used again. Single-user servers MUST be
         restarted after logout in order to get a fresh working set of tokens.
-        """
-    ).tag(config=True)
+        """,
+    )
 
     def _revoke_tokens_on_logout_default(self):
         return False
 
     allowed_globus_groups = Set(
+        config=True,
         help="""
-        Allow members of defined Globus Groups to access JupyterHub. Users in an
-        admin Globus Group are also automatically allowed. Groups are specified
-        with their UUIDs. Setting this will add the Globus Groups scope.
-        """
-    ).tag(config=True)
+        Allow members of defined Globus Groups, specified with their UUIDs, to
+        login.
+
+        If this is configured, the default value of the scope configuration is
+        appended with the scope
+        `urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships`.
+        """,
+    )
 
     admin_globus_groups = Set(
+        config=True,
         help="""
-        Set members of defined Globus Groups as JupyterHub admin users. These
-        users are automatically allowed to login to JupyterHub. Groups are
-        specified with their UUIDs. Setting this will add the Globus Groups
-        scope.
-        """
-    ).tag(config=True)
+        Allow members of defined Globus Groups, specified with their UUIDs, to
+        login as admin users.
+
+        If this is configured, the default value of the scope configuration is
+        appended with the scope
+        `urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships`.
+        """,
+    )
 
     async def pre_spawn_start(self, user, spawner):
         """Add tokens to the spawner whenever the spawner starts a notebook.

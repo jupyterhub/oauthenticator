@@ -294,11 +294,14 @@ class OAuthenticator(Authenticator):
     username_claim = Unicode(
         "username",
         config=True,
-        help="""Field in userdata reply to use for username
-        The field in the userdata response from which to get the JupyterHub username.
+        help="""
+        Field in userdata reply to use for username The field in the userdata
+        response from which to get the JupyterHub username.
+
         Examples include: email, username, nickname
 
-        What keys are available will depend on the scopes requested and the authenticator used.
+        What keys are available will depend on the scopes requested and the
+        authenticator used.
         """,
     )
 
