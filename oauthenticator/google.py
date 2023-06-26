@@ -113,8 +113,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             # (or if it's empty, an empty list)
             if proposal.value == '':
                 return []
-            return [proposal.value]
-        return proposal.value
+            return [proposal.value.lower()]
+        return [hd.lower() for hd in proposal.value]
 
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Google'),
@@ -134,7 +134,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
-        user_domain = user_info["domain"] = user_email.split("@")[1]
+        user_domain = user_info["domain"] = user_email.split("@")[1].lower()
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
