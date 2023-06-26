@@ -23,6 +23,8 @@ command line for details.
   lists as as they are converted to sets automatically, but anyone reading and
   adding entries must now use set logic and not list logic.
 - [Google] Authentication state's `google_groups` is now a set, not a list.
+- [CILogon] `allowed_idps` is now required config, and `shown_idps`,
+  `username_claim`, `additional_username_claims` must no longer be configured.
 
 (changelog:version-15)=
 

@@ -39,11 +39,11 @@ class CILogonLoginHandler(OAuthLoginHandler):
         # kwargs is updated to include extra_params if it doesn't already
         # include it, we then modify kwargs' extra_params dictionary
         extra_params = kwargs.setdefault('extra_params', {})
-        if self.authenticator.shown_idps:
-            # selected_idp must be a string where idps are separated by commas, with no space between, otherwise it will get escaped
-            # example: https://accounts.google.com/o/oauth2/auth,https://github.com/login/oauth/authorize
-            idps = ",".join(self.authenticator.shown_idps)
-            extra_params["selected_idp"] = idps
+
+        # selected_idp should be a comma separated string
+        allowed_idps = ",".join(self.authenticator.allowed_idps.keys())
+        extra_params["selected_idp"] = allowed_idps
+
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
 
@@ -61,6 +61,9 @@ class CILogonOAuthenticator(OAuthenticator):
         "idp_whitelist": ("allowed_idps", "0.12.0", False),
         "idp": ("shown_idps", "15.0.0", False),
         "strip_idp_domain": ("allowed_idps", "15.0.0", False),
+        "shown_idps": ("allowed_idps", "16.0.0", False),
+        "username_claim": ("allowed_idps", "16.0.0", False),
+        "additional_username_claims": ("allowed_idps", "16.0.0", False),
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
@@ -121,7 +124,7 @@ class CILogonOAuthenticator(OAuthenticator):
         if 'openid' not in proposal.value:
             scopes += ['openid']
 
-        if self.allowed_idps and 'org.cilogon.userinfo' not in proposal.value:
+        if 'org.cilogon.userinfo' not in proposal.value:
             scopes += ['org.cilogon.userinfo']
 
         return scopes
@@ -204,14 +207,14 @@ class CILogonOAuthenticator(OAuthenticator):
         if not idps:
             raise ValueError("One or more allowed_idps must be configured")
 
-        for entity_id, username_derivation in idps.items():
+        for entity_id, idp_config in idps.items():
             # Validate `idp_config` config using the schema
             root_dir = os.path.dirname(os.path.abspath(__file__))
             schema_file = os.path.join(root_dir, "schemas", "cilogon-schema.yaml")
             with open(schema_file) as schema_fd:
                 schema = yaml.load(schema_fd)
                 # Raises useful exception if validation fails
-                jsonschema.validate(username_derivation, schema)
+                jsonschema.validate(idp_config, schema)
 
             # Make sure allowed_idps contains EntityIDs and not domain names.
             accepted_entity_id_scheme = ["urn", "https", "http"]
@@ -278,10 +281,9 @@ class CILogonOAuthenticator(OAuthenticator):
         This is useful for linked identities where not all of them return the
         primary username_claim.
         """,
-        default_value=["email"],
     )
 
-    def _get_final_username_claim_list(self, user_info):
+    def user_info_to_username(self, user_info):
         """
         Overrides OAuthenticator.user_info_to_username that relies on
         username_claim to instead consider idp specific config in under
@@ -290,56 +292,59 @@ class CILogonOAuthenticator(OAuthenticator):
         Returns a username based on user_info and configuration in allowed_idps
         under the associated idp's username_derivation config.
         """
-        username_claims = [self.username_claim]
-        if self.additional_username_claims:
-            username_claims.extend(self.additional_username_claims)
-        if self.allowed_idps:
-            selected_idp = user_info["idp"]
-            if selected_idp in self.allowed_idps.keys():
-                # The username_claim which should be used for this idp
-                return [
-                    self.allowed_idps[selected_idp]["username_derivation"][
-                        "username_claim"
-                    ]
-                ]
-            else:
-                return username_claims
-        return username_claims
+        # NOTE: The first time we have received user_info is when
+        #       user_info_to_username is called by OAuthenticator.authenticate,
+        #       so we make a check here that the "idp" claim is received and
+        #       that we allowed_idps is configured to handle that idp.
+        #
+        user_idp = user_info.get("idp")
+        if not user_idp:
+            message = "'idp' claim was not part of the response to the userdata_url"
+            self.log.error(message)
+            raise web.HTTPError(500, message)
+        if not self.allowed_idps.get(user_idp):
+            message = f"Login with identity provider {user_idp} is not pre-configured"
+            self.log.error(message)
+            raise web.HTTPError(500, message)
 
-    def _get_username_from_claim_list(self, user_info, username_claims):
-        username = None
-        for claim in username_claims:
-            username = user_info.get(claim)
-            if username:
-                break
+        unprocessed_username = self._user_info_to_unprocessed_username(user_info)
+        username = self._get_processed_username(unprocessed_username, user_info)
 
         return username
 
-    def user_info_to_username(self, user_info):
-        username_claims = self._get_final_username_claim_list(user_info)
-        username = self._get_username_from_claim_list(user_info, username_claims)
+    def _user_info_to_unprocessed_username(self, user_info):
+        """
+        Returns a username from
+        """
+        user_idp = user_info["idp"]
+        username_derivation = self.allowed_idps[user_idp]["username_derivation"]
+        username_claim = username_derivation["username_claim"]
 
+        username = user_info.get(username_claim)
         if not username:
-            user_info_keys = sorted(user_info.keys())
-            self.log.error(
-                f"No username claim in the list at {username_claims} was found in the response {user_info_keys}"
-            )
-            raise web.HTTPError(500, "Failed to get username from CILogon")
+            message = f"Configured username_claim {username_claim} for {user_idp} was not found in the response {user_info.keys()}"
+            self.log.error(message)
+            raise web.HTTPError(500, message)
 
-        # Optionally strip idp domain or prefix the username
-        if self.allowed_idps:
-            selected_idp = user_info["idp"]
-            if selected_idp in self.allowed_idps.keys():
-                username_derivation = self.allowed_idps[selected_idp][
-                    "username_derivation"
-                ]
-                action = username_derivation.get("action")
+        return username
 
-                if action == "strip_idp_domain":
-                    username = username.split("@", 1)[0]
-                elif action == "prefix":
-                    prefix = username_derivation["prefix"]
-                    username = f"{prefix}:{username}"
+    def _get_processed_username(self, username, user_info):
+        """
+        This method optionally adjusts a username from user_info based on the
+        "action" specified under "username_derivation" for the associated idp.
+        """
+        user_idp = user_info["idp"]
+        username_derivation = self.allowed_idps[user_idp]["username_derivation"]
+
+        # Optionally execute action "strip_idp_domain" or "prefix"
+        action = username_derivation.get("action")
+        if action == "strip_idp_domain":
+            domain_suffix = "@" + username_derivation["domain"]
+            if username.lower().endswith(domain_suffix.lower()):
+                username = username[: -len(domain_suffix)]
+        elif action == "prefix":
+            prefix = username_derivation["prefix"]
+            username = f"{prefix}:{username}"
 
         return username
 
@@ -348,28 +353,18 @@ class CILogonOAuthenticator(OAuthenticator):
         Overrides the OAuthenticator.check_allowed to also allow users part of
         an `allowed_domains` as configured under `allowed_idps`.
         """
-        # before considering allowing a username by being recognized in a list
-        # of usernames or similar, we must ensure that the authenticated user is
-        # from an allowed idp
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-        user_idp = user_info["idp"]
-        if user_idp not in self.allowed_idps:
-            message = f"Login with identity provider {user_idp} is not allowed"
-            self.log.warning(message)
-            raise web.HTTPError(403, message)
-
         if await super().check_allowed(username, auth_model):
             return True
 
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        user_idp = user_info["idp"]
         idp_allowed_domains = self.allowed_idps[user_idp].get("allowed_domains")
         if idp_allowed_domains:
-            username_claims = self._get_final_username_claim_list(user_info)
-            username_with_domain = self._get_username_from_claim_list(
-                user_info, username_claims
-            )
-            user_domain = username_with_domain.split("@", 1)[1]
+            unprocessed_username = self._user_info_to_unprocessed_username(user_info)
+            user_domain = unprocessed_username.split("@", 1)[1].lower()
             if user_domain in idp_allowed_domains:
                 return True
+
             message = f"Login with domain @{user_domain} is not allowed"
             self.log.warning(message)
             raise web.HTTPError(403, message)
