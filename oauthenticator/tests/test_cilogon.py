@@ -81,7 +81,7 @@ async def test_cilogon_missing_alternate_claim(cilogon_client):
         alternative_user_model('jtkirk@ufp.gov', 'uid')
     )
     with raises(HTTPError):
-        auth_model = await authenticator.get_authenticated_user(handler, None)
+        await authenticator.get_authenticated_user(handler, None)
 
 
 async def test_deprecated_config(caplog):
@@ -188,7 +188,7 @@ async def test_allowed_idps_invalid_config_username_derivation_options(caplog):
         }
     }
 
-    with raises(ValidationError, match='Additional properties are not allowed') as e:
+    with raises(ValidationError, match='Additional properties are not allowed'):
         CILogonOAuthenticator(config=cfg)
 
 
@@ -331,7 +331,7 @@ async def test_not_allowed_domains_and_stripping(cilogon_client):
 
     # The domain to be stripped isn't allowed, so it should fail
     with raises(HTTPError):
-        auth_model = await authenticator.get_authenticated_user(handler, None)
+        await authenticator.get_authenticated_user(handler, None)
 
 
 async def test_allowed_domains_and_stripping(cilogon_client):
