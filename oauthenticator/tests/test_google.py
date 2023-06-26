@@ -3,7 +3,7 @@ import logging
 import re
 from unittest import mock
 
-from pytest import fixture, raises
+from pytest import fixture, mark, raises
 from tornado.web import HTTPError
 from traitlets.config import Config
 
@@ -11,11 +11,12 @@ from ..google import GoogleOAuthenticator
 from .mocks import setup_oauth_mock
 
 
-def user_model(email):
+def user_model(email, username="user1"):
     """Return a user model"""
     return {
         'sub': hashlib.md5(email.encode()).hexdigest(),
         'email': email,
+        'custom': username,
         'hd': email.split('@')[1],
         'verified_email': True,
     }
@@ -32,210 +33,215 @@ def google_client(client):
     return client
 
 
-async def test_google(google_client):
-    authenticator = GoogleOAuthenticator()
-    handler = google_client.handler_for_user(user_model('fake@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
-    ):
-        user_info = await authenticator.get_authenticated_user(handler, None)
-        assert sorted(user_info) == ['admin', 'auth_state', 'name']
-        name = user_info['name']
-        assert name == 'fake@email.com'
-        auth_state = user_info['auth_state']
-        assert 'access_token' in auth_state
-        assert 'google_user' in auth_state
+@mark.parametrize(
+    "test_variation_id,class_config,expect_allowed,expect_admin",
+    [
+        # no allow config tested
+        ("00", {}, False, None),
+        # allow config, individually tested
+        ("01", {"allow_all": True}, True, None),
+        ("02", {"allowed_users": {"user1"}}, True, None),
+        ("03", {"allowed_users": {"not-test-user"}}, False, None),
+        ("04", {"admin_users": {"user1"}}, True, True),
+        ("05", {"admin_users": {"not-test-user"}}, False, None),
+        ("06", {"allowed_google_groups": {"example.com": {"group1"}}}, True, None),
+        (
+            "07",
+            {"allowed_google_groups": {"example.com": {"test-user-not-in-group"}}},
+            False,
+            None,
+        ),
+        ("08", {"admin_google_groups": {"example.com": {"group1"}}}, True, True),
+        (
+            "09",
+            {"admin_google_groups": {"example.com": {"test-user-not-in-group"}}},
+            False,
+            False,
+        ),
+        # allow config, some combinations of two tested
+        (
+            "10",
+            {
+                "allow_all": False,
+                "allowed_users": {"not-test-user"},
+            },
+            False,
+            None,
+        ),
+        (
+            "11",
+            {
+                "allowed_users": {"not-test-user"},
+                "admin_users": {"user1"},
+            },
+            True,
+            True,
+        ),
+        (
+            "12",
+            {
+                "allowed_google_groups": {"example.com": {"group1"}},
+                "admin_google_groups": {"example.com": {"group1"}},
+            },
+            True,
+            True,
+        ),
+        (
+            "13",
+            {
+                "allowed_google_groups": {"example.com": {"group1"}},
+                "admin_google_groups": {"example.com": {"test-user-not-in-group"}},
+            },
+            True,
+            False,
+        ),
+        (
+            "14",
+            {
+                "allowed_google_groups": {"example.com": {"test-user-not-in-group"}},
+                "admin_google_groups": {"example.com": {"group1"}},
+            },
+            True,
+            True,
+        ),
+        (
+            "15",
+            {
+                "allowed_google_groups": {"example.com": {"test-user-not-in-group"}},
+                "admin_google_groups": {"example.com": {"test-user-not-in-group"}},
+            },
+            False,
+            False,
+        ),
+        (
+            "16",
+            {
+                "admin_users": {"user1"},
+                "admin_google_groups": {"example.com": {"group1"}},
+            },
+            True,
+            True,
+        ),
+        (
+            "17",
+            {
+                "admin_users": {"user1"},
+                "admin_google_groups": {"example.com": {"test-user-not-in-group"}},
+            },
+            True,
+            True,
+        ),
+        (
+            "18",
+            {
+                "admin_users": {"not-test-user"},
+                "admin_google_groups": {"example.com": {"group1"}},
+            },
+            True,
+            True,
+        ),
+        (
+            "19",
+            {
+                "admin_users": {"not-test-user"},
+                "admin_google_groups": {"example.com": {"test-user-not-in-group"}},
+            },
+            False,
+            False,
+        ),
+    ],
+)
+async def test_google(
+    google_client,
+    test_variation_id,
+    class_config,
+    expect_allowed,
+    expect_admin,
+):
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.GoogleOAuthenticator = Config(class_config)
+    c.GoogleOAuthenticator.username_claim = "custom"
+    authenticator = GoogleOAuthenticator(config=c)
 
-
-async def test_google_username_claim(google_client):
-    cfg = Config()
-    cfg.GoogleOAuthenticator.username_claim = "sub"
-    authenticator = GoogleOAuthenticator(config=cfg)
-    handler = google_client.handler_for_user(user_model('fake@email.com'))
+    handled_user_model = user_model("user1@example.com", "user1")
+    handler = google_client.handler_for_user(handled_user_model)
     with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
+        authenticator, "_fetch_user_groups", lambda *args: {"group1"}
     ):
-        user_info = await authenticator.get_authenticated_user(handler, None)
-        assert sorted(user_info) == ['admin', 'auth_state', 'name']
-        name = user_info['name']
-        assert name == '724f95667e2fbe903ee1b4cffcae3b25'
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    if expect_allowed:
+        assert auth_model
+        assert set(auth_model) == {"name", "admin", "auth_state"}
+        assert auth_model["admin"] == expect_admin
+        auth_state = auth_model["auth_state"]
+        assert "access_token" in auth_state
+        user_info = auth_state[authenticator.user_auth_state_key]
+        assert auth_model["name"] == user_info[authenticator.username_claim]
+        if authenticator.allowed_google_groups or authenticator.admin_google_groups:
+            assert user_info["google_groups"] == {"group1"}
+    else:
+        assert auth_model == None
 
 
 async def test_hosted_domain(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain=['email.com'])
-    handler = google_client.handler_for_user(user_model('fake@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
-    ):
-        user_info = await authenticator.get_authenticated_user(handler, None)
-        name = user_info['name']
-        assert name == 'fake@email.com'
+    c = Config()
+    c.GoogleOAuthenticator.hosted_domain = ["In-Hosted-Domain.com"]
+    c.GoogleOAuthenticator.allow_all = True
+    authenticator = GoogleOAuthenticator(config=c)
 
-        handler = google_client.handler_for_user(user_model('notallowed@notemail.com'))
-        with raises(HTTPError) as exc:
-            name = await authenticator.get_authenticated_user(handler, None)
-        assert exc.value.status_code == 403
+    handled_user_model = user_model("user1@iN-hosteD-domaiN.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
 
-
-async def test_multiple_hosted_domain(google_client):
-    authenticator = GoogleOAuthenticator(hosted_domain=['email.com', 'mycollege.edu'])
-    handler = google_client.handler_for_user(user_model('fake@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
-    ):
-        user_info = await authenticator.get_authenticated_user(handler, None)
-        name = user_info['name']
-        assert name == 'fake@email.com'
-
-        handler = google_client.handler_for_user(user_model('fake2@mycollege.edu'))
-        user_info = await authenticator.get_authenticated_user(handler, None)
-        name = user_info['name']
-        assert name == 'fake2@mycollege.edu'
-
-        handler = google_client.handler_for_user(user_model('notallowed@notemail.com'))
-        with raises(HTTPError) as exc:
-            name = await authenticator.get_authenticated_user(handler, None)
-        assert exc.value.status_code == 403
+    handled_user_model = user_model("user1@not-in-hosted-domain.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    with raises(HTTPError) as exc:
+        await authenticator.get_authenticated_user(handler, None)
+    assert exc.value.status_code == 403
 
 
-async def test_admin_google_groups(google_client):
-    authenticator = GoogleOAuthenticator(
-        hosted_domain=['email.com', 'mycollege.edu'],
-        admin_google_groups={'email.com': ['fakeadmingroup']},
-        allowed_google_groups={'email.com': ['fakegroup']},
-    )
-    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
-    ):
-        admin_user_info = await authenticator.get_authenticated_user(handler, None)
-        # Make sure the user authenticated successfully
-        assert admin_user_info
-        # Assert that the user is an admin
-        assert admin_user_info.get('admin', None) == True
-    handler = google_client.handler_for_user(user_model('fakealloweduser@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakegroup'},
-    ):
-        allowed_user_info = await authenticator.get_authenticated_user(handler, None)
-        allowed_user_groups = allowed_user_info['auth_state']['google_user'][
-            'google_groups'
-        ]
-        admin_user = allowed_user_info['admin']
-        assert 'fakegroup' in allowed_user_groups
-        assert admin_user is False
-    handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakenonallowedgroup'},
-    ):
-        allowed_user_groups = await authenticator.get_authenticated_user(handler, None)
-        assert allowed_user_groups is None
+@mark.parametrize(
+    "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
+    [
+        (
+            "google_group_whitelist",
+            {"google_group_whitelist": {"example.com": {"dummy"}}},
+            {"allowed_google_groups": {"example.com": {"dummy"}}},
+            logging.WARNING,
+            "GoogleOAuthenticator.google_group_whitelist is deprecated in GoogleOAuthenticator 0.12.0, use GoogleOAuthenticator.allowed_google_groups instead",
+        ),
+    ],
+)
+async def test_deprecated_config(
+    caplog,
+    test_variation_id,
+    class_config,
+    expect_config,
+    expect_loglevel,
+    expect_message,
+):
+    """
+    Tests that a warning is emitted when using a deprecated config and that
+    configuring the old config ends up configuring the new config.
+    """
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.GoogleOAuthenticator = Config(class_config)
 
+    test_logger = logging.getLogger('testlog')
+    if expect_loglevel == logging.ERROR:
+        with raises(ValueError, match=expect_message):
+            GoogleOAuthenticator(config=c, log=test_logger)
+    else:
+        authenticator = GoogleOAuthenticator(config=c, log=test_logger)
+        for key, value in expect_config.items():
+            assert getattr(authenticator, key) == value
 
-async def test_admin_user_but_no_admin_google_groups(google_client):
-    authenticator = GoogleOAuthenticator(
-        hosted_domain=['email.com', 'mycollege.edu'],
-        allowed_google_groups={'email.com': ['fakegroup']},
-        admin_users=['fakeadmin@email.com'],
-    )
-    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakegroup'},
-    ):
-        admin_user_info = await authenticator.get_authenticated_user(handler, data=None)
-        # Make sure the user authenticated successfully
-        assert admin_user_info
-        # Assert that the user is an admin
-        assert admin_user_info.get('admin', None) == True
+    captured_log_tuples = caplog.record_tuples
+    print(captured_log_tuples)
 
-
-async def test_allowed_google_groups(google_client):
-    authenticator = GoogleOAuthenticator(
-        hosted_domain=['email.com', 'mycollege.edu'],
-        allowed_google_groups={'email.com': ['fakegroup'], ',mycollege.edu': []},
-    )
-    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
-    ):
-        admin_user_info = await authenticator.get_authenticated_user(handler, None)
-        assert admin_user_info is None
-    handler = google_client.handler_for_user(user_model('fakealloweduser@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakegroup'},
-    ):
-        allowed_user_info = await authenticator.get_authenticated_user(handler, None)
-        allowed_user_groups = allowed_user_info['auth_state']['google_user'][
-            'google_groups'
-        ]
-        admin_field = allowed_user_info.get('admin')
-        assert 'fakegroup' in allowed_user_groups
-        assert admin_field is None
-    handler = google_client.handler_for_user(user_model('fakenonalloweduser@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakenonallowedgroup'},
-    ):
-        allowed_user_groups = await authenticator.get_authenticated_user(handler, None)
-        assert allowed_user_groups is None
-    handler = google_client.handler_for_user(user_model('fake@mycollege.edu'))
-    with mock.patch.object(
-        authenticator, '_fetch_user_groups', lambda *args: {'fakegroup'}
-    ):
-        allowed_user_groups = await authenticator.get_authenticated_user(handler, None)
-        assert allowed_user_groups is None
-
-
-async def test_admin_only_google_groups(google_client):
-    authenticator = GoogleOAuthenticator(
-        hosted_domain=['email.com', 'mycollege.edu'],
-        admin_google_groups={'email.com': ['fakeadmingroup']},
-    )
-    handler = google_client.handler_for_user(user_model('fakeadmin@email.com'))
-    with mock.patch.object(
-        authenticator,
-        '_fetch_user_groups',
-        lambda *args: {'anotherone', 'fakeadmingroup'},
-    ):
-        admin_user_info = await authenticator.get_authenticated_user(handler, None)
-        admin_user = admin_user_info['admin']
-        assert admin_user is True
-
-
-def test_deprecated_config(caplog):
-    cfg = Config()
-    cfg.GoogleOAuthenticator.google_group_whitelist = {'email.com': ['group']}
-    cfg.Authenticator.whitelist = {"user1"}
-
-    log = logging.getLogger("testlog")
-    authenticator = GoogleOAuthenticator(config=cfg, log=log)
-    assert (
-        log.name,
-        logging.WARNING,
-        'GoogleOAuthenticator.google_group_whitelist is deprecated in GoogleOAuthenticator 0.12.0, use '
-        'GoogleOAuthenticator.allowed_google_groups instead',
-    ) in caplog.record_tuples
-
-    assert authenticator.allowed_google_groups == {'email.com': {'group'}}
-    assert authenticator.allowed_users == {"user1"}
+    expected_log_tuple = (test_logger.name, expect_loglevel, expect_message)
+    assert expected_log_tuple in captured_log_tuples
