@@ -90,15 +90,9 @@ class GenericOAuthenticator(OAuthenticator):
         callable function.
         """
         if callable(self.username_claim):
-            username = self.username_claim(user_info)
+            return self.username_claim(user_info)
         else:
-            username = user_info.get(self.username_claim, None)
-            if not username:
-                message = (f"No {self.username_claim} found in {user_info}",)
-                self.log.error(message)
-                raise ValueError(message)
-
-        return username
+            return super().user_info_to_username(user_info)
 
     def get_user_groups(self, user_info):
         """
