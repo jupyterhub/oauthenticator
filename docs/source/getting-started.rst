@@ -88,7 +88,7 @@ Use a custom 403 error
 
 1. Custom message
    When a user successfully logins at an OAuth provider but is forbidden access based on the config,
-   e.g. the ``allowed_users`` list or the ``blocked_users`` list, it is whoen the following message
+   e.g. the ``allowed_users`` list or the ``blocked_users`` list, it is when the following message
    by default:
 
    *"Looks like you have not been added to the list of allowed users for this hub. Please contact the hub administrator."*
