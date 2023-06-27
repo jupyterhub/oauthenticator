@@ -305,7 +305,7 @@ class CILogonOAuthenticator(OAuthenticator):
         if not self.allowed_idps.get(user_idp):
             message = f"Login with identity provider {user_idp} is not pre-configured"
             self.log.error(message)
-            raise web.HTTPError(500, message)
+            raise web.HTTPError(403, message)
 
         unprocessed_username = self._user_info_to_unprocessed_username(user_info)
         username = self._get_processed_username(unprocessed_username, user_info)
