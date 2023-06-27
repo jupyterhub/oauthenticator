@@ -314,7 +314,8 @@ class CILogonOAuthenticator(OAuthenticator):
 
     def _user_info_to_unprocessed_username(self, user_info):
         """
-        Returns a username from
+        Returns a username from user_info without also applying the "action"
+        specified under "username_derivation" for the associated idp.
         """
         user_idp = user_info["idp"]
         username_derivation = self.allowed_idps[user_idp]["username_derivation"]
@@ -330,8 +331,8 @@ class CILogonOAuthenticator(OAuthenticator):
 
     def _get_processed_username(self, username, user_info):
         """
-        This method optionally adjusts a username from user_info based on the
-        "action" specified under "username_derivation" for the associated idp.
+        Optionally adjusts a username from user_info based on the "action"
+        specified under "username_derivation" for the associated idp.
         """
         user_idp = user_info["idp"]
         username_derivation = self.allowed_idps[user_idp]["username_derivation"]

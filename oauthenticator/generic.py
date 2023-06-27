@@ -84,6 +84,11 @@ class GenericOAuthenticator(OAuthenticator):
         )
 
     def user_info_to_username(self, user_info):
+        """
+        Overrides OAuthenticator.user_info_to_username to support the
+        GenericOAuthenticator unique feature of allowing username_claim to be a
+        callable function.
+        """
         if callable(self.username_claim):
             username = self.username_claim(user_info)
         else:
