@@ -80,6 +80,7 @@ class MWOAuthenticator(OAuthenticator):
     login_service = 'MediaWiki'
     login_handler = MWLoginHandler
     callback_handler = MWCallbackHandler
+    user_auth_state_key = "MEDIAWIKI_USER_IDENTITY"
 
     mw_index_url = Unicode(
         os.environ.get('MW_INDEX_URL', 'https://meta.wikimedia.org/w/index.php'),
@@ -102,6 +103,7 @@ class MWOAuthenticator(OAuthenticator):
         """
         Override normalize_username to avoid lowercasing usernames
         """
+        username = username.replace(' ', '_')
         return username
 
     def _executor_default(self):
@@ -137,16 +139,11 @@ class MWOAuthenticator(OAuthenticator):
             self.executor.submit(handshaker.identify, token_info["access_token"])
         )
 
-    async def update_auth_model(self, auth_model):
-        auth_model['name'] = auth_model['name'].replace(' ', '_')
-        return auth_model
-
     def build_auth_state_dict(self, token_info, user_info):
-        username = self.user_info_to_username(user_info)
         # this shouldn't be necessary anymore,
         # but keep for backward-compatibility
         return {
             'ACCESS_TOKEN_KEY': token_info["access_token"].key,
             'ACCESS_TOKEN_SECRET': token_info["access_token"].secret,
-            'MEDIAWIKI_USER_IDENTITY': user_info,
+            self.user_auth_state_key: user_info,
         }

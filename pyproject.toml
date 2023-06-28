@@ -26,16 +26,62 @@ skip-string-normalization = true
 # target-version should be all supported versions, see
 # https://github.com/psf/black/issues/751#issuecomment-473066811
 target_version = [
-    "py37",
     "py38",
     "py39",
     "py310",
     "py311",
 ]
 
+
+# pytest is used for running Python based tests
+#
+# ref: https://docs.pytest.org/en/stable/
+#
 [tool.pytest.ini_options]
-addopts = "--verbose --color=yes --durations=10"
+addopts = "--verbose --color=yes --durations=10 --cov=oauthenticator"
 asyncio_mode = "auto"
 testpaths = [
     "oauthenticator/tests"
 ]
+
+
+# pytest-cov / coverage is used to measure code coverage of tests
+#
+# ref: https://coverage.readthedocs.io/en/stable/config.html
+#
+[tool.coverage.run]
+omit = [
+  "oauthenticator/tests/**",
+]
+
+
+# tbump is used to simplify and standardize the release process when updating
+# the version, making a git commit and tag, and pushing changes.
+#
+# ref: https://github.com/your-tools/tbump#readme
+#
+[tool.tbump]
+github_url = "https://github.com/jupyterhub/oauthenticator"
+
+[tool.tbump.version]
+current = "15.1.1.dev"
+regex = '''
+    (?P<major>\d+)
+    \.
+    (?P<minor>\d+)
+    \.
+    (?P<patch>\d+)
+    (?P<pre>((a|b|rc)\d+)|)
+    \.?
+    (?P<dev>(?<=\.)dev\d*|)
+'''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "{new_version}"
+
+[[tool.tbump.file]]
+src = "setup.py"
+
+[[tool.tbump.file]]
+src = "oauthenticator/_version.py"

@@ -253,5 +253,5 @@ async def no_code_test(authenticator):
     handler = Mock(spec=web.RequestHandler)
     handler.get_argument = Mock(return_value=None)
     with pytest.raises(web.HTTPError) as exc:
-        name = await authenticator.authenticate(handler)
+        await authenticator.get_authenticated_user(handler, None)
     assert exc.value.status_code == 400

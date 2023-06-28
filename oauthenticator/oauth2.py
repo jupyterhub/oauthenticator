@@ -255,6 +255,16 @@ class OAuthenticator(Authenticator):
     # To be overridden by each oauthenticator
     user_auth_state_key = "oauth_user"
 
+    allow_all = Bool(
+        False,
+        config=True,
+        help="""
+        Allow all authenticated users to login.
+
+        .. versionadded:: 16.0
+        """,
+    )
+
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
     )
@@ -284,11 +294,14 @@ class OAuthenticator(Authenticator):
     username_claim = Unicode(
         "username",
         config=True,
-        help="""Field in userdata reply to use for username
-        The field in the userdata response from which to get the JupyterHub username.
+        help="""
+        Field in userdata reply to use for username The field in the userdata
+        response from which to get the JupyterHub username.
+
         Examples include: email, username, nickname
 
-        What keys are available will depend on the scopes requested and the authenticator used.
+        What keys are available will depend on the scopes requested and the
+        authenticator used.
         """,
     )
 
@@ -555,7 +568,6 @@ class OAuthenticator(Authenticator):
     def user_info_to_username(self, user_info):
         """
         Gets the self.username_claim key's value from the user_info dictionary.
-        This is equivalent to the JupyterHub username.
 
         Should be overridden by the authenticators for which the hub username cannot
         be extracted this way and needs extra processing.
@@ -733,44 +745,45 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
-    async def update_auth_model(self, auth_model, **kwargs):
+    async def update_auth_model(self, auth_model):
         """
-        Updates `auth_model` dict if any fields have changed or additional information is available
-        or returns the unchanged `auth_model`.
+        Updates and returns the `auth_model` dict.
 
-        Returns the model unchanged by default.
+        Should be overridden to collect information required for check_allowed.
 
-        Should be overridden to take into account changes like group/admin membership.
-
-        Args: auth_model - the auth model dictionary  dict instead, containing:
-            - the `name` key holding the username
-            - the `auth_state` key, the dictionary of of auth state
+        Args: auth_model - the auth model dictionary, containing:
+            - `name`: the normalized username
+            - `admin`: the admin status (True/False/None), where None means it
+                should be unchanged.
+            - `auth_state`: the dictionary of of auth state
                 returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
         return auth_model
 
-    async def user_is_authorized(self, auth_model):
-        """
-        Checks if the user that is authenticating should be authorized or not and False otherwise.
-        Should be overridden with any relevant logic specific to each oauthenticator.
-
-        Returns True by default.
-
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
-        """
-        return True
-
     async def authenticate(self, handler, data=None, **kwargs):
+        """
+        A JupyterHub Authenticator's authenticate method's job is:
+
+        - return None if the user isn't successfully authenticated
+        - return a dictionary if authentication is successful with name, admin
+          (optional), and auth_state (optional)
+
+        Subclasses should not override this method.
+
+        ref: https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authenticator-authenticate-method
+        ref: https://github.com/jupyterhub/jupyterhub/blob/4.0.0/jupyterhub/auth.py#L581-L611
+        """
         # build the parameters to be used in the request exchanging the oauth code for the access token
         access_token_params = self.build_access_tokens_request_params(handler, data)
         # exchange the oauth code for an access token and get the JSON with info about it
         token_info = await self.get_token_info(handler, access_token_params)
         # use the access_token to get userdata info
         user_info = await self.token_to_user(token_info)
-        # extract the username out of the user_info dict
+        # extract the username out of the user_info dict and normalize it
         username = self.user_info_to_username(user_info)
+        username = self.normalize_username(username)
 
         # check if there any refresh_token in the token_info dict
         refresh_token = token_info.get("refresh_token", None)
@@ -782,19 +795,50 @@ class OAuthenticator(Authenticator):
             if refresh_token:
                 token_info["refresh_token"] = refresh_token
 
-        # build the auth model to be persisted if authentication goes right
+        # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
+            "admin": True if username in self.admin_users else None,
             "auth_state": self.build_auth_state_dict(token_info, user_info),
         }
 
-        # check if the username that's authenticating should be authorized
-        authorized = await self.user_is_authorized(auth_model)
-        if not authorized:
-            return None
+        # update the auth_model with info to later authorize the user in
+        # check_allowed, such as admin status and group memberships
+        return await self.update_auth_model(auth_model)
 
-        # update the auth model with any info if available
-        return await self.update_auth_model(auth_model, **kwargs)
+    async def check_allowed(self, username, auth_model):
+        """
+        Returns True for users allowed to be authorized
+
+        Overrides Authenticator.check_allowed that is called from
+        `Authenticator.get_authenticated_user` after
+        `OAuthenticator.authenticate` has been called, and therefore also after
+        `update_auth_model` has been called.
+
+        Subclasses with additional config to allow a user should override this
+        method and return True when this method returns True or if a user is
+        allowed via the additional config.
+        """
+        # A workaround for JupyterHub<=4.0.1, described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
+
+        if self.allow_all:
+            return True
+
+        # allow users with admin status set to True via admin_users config or
+        # update_auth_model override
+        if auth_model["admin"]:
+            return True
+
+        # allow users in allowed_users, note that allowed_users is appended
+        # automatically with existing users if it was configured truthy
+        if username in self.allowed_users:
+            return True
+
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     _deprecated_oauth_aliases = {}
 

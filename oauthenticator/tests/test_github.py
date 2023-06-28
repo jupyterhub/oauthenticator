@@ -5,7 +5,7 @@ import re
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
@@ -36,21 +36,66 @@ def github_client(client):
     return client
 
 
-async def test_github(github_client):
-    authenticator = GitHubOAuthenticator()
-    handler = github_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
-    assert 'access_token' in auth_state
-    assert 'github_user' in auth_state
-    assert auth_state["github_user"] == {
-        'email': 'dinosaurs@space',
-        'id': 5,
-        'login': name,
-        'name': 'Hoban Washburn',
-    }
+@mark.parametrize(
+    "test_variation_id,class_config,expect_allowed,expect_admin",
+    [
+        # no allow config tested
+        ("00", {}, False, None),
+        # allow config, individually tested
+        ("01", {"allow_all": True}, True, None),
+        ("02", {"allowed_users": {"user1"}}, True, None),
+        ("03", {"allowed_users": {"not-test-user"}}, False, None),
+        ("04", {"admin_users": {"user1"}}, True, True),
+        ("05", {"admin_users": {"not-test-user"}}, False, None),
+        # allow config, some combinations of two tested
+        (
+            "10",
+            {
+                "allow_all": False,
+                "allowed_users": {"not-test-user"},
+            },
+            False,
+            None,
+        ),
+        (
+            "11",
+            {
+                "admin_users": {"user1"},
+                "allowed_users": {"not-test-user"},
+            },
+            True,
+            True,
+        ),
+    ],
+)
+async def test_github(
+    github_client,
+    test_variation_id,
+    class_config,
+    expect_allowed,
+    expect_admin,
+):
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.GitHubOAuthenticator = Config(class_config)
+    c.GitHubOAuthenticator.username_claim = "login"
+    authenticator = GitHubOAuthenticator(config=c)
+
+    handled_user_model = user_model("user1")
+    handler = github_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    if expect_allowed:
+        assert auth_model
+        assert set(auth_model) == {"name", "admin", "auth_state"}
+        assert auth_model["admin"] == expect_admin
+        auth_state = auth_model["auth_state"]
+        assert "access_token" in auth_state
+        user_info = auth_state[authenticator.user_auth_state_key]
+        assert user_info == handled_user_model
+        assert auth_model["name"] == user_info[authenticator.username_claim]
+    else:
+        assert auth_model == None
 
 
 def make_link_header(urlinfo, page):
@@ -60,17 +105,18 @@ def make_link_header(urlinfo, page):
 
 
 async def test_allowed_org_membership(github_client):
-    client = github_client
     authenticator = GitHubOAuthenticator()
 
     ## Mock Github API
 
-    orgs = {
-        'red': ['grif', 'simmons', 'donut', 'sarge', 'lopez'],
-        'blue': ['tucker', 'caboose', 'burns', 'sheila', 'texas'],
+    allowed_org_members = {
+        "org1": ["user1"],
     }
-
-    org_teams = {'blue': {'alpha': ['tucker', 'caboose', 'burns']}}
+    allowed_org_team_members = {
+        "org1": {
+            "team1": ["user1"],
+        },
+    }
 
     member_regex = re.compile(r'/orgs/(.*)/members')
 
@@ -78,11 +124,11 @@ async def test_allowed_org_membership(github_client):
         urlinfo = urlparse(request.url)
         org = member_regex.match(urlinfo.path).group(1)
 
-        if org not in orgs:
+        if org not in allowed_org_members:
             return HTTPResponse(request, 404)
 
         if not paginate:
-            return [user_model(m) for m in orgs[org]]
+            return [user_model(m) for m in allowed_org_members[org]]
         else:
             page = parse_qs(urlinfo.query).get('page', ['1'])
             page = int(page[0])
@@ -91,16 +137,16 @@ async def test_allowed_org_membership(github_client):
             )
 
     def org_members_paginated(org, page, urlinfo, response):
-        if page < len(orgs[org]):
+        if page < len(allowed_org_members[org]):
             headers = make_link_header(urlinfo, page + 1)
-        elif page == len(orgs[org]):
+        elif page == len(allowed_org_members[org]):
             headers = {}
         else:
             return response(400)
 
         headers.update({'Content-Type': 'application/json'})
 
-        ret = [user_model(orgs[org][page - 1])]
+        ret = [user_model(allowed_org_members[org][page - 1])]
 
         return response(
             200,
@@ -116,10 +162,10 @@ async def test_allowed_org_membership(github_client):
         org = urlmatch.group(1)
         username = urlmatch.group(2)
         print(f"Request org = {org}, username = {username}")
-        if org not in orgs:
+        if org not in allowed_org_members:
             print(f"Org not found: org = {org}")
             return HTTPResponse(request, 404)
-        if username not in orgs[org]:
+        if username not in allowed_org_members[org]:
             print(f"Member not found: org = {org}, username = {username}")
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
@@ -133,13 +179,13 @@ async def test_allowed_org_membership(github_client):
         team = urlmatch.group(2)
         username = urlmatch.group(3)
         print(f"Request org = {org}, team = {team} username = {username}")
-        if org not in orgs:
+        if org not in allowed_org_members:
             print(f"Org not found: org = {org}")
             return HTTPResponse(request, 404)
-        if team not in org_teams[org]:
+        if team not in allowed_org_team_members[org]:
             print(f"Team not found in org: team = {team}, org = {org}")
             return HTTPResponse(request, 404)
-        if username not in org_teams[org][team]:
+        if username not in allowed_org_team_members[org][team]:
             print(
                 f"Member not found: org = {org}, team = {team}, username = {username}"
             )
@@ -148,82 +194,82 @@ async def test_allowed_org_membership(github_client):
 
     ## Perform tests
 
+    client_hosts = github_client.hosts['api.github.com']
+    client_hosts.append((team_membership_regex, team_membership))
+    client_hosts.append((org_membership_regex, org_membership))
+
+    # Run tests twice, once with paginate and once without
     for paginate in (False, True):
-        client_hosts = client.hosts['api.github.com']
-        client_hosts.append((team_membership_regex, team_membership))
-        client_hosts.append((org_membership_regex, org_membership))
         client_hosts.append((member_regex, functools.partial(org_members, paginate)))
 
-        authenticator.allowed_organizations = ['blue']
+        # test org membership
+        authenticator.allowed_organizations = ["org1"]
 
-        handler = client.handler_for_user(user_model('caboose'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'caboose'
+        handled_user_model = user_model("user1")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model
 
-        handler = client.handler_for_user(user_model('donut'))
-        user = await authenticator.authenticate(handler)
-        assert user is None
+        handled_user_model = user_model("user-not-in-org")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
-        # reverse it, just to be safe
-        authenticator.allowed_organizations = ['red']
+        # test org team membership
+        authenticator.allowed_organizations = ["org1:team1"]
 
-        handler = client.handler_for_user(user_model('caboose'))
-        user = await authenticator.authenticate(handler)
-        assert user is None
+        handled_user_model = user_model("user1")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model
 
-        handler = client.handler_for_user(user_model('donut'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'donut'
+        handled_user_model = user_model("user-not-in-org-team")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
 
-        # test team membership
-        authenticator.allowed_organizations = ['blue:alpha', 'red']
-
-        handler = client.handler_for_user(user_model('tucker'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'tucker'
-
-        handler = client.handler_for_user(user_model('grif'))
-        user = await authenticator.authenticate(handler)
-        assert user['name'] == 'grif'
-
-        handler = client.handler_for_user(user_model('texas'))
-        user = await authenticator.authenticate(handler)
-        assert user is None
-
-        client_hosts.pop()
         client_hosts.pop()
 
 
 @mark.parametrize(
-    "org, username, expected",
+    "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
     [
-        ("blue", "texas", "https://api.github.com/orgs/blue/members/texas"),
         (
-            "blue:alpha",
-            "tucker",
-            "https://api.github.com/orgs/blue/teams/alpha/members/tucker",
+            "github_organization_whitelist",
+            {"github_organization_whitelist": {"dummy"}},
+            {"allowed_organizations": {"dummy"}},
+            logging.WARNING,
+            "GitHubOAuthenticator.github_organization_whitelist is deprecated in GitHubOAuthenticator 0.12.0, use GitHubOAuthenticator.allowed_organizations instead",
         ),
-        ("red", "grif", "https://api.github.com/orgs/red/members/grif"),
     ],
 )
-async def test_build_check_membership_url(org, username, expected):
-    output = GitHubOAuthenticator()._build_check_membership_url(org, username)
-    assert output == expected
+async def test_deprecated_config(
+    caplog,
+    test_variation_id,
+    class_config,
+    expect_config,
+    expect_loglevel,
+    expect_message,
+):
+    """
+    Tests that a warning is emitted when using a deprecated config and that
+    configuring the old config ends up configuring the new config.
+    """
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.GitHubOAuthenticator = Config(class_config)
 
+    test_logger = logging.getLogger('testlog')
+    if expect_loglevel == logging.ERROR:
+        with raises(ValueError, match=expect_message):
+            GitHubOAuthenticator(config=c, log=test_logger)
+    else:
+        authenticator = GitHubOAuthenticator(config=c, log=test_logger)
+        for key, value in expect_config.items():
+            assert getattr(authenticator, key) == value
 
-async def test_deprecated_config(caplog):
-    cfg = Config()
-    cfg.GitHubOAuthenticator.github_organization_whitelist = ["jupy"]
-    cfg.Authenticator.whitelist = {"user1"}
+    captured_log_tuples = caplog.record_tuples
+    print(captured_log_tuples)
 
-    log = logging.getLogger("testlog")
-    authenticator = GitHubOAuthenticator(config=cfg, log=log)
-    assert (
-        log.name,
-        logging.WARNING,
-        'GitHubOAuthenticator.github_organization_whitelist is deprecated in GitHubOAuthenticator 0.12.0, use '
-        'GitHubOAuthenticator.allowed_organizations instead',
-    ) in caplog.record_tuples
-
-    assert authenticator.allowed_organizations == {"jupy"}
-    assert authenticator.allowed_users == {"user1"}
+    expected_log_tuple = (test_logger.name, expect_loglevel, expect_message)
+    assert expected_log_tuple in captured_log_tuples

@@ -7,7 +7,6 @@ from urllib.parse import quote
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.escape import url_escape
-from tornado.httpclient import HTTPRequest
 from traitlets import CUnicode, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -113,46 +112,40 @@ class GitLabOAuthenticator(OAuthenticator):
     )
 
     gitlab_version = None
+    member_api_variant = None
 
-    async def user_is_authorized(self, auth_model):
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
-
+    async def _set_gitlab_version(self, access_token):
         # memoize gitlab version for class lifetime
         if self.gitlab_version is None:
             self.gitlab_version = await self._get_gitlab_version(access_token)
             self.member_api_variant = 'all/' if self.gitlab_version >= [12, 4] else ''
 
-        # Check if user is a member of any allowed groups or projects.
-        # These checks are performed here, as it requires `access_token`.
-        user_in_group = user_in_project = False
-        is_group_specified = is_project_id_specified = False
+    async def check_allowed(self, username, auth_model):
+        """
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_google_groups` or `allowed_project_ids`.
+        """
+        if await super().check_allowed(username, auth_model):
+            return True
+
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
 
         if self.allowed_gitlab_groups:
-            is_group_specified = True
             user_in_group = await self._check_membership_allowed_groups(
                 user_id, access_token
             )
+            if user_in_group:
+                return True
 
-        # We skip project_id check if user is in allowed group.
-        if self.allowed_project_ids and not user_in_group:
-            is_project_id_specified = True
+        if self.allowed_project_ids:
             user_in_project = await self._check_membership_allowed_project_ids(
                 user_id, access_token
             )
+            if user_in_project:
+                return True
 
-        no_config_specified = not (is_group_specified or is_project_id_specified)
-
-        if (
-            (is_group_specified and user_in_group)
-            or (is_project_id_specified and user_in_project)
-            or no_config_specified
-        ):
-            return True
-
-        self.log.warning(
-            f"{auth_model['name']} not in group or project allowed list",
-        )
+        # users should be explicitly allowed via config, otherwise they aren't
         return False
 
     async def _get_gitlab_version(self, access_token):
@@ -169,6 +162,8 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _check_membership_allowed_groups(self, user_id, access_token):
         headers = _api_headers(access_token)
+        await self._set_gitlab_version(access_token)
+
         # Check if user is a member of any group in the allowed list
         for group in map(url_escape, self.allowed_gitlab_groups):
             url = "%s/groups/%s/members/%s%d" % (
@@ -176,9 +171,6 @@ class GitLabOAuthenticator(OAuthenticator):
                 quote(group, safe=''),
                 self.member_api_variant,
                 user_id,
-            )
-            req = HTTPRequest(
-                url,
             )
             resp = await self.httpfetch(
                 url,
@@ -194,6 +186,8 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def _check_membership_allowed_project_ids(self, user_id, access_token):
         headers = _api_headers(access_token)
+        await self._set_gitlab_version(access_token)
+
         # Check if user has developer access to any project in the allowed list
         for project in self.allowed_project_ids:
             url = "%s/projects/%s/members/%s%d" % (

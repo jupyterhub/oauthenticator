@@ -11,11 +11,11 @@
 repos:
   # Autoformat: Python code, syntax patterns are modernized
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.2
+    rev: v3.4.0
     hooks:
       - id: pyupgrade
         args:
-          - --py37-plus
+          - --py38-plus
 
   # Autoformat: Python code
   - repo: https://github.com/PyCQA/autoflake

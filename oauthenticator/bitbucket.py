@@ -40,37 +40,49 @@ class BitbucketOAuthenticator(OAuthenticator):
         config=True, help="Automatically allow members of selected teams"
     )
 
-    async def user_is_authorized(self, auth_model):
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        token_type = auth_model["auth_state"]["token_response"]["token_type"]
-        username = auth_model["name"]
-
-        # Check if user is a member of any allowed teams.
-        # This check is performed here, as the check requires `access_token`.
-        if self.allowed_teams:
-            user_in_team = await self._check_membership_allowed_teams(
-                username, access_token, token_type
-            )
-            if not user_in_team:
-                self.log.warning(f"{username} not in team allowed list of users")
-                return False
-
-        return True
-
-    async def _check_membership_allowed_teams(self, username, access_token, token_type):
+    async def _fetch_user_teams(self, access_token, token_type):
+        """
+        Get user's team memberships via bitbucket's API.
+        """
         headers = self.build_userdata_request_headers(access_token, token_type)
-        # We verify the team membership by calling teams endpoint.
         next_page = url_concat(
             "https://api.bitbucket.org/2.0/workspaces", {'role': 'member'}
         )
+
+        user_teams = set()
         while next_page:
             resp_json = await self.httpfetch(next_page, method="GET", headers=headers)
             next_page = resp_json.get('next', None)
+            user_teams |= {entry["name"] for entry in resp_json["values"]}
+        return user_teams
 
-            user_teams = {entry["name"] for entry in resp_json["values"]}
-            # check if any of the organizations seen thus far are in the allowed list
-            if len(self.allowed_teams & user_teams) > 0:
+    async def update_auth_model(self, auth_model):
+        """
+        Fetch and store `user_teams` in auth state if `allowed_teams` is
+        configured.
+        """
+        if self.allowed_teams:
+            access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            token_type = auth_model["auth_state"]["token_response"]["token_type"]
+            user_teams = await self._fetch_user_teams(access_token, token_type)
+            auth_model["auth_state"]["user_teams"] = user_teams
+
+        return auth_model
+
+    async def check_allowed(self, username, auth_model):
+        """
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_teams`.
+        """
+        if await super().check_allowed(username, auth_model):
+            return True
+
+        if self.allowed_teams:
+            user_teams = auth_model["auth_state"]["user_teams"]
+            if any(user_teams & self.allowed_teams):
                 return True
+
+        # users should be explicitly allowed via config, otherwise they aren't
         return False
 
 

@@ -6,6 +6,26 @@ command line for details.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- [All] Users are now authorized based on _either_ being part of
+  `Authenticator.admin_users`, `Authenticator.allowed_users`, an Authenticator
+  specific allowed team/group/organization, or declared in
+  `JupyterHub.load_roles` or `JupyterHub.load_groups`.
+- [Google] If `GoogleOAuthenticator.admin_google_groups` is configured, users
+  logging in not explicitly there or in `Authenticator.admin_users` will get
+  their admin status revoked.
+- [Generic, Google] `GenericOAuthenticator.allowed_groups`,
+  `GenericOAuthenticator.allowed_groups`
+  `GoogleOAuthenticator.allowed_google_groups`, and
+  `GoogleOAuthenticator.admin_google_groups` are now Set based configuration
+  instead of List based configuration. It is still possible to set these with
+  lists as as they are converted to sets automatically, but anyone reading and
+  adding entries must now use set logic and not list logic.
+- [Google] Authentication state's `google_groups` is now a set, not a list.
+- [CILogon] `allowed_idps` is now required config, and `shown_idps`,
+  `username_claim`, `additional_username_claims` must no longer be configured.
+
 (changelog:version-15)=
 
 ## 15.0

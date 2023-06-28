@@ -13,10 +13,6 @@ from .oauth2 import OAuthenticator
 
 
 class GitHubOAuthenticator(OAuthenticator):
-    # see github_scopes.md for details about scope config
-    # set scopes via config, e.g.
-    # c.GitHubOAuthenticator.scope = ['read:org']
-
     _deprecated_oauth_aliases = {
         "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
         **OAuthenticator._deprecated_oauth_aliases,
@@ -106,7 +102,14 @@ class GitHubOAuthenticator(OAuthenticator):
     )
 
     allowed_organizations = Set(
-        config=True, help="Automatically allow members of selected organizations"
+        help="""
+        Allow members of organizations or organizations' teams by specifying
+        strings like `org-a` and/or `org-b:team-1`.
+
+        Requires `read:org` to be set in `scope` to not just allow based on
+        public membership.
+        """,
+        config=True,
     )
 
     populate_teams_in_auth_state = Bool(
@@ -128,27 +131,39 @@ class GitHubOAuthenticator(OAuthenticator):
         config=True,
     )
 
-    async def user_is_authorized(self, auth_model):
-        # Check if user is a member of any allowed organizations.
-        # This check is performed here, as it requires `access_token`.
-        access_token = auth_model["auth_state"]["token_response"]["access_token"]
-        token_type = auth_model["auth_state"]["token_response"]["token_type"]
-        if self.allowed_organizations:
-            for org in self.allowed_organizations:
-                user_in_org = await self._check_membership_allowed_organizations(
-                    org, auth_model["name"], access_token, token_type
-                )
-                if user_in_org:
-                    break
-            else:  # User not found in member list for any organisation
-                self.log.warning(
-                    f"User {auth_model['name']} is not in allowed org list",
-                )
-                return False
+    async def check_allowed(self, username, auth_model):
+        """
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_organizations`.
+        """
+        if await super().check_allowed(username, auth_model):
+            return True
 
-        return True
+        if self.allowed_organizations:
+            access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            token_type = auth_model["auth_state"]["token_response"]["token_type"]
+            for org_team in self.allowed_organizations:
+                if await self._check_membership_allowed_organizations(
+                    org_team, username, access_token, token_type
+                ):
+                    return True
+            message = f"User {username} is not part of allowed_organizations"
+            self.log.warning(message)
+
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     async def update_auth_model(self, auth_model):
+        """
+        Fetch and store `email` in auth state if the user's only was: private,
+        not part of the initial response, and we was granted a scope to fetch
+        the private email.
+
+        Also fetch and store `teams` in auth state if
+        `populate_teams_in_auth_state` is configured.
+        """
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+
         # If a public email is not available, an extra API call has to be made
         # to a /user/emails using the access token to retrieve emails. The
         # scopes relevant for this are checked based on this documentation:
@@ -158,15 +173,12 @@ class GitHubOAuthenticator(OAuthenticator):
         # Note that the read:user scope does not imply the user:emails scope!
         access_token = auth_model["auth_state"]["token_response"]["access_token"]
         token_type = auth_model["auth_state"]["token_response"]["token_type"]
-        granted_scopes = []
-        if auth_model["auth_state"]["scope"]:
-            granted_scopes = auth_model["auth_state"]["scope"]
-
-        if not auth_model["auth_state"]["github_user"]["email"] and (
+        granted_scopes = auth_model["auth_state"].get("scope", [])
+        if not user_info["email"] and (
             "user" in granted_scopes or "user:email" in granted_scopes
         ):
             resp_json = await self.httpfetch(
-                self.github_api + "/user/emails",
+                f"{self.github_api}/user/emails",
                 "fetching user emails",
                 method="GET",
                 headers=self.build_userdata_request_headers(access_token, token_type),
@@ -174,25 +186,21 @@ class GitHubOAuthenticator(OAuthenticator):
             )
             for val in resp_json:
                 if val["primary"]:
-                    auth_model["auth_state"]["github_user"]["email"] = val["email"]
+                    user_info["email"] = val["email"]
                     break
 
         if self.populate_teams_in_auth_state:
             if "read:org" not in self.scope:
-                # This means the "read:org" scope was not set, and we can"t fetch teams
+                # This means the "read:org" scope was not set, and we can't
+                # fetch teams
                 self.log.error(
                     "read:org scope is required for populate_teams_in_auth_state functionality to work"
                 )
             else:
-                # Number of teams to request per page
-                per_page = 100
-
-                #  https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
-                url = self.github_api + f"/user/teams?per_page={per_page}"
-
-                auth_model["auth_state"]["teams"] = await self._paginated_fetch(
-                    url, access_token, token_type
-                )
+                # https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#list-teams-for-the-authenticated-user
+                url = f"{self.github_api}/user/teams?per_page=100"
+                user_teams = await self._paginated_fetch(url, access_token, token_type)
+                auth_model["auth_state"]["teams"] = user_teams
 
         return auth_model
 
@@ -243,21 +251,33 @@ class GitHubOAuthenticator(OAuthenticator):
         return content
 
     async def _check_membership_allowed_organizations(
-        self, org, username, access_token, token_type
+        self, org_team, username, access_token, token_type
     ):
-        headers = self.build_userdata_request_headers(access_token, token_type)
-        # Check membership of user `username` for organization `org` via api [check-membership](https://docs.github.com/en/rest/orgs/members#check-membership)
-        # With empty scope (even if authenticated by an org member), this
-        # will only await public org members.  You want 'read:org' in order
-        # to be able to iterate through all members. If you would only like to
-        # allow certain teams within an organisation, specify
-        # allowed_organisations = {org_name:team_name}
+        """
+        Checks if a user is part of an organization or organization's team via
+        GitHub's REST API. The `read:org` scope is required to not only check
+        for public org/team membership.
 
-        check_membership_url = self._build_check_membership_url(org, username)
+        The `org_team` parameter accepts values like `org-a` or `org-b:team-1`,
+        and will adjust to use a the relevant REST API to check either org or
+        team membership.
+        """
+        headers = self.build_userdata_request_headers(access_token, token_type)
+
+        if ":" in org_team:
+            # check if user is part of an organization's team
+            # https://docs.github.com/en/rest/teams/members?apiVersion=2022-11-28#get-team-member-legacy
+            org, team = org_team.split(":")
+            api_url = f"{self.github_api}/orgs/{org}/teams/{team}/members/{username}"
+        else:
+            # check if user is part of an organization
+            # https://docs.github.com/en/rest/orgs/members?apiVersion=2022-11-28#check-organization-membership-for-a-user
+            org = org_team
+            api_url = f"{self.github_api}/orgs/{org}/members/{username}"
 
         self.log.debug(f"Checking GitHub organization membership: {username} in {org}?")
         resp = await self.httpfetch(
-            check_membership_url,
+            api_url,
             parse_json=False,
             raise_error=False,
             method="GET",
@@ -265,7 +285,7 @@ class GitHubOAuthenticator(OAuthenticator):
             validate_cert=self.validate_server_cert,
         )
         if resp.code == 204:
-            self.log.info(f"Allowing {username} as member of {org}")
+            self.log.debug(f"Allowing {username} as member of {org_team}")
             return True
         else:
             try:
@@ -274,18 +294,10 @@ class GitHubOAuthenticator(OAuthenticator):
             except ValueError:
                 message = ''
             self.log.debug(
-                f"{username} does not appear to be a member of {org} (status={resp.code}): {message}",
+                f"{username} does not appear to be a member of {org_team} (status={resp.code}): {message}",
             )
         return False
 
-    def _build_check_membership_url(self, org: str, username: str) -> str:
-        if ":" in org:
-            org, team = org.split(":")
-            return f"{self.github_api}/orgs/{org}/teams/{team}/members/{username}"
-        else:
-            return f"{self.github_api}/orgs/{org}/members/{username}"
-
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
-
     """A version that mixes in local system user creation"""

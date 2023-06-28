@@ -86,41 +86,48 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return f"{self.openshift_rest_api_url}/apis/user.openshift.io/v1/users/~"
 
-    @staticmethod
-    def user_in_groups(user_groups: set, allowed_groups: set):
-        return any(user_groups.intersection(allowed_groups))
-
     def user_info_to_username(self, user_info):
+        """
+        Overrides OAuthenticator.user_info_to_username instead of setting
+        username_claim as the username is nested inside another dictionary.
+        """
         return user_info['metadata']['name']
 
     async def update_auth_model(self, auth_model):
         """
-        Use the group info stored on the OpenShift User object to determine if a user
-        is an admin and update the auth_model with this info.
+        Sets admin status to True or False if `admin_groups` is configured and
+        the user isn't part of `admin_users`. Note that leaving it at None makes
+        users able to retain an admin status while setting it to False makes it
+        be revoked.
         """
-        user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
+            return auth_model
 
         if self.admin_groups:
-            auth_model['admin'] = self.user_in_groups(user_groups, self.admin_groups)
+            # admin status should in this case be True or False, not None
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = set(user_info["groups"])
+            auth_model["admin"] = any(user_groups & self.admin_groups)
 
         return auth_model
 
-    async def user_is_authorized(self, auth_model):
+    async def check_allowed(self, username, auth_model):
         """
-        Use the group info stored on the OpenShift User object to determine if a user
-        is authorized to login.
+        Overrides OAuthenticator.check_allowed to also allow users part of
+        `allowed_groups`.
         """
-        user_groups = set(auth_model['auth_state']['openshift_user']['groups'])
-        username = auth_model['name']
+        if await super().check_allowed(username, auth_model):
+            return True
 
-        if self.allowed_groups or self.admin_groups:
-            msg = f"username:{username} User not in any of the allowed/admin groups"
-            if not self.user_in_groups(user_groups, self.allowed_groups):
-                if not self.user_in_groups(user_groups, self.admin_groups):
-                    self.log.warning(msg)
-                    return False
+        if self.allowed_groups:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = set(user_info["groups"])
+            if any(user_groups & self.allowed_groups):
+                return True
 
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):

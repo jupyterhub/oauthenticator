@@ -1,18 +1,11 @@
-from pytest import fixture
+import pytest
+from traitlets.config import Config
 
 from ..openshift import OpenShiftOAuthenticator
 from .mocks import setup_oauth_mock
 
 
-def user_model(username):
-    """Return a user model"""
-    return {
-        'metadata': {'name': username},
-        "groups": ["group1", "group2"],
-    }
-
-
-@fixture
+@pytest.fixture
 def openshift_client(client):
     setup_oauth_mock(
         client,
@@ -23,72 +16,149 @@ def openshift_client(client):
     return client
 
 
-async def test_openshift(openshift_client):
-    authenticator = OpenShiftOAuthenticator()
-    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
-    handler = openshift_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
-    assert 'access_token' in auth_state
-    assert 'openshift_user' in auth_state
+def user_model():
+    """Return a user model"""
+    return {
+        "metadata": {"name": "user1"},
+        "groups": ["group1"],
+    }
 
 
-async def test_openshift_allowed_groups(openshift_client):
-    authenticator = OpenShiftOAuthenticator()
-    authenticator.allowed_groups = {'group1'}
-    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
-    handler = openshift_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'name']
-    name = user_info['name']
-    assert name == 'wash'
-    auth_state = user_info['auth_state']
-    assert 'access_token' in auth_state
-    assert 'openshift_user' in auth_state
-    groups = auth_state['openshift_user']['groups']
-    assert 'group1' in groups
+@pytest.mark.parametrize(
+    "test_variation_id,class_config,expect_allowed,expect_admin",
+    [
+        # no allow config tested
+        ("00", {}, False, None),
+        # allow config, individually tested
+        ("01", {"allow_all": True}, True, None),
+        ("02", {"allowed_users": {"user1"}}, True, None),
+        ("03", {"allowed_users": {"not-test-user"}}, False, None),
+        ("04", {"admin_users": {"user1"}}, True, True),
+        ("05", {"admin_users": {"not-test-user"}}, False, None),
+        ("06", {"allowed_groups": {"group1"}}, True, None),
+        ("07", {"allowed_groups": {"test-user-not-in-group"}}, False, None),
+        ("08", {"admin_groups": {"group1"}}, True, True),
+        ("09", {"admin_groups": {"test-user-not-in-group"}}, False, False),
+        # allow config, some combinations of two tested
+        (
+            "10",
+            {
+                "allow_all": False,
+                "allowed_users": {"not-test-user"},
+            },
+            False,
+            None,
+        ),
+        (
+            "11",
+            {
+                "allowed_users": {"not-test-user"},
+                "admin_users": {"user1"},
+            },
+            True,
+            True,
+        ),
+        (
+            "12",
+            {
+                "allowed_groups": {"group1"},
+                "admin_groups": {"group1"},
+            },
+            True,
+            True,
+        ),
+        (
+            "13",
+            {
+                "allowed_groups": {"group1"},
+                "admin_groups": {"test-user-not-in-group"},
+            },
+            True,
+            False,
+        ),
+        (
+            "14",
+            {
+                "allowed_groups": {"test-user-not-in-group"},
+                "admin_groups": {"group1"},
+            },
+            True,
+            True,
+        ),
+        (
+            "15",
+            {
+                "allowed_groups": {"test-user-not-in-group"},
+                "admin_groups": {"test-user-not-in-group"},
+            },
+            False,
+            False,
+        ),
+        (
+            "16",
+            {
+                "admin_users": {"user1"},
+                "admin_groups": {"group1"},
+            },
+            True,
+            True,
+        ),
+        (
+            "17",
+            {
+                "admin_users": {"user1"},
+                "admin_groups": {"test-user-not-in-group"},
+            },
+            True,
+            True,
+        ),
+        (
+            "18",
+            {
+                "admin_users": {"not-test-user"},
+                "admin_groups": {"group1"},
+            },
+            True,
+            True,
+        ),
+        (
+            "19",
+            {
+                "admin_users": {"not-test-user"},
+                "admin_groups": {"test-user-not-in-group"},
+            },
+            False,
+            False,
+        ),
+    ],
+)
+async def test_openshift(
+    openshift_client,
+    test_variation_id,
+    class_config,
+    expect_allowed,
+    expect_admin,
+):
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.OpenShiftOAuthenticator = Config(class_config)
+    c.OpenShiftOAuthenticator.openshift_auth_api_url = (
+        "https://openshift.default.svc.cluster.local"
+    )
+    authenticator = OpenShiftOAuthenticator(config=c)
 
+    handled_user_model = user_model()
+    handler = openshift_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
 
-async def test_openshift_not_in_allowed_groups(openshift_client):
-    authenticator = OpenShiftOAuthenticator()
-    authenticator.allowed_groups = {'group3'}
-    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
-    handler = openshift_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert user_info == None
-
-
-async def test_openshift_not_in_allowed_groups_but_is_admin(openshift_client):
-    authenticator = OpenShiftOAuthenticator()
-    authenticator.allowed_groups = {'group3'}
-    authenticator.admin_groups = {'group1'}
-    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
-    handler = openshift_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['admin', 'auth_state', 'name']
-    assert user_info['admin'] == True
-
-
-async def test_openshift_in_allowed_groups_and_is_admin(openshift_client):
-    authenticator = OpenShiftOAuthenticator()
-    authenticator.allowed_groups = {'group2'}
-    authenticator.admin_groups = {'group1'}
-    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
-    handler = openshift_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['admin', 'auth_state', 'name']
-    assert user_info['admin'] == True
-
-
-async def test_openshift_in_allowed_groups_and_is_not_admin(openshift_client):
-    authenticator = OpenShiftOAuthenticator()
-    authenticator.allowed_groups = {'group2'}
-    authenticator.admin_groups = {'group3'}
-    authenticator.openshift_auth_api_url = "https://openshift.default.svc.cluster.local"
-    handler = openshift_client.handler_for_user(user_model('wash'))
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['admin', 'auth_state', 'name']
-    assert user_info['admin'] == False
+    if expect_allowed:
+        assert auth_model
+        assert set(auth_model) == {"name", "admin", "auth_state"}
+        assert auth_model["name"] == handled_user_model["metadata"]["name"]
+        assert auth_model["admin"] == expect_admin
+        auth_state = auth_model["auth_state"]
+        assert "access_token" in auth_state
+        user_info = auth_state[authenticator.user_auth_state_key]
+        assert user_info == handled_user_model
+    else:
+        assert auth_model == None

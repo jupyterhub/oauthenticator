@@ -7,7 +7,7 @@ from functools import reduce
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.traitlets import Callable
 from tornado.httpclient import AsyncHTTPClient
-from traitlets import Bool, Dict, List, Unicode, Union, default
+from traitlets import Bool, Dict, Set, Unicode, Union, default
 
 from .oauth2 import OAuthenticator
 
@@ -36,13 +36,13 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    allowed_groups = List(
+    allowed_groups = Set(
         Unicode(),
         config=True,
         help="Automatically allow members of selected groups",
     )
 
-    admin_groups = List(
+    admin_groups = Set(
         Unicode(),
         config=True,
         help="Groups whose members should have Jupyterhub admin privileges",
@@ -70,7 +70,7 @@ class GenericOAuthenticator(OAuthenticator):
     tls_verify = Bool(
         os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
         config=True,
-        help="Disable TLS verification on http request",
+        help="Require valid tls certificates in HTTP requests",
     )
 
     @default("basic_auth")
@@ -83,67 +83,76 @@ class GenericOAuthenticator(OAuthenticator):
             force_instance=True, defaults=dict(validate_cert=self.tls_verify)
         )
 
-    @staticmethod
-    def check_user_in_groups(member_groups, allowed_groups):
-        return bool(set(member_groups) & set(allowed_groups))
-
     def user_info_to_username(self, user_info):
+        """
+        Overrides OAuthenticator.user_info_to_username to support the
+        GenericOAuthenticator unique feature of allowing username_claim to be a
+        callable function.
+        """
         if callable(self.username_claim):
-            username = self.username_claim(user_info)
+            return self.username_claim(user_info)
         else:
-            username = user_info.get(self.username_claim, None)
-            if not username:
-                message = (f"No {self.username_claim} found in {user_info}",)
-                self.log.error(message)
-                raise ValueError(message)
+            return super().user_info_to_username(user_info)
 
-        return username
+    def get_user_groups(self, user_info):
+        """
+        Returns a set of groups the user belongs to based on claim_groups_key
+        and provided user_info.
 
-    async def user_is_authorized(self, auth_model):
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-        if self.allowed_groups:
-            self.log.info(
-                f"Validating if user claim groups match any of {self.allowed_groups}"
+        - If claim_groups_key is a callable, it is meant to return the groups
+          directly.
+        - If claim_groups_key is a nested dictionary key like
+          "permissions.groups", this function returns
+          user_info["permissions"]["groups"].
+
+        Note that this method is introduced by GenericOAuthenticator and not
+        present in the base class.
+        """
+        if callable(self.claim_groups_key):
+            return set(self.claim_groups_key(user_info))
+        try:
+            return set(reduce(dict.get, self.claim_groups_key.split("."), user_info))
+        except TypeError:
+            self.log.error(
+                f"The claim_groups_key {self.claim_groups_key} does not exist in the user token"
             )
-
-            if callable(self.claim_groups_key):
-                groups = self.claim_groups_key(user_info)
-            else:
-                try:
-                    groups = reduce(
-                        dict.get, self.claim_groups_key.split("."), user_info
-                    )
-                except TypeError:
-                    # This happens if a nested key does not exist (reduce trying to call None.get)
-                    self.log.error(
-                        f"The key {self.claim_groups_key} does not exist in the user token, or it is set to null"
-                    )
-                    groups = None
-            if not groups:
-                self.log.error(
-                    f"No claim groups found for user! Something wrong with the `claim_groups_key` {self.claim_groups_key}? {user_info}"
-                )
-                return False
-
-            if not self.check_user_in_groups(groups, self.allowed_groups):
-                return False
-
-        return True
+            return set()
 
     async def update_auth_model(self, auth_model):
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-        if self.allowed_groups:
-            if callable(self.claim_groups_key):
-                groups = self.claim_groups_key(user_info)
-            else:
-                groups = user_info.get(self.claim_groups_key)
+        """
+        Sets admin status to True or False if `admin_groups` is configured and
+        the user isn't part of `admin_users` or `admin_groups`. Note that
+        leaving it at None makes users able to retain an admin status while
+        setting it to False makes it be revoked.
+        """
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
+            return auth_model
 
-            # User has been checked to be in allowed_groups too if we're here
-            if groups:
-                auth_model['admin'] = self.check_user_in_groups(
-                    groups, self.admin_groups
-                )
+        if self.admin_groups:
+            # admin status should in this case be True or False, not None
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = self.get_user_groups(user_info)
+            auth_model["admin"] = any(user_groups & self.admin_groups)
+
         return auth_model
+
+    async def check_allowed(self, username, auth_model):
+        """
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_groups`.
+        """
+        if await super().check_allowed(username, auth_model):
+            return True
+
+        if self.allowed_groups:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = self.get_user_groups(user_info)
+            if any(user_groups & self.allowed_groups):
+                return True
+
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
