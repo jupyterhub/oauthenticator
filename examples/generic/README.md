@@ -21,18 +21,14 @@ The `GenericOAuthenticator` can be configured to provide authorization as well.
 ### Example configuration
 
 ```python
-from oauthenticator.generic import GenericOAuthenticator
-
-c.Application.log_level = 'DEBUG'
-
-c.JupyterHub.authenticator_class = GenericOAuthenticator
+c.JupyterHub.authenticator_class = "generic"
 c.GenericOAuthenticator.client_id = 'client-id'
 c.GenericOAuthenticator.client_secret = 'some-long-secret-hash'
 c.GenericOAuthenticator.token_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/token'
 c.GenericOAuthenticator.userdata_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/userinfo'
 c.GenericOAuthenticator.userdata_params = {'state': 'state'}
 # the next can be a callable as well, e.g.: lambda t: t.get('complex').get('structure').get('username')
-c.GenericOAuthenticator.username_key = 'preferred_username'
+c.GenericOAuthenticator.username_claim = 'preferred_username'
 c.GenericOAuthenticator.login_service = 'EXAMPLE'
 c.GenericOAuthenticator.scope = ['openid', 'profile']
 ```
@@ -42,18 +38,14 @@ c.GenericOAuthenticator.scope = ['openid', 'profile']
 In order to enable authorization, one needs to specify the at least one value for `allowed_groups`:
 
 ```python
-from oauthenticator.generic import GenericOAuthenticator
-
-c.Application.log_level = 'DEBUG'
-
-c.JupyterHub.authenticator_class = GenericOAuthenticator
+c.JupyterHub.authenticator_class = "generic"
 c.GenericOAuthenticator.client_id = 'client-id'
 c.GenericOAuthenticator.client_secret = 'some-long-secret-hash'
 c.GenericOAuthenticator.token_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/token'
 c.GenericOAuthenticator.userdata_url = 'https://accounts.example.com/auth/realms/example/protocol/openid-connect/userinfo'
 c.GenericOAuthenticator.userdata_params = {'state': 'state'}
 # the next can be a callable as well, e.g.: lambda t: t.get('complex').get('structure').get('username')
-c.GenericOAuthenticator.username_key = 'preferred_username'
+c.GenericOAuthenticator.username_claim = 'preferred_username'
 c.GenericOAuthenticator.login_service = 'EXAMPLE'
 # The next settings are responsible for enabling authorization
 # the next can be a callable as well, e.g.: lambda t: t.get('complex').get('structure').get('roles')

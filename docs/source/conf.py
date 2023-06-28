@@ -202,4 +202,5 @@ rediraffe_redirects = {
     "api/gen/oauthenticator.okpy": "reference/api/gen/oauthenticator.okpy",
     "api/gen/oauthenticator.openshift": "reference/api/gen/oauthenticator.openshift",
     "api/gen/oauthenticator.mediawiki": "reference/api/gen/oauthenticator.mediawiki",
+    "tutorials/provider-specific-setup/providers/awscognito": "tutorials/provider-specific-setup/providers/generic",
 }

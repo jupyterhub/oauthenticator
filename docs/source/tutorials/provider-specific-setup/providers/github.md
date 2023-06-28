@@ -1,19 +1,26 @@
 # GitHub Setup
 
-First, you’ll need to create a [GitHub OAuth application](https://github.com/settings/applications/new).
+You need to have an GitHub OAuth application registered ahead of time, see
+GitLab's official documentation about [registering an app].
 
-Then, add the following to your `jupyterhub_config.py` file:
+[registering an app]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
+
+## JupyterHub configuration
+
+Your `jupyterhub_config.py` file should look something like this:
 
 ```python
-from oauthenticator.github import GitHubOAuthenticator
-c.JupyterHub.authenticator_class = GitHubOAuthenticator
+c.JupyterHub.authenticator_class = "github"
+c.OAuthenticator.oauth_callback_url = "https://[your-domain]/hub/oauth_callback"
+c.OAuthenticator.client_id = "[your oauth2 application id]"
+c.OAuthenticator.client_secret = "[your oauth2 application secret]"
 ```
 
-You can also use `LocalGitHubOAuthenticator` to map GitHub accounts onto local users.
+## Additional configuration
 
-You can use your own Github Enterprise instance by setting the `GITHUB_HOST` environment variable.
+GitHubOAuthenticator expands OAuthenticator with the following config that may
+be relevant to read more about in the configuration reference:
 
-You can set `GITHUB_HTTP` environment variable to true or anything if
-your GitHub Enterprise supports http only.
-
-GitHub allows expanded capabilities by adding [](topic:github:specific-scopes) to the requested token.
+- {attr}`.GitHubOAuthenticator.allowed_organizations`
+- {attr}`.GitHubOAuthenticator.populate_teams_in_auth_state`
+- {attr}`.GitHubOAuthenticator.github_url`

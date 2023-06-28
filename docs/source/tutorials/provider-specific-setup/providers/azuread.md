@@ -1,55 +1,33 @@
 # Azure AD Setup
 
-1. Install oauthenticator with required dependency
+You need to have an Azure OAuth application registered ahead of time, see
+Azure's official documentation about [registering an app].
+
+[registering an app]: https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-protocols#app-registration
+
+1. Install oauthenticator with the optional dependency `azuread`, as required
+   for use with AzureAdOAuthenticator.
 
    ```bash
-   pip3 install "oauthenticator[azuread]"
+   pip install "oauthenticator[azuread]"
    ```
 
-1. Set the `AAD_TENANT_ID` environment variable
-
-   ```bash
-   export AAD_TENANT_ID='{AAD-TENANT-ID}'
-   ```
-
-1. Add the code below to your `jupyterhub_config.py` file
+2. Add code like below to a `jupyterhub_config.py` file
 
    ```python
-   import os
-   from oauthenticator.azuread import AzureAdOAuthenticator
-   c.JupyterHub.authenticator_class = AzureAdOAuthenticator
+   c.JupyterHub.authenticator_class = "azuread"
 
-   c.Application.log_level = 'DEBUG'
+   c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
+   c.OAuthenticator.client_id = "[your oauth2 application id]"
+   c.OAuthenticator.client_secret = "[your oauth2 application secret]"
 
-   c.AzureAdOAuthenticator.tenant_id = os.environ.get('AAD_TENANT_ID')
-
-   c.AzureAdOAuthenticator.oauth_callback_url = 'http://{your-domain}/hub/oauth_callback'
-   c.AzureAdOAuthenticator.client_id = '{AAD-APP-CLIENT-ID}'
-   c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
+   c.AzureAdOAuthenticator.tenant_id = "[your azure tenant id]"
+   c.AzureAdOAuthenticator.scope = ["openid", "email"]
    ```
 
-   This sample code is provided for you in `examples > azuread > sample_jupyter_config.py`
+## Additional configuration
 
-1. Make sure to replace the values in `'{}'` with your APP, TENANT, DOMAIN, etc. values
+AzureAdOAuthenticator expands OAuthenticator with the following config that may
+be relevant to read more about in the configuration reference:
 
-1. You might need to add at least the `openid` scope if your
-   organization requires MFA (`c.AzureAdOAuthenticator.scope = ['openid']`),
-   in addition to whatever else you need.
-
-1. Follow [this link to create an AAD APP](https://community.microfocus.com/cyberres/netiq-identity-governance-administration/idm/w/identity_mgr_tips/17052/creating-the-application-client-id-and-client-secret-from-microsoft-azure-new-portal---part-1)
-
-1. CLIENT_ID === Azure Application ID, found in:
-   `Azure portal --> AD --> App Registrations --> App`
-
-1. TENANT_ID === Azure Directory ID, found in:
-   `Azure portal --> AD --> Properties`
-
-1. Run via:
-
-   ```bash
-   sudo jupyterhub -f ./path/to/jupyterhub_config.py
-   ```
-
-1. See `run.sh` for an [example](https://github.com/jupyterhub/oauthenticator/tree/main/examples/azuread)
-
-1. [Source Code](https://github.com/jupyterhub/oauthenticator/blob/HEAD/oauthenticator/azuread.py)
+- {attr}`.AzureAdOAuthenticator.tenant_id`

@@ -1,33 +1,26 @@
 # GitLab Setup
 
-First, you’ll need to create a [GitLab OAuth application](https://docs.gitlab.com/ee/integration/oauth_provider.html).
+You need to have an GitLab OAuth application registered ahead of time, see
+GitLab's official documentation about [registering an app].
 
-Then, add the following to your `jupyterhub_config.py` file:
+[registering an app]: https://docs.gitlab.com/ee/integration/oauth_provider.html
 
-```python
-from oauthenticator.gitlab import GitLabOAuthenticator
-c.JupyterHub.authenticator_class = GitLabOAuthenticator
-```
+## JupyterHub configuration
 
-You can also use `LocalGitLabOAuthenticator` to map GitLab accounts onto local users.
-
-You can use your own GitLab CE/EE instance by setting the `GITLAB_HOST` environment flag.
-
-You can restrict access to only accept members of certain projects or groups by setting
+Your `jupyterhub_config.py` file should look something like this:
 
 ```python
-c.GitLabOAuthenticator.allowed_project_ids = [ ... ]
+c.JupyterHub.authenticator_class = "gitlab"
+c.OAuthenticator.oauth_callback_url = "https://[your-domain]/hub/oauth_callback"
+c.OAuthenticator.client_id = "[your oauth2 application id]"
+c.OAuthenticator.client_secret = "[your oauth2 application secret]"
 ```
 
-and
+## Additional configuration
 
-```python
-c.GitLabOAuthenticator.allowed_gitlab_groups = [ ... ]
-```
+GitLabOAuthenticator expands OAuthenticator with the following config that may
+be relevant to read more about in the configuration reference:
 
-but be aware that each entry incurs a separate API call, increasing the risk of rate limiting and timeouts.
-
-```{note}
-If restriction to projects or groups does not work, you might not be using jupyterHub 1.2. In that case you can still you use whitelists as noted in this
-[comment](https://github.com/jupyterhub/oauthenticator/pull/366#pullrequestreview-483095919).
-```
+- {attr}`.GitLabOAuthenticator.allowed_project_ids`
+- {attr}`.GitLabOAuthenticator.allowed_gitlab_groups`
+- {attr}`.GitLabOAuthenticator.gitlab_url`
