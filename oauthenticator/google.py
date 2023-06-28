@@ -100,13 +100,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
-    user_info_url = Unicode(
-        "https://www.googleapis.com/oauth2/v1/userinfo",
-        config=True,
-        help="""
-        """,
-    )
-
     hosted_domain = List(
         Unicode(),
         config=True,
