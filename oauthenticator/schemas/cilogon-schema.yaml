@@ -1,5 +1,7 @@
+# This JSONSchema is used to validate the values in the
+# CILogonOAuthenticator.allowed_idps dictionary.
+#
 $schema: http://json-schema.org/draft-07/schema#
-title: username_derivation
 type: object
 additionalProperties: false
 required:
@@ -12,6 +14,8 @@ properties:
   username_derivation:
     type: object
     additionalProperties: false
+    required:
+      - username_claim
     properties:
       username_claim:
         type: string
@@ -24,9 +28,8 @@ properties:
         type: string
       prefix:
         type: string
-    required:
-      - username_claim
     allOf:
+      # if action is strip_idp_domain, then domain is required
       - if:
           properties:
             action:
@@ -36,6 +39,7 @@ properties:
         then:
           required:
             - domain
+      # if action is prefix, then prefix is required
       - if:
           properties:
             action:

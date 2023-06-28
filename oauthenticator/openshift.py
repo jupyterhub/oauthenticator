@@ -87,17 +87,25 @@ class OpenShiftOAuthenticator(OAuthenticator):
         return f"{self.openshift_rest_api_url}/apis/user.openshift.io/v1/users/~"
 
     def user_info_to_username(self, user_info):
+        """
+        Overrides OAuthenticator.user_info_to_username instead of setting
+        username_claim as the username is nested inside another dictionary.
+        """
         return user_info['metadata']['name']
 
     async def update_auth_model(self, auth_model):
         """
-        Update admin status based on `admin_groups` if its configured.
+        Sets admin status to True or False if `admin_groups` is configured and
+        the user isn't part of `admin_users`. Note that leaving it at None makes
+        users able to retain an admin status while setting it to False makes it
+        be revoked.
         """
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
+            return auth_model
+
         if self.admin_groups:
-            # if admin_groups is configured and the user wasn't part of
-            # admin_users, we must set the admin status to True or False,
-            # otherwise removing a user from the admin_groups won't have an
-            # effect
+            # admin status should in this case be True or False, not None
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = set(user_info["groups"])
             auth_model["admin"] = any(user_groups & self.admin_groups)
@@ -106,34 +114,20 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized.
-
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_groups`, and not just those
-        part of `allowed_users`.
+        Overrides OAuthenticator.check_allowed to also allow users part of
+        `allowed_groups`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
+        if await super().check_allowed(username, auth_model):
             return True
 
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
-
-        # if allowed_users or allowed_groups is configured, we deny users not
-        # part of either
-        if self.allowed_users or self.allowed_groups:
-            if username in self.allowed_users:
-                return True
+        if self.allowed_groups:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = set(user_info["groups"])
             if any(user_groups & self.allowed_groups):
                 return True
-            return False
 
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):

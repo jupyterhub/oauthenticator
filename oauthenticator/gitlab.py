@@ -122,48 +122,31 @@ class GitLabOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized.
-
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users`, `allowed_gitlab_groups`, or `allowed_project_ids`,
-        and not just those part of `allowed_users`.
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_google_groups` or `allowed_project_ids`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
+        if await super().check_allowed(username, auth_model):
             return True
 
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
+        access_token = auth_model["auth_state"]["token_response"]["access_token"]
+        user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
 
-        # if allowed_users, allowed_gitlab_groups, or allowed_project_ids is
-        # configured, we deny users not part of either
-        if self.allowed_users or self.allowed_gitlab_groups or self.allowed_project_ids:
-            if username in self.allowed_users:
+        if self.allowed_gitlab_groups:
+            user_in_group = await self._check_membership_allowed_groups(
+                user_id, access_token
+            )
+            if user_in_group:
                 return True
 
-            access_token = auth_model["auth_state"]["token_response"]["access_token"]
-            user_id = auth_model["auth_state"][self.user_auth_state_key]["id"]
+        if self.allowed_project_ids:
+            user_in_project = await self._check_membership_allowed_project_ids(
+                user_id, access_token
+            )
+            if user_in_project:
+                return True
 
-            if self.allowed_gitlab_groups:
-                user_in_group = await self._check_membership_allowed_groups(
-                    user_id, access_token
-                )
-                if user_in_group:
-                    return True
-
-            if self.allowed_project_ids:
-                user_in_project = await self._check_membership_allowed_project_ids(
-                    user_id, access_token
-                )
-                if user_in_project:
-                    return True
-
-            return False
-
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     async def _get_gitlab_version(self, access_token):
         url = f"{self.gitlab_api}/version"

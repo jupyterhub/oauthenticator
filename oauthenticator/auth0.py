@@ -54,13 +54,15 @@ class Auth0OAuthenticator(OAuthenticator):
     def _username_claim_default(self):
         return "email"
 
-    auth0_subdomain = Unicode(config=True)
-    auth0_domain = Unicode(config=True)
+    auth0_domain = Unicode(
+        config=True,
+        help="""
+        The domain for your Auth0 account.
 
-    @default("auth0_subdomain")
-    def _auth0_subdomain_default(self):
-        # This is allowed to be empty unless auth0_domain is not supplied either
-        return os.getenv("AUTH0_SUBDOMAIN", "")
+        Used to determine the default values for `logout_redirect_url`,
+        `authorize_url`, `token_url`, and `userdata_url`.
+        """,
+    )
 
     @default("auth0_domain")
     def _auth0_domain_default(self):
@@ -70,11 +72,22 @@ class Auth0OAuthenticator(OAuthenticator):
         if self.auth0_subdomain:
             return f"{self.auth0_subdomain}.auth0.com"
         raise ValueError(
-            "Please specify $AUTH0_DOMAIN env, $AUTH0_SUBDOMAIN env, "
-            "{part}.auth0_domain config, or {part}.auth0_subdomain config".format(
-                part=self.__class__.__name__
-            )
+            "Configuring either auth0_domain or auth0_subdomain is required"
         )
+
+    auth0_subdomain = Unicode(
+        config=True,
+        help="""
+        A shorthand for configuring `auth0_domain`, if configured to
+        "something", it is the same as configuring `auth0_domain` to
+        "something.auth0.com".
+        """,
+    )
+
+    @default("auth0_subdomain")
+    def _auth0_subdomain_default(self):
+        # This is allowed to be empty unless auth0_domain is not supplied either
+        return os.getenv("AUTH0_SUBDOMAIN", "")
 
     username_key = Unicode(
         config=True,

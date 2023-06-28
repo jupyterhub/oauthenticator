@@ -255,6 +255,16 @@ class OAuthenticator(Authenticator):
     # To be overridden by each oauthenticator
     user_auth_state_key = "oauth_user"
 
+    allow_all = Bool(
+        False,
+        config=True,
+        help="""
+        Allow all authenticated users to login.
+
+        .. versionadded:: 16.0
+        """,
+    )
+
     authorize_url = Unicode(
         config=True, help="""The authenticate url for initiating oauth"""
     )
@@ -284,11 +294,14 @@ class OAuthenticator(Authenticator):
     username_claim = Unicode(
         "username",
         config=True,
-        help="""Field in userdata reply to use for username
-        The field in the userdata response from which to get the JupyterHub username.
+        help="""
+        Field in userdata reply to use for username The field in the userdata
+        response from which to get the JupyterHub username.
+
         Examples include: email, username, nickname
 
-        What keys are available will depend on the scopes requested and the authenticator used.
+        What keys are available will depend on the scopes requested and the
+        authenticator used.
         """,
     )
 
@@ -802,25 +815,30 @@ class OAuthenticator(Authenticator):
         `OAuthenticator.authenticate` has been called, and therefore also after
         `update_auth_model` has been called.
 
-        Subclasses with authorization logic involving allowed groups should
-        override this.
+        Subclasses with additional config to allow a user should override this
+        method and return True when this method returns True or if a user is
+        allowed via the additional config.
         """
         # A workaround for JupyterHub<=4.0.1, described in
         # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
 
-        # authorize users to become admins by admin_users or logic in
-        # update_auth_model
+        if self.allow_all:
+            return True
+
+        # allow users with admin status set to True via admin_users config or
+        # update_auth_model override
         if auth_model["admin"]:
             return True
 
-        # if allowed_users is configured, authorize/unauthorize based on that
-        if self.allowed_users:
-            return username in self.allowed_users
+        # allow users in allowed_users, note that allowed_users is appended
+        # automatically with existing users if it was configured truthy
+        if username in self.allowed_users:
+            return True
 
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     _deprecated_oauth_aliases = {}
 

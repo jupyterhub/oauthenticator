@@ -84,16 +84,15 @@ class GenericOAuthenticator(OAuthenticator):
         )
 
     def user_info_to_username(self, user_info):
+        """
+        Overrides OAuthenticator.user_info_to_username to support the
+        GenericOAuthenticator unique feature of allowing username_claim to be a
+        callable function.
+        """
         if callable(self.username_claim):
-            username = self.username_claim(user_info)
+            return self.username_claim(user_info)
         else:
-            username = user_info.get(self.username_claim, None)
-            if not username:
-                message = (f"No {self.username_claim} found in {user_info}",)
-                self.log.error(message)
-                raise ValueError(message)
-
-        return username
+            return super().user_info_to_username(user_info)
 
     def get_user_groups(self, user_info):
         """
@@ -140,34 +139,20 @@ class GenericOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Returns True for users allowed to be authorized.
-
-        Overrides the OAuthenticator.check_allowed implementation to allow users
-        either part of `allowed_users` or `allowed_groups`, and not just those
-        part of `allowed_users`.
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_groups`.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
-        # https://github.com/jupyterhub/oauthenticator/issues/621
-        if auth_model is None:
+        if await super().check_allowed(username, auth_model):
             return True
 
-        # allow admin users recognized via admin_users or update_auth_model
-        if auth_model["admin"]:
-            return True
-
-        # if allowed_users or allowed_groups is configured, we deny users not
-        # part of either
-        if self.allowed_users or self.allowed_groups:
+        if self.allowed_groups:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = self.get_user_groups(user_info)
-            if username in self.allowed_users:
-                return True
             if any(user_groups & self.allowed_groups):
                 return True
-            return False
 
-        # otherwise, authorize all users
-        return True
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
