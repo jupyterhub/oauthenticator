@@ -20,10 +20,17 @@ class GenericOAuthenticator(OAuthenticator):
     }
 
     extra_params = Dict(
-        help="Deprecated, use `GenericOAuthenticator.token_params`"
-    ).tag(config=True)
+        config=True,
+        help="""
+        Deprecated, use `GenericOAuthenticator.token_params`
+        """,
+    )
 
-    login_service = Unicode("OAuth 2.0", config=True)
+    login_service = Unicode(
+        "OAuth 2.0",
+        config=True,
+        help="""""",
+    )
 
     claim_groups_key = Union(
         [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],

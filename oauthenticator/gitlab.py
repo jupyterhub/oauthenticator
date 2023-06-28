@@ -37,7 +37,10 @@ class GitLabOAuthenticator(OAuthenticator):
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
 
-    gitlab_url = Unicode("https://gitlab.com", config=True)
+    gitlab_url = Unicode(
+        config=True,
+        help="""""",
+    )
 
     @default("gitlab_url")
     def _default_gitlab_url(self):
@@ -68,13 +71,20 @@ class GitLabOAuthenticator(OAuthenticator):
 
         return gitlab_url
 
-    gitlab_api_version = CUnicode('4', config=True)
+    gitlab_api_version = CUnicode(
+        "4",
+        config=True,
+        help="""""",
+    )
 
     @default('gitlab_api_version')
     def _gitlab_api_version_default(self):
         return os.environ.get('GITLAB_API_VERSION') or '4'
 
-    gitlab_api = Unicode(config=True)
+    gitlab_api = Unicode(
+        config=True,
+        help="""""",
+    )
 
     @default("gitlab_api")
     def _default_gitlab_api(self):
@@ -93,22 +103,40 @@ class GitLabOAuthenticator(OAuthenticator):
         return f"{self.gitlab_api}/user"
 
     gitlab_group_whitelist = Set(
-        help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
         config=True,
+        help="""
+        Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`
+        """,
     )
 
     allowed_gitlab_groups = Set(
-        config=True, help="Automatically allow members of selected groups"
+        config=True,
+        help="""
+        Allow members of selected GitLab groups to sign in.
+
+        Note that for each group allowed, an additional REST API call needs to
+        be made when a user is signing in. To reduce the risk of JupyterHub
+        being rate limited, don't specify too many.
+        """,
     )
 
     gitlab_project_id_whitelist = Set(
-        help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`",
         config=True,
+        help="""
+        Deprecated, use `GitLabOAuthenticator.allowed_project_ids`
+        """,
     )
 
     allowed_project_ids = Set(
         config=True,
-        help="Automatically allow members with Developer access to selected project ids",
+        help="""
+        Allow members with Developer access or higher in selected project ids to
+        sign in.
+
+        Note that for each project allowed, an additional REST API call needs to
+        be made when a user is signing in. To reduce the risk of JupyterHub
+        being rate limited, don't specify too many.
+        """,
     )
 
     gitlab_version = None

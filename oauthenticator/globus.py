@@ -81,13 +81,13 @@ class GlobusOAuthenticator(OAuthenticator):
 
     revocation_url = Unicode(
         "https://auth.globus.org/v2/oauth2/token/revoke",
-        help="Globus URL to revoke live tokens.",
         config=True,
+        help="Globus URL to revoke live tokens.",
     )
     globus_groups_url = Unicode(
         "https://groups.api.globus.org/v2/groups/my_groups",
-        help="Globus URL to get list of user's Groups.",
         config=True,
+        help="Globus URL to get list of user's Groups.",
     )
 
     identity_provider = Unicode(
@@ -108,12 +108,12 @@ class GlobusOAuthenticator(OAuthenticator):
 
     username_from_email = Bool(
         False,
+        config=True,
         help="""
         Create username from email address, not preferred username. If an
         identity provider is specified, email address must be from the same
         domain. Email scope will be set automatically.
         """,
-        config=True,
     )
 
     @default("username_claim")
@@ -172,8 +172,8 @@ class GlobusOAuthenticator(OAuthenticator):
     allowed_globus_groups = Set(
         config=True,
         help="""
-        Allow members of defined Globus Groups, specified with their UUIDs, to
-        login.
+        Allow members of selected Google groups to sign in. Globus groups should
+        be specified using their UUIDs.
 
         If this is configured, the default value of the scope configuration is
         appended with the scope
@@ -184,8 +184,11 @@ class GlobusOAuthenticator(OAuthenticator):
     admin_globus_groups = Set(
         config=True,
         help="""
-        Allow members of defined Globus Groups, specified with their UUIDs, to
-        login as admin users.
+        Allow members of selected Globus groups to sign in and consider them as
+        JupyterHub admins. Globus groups should be specified using their UUIDs.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
 
         If this is configured, the default value of the scope configuration is
         appended with the scope

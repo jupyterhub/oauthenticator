@@ -76,7 +76,11 @@ class CILogonOAuthenticator(OAuthenticator):
 
     login_handler = CILogonLoginHandler
 
-    cilogon_host = Unicode(os.environ.get("CILOGON_HOST") or "cilogon.org", config=True)
+    cilogon_host = Unicode(
+        os.environ.get("CILOGON_HOST") or "cilogon.org",
+        config=True,
+        help="""""",
+    )
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -130,13 +134,14 @@ class CILogonOAuthenticator(OAuthenticator):
         return scopes
 
     idp_whitelist = List(
-        help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`",
         config=True,
+        help="""
+        Deprecated, use `CIlogonOAuthenticator.allowed_idps`
+        """,
     )
 
     allowed_idps = Dict(
         config=True,
-        default_value={},
         help="""
         A dictionary of the only entity IDs that will be allowed to be used as
         login options. See https://cilogon.org/idplist for the list of
@@ -242,7 +247,10 @@ class CILogonOAuthenticator(OAuthenticator):
     )
 
     idp = Unicode(
-        config=True, help="Deprecated, use `CILogonOAuthenticator.shown_idps`."
+        config=True,
+        help="""
+        Deprecated, use `CILogonOAuthenticator.shown_idps`.
+        """,
     )
 
     shown_idps = List(

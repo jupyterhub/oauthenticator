@@ -266,7 +266,10 @@ class OAuthenticator(Authenticator):
     )
 
     authorize_url = Unicode(
-        config=True, help="""The authenticate url for initiating oauth"""
+        config=True,
+        help="""
+        The authenticate url for initiating oauth
+        """,
     )
 
     @default("authorize_url")
@@ -275,7 +278,9 @@ class OAuthenticator(Authenticator):
 
     token_url = Unicode(
         config=True,
-        help="""The url retrieving an access token at the completion of oauth""",
+        help="""
+        The url retrieving an access token at the completion of oauth
+        """,
     )
 
     @default("token_url")
@@ -284,7 +289,9 @@ class OAuthenticator(Authenticator):
 
     userdata_url = Unicode(
         config=True,
-        help="""The url for retrieving user data with a completed access token""",
+        help="""
+        The url for retrieving user data with a completed access token
+        """,
     )
 
     @default("userdata_url")
@@ -313,24 +320,37 @@ class OAuthenticator(Authenticator):
 
         return False
 
-    logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
+    logout_redirect_url = Unicode(
+        config=True,
+        help="""
+        URL for logging out of Auth0
+        """,
+    )
 
     # Originally a GenericOAuthenticator only trait
     userdata_params = Dict(
-        help="Userdata params to get user data login information"
-    ).tag(config=True)
+        config=True,
+        help="""
+        Userdata params to get user data login information
+        """,
+    )
 
     # Originally a GenericOAuthenticator only trait
     userdata_token_method = Unicode(
         os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
         config=True,
-        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header",
+        help="""
+        Method for sending access token in userdata request. Supported methods: header, url. Default: header
+        """,
     )
 
     # Originally a GenericOAuthenticator only trait
     token_params = Dict(
-        help="Extra parameters for first POST request exchanging the OAuth code for an Access Token"
-    ).tag(config=True)
+        config=True,
+        help="""
+        Extra parameters for first POST request exchanging the OAuth code for an Access Token
+        """,
+    )
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
@@ -339,41 +359,57 @@ class OAuthenticator(Authenticator):
     custom_403_message = Unicode(
         "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
         config=True,
-        help="""The message to be shown when user was not allowed""",
+        help="""
+        The message to be shown when user was not allowed
+        """,
     )
 
     scope = List(
         Unicode(),
         config=True,
-        help="""The OAuth scopes to request.
+        help="""
+        The OAuth scopes to request.
+
         See the OAuth documentation of your OAuth provider for options.
-        For GitHub in particular, you can see github_scopes.md in this repo.
         """,
     )
 
     extra_authorize_params = Dict(
         config=True,
-        help="""Extra GET params to send along with the initial OAuth request
-        to the OAuth provider.""",
+        help="""
+        Extra GET params to send along with the initial OAuth request to the
+        OAuth provider.
+        """,
     )
 
     login_service = "override in subclass"
     oauth_callback_url = Unicode(
         os.getenv("OAUTH_CALLBACK_URL", ""),
         config=True,
-        help="""Callback URL to use.
-        Typically `https://{host}/hub/oauth_callback`""",
+        help="""
+        Callback URL to use.
+        
+        When registering an OAuth2 application with an identity provider, this
+        is typically called the redirect url.
+
+        Should very likely be set to `https://[your-domain]/hub/oauth_callback`.
+        """,
     )
 
     # Originally a GenericOAuthenticator only trait
     basic_auth = Bool(
         os.environ.get("OAUTH2_BASIC_AUTH", "False").lower() in {"true", "1"},
         config=True,
-        help="Whether or not to use basic authentication for access token request",
+        help="""
+        Whether or not to use basic authentication for access token request
+        """,
     )
 
     client_id_env = ""
-    client_id = Unicode(config=True)
+    client_id = Unicode(
+        config=True,
+        help="""""",
+    )
 
     def _client_id_default(self):
         if self.client_id_env:
@@ -383,7 +419,10 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_CLIENT_ID", "")
 
     client_secret_env = ""
-    client_secret = Unicode(config=True)
+    client_secret = Unicode(
+        config=True,
+        help="""""",
+    )
 
     def _client_secret_default(self):
         if self.client_secret_env:
@@ -393,7 +432,10 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_CLIENT_SECRET", "")
 
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
-    validate_server_cert = Bool(config=True)
+    validate_server_cert = Bool(
+        config=True,
+        help="""""",
+    )
 
     def _validate_server_cert_default(self):
         env_value = os.getenv(self.validate_server_cert_env, "")
@@ -403,7 +445,7 @@ class OAuthenticator(Authenticator):
             return True
 
     http_request_kwargs = Dict(
-        {},
+        config=True,
         help="""Extra default kwargs passed to all HTTPRequests.
 
         For example, to use a HTTP proxy for all requests:
@@ -415,7 +457,6 @@ class OAuthenticator(Authenticator):
 
         Note that some of these are dependent on the httpclient implementation.
         """,
-        config=True,
     )
 
     http_client = Any()

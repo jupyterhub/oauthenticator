@@ -91,7 +91,9 @@ class Auth0OAuthenticator(OAuthenticator):
 
     username_key = Unicode(
         config=True,
-        help="Deprecated, use `Auth0OAuthenticator.username_claim`",
+        help="""
+        Deprecated, use `Auth0OAuthenticator.username_claim`
+        """,
     )
 
     @default("logout_redirect_url")

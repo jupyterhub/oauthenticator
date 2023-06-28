@@ -32,12 +32,17 @@ class BitbucketOAuthenticator(OAuthenticator):
         return "https://api.bitbucket.org/2.0/user"
 
     team_whitelist = Set(
-        help="Deprecated, use `BitbucketOAuthenticator.allowed_teams`",
         config=True,
+        help="""
+        Deprecated, use `BitbucketOAuthenticator.allowed_teams`
+        """,
     )
 
     allowed_teams = Set(
-        config=True, help="Automatically allow members of selected teams"
+        config=True,
+        help="""
+        Automatically allow members of selected teams
+        """,
     )
 
     async def _fetch_user_teams(self, access_token, token_type):

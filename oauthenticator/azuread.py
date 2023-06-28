@@ -14,20 +14,31 @@ class AzureAdOAuthenticator(OAuthenticator):
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Azure AD'),
         config=True,
-        help="""Azure AD domain name string, e.g. My College""",
+        help="""
+        Azure AD domain name string, e.g. My College
+        """,
     )
-
-    tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
     user_auth_state_key = "user"
 
-    @default("username_claim")
-    def _username_claim_default(self):
-        return "name"
+    tenant_id = Unicode(
+        config=True,
+        help="""
+        An Azure tenant ID for which an OAuth application is registered via
+        `client_id` and `client_secret`.
+
+        This is used to set the default values of `authorize_url` and
+        `token_url`.
+        """,
+    )
 
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
+
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "name"
 
     @default("authorize_url")
     def _authorize_url_default(self):

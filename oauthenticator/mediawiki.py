@@ -85,17 +85,20 @@ class MWOAuthenticator(OAuthenticator):
     mw_index_url = Unicode(
         os.environ.get('MW_INDEX_URL', 'https://meta.wikimedia.org/w/index.php'),
         config=True,
-        help='Full path to index.php of the MW instance to use to log in',
+        help="""
+        Full path to index.php of the MW instance to use to log in
+        """,
     )
 
     executor_threads = Integer(
         12,
-        help="""Number of executor threads.
+        config=True,
+        help="""
+        Number of executor threads.
 
         MediaWiki OAuth requests happen in this thread,
         so it is mostly waiting for network replies.
         """,
-        config=True,
     )
     executor = Any()
 

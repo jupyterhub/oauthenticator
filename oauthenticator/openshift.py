@@ -27,22 +27,38 @@ class OpenShiftOAuthenticator(OAuthenticator):
         os.environ.get('OPENSHIFT_URL')
         or 'https://openshift.default.svc.cluster.local',
         config=True,
+        help="""""",
     )
-
-    validate_cert = Bool(
-        True, config=True, help="Set to False to disable certificate validation"
-    )
-
-    ca_certs = Unicode(config=True)
 
     allowed_groups = Set(
         config=True,
-        help="Set of OpenShift groups that should be allowed to access the hub.",
+        help="""
+        Allow members of selected OpenShift groups to sign in.
+        """,
     )
 
     admin_groups = Set(
         config=True,
-        help="Set of OpenShift groups that should be given admin access to the hub.",
+        help="""
+        Allow members of selected OpenShift groups to sign in and consider them
+        as JupyterHub admins.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+        """,
+    )
+
+    ca_certs = Unicode(
+        config=True,
+        help="""""",
+    )
+
+    validate_cert = Bool(
+        True,
+        config=True,
+        help="""
+        Set to False to disable certificate validation
+        """,
     )
 
     @default("ca_certs")
@@ -50,10 +66,12 @@ class OpenShiftOAuthenticator(OAuthenticator):
         ca_cert_file = "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         if self.validate_cert and os.path.exists(ca_cert_file):
             return ca_cert_file
-
         return ''
 
-    openshift_auth_api_url = Unicode(config=True)
+    openshift_auth_api_url = Unicode(
+        config=True,
+        help="""""",
+    )
 
     @default("openshift_auth_api_url")
     def _openshift_auth_api_url_default(self):
@@ -65,9 +83,8 @@ class OpenShiftOAuthenticator(OAuthenticator):
         return resp_json.get('issuer')
 
     openshift_rest_api_url = Unicode(
-        os.environ.get('OPENSHIFT_REST_API_URL')
-        or 'https://openshift.default.svc.cluster.local',
         config=True,
+        help="""""",
     )
 
     @default("openshift_rest_api_url")
@@ -131,5 +148,4 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
-
     """A version that mixes in local system user creation"""

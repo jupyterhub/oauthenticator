@@ -21,11 +21,14 @@ class GitHubOAuthenticator(OAuthenticator):
     login_service = "GitHub"
     user_auth_state_key = "github_user"
 
-    github_url = Unicode("https://github.com", config=True)
-
     @default("username_claim")
     def _username_claim_default(self):
         return "login"
+
+    github_url = Unicode(
+        config=True,
+        help="""""",
+    )
 
     @default("github_url")
     def _github_url_default(self):
@@ -59,7 +62,10 @@ class GitHubOAuthenticator(OAuthenticator):
         # ensure no trailing slash
         return github_url.rstrip("/")
 
-    github_api = Unicode("https://api.github.com", config=True)
+    github_api = Unicode(
+        config=True,
+        help="""""",
+    )
 
     @default("github_api")
     def _github_api_default(self):
@@ -81,13 +87,23 @@ class GitHubOAuthenticator(OAuthenticator):
         return f"{self.github_api}/user"
 
     # deprecated names
-    github_client_id = Unicode(config=True, help="DEPRECATED")
+    github_client_id = Unicode(
+        config=True,
+        help="""
+        DEPRECATED
+        """,
+    )
 
     def _github_client_id_changed(self, name, old, new):
         self.log.warning("github_client_id is deprecated, use client_id")
         self.client_id = new
 
-    github_client_secret = Unicode(config=True, help="DEPRECATED")
+    github_client_secret = Unicode(
+        config=True,
+        help="""
+        DEPRECATED
+        """,
+    )
 
     def _github_client_secret_changed(self, name, old, new):
         self.log.warning("github_client_secret is deprecated, use client_secret")
@@ -97,23 +113,32 @@ class GitHubOAuthenticator(OAuthenticator):
     client_secret_env = 'GITHUB_CLIENT_SECRET'
 
     github_organization_whitelist = Set(
-        help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`",
         config=True,
+        help="""
+        Deprecated, use `GitHubOAuthenticator.allowed_organizations`
+        """,
     )
 
     allowed_organizations = Set(
+        config=True,
         help="""
         Allow members of organizations or organizations' teams by specifying
-        strings like `org-a` and/or `org-b:team-1`.
+        organization names like `org-a` and/or an organizations' team names like
+        `org-b:team-1`.
+
+        The names can have a human friendly variant with spaces etc, but you
+        should specify the name as seen in a URL. As an example, it should be
+        `jupyterhub:mybinder-org-operators` for the team
+        https://github.com/orgs/jupyterhub/teams/mybinder-org-operators.
 
         Requires `read:org` to be set in `scope` to not just allow based on
         public membership.
         """,
-        config=True,
     )
 
     populate_teams_in_auth_state = Bool(
         False,
+        config=True,
         help="""
         Populates the authentication state dictionary `auth_state` with a key
         `teams` assigned the list of teams the current user is a member of at
@@ -128,7 +153,6 @@ class GitHubOAuthenticator(OAuthenticator):
         persisted via `enable_auth_state`. For more information, see
         https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
         """,
-        config=True,
     )
 
     async def check_allowed(self, username, auth_model):
