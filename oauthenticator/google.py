@@ -12,11 +12,6 @@ from .oauth2 import OAuthenticator
 
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-    _deprecated_oauth_aliases = {
-        "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     user_auth_state_key = "google_user"
 
     @default("login_service")
@@ -83,13 +78,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
-    google_group_whitelist = Dict(
-        config=True,
-        help="""
-        Deprecated, use `GoogleOAuthenticator.allowed_google_groups`
-        """,
-    )
-
     allowed_google_groups = Dict(
         Set(Unicode()),
         config=True,
@@ -150,6 +138,16 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 return []
             return [proposal.value.lower()]
         return [hd.lower() for hd in proposal.value]
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    google_group_whitelist = Dict(
+        config=True,
+        help="Deprecated, use :attr:`.GoogleOAuthenticator.allowed_google_groups`.",
+    )
 
     async def update_auth_model(self, auth_model):
         """

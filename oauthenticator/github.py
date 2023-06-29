@@ -13,11 +13,6 @@ from .oauth2 import OAuthenticator
 
 
 class GitHubOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     user_auth_state_key = "github_user"
 
     @default("login_service")
@@ -99,38 +94,8 @@ class GitHubOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return f"{self.github_api}/user"
 
-    # deprecated names
-    github_client_id = Unicode(
-        config=True,
-        help="""
-        DEPRECATED
-        """,
-    )
-
-    def _github_client_id_changed(self, name, old, new):
-        self.log.warning("github_client_id is deprecated, use client_id")
-        self.client_id = new
-
-    github_client_secret = Unicode(
-        config=True,
-        help="""
-        DEPRECATED
-        """,
-    )
-
-    def _github_client_secret_changed(self, name, old, new):
-        self.log.warning("github_client_secret is deprecated, use client_secret")
-        self.client_secret = new
-
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
-
-    github_organization_whitelist = Set(
-        config=True,
-        help="""
-        Deprecated, use `GitHubOAuthenticator.allowed_organizations`
-        """,
-    )
 
     allowed_organizations = Set(
         config=True,
@@ -166,6 +131,24 @@ class GitHubOAuthenticator(OAuthenticator):
         persisted via `enable_auth_state`. For more information, see
         https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
         """,
+    )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "github_client_id": ("client_id", "0.1.0"),
+        "github_client_secret": ("client_secret", "0.1.0"),
+        "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    github_client_id = Unicode(
+        config=True, help="Deprecated, use :attr:`.GitHubOAuthenticator.client_id`."
+    )
+    github_client_secret = Unicode(
+        config=True, help="Deprecated, use :attr:`.GitHubOAuthenticator.client_secret`."
+    )
+    github_organization_whitelist = Set(
+        config=True,
+        help="Deprecated, use :attr:`.GitHubOAuthenticator.allowed_organizations`.",
     )
 
     async def check_allowed(self, username, auth_model):

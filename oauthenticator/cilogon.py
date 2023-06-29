@@ -40,22 +40,6 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 
 class CILogonOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        # <deprecated-config>:
-        #   (
-        #    <new-config>,
-        #    <deprecation-version>,
-        #    <deprecated-config-and-new-config-have-same-type>
-        #   )
-        "idp_whitelist": ("allowed_idps", "0.12.0", False),
-        "idp": ("shown_idps", "15.0.0", False),
-        "strip_idp_domain": ("allowed_idps", "15.0.0", False),
-        "shown_idps": ("allowed_idps", "16.0.0", False),
-        "username_claim": ("allowed_idps", "16.0.0", False),
-        "additional_username_claims": ("allowed_idps", "16.0.0", False),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     login_handler = CILogonLoginHandler
 
     user_auth_state_key = "cilogon_user"
@@ -86,14 +70,6 @@ class CILogonOAuthenticator(OAuthenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return f"https://{self.cilogon_host}/oauth2/userinfo"
-
-    @default("username_claim")
-    def _username_claim_default(self):
-        """What keys are available will depend on the scopes requested.
-        See https://www.cilogon.org/oidc for details.
-        Note that this option can be overridden for specific identity providers via `allowed_idps[<identity provider>]["username_derivation"]["username_claim"]`.
-        """
-        return "eppn"
 
     scope = List(
         Unicode(),
@@ -127,13 +103,6 @@ class CILogonOAuthenticator(OAuthenticator):
             scopes += ['org.cilogon.userinfo']
 
         return scopes
-
-    idp_whitelist = List(
-        config=True,
-        help="""
-        Deprecated, use `CIlogonOAuthenticator.allowed_idps`
-        """,
-    )
 
     allowed_idps = Dict(
         config=True,
@@ -231,39 +200,6 @@ class CILogonOAuthenticator(OAuthenticator):
 
         return idps
 
-    strip_idp_domain = Bool(
-        False,
-        config=True,
-        help="""
-        Deprecated, use `CILogonOAuthenticator.allowed_idps[<ipd>]["username_derivation"]["action"] = "strip_idp_domain"`
-        to enable it and `CIlogonOAuthenticator.allowed_idps[<idp>]["username_derivation"]["domain"]` to list the domain
-        which will be stripped
-        """,
-    )
-
-    idp = Unicode(
-        config=True,
-        help="""
-        Deprecated, use `CILogonOAuthenticator.shown_idps`.
-        """,
-    )
-
-    shown_idps = List(
-        Unicode(),
-        config=True,
-        help="""
-        Deprecated, `CILogonOAuthenticator.allowed_idps` will determine the idps
-        shown.
-
-        A list of identity providers to be shown as login options. The `idp`
-        attribute is the SAML Entity ID of the user's selected identity
-        provider.
-
-        See https://cilogon.org/include/idplist.xml for the list of identity
-        providers supported by CILogon.
-        """,
-    )
-
     skin = Unicode(
         config=True,
         help="""
@@ -274,16 +210,30 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "idp_whitelist": ("allowed_idps", "0.12.0", False),
+        "idp": ("shown_idps", "15.0.0", False),
+        "strip_idp_domain": ("allowed_idps", "15.0.0", False),
+        "shown_idps": ("allowed_idps", "16.0.0", False),
+        "additional_username_claims": ("allowed_idps", "16.0.0", False),
+        "username_claim": ("allowed_idps", "16.0.0", False),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    idp_whitelist = List(
+        config=True, help="Removed, use :attr:`.CILogonOAuthenticator.allowed_idps`."
+    )
+    idp = Unicode(
+        config=True, help="Removed, use :attr:`.CILogonOAuthenticator.allowed_idps`."
+    )
+    strip_idp_domain = Bool(
+        config=True, help="Removed, use :attr:`.CILogonOAuthenticator.allowed_idps`."
+    )
+    shown_idps = List(
+        config=True, help="Removed, use :attr:`.CILogonOAuthenticator.allowed_idps`."
+    )
     additional_username_claims = List(
-        config=True,
-        help="""
-        Deprecated, use `CILogonOAuthenticator.allowed_idps["username_derivation"]["username_claim"]`.
-
-        Additional claims to check if the username_claim fails.
-
-        This is useful for linked identities where not all of them return the
-        primary username_claim.
-        """,
+        config=True, help="Removed, use :attr:`.CILogonOAuthenticator.allowed_idps`."
     )
 
     def user_info_to_username(self, user_info):

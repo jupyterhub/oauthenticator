@@ -21,12 +21,6 @@ def _api_headers(access_token):
 
 
 class GitLabOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
-        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     user_auth_state_key = "gitlab_user"
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
@@ -108,13 +102,6 @@ class GitLabOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return f"{self.gitlab_api}/user"
 
-    gitlab_group_whitelist = Set(
-        config=True,
-        help="""
-        Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`
-        """,
-    )
-
     allowed_gitlab_groups = Set(
         config=True,
         help="""
@@ -123,13 +110,6 @@ class GitLabOAuthenticator(OAuthenticator):
         Note that for each group allowed, an additional REST API call needs to
         be made when a user is signing in. To reduce the risk of JupyterHub
         being rate limited, don't specify too many.
-        """,
-    )
-
-    gitlab_project_id_whitelist = Set(
-        config=True,
-        help="""
-        Deprecated, use `GitLabOAuthenticator.allowed_project_ids`
         """,
     )
 
@@ -143,6 +123,21 @@ class GitLabOAuthenticator(OAuthenticator):
         be made when a user is signing in. To reduce the risk of JupyterHub
         being rate limited, don't specify too many.
         """,
+    )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
+        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    gitlab_group_whitelist = Set(
+        config=True,
+        help="Deprecated, use :attr:`.GitLabOAuthenticator.allowed_gitlab_groups`.",
+    )
+    gitlab_project_id_whitelist = Set(
+        config=True,
+        help="Deprecated, use :attr:`.GitLabOAuthenticator.allowed_project_ids`.",
     )
 
     gitlab_version = None
@@ -248,5 +243,4 @@ class GitLabOAuthenticator(OAuthenticator):
 
 
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
-
     """A version that mixes in local system user creation"""
