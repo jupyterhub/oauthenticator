@@ -32,3 +32,9 @@ be relevant to read more about in the configuration reference:
 - {attr}`.GoogleOAuthenticator.allowed_google_groups`
 - {attr}`.GoogleOAuthenticator.admin_google_groups`
 - {attr}`.GoogleOAuthenticator.hosted_domain`
+
+If you configure `allowed_google_groups` or `admin_google_groups`, you are
+required to also configure:
+
+- {attr}`.GoogleOAuthenticator.gsuite_administrator`
+- {attr}`.GoogleOAuthenticator.google_service_account_keys`

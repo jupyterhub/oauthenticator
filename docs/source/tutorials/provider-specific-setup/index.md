@@ -14,22 +14,16 @@ can allow users part of specific GitHub organizations.
 :maxdepth: 1
 :caption: OAuth providers specific setup guides
 
+providers/auth0.md
 providers/azuread.md
+providers/bitbucket.md
+providers/cilogon.md
 providers/github.md
 providers/gitlab.md
 providers/globus.md
 providers/google.md
+providers/mediawiki.md
 providers/okpy.md
 providers/openshift.md
 providers/generic.md
-```
-
-```{warning}
-The following authenticator classes doesn't yet have specialized documentation
-pages written for them.
-
-- `Auth0OAuthenticator`
-- `BitBucketOAuthenticator`
-- `CILogonOAuthenticator`
-- `MWOAuthenticator` (MW stands for MediaWiki)
 ```
