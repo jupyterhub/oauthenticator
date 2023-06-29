@@ -1,7 +1,7 @@
-# BitBucket Setup
+# Bitbucket Setup
 
-You need to have an BitBucket OAuth application registered ahead of time, see
-BitBucket's official documentation about [registering an app].
+You need to have an Bitbucket OAuth application registered ahead of time, see
+Bitbucket's official documentation about [registering an app].
 
 [registering an app]: https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/
 
@@ -18,7 +18,7 @@ c.OAuthenticator.client_secret = "[your oauth2 application secret]"
 
 ## Additional configuration
 
-BitBucketOAuthenticator expands OAuthenticator with the following config that may
+BitbucketOAuthenticator expands OAuthenticator with the following config that may
 be relevant to read more about in the configuration reference:
 
-- {attr}`.BitBucketOAuthenticator.allowed_teams`
+- {attr}`.BitbucketOAuthenticator.allowed_teams`

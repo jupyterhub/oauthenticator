@@ -3,7 +3,7 @@
 When a user is recognized by an identity provider but isn't allowed to sign in,
 the following message is shown by default.
 
-```{important}
+```
 Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.
 ```
 

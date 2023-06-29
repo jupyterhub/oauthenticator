@@ -17,6 +17,10 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _login_service_default(self):
         return os.environ.get("LOGIN_SERVICE", "Azure AD")
 
+    @default("username_claim")
+    def _username_claim_default(self):
+        return "name"
+
     tenant_id = Unicode(
         config=True,
         help="""
@@ -31,10 +35,6 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
-
-    @default("username_claim")
-    def _username_claim_default(self):
-        return "name"
 
     @default("authorize_url")
     def _authorize_url_default(self):

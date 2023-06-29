@@ -72,10 +72,6 @@ class GitLabOAuthenticator(OAuthenticator):
 
         return gitlab_url
 
-    @default("gitlab_api")
-    def _default_gitlab_api(self):
-        return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
-
     @default("authorize_url")
     def _authorize_url_default(self):
         return f"{self.gitlab_url}/oauth/authorize"
@@ -103,6 +99,10 @@ class GitLabOAuthenticator(OAuthenticator):
         Used to determine the default value for `userdata_url`.
         """,
     )
+
+    @default("gitlab_api")
+    def _default_gitlab_api(self):
+        return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
 
     @default("userdata_url")
     def _userdata_url_default(self):

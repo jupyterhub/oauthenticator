@@ -46,7 +46,7 @@ class BitbucketOAuthenticator(OAuthenticator):
     allowed_teams = Set(
         config=True,
         help="""
-        Allow members of selected BitBucket teams to sign in.
+        Allow members of selected Bitbucket teams to sign in.
         """,
     )
 

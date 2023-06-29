@@ -44,13 +44,29 @@ class GenericOAuthenticator(OAuthenticator):
     allowed_groups = Set(
         Unicode(),
         config=True,
-        help="Automatically allow members of selected groups",
+        help="""
+        Allow members of selected groups to sign in.
+
+        When configuring this you may need to configure `claim_groups_key` as
+        well as it determines the key in the `userdata_url` response that is
+        assumed to list the groups a user is a member of.
+        """,
     )
 
     admin_groups = Set(
         Unicode(),
         config=True,
-        help="Groups whose members should have Jupyterhub admin privileges",
+        help="""
+        Allow members of selected groups to sign in and consider them as
+        JupyterHub admins.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+
+        When configuring this you may need to configure `claim_groups_key` as
+        well as it determines the key in the `userdata_url` response that is
+        assumed to list the groups a user is a member of.
+        """,
     )
 
     username_key = Union(

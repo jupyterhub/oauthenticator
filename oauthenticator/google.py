@@ -153,14 +153,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             return [proposal.value.lower()]
         return [hd.lower() for hd in proposal.value]
 
-    login_service = Unicode(
-        os.environ.get('LOGIN_SERVICE', 'Google'),
-        config=True,
-        help="""
-        Google Apps hosted domain string, e.g. My College
-        """,
-    )
-
     async def update_auth_model(self, auth_model):
         """
         Fetch and store `google_groups` in auth state if `allowed_google_groups`

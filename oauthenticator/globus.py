@@ -88,13 +88,17 @@ class GlobusOAuthenticator(OAuthenticator):
     revocation_url = Unicode(
         "https://auth.globus.org/v2/oauth2/token/revoke",
         config=True,
-        help="Globus URL to revoke live tokens.",
+        help="""
+        Globus URL to revoke live tokens.
+        """,
     )
 
     globus_groups_url = Unicode(
         "https://groups.api.globus.org/v2/groups/my_groups",
         config=True,
-        help="Globus URL to get list of user's Groups.",
+        help="""
+        Globus URL to get list of user's Groups.
+        """,
     )
 
     identity_provider = Unicode(
@@ -179,7 +183,7 @@ class GlobusOAuthenticator(OAuthenticator):
     allowed_globus_groups = Set(
         config=True,
         help="""
-        Allow members of selected Google groups to sign in. Globus groups should
+        Allow members of selected Globus groups to sign in. Globus groups should
         be specified using their UUIDs.
 
         If this is configured, the default value of the scope configuration is

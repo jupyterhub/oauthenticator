@@ -463,7 +463,8 @@ class OAuthenticator(Authenticator):
 
     http_request_kwargs = Dict(
         config=True,
-        help="""Extra default kwargs passed to all HTTPRequests.
+        help="""
+        Extra default kwargs passed to all HTTPRequests.
 
         For example, to use a HTTP proxy for all requests:
 
