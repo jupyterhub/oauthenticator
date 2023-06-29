@@ -26,11 +26,9 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    login_service = Unicode(
-        "OAuth 2.0",
-        config=True,
-        help="""""",
-    )
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "OAuth 2.0")
 
     claim_groups_key = Union(
         [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],
@@ -65,11 +63,12 @@ class GenericOAuthenticator(OAuthenticator):
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
         config=True,
         help="""
-        Userdata username key from returned json for USERDATA_URL.
+        When `userdata_url` returns a json response, the username will be taken
+        from this key.
 
         Can be a string key name or a callable that accepts the returned
-        json (as a dict) and returns the username.  The callable is useful
-        e.g. for extracting the username from a nested object in the
+        userdata json (as a dict) and returns the username.  The callable is
+        useful e.g. for extracting the username from a nested object in the
         response.
         """,
     )

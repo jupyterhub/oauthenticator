@@ -47,8 +47,11 @@ class Auth0OAuthenticator(OAuthenticator):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    login_service = "Auth0"
     user_auth_state_key = "auth0_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Auth0")
 
     @default("username_claim")
     def _username_claim_default(self):

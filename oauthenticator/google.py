@@ -21,9 +21,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     user_auth_state_key = "google_user"
 
-    @default("authorize_url")
-    def _authorize_url_default(self):
-        return "https://accounts.google.com/o/oauth2/v2/auth"
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Google")
 
     @default("scope")
     def _scope_default(self):
@@ -33,9 +33,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def _username_claim_default(self):
         return "email"
 
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
+
     google_api_url = Unicode(
         config=True,
-        help="""""",
+        help="""
+        Used to determine the default values for `token_url` and `userdata_url`.
+        """,
     )
 
     @default("google_api_url")
@@ -62,6 +68,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True,
         help="""
         Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+
+        Required if and only if `allowed_google_groups` or `admin_google_groups`
+        is configured.
         """,
     )
 
@@ -69,7 +78,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Unicode(),
         config=True,
         help="""
-        Username of a G Suite Administrator for the service account to act as
+        Username of a G Suite Administrator for the service account to act as.
+
+        Required if and only if `allowed_google_groups` or `admin_google_groups`
+        is configured.
         """,
     )
 
@@ -85,6 +97,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True,
         help="""
         Allow members of selected Google groups to sign in.
+
+        Use of this requires configuration of `gsuite_administrator` and
+        `google_service_account_keys`.
         """,
     )
 
@@ -97,6 +112,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         If this is set and a user isn't part of one of these groups or listed in
         `admin_users`, a user signing in will have their admin status revoked.
+
+        Use of this requires configuration of `gsuite_administrator` and
+        `google_service_account_keys`.
         """,
     )
 
@@ -226,7 +244,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         except:
             raise ImportError(
                 "Could not import google.oauth2's service_account,"
-                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
             )
 
         gsuite_administrator_email = "{}@{}".format(
@@ -250,7 +268,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         except:
             raise ImportError(
                 "Could not import googleapiclient.discovery's build,"
-                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
             )
 
         self.log.debug(

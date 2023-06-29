@@ -1,6 +1,8 @@
 """
 Custom Authenticator to use Bitbucket OAuth with JupyterHub
 """
+import os
+
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httputil import url_concat
 from traitlets import Set, default
@@ -14,10 +16,13 @@ class BitbucketOAuthenticator(OAuthenticator):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    login_service = "Bitbucket"
     client_id_env = "BITBUCKET_CLIENT_ID"
     client_secret_env = "BITBUCKET_CLIENT_SECRET"
     user_auth_state_key = "bitbucket_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Bitbucket")
 
     @default("authorize_url")
     def _authorize_url_default(self):

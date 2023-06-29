@@ -67,19 +67,23 @@ class CILogonOAuthenticator(OAuthenticator):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    login_service = "CILogon"
+    login_handler = CILogonLoginHandler
 
+    user_auth_state_key = "cilogon_user"
     client_id_env = 'CILOGON_CLIENT_ID'
     client_secret_env = 'CILOGON_CLIENT_SECRET'
 
-    user_auth_state_key = "cilogon_user"
-
-    login_handler = CILogonLoginHandler
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "CILogon")
 
     cilogon_host = Unicode(
         os.environ.get("CILOGON_HOST") or "cilogon.org",
         config=True,
-        help="""""",
+        help="""
+        Used to determine the default values for `authorize_url`, `token_url`,
+        and `userdata_url`.
+        """,
     )
 
     @default("authorize_url")
@@ -107,9 +111,11 @@ class CILogonOAuthenticator(OAuthenticator):
         default_value=['openid', 'email', 'org.cilogon.userinfo', 'profile'],
         config=True,
         help="""
-        The OAuth scopes to request.
+        OAuth scopes to request.
 
-        See cilogon_scope.md for details. At least 'openid' is required.
+        `openid` and `org.cilogon.userinfo` is required.
+
+        Read more about CILogon scopes in https://www.cilogon.org/oidc.
         """,
     )
 

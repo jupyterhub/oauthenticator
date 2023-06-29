@@ -21,25 +21,26 @@ def _api_headers(access_token):
 
 
 class GitLabOAuthenticator(OAuthenticator):
-    # see gitlab_scopes.md for details about scope config
-    # set scopes via config, e.g.
-    # c.GitLabOAuthenticator.scope = ['read_user']
-
     _deprecated_oauth_aliases = {
         "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
         "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    login_service = "GitLab"
     user_auth_state_key = "gitlab_user"
-
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
 
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "GitLab")
+
     gitlab_url = Unicode(
         config=True,
-        help="""""",
+        help="""
+        Used to determine the default values for `gitlab_api`, `authorize_url`,
+        `token_url`.
+        """,
     )
 
     @default("gitlab_url")
@@ -71,21 +72,6 @@ class GitLabOAuthenticator(OAuthenticator):
 
         return gitlab_url
 
-    gitlab_api_version = CUnicode(
-        "4",
-        config=True,
-        help="""""",
-    )
-
-    @default('gitlab_api_version')
-    def _gitlab_api_version_default(self):
-        return os.environ.get('GITLAB_API_VERSION') or '4'
-
-    gitlab_api = Unicode(
-        config=True,
-        help="""""",
-    )
-
     @default("gitlab_api")
     def _default_gitlab_api(self):
         return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
@@ -97,6 +83,26 @@ class GitLabOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url_default(self):
         return f"{self.gitlab_url}/oauth/token"
+
+    gitlab_api_version = CUnicode(
+        config=True,
+        help="""
+        Used to determine the default values for `gitlab_api`.
+
+        For details, see https://docs.gitlab.com/ee/api/rest/.
+        """,
+    )
+
+    @default("gitlab_api_version")
+    def _gitlab_api_version_default(self):
+        return os.environ.get("GITLAB_API_VERSION") or "4"
+
+    gitlab_api = Unicode(
+        config=True,
+        help="""
+        Used to determine the default value for `userdata_url`.
+        """,
+    )
 
     @default("userdata_url")
     def _userdata_url_default(self):

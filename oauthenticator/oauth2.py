@@ -239,20 +239,26 @@ class OAuthLogoutHandler(LogoutHandler):
 
 
 class OAuthenticator(Authenticator):
-    """Base class for OAuthenticators
+    """
+    Base class for OAuthenticators.
 
-    Subclasses must override:
+    Subclasses should, in an increasing level of customization:
 
-    login_service (string identifying the service provider)
-    authenticate (method takes one arg - the request handler handling the oauth callback)
+    - Override the constant `user_auth_state_key`
+    - Override various config's default values, such as
+      `authorize_url`, `token_url`, `userdata_url`, and `login_service`.
+    - Override various methods called by the `authenticate` method, which
+      subclasses should not override.
+    - Override handler classes such as `login_handler`, `callback_handler`, and
+      `logout_handler`.
     """
 
     login_handler = OAuthLoginHandler
     callback_handler = OAuthCallbackHandler
     logout_handler = OAuthLogoutHandler
 
-    # The name of the user key expected to be present in `auth_state`
-    # To be overridden by each oauthenticator
+    # user_auth_state_key represents the name of the key in the `auth_state`
+    # dictionary that user info will be saved
     user_auth_state_key = "oauth_user"
 
     allow_all = Bool(
@@ -323,9 +329,14 @@ class OAuthenticator(Authenticator):
     logout_redirect_url = Unicode(
         config=True,
         help="""
-        URL for logging out of Auth0
+        When configured, users are not presented with the JupyterHub logout
+        page, but instead redirected to this destination.
         """,
     )
+
+    @default("logout_redirect_url")
+    def _logout_redirect_url_default(self):
+        return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
     # Originally a GenericOAuthenticator only trait
     userdata_params = Dict(
@@ -351,10 +362,6 @@ class OAuthenticator(Authenticator):
         Extra parameters for first POST request exchanging the OAuth code for an Access Token
         """,
     )
-
-    @default("logout_redirect_url")
-    def _logout_redirect_url_default(self):
-        return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
     custom_403_message = Unicode(
         "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
@@ -382,7 +389,6 @@ class OAuthenticator(Authenticator):
         """,
     )
 
-    login_service = "override in subclass"
     oauth_callback_url = Unicode(
         os.getenv("OAUTH_CALLBACK_URL", ""),
         config=True,
@@ -408,7 +414,10 @@ class OAuthenticator(Authenticator):
     client_id_env = ""
     client_id = Unicode(
         config=True,
-        help="""""",
+        help="""
+        The client id of the OAuth2 application registered with the identity
+        provider.
+        """,
     )
 
     def _client_id_default(self):
@@ -421,7 +430,10 @@ class OAuthenticator(Authenticator):
     client_secret_env = ""
     client_secret = Unicode(
         config=True,
-        help="""""",
+        help="""
+        The client secret of the OAuth2 application registered with the identity
+        provider.
+        """,
     )
 
     def _client_secret_default(self):
@@ -434,7 +446,12 @@ class OAuthenticator(Authenticator):
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
     validate_server_cert = Bool(
         config=True,
-        help="""""",
+        help="""
+        Determines if certificates are validated.
+
+        Only set this to False if you feel confident it will not be a security
+        concern.
+        """,
     )
 
     def _validate_server_cert_default(self):
@@ -881,6 +898,16 @@ class OAuthenticator(Authenticator):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
+    # _deprecated_oauth_aliases should be a dictionary with a format as:
+    #
+    # {
+    #     "old_config": (
+    #         "new_config",
+    #         "16.0.0",      # version when it became deprecated
+    #         False,         # if new config can be updated with a warning
+    #     ),
+    # }
+    #
     _deprecated_oauth_aliases = {}
 
     def _deprecated_oauth_trait(self, change):

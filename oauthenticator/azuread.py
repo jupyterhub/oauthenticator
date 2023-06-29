@@ -11,15 +11,11 @@ from .oauth2 import OAuthenticator
 
 
 class AzureAdOAuthenticator(OAuthenticator):
-    login_service = Unicode(
-        os.environ.get('LOGIN_SERVICE', 'Azure AD'),
-        config=True,
-        help="""
-        Azure AD domain name string, e.g. My College
-        """,
-    )
-
     user_auth_state_key = "user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Azure AD")
 
     tenant_id = Unicode(
         config=True,

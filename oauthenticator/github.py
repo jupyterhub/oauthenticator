@@ -18,8 +18,11 @@ class GitHubOAuthenticator(OAuthenticator):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    login_service = "GitHub"
     user_auth_state_key = "github_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "GitHub")
 
     @default("username_claim")
     def _username_claim_default(self):
@@ -27,7 +30,10 @@ class GitHubOAuthenticator(OAuthenticator):
 
     github_url = Unicode(
         config=True,
-        help="""""",
+        help="""
+        Used to determine the default values for `github_api`, `authorize_url`,
+        `token_url`, and `userdata_url`.
+        """,
     )
 
     @default("github_url")
@@ -64,7 +70,12 @@ class GitHubOAuthenticator(OAuthenticator):
 
     github_api = Unicode(
         config=True,
-        help="""""",
+        help="""
+        URL to the GitHub REST API to use.
+
+        Determined based on `github_url` by default and may never need to be
+        explicitly set.
+        """,
     )
 
     @default("github_api")
@@ -72,6 +83,8 @@ class GitHubOAuthenticator(OAuthenticator):
         if self.github_url == "https://github.com":
             return "https://api.github.com"
         else:
+            # Only github.com has its api at api.github.com, enterprise server
+            # deployments has it in the same domain path under /api/v3
             return self.github_url + "/api/v3"
 
     @default("authorize_url")

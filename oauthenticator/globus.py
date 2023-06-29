@@ -59,13 +59,19 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
 
 
 class GlobusOAuthenticator(OAuthenticator):
-    """The Globus OAuthenticator handles both authorization and passing
-    transfer tokens to the spawner."""
+    """
+    The Globus OAuthenticator handles authentication, authorization, and sets
+    transfer tokens on the spawner environment variables via a pre_spawn_start
+    hook.
+    """
 
-    login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
 
     user_auth_state_key = "globus_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Globus")
 
     @default("userdata_url")
     def _userdata_url_default(self):
@@ -84,6 +90,7 @@ class GlobusOAuthenticator(OAuthenticator):
         config=True,
         help="Globus URL to revoke live tokens.",
     )
+
     globus_groups_url = Unicode(
         "https://groups.api.globus.org/v2/groups/my_groups",
         config=True,
@@ -197,7 +204,8 @@ class GlobusOAuthenticator(OAuthenticator):
     )
 
     async def pre_spawn_start(self, user, spawner):
-        """Add tokens to the spawner whenever the spawner starts a notebook.
+        """
+        Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
         globus-sdk-python.readthedocs.io/en/stable/tutorial/#tutorial-step4
         """
