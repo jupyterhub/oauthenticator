@@ -2,9 +2,52 @@
 
 # Generic OAuthenticator setups for various identity providers
 
+(tutorials:provider-specific:generic:oidc)=
+
+## Setup for an OpenID Connect (OIDC) based identity provider
+
+The GenericOAuthenticator can be configured to be used against an OpenID Connect
+(OIDC) based identity provider, and this is an example demonstrating that.
+
+```python
+c.JupyterHub.authenticator_class = "generic"
+
+# OAuth2 application info
+# -----------------------
+c.GenericOAuthenticator.client_id = "some-client-id"
+c.GenericOAuthenticator.client_secret = "some-often-long-client-secret"
+
+# Identity provider info
+# ----------------------
+c.GenericOAuthenticator.authorize_url =
+c.GenericOAuthenticator.token_url = "https://accounts.example.com/auth/realms/example/protocol/openid-connect/token"
+c.GenericOAuthenticator.userdata_url = "https://accounts.example.com/auth/realms/example/protocol/openid-connect/userinfo"
+
+# What we request about the user
+# ------------------------------
+# scope represents requested information about the user, and since we configure
+# this against an OIDC based identity provider, we should request "openid" at
+# least.
+#
+# In this example we include "email" and "groups" as well, and then declare that
+# we should set the username based on the "email" key in the response, and read
+# group membership from the "groups" key in the response.
+#
+c.GenericOAuthenticator.scope = ["openid", "email", "groups"]
+c.GenericOAuthenticator.username_claim = "email"
+c.GenericOAuthenticator.claim_groups_key = "groups"
+
+# Authorization
+# -------------
+c.GenericOAuthenticator.allowed_users = {"user1@example.com"}
+c.GenericOAuthenticator.allowed_groups = {"staff"}
+c.GenericOAuthenticator.admin_users = {"user2@example.com"}
+c.GenericOAuthenticator.admin_groups = {"administrator"}
+```
+
 (tutorials:provider-specific:generic:moodle)=
 
-## Generic OAuthenticator Setup for Moodle
+## Setup for Moodle
 
 First install the [OAuth2 Server Plugin](https://github.com/projectestac/moodle-local_oauth) for
 Moodle.
@@ -28,7 +71,7 @@ c.GenericOAuthenticator.scope = ["user_info"]
 
 (tutorials:provider-specific:generic:nextcloud)=
 
-## Generic OAuthenticator Setup for Nextcloud
+## Setup for Nextcloud
 
 Add a new OAuth2 Application in the Nextcloud Administrator
 Security Settings. You will get a client id and a secret key.
@@ -51,7 +94,7 @@ c.GenericOAuthenticator.userdata_url = 'https://YOUR-NEXTCLOUD-DOMAIN.com/ocs/v2
 
 (tutorials:provider-specific:generic:yandex)=
 
-## Generic OAuthenticator Setup for Yandex
+## Setup for Yandex
 
 First visit [Yandex OAuth](https://oauth.yandex.com) to setup your
 app. Ensure that **Web services** is checked (in the **Platform**
@@ -81,7 +124,7 @@ c.GenericOAuthenticator.userdata_url = "https://login.yandex.ru/info"
 
 (tutorials:provider-specific:generic:awscognito)=
 
-## Generic OAuthenticator Setup for AWS Cognito
+## Setup for AWS Cognito
 
 First visit AWS official documentation on [Getting started with user pools] for
 info on how to register and configure a cognito user pool and an associated

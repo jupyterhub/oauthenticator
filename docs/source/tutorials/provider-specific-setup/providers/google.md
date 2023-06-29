@@ -2,12 +2,16 @@
 
 # Google Setup
 
-See [Google’s documentation](https://developers.google.com/identity/protocols/oauth2)
-on how to create OAUth 2.0 client credentials.
+You need to have an Google OAuth application registered ahead of time, see
+Google's official documentation about [registering an app].
 
+[registering an app]: https://developers.google.com/identity/protocols/oauth2
+
+```{note}
 The `Authorized JavaScript origins` should be set to to your hub’s public
 address while `Authorized redirect URIs` should be set to the same but
 followed by `/hub/oauth_callback`.
+```
 
 ## JupyterHub configuration
 
