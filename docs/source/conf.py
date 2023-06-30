@@ -127,6 +127,10 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# default_role is set for use with reStructuredText that we still need to use in
+# docstrings in the autodoc_traits inspected Python module. It makes single
+# backticks around text, like `my_function`, behave as in typical Markdown.
+default_role = "literal"
 
 # -- Options for HTML output -------------------------------------------------
 
