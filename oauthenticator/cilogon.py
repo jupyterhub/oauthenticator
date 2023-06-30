@@ -1,16 +1,5 @@
-"""CILogon OAuthAuthenticator for JupyterHub
-
-Uses OAuth 2.0 with cilogon.org (override with CILOGON_HOST)
-
-Caveats:
-
-- For allowed user list /admin purposes, username will be the ePPN by default.
-  This is typically an email address and may not work as a Unix userid.
-  Normalization may be required to turn the JupyterHub username into a Unix username.
-- Default username_claim of ePPN does not work for all providers,
-  e.g. generic OAuth such as Google.
-  Use `c.CILogonOAuthenticator.username_claim = 'email'` to use
-  email instead of ePPN as the JupyterHub username.
+"""
+A JupyterHub authenticator class for use with CILogon as an identity provider.
 """
 import os
 from urllib.parse import urlparse
@@ -67,16 +56,24 @@ class CILogonOAuthenticator(OAuthenticator):
         **OAuthenticator._deprecated_oauth_aliases,
     }
 
-    login_service = "CILogon"
+    login_handler = CILogonLoginHandler
 
+    user_auth_state_key = "cilogon_user"
     client_id_env = 'CILOGON_CLIENT_ID'
     client_secret_env = 'CILOGON_CLIENT_SECRET'
 
-    user_auth_state_key = "cilogon_user"
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "CILogon")
 
-    login_handler = CILogonLoginHandler
-
-    cilogon_host = Unicode(os.environ.get("CILOGON_HOST") or "cilogon.org", config=True)
+    cilogon_host = Unicode(
+        os.environ.get("CILOGON_HOST") or "cilogon.org",
+        config=True,
+        help="""
+        Used to determine the default values for `authorize_url`, `token_url`,
+        and `userdata_url`.
+        """,
+    )
 
     @default("authorize_url")
     def _authorize_url_default(self):
@@ -103,9 +100,11 @@ class CILogonOAuthenticator(OAuthenticator):
         default_value=['openid', 'email', 'org.cilogon.userinfo', 'profile'],
         config=True,
         help="""
-        The OAuth scopes to request.
+        OAuth scopes to request.
 
-        See cilogon_scope.md for details. At least 'openid' is required.
+        `openid` and `org.cilogon.userinfo` is required.
+
+        Read more about CILogon scopes in https://www.cilogon.org/oidc.
         """,
     )
 
@@ -130,13 +129,14 @@ class CILogonOAuthenticator(OAuthenticator):
         return scopes
 
     idp_whitelist = List(
-        help="Deprecated, use `CIlogonOAuthenticator.allowed_idps`",
         config=True,
+        help="""
+        Deprecated, use `CIlogonOAuthenticator.allowed_idps`
+        """,
     )
 
     allowed_idps = Dict(
         config=True,
-        default_value={},
         help="""
         A dictionary of the only entity IDs that will be allowed to be used as
         login options. See https://cilogon.org/idplist for the list of
@@ -242,7 +242,10 @@ class CILogonOAuthenticator(OAuthenticator):
     )
 
     idp = Unicode(
-        config=True, help="Deprecated, use `CILogonOAuthenticator.shown_idps`."
+        config=True,
+        help="""
+        Deprecated, use `CILogonOAuthenticator.shown_idps`.
+        """,
     )
 
     shown_idps = List(

@@ -1,7 +1,5 @@
 """
-Custom Authenticator to use OpenShift OAuth with JupyterHub.
-
-Derived from the GitHub OAuth authenticator.
+A JupyterHub authenticator class for use with OpenShift as an identity provider.
 """
 import os
 
@@ -13,11 +11,15 @@ from oauthenticator.oauth2 import OAuthenticator
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
-    login_service = "OpenShift"
-
-    scope = ['user:info']
-
     user_auth_state_key = "openshift_user"
+
+    @default("scope")
+    def _scope_default(self):
+        return ["user:info"]
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "OpenShift")
 
     @default("username_claim")
     def _username_claim_default(self):
@@ -27,22 +29,49 @@ class OpenShiftOAuthenticator(OAuthenticator):
         os.environ.get('OPENSHIFT_URL')
         or 'https://openshift.default.svc.cluster.local',
         config=True,
+        help="""
+        Used to determine the default values for `openshift_auth_api_url` and
+        `openshift_rest_api_url`.
+        """,
     )
-
-    validate_cert = Bool(
-        True, config=True, help="Set to False to disable certificate validation"
-    )
-
-    ca_certs = Unicode(config=True)
 
     allowed_groups = Set(
         config=True,
-        help="Set of OpenShift groups that should be allowed to access the hub.",
+        help="""
+        Allow members of selected OpenShift groups to sign in.
+        """,
     )
 
     admin_groups = Set(
         config=True,
-        help="Set of OpenShift groups that should be given admin access to the hub.",
+        help="""
+        Allow members of selected OpenShift groups to sign in and consider them
+        as JupyterHub admins.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+        """,
+    )
+
+    ca_certs = Unicode(
+        config=True,
+        help="""
+        Path to a certificate authority (CA) certificate file. Used to trust the
+        certificates from a specific CA.
+        """,
+    )
+
+    # FIXME: validate_cert is defined here, but OAuthenticator also defines
+    #        validate_server_cert. If both should exist separately its too
+    #        confusing without further documentation, and if only one should
+    #        exist the one here should be deprecated in favor of the other.
+    #
+    validate_cert = Bool(
+        True,
+        config=True,
+        help="""
+        Set to False to disable certificate validation.
+        """,
     )
 
     @default("ca_certs")
@@ -50,10 +79,15 @@ class OpenShiftOAuthenticator(OAuthenticator):
         ca_cert_file = "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         if self.validate_cert and os.path.exists(ca_cert_file):
             return ca_cert_file
-
         return ''
 
-    openshift_auth_api_url = Unicode(config=True)
+    openshift_auth_api_url = Unicode(
+        config=True,
+        help="""
+        Used to determine the default values for `authorize_url` and
+        `token_url`.
+        """,
+    )
 
     @default("openshift_auth_api_url")
     def _openshift_auth_api_url_default(self):
@@ -64,16 +98,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
         return resp_json.get('issuer')
 
-    openshift_rest_api_url = Unicode(
-        os.environ.get('OPENSHIFT_REST_API_URL')
-        or 'https://openshift.default.svc.cluster.local',
-        config=True,
-    )
-
-    @default("openshift_rest_api_url")
-    def _openshift_rest_api_url_default(self):
-        return self.openshift_url
-
     @default("authorize_url")
     def _authorize_url_default(self):
         return f"{self.openshift_auth_api_url}/oauth/authorize"
@@ -81,6 +105,19 @@ class OpenShiftOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url_default(self):
         return f"{self.openshift_auth_api_url}/oauth/token"
+
+    openshift_rest_api_url = Unicode(
+        config=True,
+        help="""
+        Used to determine the default value for `userdata_url`.
+
+        Defaults to the `openshift_url`.
+        """,
+    )
+
+    @default("openshift_rest_api_url")
+    def _openshift_rest_api_url_default(self):
+        return self.openshift_url
 
     @default("userdata_url")
     def _userdata_url_default(self):
@@ -131,5 +168,4 @@ class OpenShiftOAuthenticator(OAuthenticator):
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
-
     """A version that mixes in local system user creation"""

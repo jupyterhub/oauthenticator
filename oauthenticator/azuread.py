@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Azure AD with JupyterHub
+A JupyterHub authenticator class for use with Azure AD as an identity provider.
 """
 import os
 
@@ -11,19 +11,26 @@ from .oauth2 import OAuthenticator
 
 
 class AzureAdOAuthenticator(OAuthenticator):
-    login_service = Unicode(
-        os.environ.get('LOGIN_SERVICE', 'Azure AD'),
-        config=True,
-        help="""Azure AD domain name string, e.g. My College""",
-    )
-
-    tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
-
     user_auth_state_key = "user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Azure AD")
 
     @default("username_claim")
     def _username_claim_default(self):
         return "name"
+
+    tenant_id = Unicode(
+        config=True,
+        help="""
+        An Azure tenant ID for which an OAuth application is registered via
+        `client_id` and `client_secret`.
+
+        This is used to set the default values of `authorize_url` and
+        `token_url`.
+        """,
+    )
 
     @default('tenant_id')
     def _tenant_id_default(self):

@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use generic OAuth2 with JupyterHub
+A JupyterHub authenticator class for use with any OAuth2 based identity provider.
 """
 import os
 from functools import reduce
@@ -20,10 +20,15 @@ class GenericOAuthenticator(OAuthenticator):
     }
 
     extra_params = Dict(
-        help="Deprecated, use `GenericOAuthenticator.token_params`"
-    ).tag(config=True)
+        config=True,
+        help="""
+        Deprecated, use `GenericOAuthenticator.token_params`
+        """,
+    )
 
-    login_service = Unicode("OAuth 2.0", config=True)
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "OAuth 2.0")
 
     claim_groups_key = Union(
         [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],
@@ -39,13 +44,29 @@ class GenericOAuthenticator(OAuthenticator):
     allowed_groups = Set(
         Unicode(),
         config=True,
-        help="Automatically allow members of selected groups",
+        help="""
+        Allow members of selected groups to sign in.
+
+        When configuring this you may need to configure `claim_groups_key` as
+        well as it determines the key in the `userdata_url` response that is
+        assumed to list the groups a user is a member of.
+        """,
     )
 
     admin_groups = Set(
         Unicode(),
         config=True,
-        help="Groups whose members should have Jupyterhub admin privileges",
+        help="""
+        Allow members of selected groups to sign in and consider them as
+        JupyterHub admins.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+
+        When configuring this you may need to configure `claim_groups_key` as
+        well as it determines the key in the `userdata_url` response that is
+        assumed to list the groups a user is a member of.
+        """,
     )
 
     username_key = Union(
@@ -58,11 +79,12 @@ class GenericOAuthenticator(OAuthenticator):
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
         config=True,
         help="""
-        Userdata username key from returned json for USERDATA_URL.
+        When `userdata_url` returns a json response, the username will be taken
+        from this key.
 
         Can be a string key name or a callable that accepts the returned
-        json (as a dict) and returns the username.  The callable is useful
-        e.g. for extracting the username from a nested object in the
+        userdata json (as a dict) and returns the username.  The callable is
+        useful e.g. for extracting the username from a nested object in the
         response.
         """,
     )

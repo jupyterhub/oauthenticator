@@ -1,50 +1,47 @@
-# Configuration file for the Sphinx documentation builder.
+# Configuration file for Sphinx to build our documentation to HTML.
 #
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# http://www.sphinx-doc.org/en/master/config
-# -- Path setup --------------------------------------------------------------
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+import datetime
 import os
 import sys
 
-source = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath('..'))
-
-# -- Project information -----------------------------------------------------
-
-project = 'OAuthenticator'
-copyright = 'Jupyter Contributors'
-author = 'Jupyter Contributors'
-
-root_doc = master_doc = 'index'
-
 import oauthenticator
 
-# The short X.Y version.
+# -- Project information -----------------------------------------------------
+# ref: https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+#
+project = 'OAuthenticator'
+copyright = f"{datetime.date.today().year}, Project Jupyter Contributors"
+author = "Project Jupyter Contributors"
 version = '%i.%i' % oauthenticator.version_info[:2]
-# The full version, including alpha/beta/rc tags.
 release = oauthenticator.__version__
 
-
-# -- generate autodoc classes from entrypoints
-
+# -- Generate config reference documents based on entrypoints ----------------
+#
+# source/reference/api includes two templates, index.rst.tpl and
+# authenticator.rst.tpl. They are used to generate an index.rst file and a file
+# for each authenticator.
+#
 from collections import defaultdict
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
+
 import jinja2
+
+# The generation relies on the sphinx extension sphinx.ext.autodoc, and since it
+# loads python files it can error if it tries to import an optional dependency
+# we haven't installed. Because of this, we mock those dependencies using this
+# config option.
+autodoc_mock_imports = ["jwt", "mwoauth", "globus_sdk"]
 
 
 def render_autodoc_modules():
     authenticator_entrypoints = entry_points(group="jupyterhub.authenticators")
 
-    api = os.path.join(source, "reference/api")
+    here = os.path.dirname(__file__)
+    api = os.path.join(here, "reference/api")
     api_gen = os.path.join(api, "gen")
 
     # modules is a dict of dicts of lists
@@ -96,14 +93,10 @@ def render_autodoc_modules():
 
 render_autodoc_modules()
 
-autodoc_mock_imports = ["tornado", "jwt", "mwoauth", "globus_sdk"]
 
-
-# -- General configuration ---------------------------------------------------
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
+# -- General Sphinx configuration ---------------------------------------------------
+# ref: https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+#
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -115,27 +108,24 @@ extensions = [
     'sphinx_copybutton',
 ]
 
+root_doc = "index"
+source_suffix = [".md", ".rst"]
+
+# default_role is set for use with reStructuredText that we still need to use in
+# docstrings in the autodoc_traits inspected Python module. It makes single
+# backticks around text, like `my_function`, behave as in typical Markdown.
+default_role = "literal"
+
 # Disable autosummary otherwise it will overwrite the oauthenticators docs in the `gen` directory.
 # Reference: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html#confval-autosummary_generate
 autosummary_generate = False
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
-
 
 # -- Options for HTML output -------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
+# ref: https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 #
-html_theme = 'sphinx_book_theme'
 html_title = 'OAuthenticator'
-
+html_theme = 'sphinx_book_theme'
 html_theme_options = {
     "repository_url": "https://github.com/jupyterhub/oauthenticator",
     "use_issues_button": True,
@@ -143,18 +133,18 @@ html_theme_options = {
     "use_edit_page_button": True,
 }
 
-
 html_logo = '_static/images/logo/logo.png'
 html_favicon = '_static/images/logo/favicon.ico'
 
 # Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# relative to this directory. They are copied after the builtin static files, so
+# a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ["_static"]
 
 
 # -- Options for linkcheck builder -------------------------------------------
-# ref: http://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-linkcheck-builder
+# ref: https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-linkcheck-builder
+#
 linkcheck_ignore = [
     r"(.*)github\.com(.*)#",  # javascript based anchors
     r"(.*)/#%21(.*)/(.*)",  # /#!forum/jupyter - encoded anchor edge case
@@ -202,4 +192,7 @@ rediraffe_redirects = {
     "api/gen/oauthenticator.okpy": "reference/api/gen/oauthenticator.okpy",
     "api/gen/oauthenticator.openshift": "reference/api/gen/oauthenticator.openshift",
     "api/gen/oauthenticator.mediawiki": "reference/api/gen/oauthenticator.mediawiki",
+    # 2023-06-29 docs refresh
+    "topic/cilogon": "tutorials/provider-specific-setup/providers/cilogon",
+    "tutorials/provider-specific-setup/providers/awscognito": "tutorials/provider-specific-setup/providers/generic",
 }

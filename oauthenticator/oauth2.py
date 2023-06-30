@@ -1,7 +1,7 @@
 """
-Base classes for Custom Authenticator to use OAuth with JupyterHub
+Base classes for use by OAuth2 based JupyterHub authenticator classes.
 
-Most of the code c/o Kyle Kelley (@rgbkrk)
+Founded based on work by Kyle Kelley (@rgbkrk)
 """
 import base64
 import json
@@ -239,20 +239,26 @@ class OAuthLogoutHandler(LogoutHandler):
 
 
 class OAuthenticator(Authenticator):
-    """Base class for OAuthenticators
+    """
+    Base class for OAuthenticators.
 
-    Subclasses must override:
+    Subclasses should, in an increasing level of customization:
 
-    login_service (string identifying the service provider)
-    authenticate (method takes one arg - the request handler handling the oauth callback)
+    - Override the constant `user_auth_state_key`
+    - Override various config's default values, such as
+      `authorize_url`, `token_url`, `userdata_url`, and `login_service`.
+    - Override various methods called by the `authenticate` method, which
+      subclasses should not override.
+    - Override handler classes such as `login_handler`, `callback_handler`, and
+      `logout_handler`.
     """
 
     login_handler = OAuthLoginHandler
     callback_handler = OAuthCallbackHandler
     logout_handler = OAuthLogoutHandler
 
-    # The name of the user key expected to be present in `auth_state`
-    # To be overridden by each oauthenticator
+    # user_auth_state_key represents the name of the key in the `auth_state`
+    # dictionary that user info will be saved
     user_auth_state_key = "oauth_user"
 
     allow_all = Bool(
@@ -266,7 +272,10 @@ class OAuthenticator(Authenticator):
     )
 
     authorize_url = Unicode(
-        config=True, help="""The authenticate url for initiating oauth"""
+        config=True,
+        help="""
+        The authenticate url for initiating oauth
+        """,
     )
 
     @default("authorize_url")
@@ -275,7 +284,9 @@ class OAuthenticator(Authenticator):
 
     token_url = Unicode(
         config=True,
-        help="""The url retrieving an access token at the completion of oauth""",
+        help="""
+        The url retrieving an access token at the completion of oauth
+        """,
     )
 
     @default("token_url")
@@ -284,7 +295,9 @@ class OAuthenticator(Authenticator):
 
     userdata_url = Unicode(
         config=True,
-        help="""The url for retrieving user data with a completed access token""",
+        help="""
+        The url for retrieving user data with a completed access token
+        """,
     )
 
     @default("userdata_url")
@@ -313,67 +326,99 @@ class OAuthenticator(Authenticator):
 
         return False
 
-    logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
-
-    # Originally a GenericOAuthenticator only trait
-    userdata_params = Dict(
-        help="Userdata params to get user data login information"
-    ).tag(config=True)
-
-    # Originally a GenericOAuthenticator only trait
-    userdata_token_method = Unicode(
-        os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
+    logout_redirect_url = Unicode(
         config=True,
-        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header",
+        help="""
+        When configured, users are not presented with the JupyterHub logout
+        page, but instead redirected to this destination.
+        """,
     )
-
-    # Originally a GenericOAuthenticator only trait
-    token_params = Dict(
-        help="Extra parameters for first POST request exchanging the OAuth code for an Access Token"
-    ).tag(config=True)
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
         return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
+    # Originally a GenericOAuthenticator only trait
+    userdata_params = Dict(
+        config=True,
+        help="""
+        Userdata params to get user data login information
+        """,
+    )
+
+    # Originally a GenericOAuthenticator only trait
+    userdata_token_method = Unicode(
+        os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
+        config=True,
+        help="""
+        Method for sending access token in userdata request. Supported methods: header, url. Default: header
+        """,
+    )
+
+    # Originally a GenericOAuthenticator only trait
+    token_params = Dict(
+        config=True,
+        help="""
+        Extra parameters for first POST request exchanging the OAuth code for an Access Token
+        """,
+    )
+
     custom_403_message = Unicode(
         "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
         config=True,
-        help="""The message to be shown when user was not allowed""",
+        help="""
+        The message to be shown when user was not allowed
+        """,
     )
 
     scope = List(
         Unicode(),
         config=True,
-        help="""The OAuth scopes to request.
+        help="""
+        The OAuth scopes to request.
+
         See the OAuth documentation of your OAuth provider for options.
-        For GitHub in particular, you can see github_scopes.md in this repo.
         """,
     )
 
     extra_authorize_params = Dict(
         config=True,
-        help="""Extra GET params to send along with the initial OAuth request
-        to the OAuth provider.""",
+        help="""
+        Extra GET params to send along with the initial OAuth request to the
+        OAuth provider.
+        """,
     )
 
-    login_service = "override in subclass"
     oauth_callback_url = Unicode(
         os.getenv("OAUTH_CALLBACK_URL", ""),
         config=True,
-        help="""Callback URL to use.
-        Typically `https://{host}/hub/oauth_callback`""",
+        help="""
+        Callback URL to use.
+        
+        When registering an OAuth2 application with an identity provider, this
+        is typically called the redirect url.
+
+        Should very likely be set to `https://[your-domain]/hub/oauth_callback`.
+        """,
     )
 
     # Originally a GenericOAuthenticator only trait
     basic_auth = Bool(
         os.environ.get("OAUTH2_BASIC_AUTH", "False").lower() in {"true", "1"},
         config=True,
-        help="Whether or not to use basic authentication for access token request",
+        help="""
+        Whether or not to use basic authentication for access token request
+        """,
     )
 
     client_id_env = ""
-    client_id = Unicode(config=True)
+    client_id = Unicode(
+        config=True,
+        help="""
+        The client id of the OAuth2 application registered with the identity
+        provider.
+        """,
+    )
 
     def _client_id_default(self):
         if self.client_id_env:
@@ -383,7 +428,13 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_CLIENT_ID", "")
 
     client_secret_env = ""
-    client_secret = Unicode(config=True)
+    client_secret = Unicode(
+        config=True,
+        help="""
+        The client secret of the OAuth2 application registered with the identity
+        provider.
+        """,
+    )
 
     def _client_secret_default(self):
         if self.client_secret_env:
@@ -393,7 +444,15 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_CLIENT_SECRET", "")
 
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
-    validate_server_cert = Bool(config=True)
+    validate_server_cert = Bool(
+        config=True,
+        help="""
+        Determines if certificates are validated.
+
+        Only set this to False if you feel confident it will not be a security
+        concern.
+        """,
+    )
 
     def _validate_server_cert_default(self):
         env_value = os.getenv(self.validate_server_cert_env, "")
@@ -403,8 +462,9 @@ class OAuthenticator(Authenticator):
             return True
 
     http_request_kwargs = Dict(
-        {},
-        help="""Extra default kwargs passed to all HTTPRequests.
+        config=True,
+        help="""
+        Extra default kwargs passed to all HTTPRequests.
 
         For example, to use a HTTP proxy for all requests:
 
@@ -415,7 +475,6 @@ class OAuthenticator(Authenticator):
 
         Note that some of these are dependent on the httpclient implementation.
         """,
-        config=True,
     )
 
     http_client = Any()
@@ -840,6 +899,16 @@ class OAuthenticator(Authenticator):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
+    # _deprecated_oauth_aliases should be a dictionary with a format as:
+    #
+    # {
+    #     "old_config": (
+    #         "new_config",
+    #         "16.0.0",      # version when it became deprecated
+    #         False,         # if new config can be updated with a warning
+    #     ),
+    # }
+    #
     _deprecated_oauth_aliases = {}
 
     def _deprecated_oauth_trait(self, change):

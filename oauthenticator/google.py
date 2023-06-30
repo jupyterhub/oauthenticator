@@ -1,7 +1,5 @@
 """
-Custom Authenticator to use Google OAuth with JupyterHub.
-
-Derived from the GitHub OAuth authenticator.
+A JupyterHub authenticator class for use with Google as an identity provider.
 """
 import os
 
@@ -21,9 +19,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     user_auth_state_key = "google_user"
 
-    @default("authorize_url")
-    def _authorize_url_default(self):
-        return "https://accounts.google.com/o/oauth2/v2/auth"
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Google")
 
     @default("scope")
     def _scope_default(self):
@@ -33,7 +31,16 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     def _username_claim_default(self):
         return "email"
 
-    google_api_url = Unicode("https://www.googleapis.com", config=True)
+    @default("authorize_url")
+    def _authorize_url_default(self):
+        return "https://accounts.google.com/o/oauth2/v2/auth"
+
+    google_api_url = Unicode(
+        config=True,
+        help="""
+        Used to determine the default values for `token_url` and `userdata_url`.
+        """,
+    )
 
     @default("google_api_url")
     def _google_api_url(self):
@@ -56,30 +63,57 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     google_service_account_keys = Dict(
         Unicode(),
-        help="Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation",
-    ).tag(config=True)
+        config=True,
+        help="""
+        Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+
+        Required if and only if `allowed_google_groups` or `admin_google_groups`
+        is configured.
+        """,
+    )
 
     gsuite_administrator = Dict(
         Unicode(),
-        help="Username of a G Suite Administrator for the service account to act as",
-    ).tag(config=True)
+        config=True,
+        help="""
+        Username of a G Suite Administrator for the service account to act as.
+
+        Required if and only if `allowed_google_groups` or `admin_google_groups`
+        is configured.
+        """,
+    )
 
     google_group_whitelist = Dict(
-        help="Deprecated, use `GoogleOAuthenticator.allowed_google_groups`",
         config=True,
+        help="""
+        Deprecated, use `GoogleOAuthenticator.allowed_google_groups`
+        """,
     )
 
     allowed_google_groups = Dict(
-        Set(Unicode()), help="Automatically allow members of selected groups"
-    ).tag(config=True)
+        Set(Unicode()),
+        config=True,
+        help="""
+        Allow members of selected Google groups to sign in.
+
+        Use of this requires configuration of `gsuite_administrator` and
+        `google_service_account_keys`.
+        """,
+    )
 
     admin_google_groups = Dict(
         Set(Unicode()),
-        help="Groups whose members should have Jupyterhub admin privileges",
-    ).tag(config=True)
+        config=True,
+        help="""
+        Allow members of selected Google groups to sign in and consider them as
+        JupyterHub admins.
 
-    user_info_url = Unicode(
-        "https://www.googleapis.com/oauth2/v1/userinfo", config=True
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+
+        Use of this requires configuration of `gsuite_administrator` and
+        `google_service_account_keys`.
+        """,
     )
 
     hosted_domain = List(
@@ -90,7 +124,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         `["mycollege.edu"]`.
 
         Note that users with email domains in this list must still be allowed
-        via another config, such as `allow_all`.
+        via another config, such as `allow_all`, `allowed_users`, or
+        `allowed_google_groups`.
         """,
     )
 
@@ -115,12 +150,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 return []
             return [proposal.value.lower()]
         return [hd.lower() for hd in proposal.value]
-
-    login_service = Unicode(
-        os.environ.get('LOGIN_SERVICE', 'Google'),
-        config=True,
-        help="""Google Apps hosted domain string, e.g. My College""",
-    )
 
     async def update_auth_model(self, auth_model):
         """
@@ -205,7 +234,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         except:
             raise ImportError(
                 "Could not import google.oauth2's service_account,"
-                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
             )
 
         gsuite_administrator_email = "{}@{}".format(
@@ -229,7 +258,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         except:
             raise ImportError(
                 "Could not import googleapiclient.discovery's build,"
-                "you may need to run pip install oauthenticator[googlegroups] or not declare google groups"
+                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
             )
 
         self.log.debug(
