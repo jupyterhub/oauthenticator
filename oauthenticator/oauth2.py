@@ -300,7 +300,7 @@ class OAuthenticator(Authenticator):
 
     # Enable refresh_pre_spawn by default if self.enable_auth_state
     @default("refresh_pre_spawn")
-    def _refresh_pre_spawn(self):
+    def _refresh_pre_spawn_default(self):
         if self.enable_auth_state:
             return True
 
