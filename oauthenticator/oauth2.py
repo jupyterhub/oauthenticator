@@ -251,6 +251,43 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    allow_existing_users = Bool(
+        False,
+        config=True,
+        help="""
+        Allow existing users to login.
+
+        With this enabled, JupyterHub admin users can visit `/hub/admin` or use
+        JupyterHub's REST API to add and remove users as a way to allow them
+        access.
+
+        The username for existing users must match the normalized username
+        returned by the authenticator. When creating users, only lowercase
+        letters should be used unless `MWOAuthenticator` is used.
+
+        .. warning::
+
+           Before enabling this you should review the existing users in the
+           JupyterHub admin panel at `/hub/admin`. You may find users existing
+           there because they have once been declared in config such as
+           `allowed_users` or once been allowed to sign in.
+
+        .. note::
+
+           Allowing existing users is done by adding existing users on startup
+           and newly created users to the `allowed_users` set. Due to that, you
+           can't rely on this config to independently allow existing users.
+
+        .. versionadded:: 16.0
+
+        .. versionchanged:: 16.0
+
+           Before this config was available, the default behavior was to allow
+           existing users if `allowed_users` was configured with one or more
+           user.
+        """,
+    )
+
     authorize_url = Unicode(
         config=True,
         help="""
@@ -537,6 +574,24 @@ class OAuthenticator(Authenticator):
         return await self.fetch(
             req, label=label, parse_json=parse_json, raise_error=raise_error
         )
+
+    def add_user(self, user):
+        """
+        Overrides `Authenticator.add_user`, a hook called for all users in the
+        database on startup and for each user being created.
+
+        The purpose of the override is to implement the `allow_existing_users`
+        config by adding users to the `allowed_users` set only if
+        `allow_existing_users` is truthy. The overridden behavior is to do it if
+        `allowed_users` is truthy.
+
+        The implementation is adjusted from JupyterHub 4.0.1:
+        https://github.com/jupyterhub/jupyterhub/blob/4.0.1/jupyterhub/auth.py#L625-L648
+        """
+        if not self.validate_username(user.name):
+            raise ValueError("Invalid username: %s" % user.name)
+        if self.allow_existing_users:
+            self.allowed_users.add(user.name)
 
     def login_url(self, base_url):
         return url_path_join(base_url, "oauth_login")

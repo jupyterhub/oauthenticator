@@ -58,6 +58,7 @@ projects' authenticator classes.
    reference.
 
    - {attr}`.OAuthenticator.allow_all`
+   - {attr}`.OAuthenticator.allow_existing_users`
    - {attr}`.OAuthenticator.allowed_users`
    - {attr}`.OAuthenticator.admin_users`
 
@@ -71,6 +72,7 @@ projects' authenticator classes.
    c.OAuthenticator.client_id = "1234-5678-9012-3456"
    c.OAuthenticator.client_secret = "abcd-edfg-ijkl-mnop"
 
+   c.OAuthenticator.allow_existing_users = True
    c.OAuthenticator.allowed_users = {"github-user-1", "github-user-2"}
    c.OAuthenticator.admin_users = {"github-user-3"}
 

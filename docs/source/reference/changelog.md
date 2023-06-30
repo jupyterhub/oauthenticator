@@ -10,8 +10,11 @@ command line for details.
 
 - [All] Users are now authorized based on _either_ being part of
   `Authenticator.admin_users`, `Authenticator.allowed_users`, an Authenticator
-  specific allowed team/group/organization, or declared in
-  `JupyterHub.load_roles` or `JupyterHub.load_groups`.
+  specific allowed group/team/organization, or if by being part of the existing
+  users if new config `OAuthenticator.allow_existing_users` is True.
+- [All] Existing users (listed via `/hub/admin`) will now only be allowed if
+  `OAuthenticator.allow_existing_users` is True, while before this version they
+  were allowed if `Authenticator.allowed_users` was configured.
 - [Google] If `GoogleOAuthenticator.admin_google_groups` is configured, users
   logging in not explicitly there or in `Authenticator.admin_users` will get
   their admin status revoked.
