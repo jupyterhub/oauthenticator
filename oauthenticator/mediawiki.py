@@ -1,7 +1,5 @@
 """
-Custom Authenticator to use MediaWiki OAuth with JupyterHub
-
-Requires `mwoauth` package.
+A JupyterHub authenticator class for use with MediaWiki as an identity provider.
 """
 import json
 import os

@@ -1,7 +1,5 @@
 """
-Custom Authenticator to use Google OAuth with JupyterHub.
-
-Derived from the GitHub OAuth authenticator.
+A JupyterHub authenticator class for use with Google as an identity provider.
 """
 import os
 

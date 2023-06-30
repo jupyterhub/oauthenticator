@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Globus OAuth2 with JupyterHub
+A JupyterHub authenticator class for use with Globus as an identity provider.
 """
 import base64
 import os

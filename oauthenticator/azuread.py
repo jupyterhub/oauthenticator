@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Azure AD with JupyterHub
+A JupyterHub authenticator class for use with Azure AD as an identity provider.
 """
 import os
 

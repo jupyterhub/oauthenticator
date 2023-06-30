@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Bitbucket OAuth with JupyterHub
+A JupyterHub authenticator class for use with Bitbucket as an identity provider.
 """
 import os
 

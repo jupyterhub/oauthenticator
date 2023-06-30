@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use GitLab OAuth with JupyterHub
+A JupyterHub authenticator class for use with GitLab as an identity provider.
 """
 import os
 import warnings

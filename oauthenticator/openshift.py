@@ -1,7 +1,5 @@
 """
-Custom Authenticator to use OpenShift OAuth with JupyterHub.
-
-Derived from the GitHub OAuth authenticator.
+A JupyterHub authenticator class for use with OpenShift as an identity provider.
 """
 import os
 

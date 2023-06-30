@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use generic OAuth2 with JupyterHub
+A JupyterHub authenticator class for use with any OAuth2 based identity provider.
 """
 import os
 from functools import reduce

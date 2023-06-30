@@ -1,7 +1,7 @@
 """
-Base classes for Custom Authenticator to use OAuth with JupyterHub
+Base classes for use by OAuth2 based JupyterHub authenticator classes.
 
-Most of the code c/o Kyle Kelley (@rgbkrk)
+Founded based on work by Kyle Kelley (@rgbkrk)
 """
 import base64
 import json

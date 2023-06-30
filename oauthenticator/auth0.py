@@ -1,37 +1,5 @@
 """
-Custom Authenticator to use Auth0 OAuth with JupyterHub
-
-Derived using the Github and Google OAuthenticator implementations as examples.
-
-The following environment variables may be used for configuration:
-
-* AUTH0_DOMAIN - The domain for your Auth0 account
-* AUTH0_SUBDOMAIN - Alternative to AUTH0_DOMAIN if your domain ends with .auth0.com
-* OAUTH_CLIENT_ID - Your client id
-* OAUTH_CLIENT_SECRET - Your client secret
-* OAUTH_CALLBACK_URL - Your callback handler URL
-
-You must provide either AUTH0_DOMAIN or AUTH0_SUBDOMAIN. If both are provided,
-AUTH0_DOMAIN will take precedence.
-
-Additionally, if you are concerned about your secrets being exposed by
-an env dump(I know I am!) you can set the client_secret, client_id and
-oauth_callback_url directly on the config for Auth0OAuthenticator.
-
-One instance of this could be adding the following to your jupyterhub_config.py::
-
-  c.Auth0OAuthenticator.auth0_domain = 'auth.example.com'
-  c.Auth0OAuthenticator.client_id = 'YOUR_CLIENT_ID'
-  c.Auth0OAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
-  c.Auth0OAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
-  c.Auth0OAuthenticator.scope = ['openid','profile','email']
-
-If you are using the environment variable config, all you should need to
-do is define them in the environment then add the following line to 
-jupyterhub_config.py :
-
-  c.JupyterHub.authenticator_class = 'oauthenticator.auth0.Auth0OAuthenticator'
-
+A JupyterHub authenticator class for use with Auth0 as an identity provider.
 """
 import os
 
