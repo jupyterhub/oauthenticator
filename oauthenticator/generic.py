@@ -95,10 +95,11 @@ class GenericOAuthenticator(OAuthenticator):
     username_key = Union(
         [Unicode(), Callable()],
         config=True,
-        help="Deprecated, use :attr:`.GenericOAuthenticator.username_claim`.",
+        help="Deprecated in 16.0, use :attr:`.GenericOAuthenticator.username_claim`.",
     )
     extra_params = Dict(
-        config=True, help="Deprecated, use :attr:`.GenericOAuthenticator.token_params`."
+        config=True,
+        help="Deprecated in 16.0, use :attr:`.GenericOAuthenticator.token_params`.",
     )
 
     def user_info_to_username(self, user_info):

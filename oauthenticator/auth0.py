@@ -77,7 +77,8 @@ class Auth0OAuthenticator(OAuthenticator):
         **OAuthenticator._deprecated_oauth_aliases,
     }
     username_key = Unicode(
-        config=True, help="Deprecated, use :attr:`.Auth0OAuthenticator.username_claim`."
+        config=True,
+        help="Deprecated in 16.0, use :attr:`.Auth0OAuthenticator.username_claim`.",
     )
 
 

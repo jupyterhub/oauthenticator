@@ -146,7 +146,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     }
     google_group_whitelist = Dict(
         config=True,
-        help="Deprecated, use :attr:`.GoogleOAuthenticator.allowed_google_groups`.",
+        help="Deprecated in 0.12, use :attr:`.GoogleOAuthenticator.allowed_google_groups`.",
     )
 
     async def update_auth_model(self, auth_model):
