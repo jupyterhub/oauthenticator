@@ -81,7 +81,7 @@ class Auth0OAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 16.0
 
-           Use :attr:`.Auth0OAuthenticator.username_claim`.
+           Use :attr:`username_claim`.
         """,
     )
 

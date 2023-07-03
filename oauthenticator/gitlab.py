@@ -136,7 +136,7 @@ class GitLabOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 0.12
 
-           Use :attr:`.GitLabOAuthenticator.allowed_gitlab_groups`.
+           Use :attr:`allowed_gitlab_groups`.
         """,
     )
     gitlab_project_id_whitelist = Set(
@@ -144,7 +144,7 @@ class GitLabOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 0.12
 
-           Use :attr:`.GitLabOAuthenticator.allowed_project_ids`.
+           Use :attr:`allowed_project_ids`.
         """,
     )
 

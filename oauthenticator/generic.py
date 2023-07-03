@@ -98,7 +98,7 @@ class GenericOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 16.0
 
-           Use :attr:`.GenericOAuthenticator.username_claim`.
+           Use :attr:`username_claim`.
         """,
     )
     extra_params = Dict(
@@ -106,7 +106,7 @@ class GenericOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 16.0
 
-           Use :attr:`.GenericOAuthenticator.token_params`.
+           Use :attr:`token_params`.
         """,
     )
 

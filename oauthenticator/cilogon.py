@@ -225,7 +225,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 0.12
 
-           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+           Use :attr:`allowed_idps`.
         """,
     )
     idp = Unicode(
@@ -233,7 +233,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 15.0
 
-           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+           Use :attr:`allowed_idps`.
         """,
     )
     strip_idp_domain = Bool(
@@ -241,7 +241,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 15.0
 
-           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+           Use :attr:`allowed_idps`.
         """,
     )
     shown_idps = List(
@@ -249,7 +249,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 16.0
 
-           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+           Use :attr:`allowed_idps`.
         """,
     )
     additional_username_claims = List(
@@ -257,7 +257,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 16.0
 
-           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+           Use :attr:`allowed_idps`.
         """,
     )
     username_claim = Unicode(
@@ -265,7 +265,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 16.0
 
-           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+           Use :attr:`allowed_idps`.
         """,
     )
 

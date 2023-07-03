@@ -145,7 +145,7 @@ class GitHubOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 0.1
 
-           Use :attr:`.GitHubOAuthenticator.client_id`.
+           Use :attr:`client_id`.
         """,
     )
     github_client_secret = Unicode(
@@ -153,7 +153,7 @@ class GitHubOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 0.1
 
-           Use :attr:`.GitHubOAuthenticator.client_secret`.
+           Use :attr:`client_secret`.
         """,
     )
     github_organization_whitelist = Set(
@@ -161,7 +161,7 @@ class GitHubOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 0.12
 
-           Use :attr:`.GitHubOAuthenticator.allowed_organizations`.
+           Use :attr:`allowed_organizations`.
         """,
     )
 

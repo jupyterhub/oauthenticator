@@ -48,7 +48,7 @@ class BitbucketOAuthenticator(OAuthenticator):
         help="""
         .. deprecated:: 0.12
 
-           Use :attr:`.BitbucketOAuthenticator.allowed_teams`.
+           Use :attr:`allowed_teams`.
         """,
     )
 

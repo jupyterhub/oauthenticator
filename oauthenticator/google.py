@@ -149,7 +149,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         .. deprecated:: 0.12
 
-           Use :attr:`.GoogleOAuthenticator.allowed_google_groups`.
+           Use :attr:`allowed_google_groups`.
         """,
     )
 
