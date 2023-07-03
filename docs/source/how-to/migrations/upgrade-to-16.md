@@ -4,25 +4,6 @@
 
 The following section describes what to pay attention to when upgrading to OAuthenticator 16.0.
 
-## Breaking changes
-
-1. `username_key` replaced by `username_claim` in _all oauthenticators_
-
-   - {attr}`.GenericOAuthenticator.username_key` is deprecated and replaced by {attr}`.OAuthenticator.username_claim`.
-
-   - {attr}`.Auth0OAuthenticator.username_key` is deprecated and replaced by {attr}`.OAuthenticator.username_claim`.
-
-   ```{note}
-   The `username_claim` and the deprecated `username_key` refers to the field in the `userdata` response from which to get the JupyterHub username. Examples include: email, username, nickname. What keys are available depend on the scopes requested and the authenticator used.
-   ```
-
-2. {attr}`.GenericOAuthenticator.extra_params` is deprecated and replaced by {attr}`.OAuthenticator.token_params`.
-
-3. The following public functions were removed:
-
-   - `OkpyOAuthenticator.get_auth_request(self, code)`
-   - `OkpyOAuthenticator.get_user_info_request(self, access_token)`
-
 ## New
 
 1. The name of the user key expected to be present in `auth_state` is now configurable through {attr}`.OAuthenticator.user_auth_state_key` for _all oauthenticators_, and it defaults to their prior specific values.

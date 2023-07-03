@@ -31,6 +31,15 @@ command line for details.
 - [CILogon] {attr}`.CILogonOAuthenticator.allowed_idps` is now required config,
   and `shown_idps`, `username_claim`, `additional_username_claims` must no
   longer be configured.
+- [Okpy] The public functions `OkpyOAuthenticator.get_auth_request` and
+  `OkpyOAuthenticator.get_user_info_request` was removed.
+
+### Deprecations
+
+- [Generic, Auth0] `username_key` is deprecated and is being replaced by
+  {attr}`.OAuthenticator.username_claim`.
+- [Generic] {attr}`.GenericOAuthenticator.extra_params` is deprecated and is
+  being replaced by {attr}`.OAuthenticator.token_params`.
 
 (changelog:version-15)=
 
