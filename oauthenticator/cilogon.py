@@ -222,23 +222,43 @@ class CILogonOAuthenticator(OAuthenticator):
     }
     idp_whitelist = List(
         config=True,
-        help="Removed in 0.12, use :attr:`.CILogonOAuthenticator.allowed_idps`.",
+        help="""
+        .. versionremoved:: 0.12
+
+           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+        """,
     )
     idp = Unicode(
         config=True,
-        help="Removed in 15.0, use :attr:`.CILogonOAuthenticator.allowed_idps`.",
+        help="""
+        .. versionremoved:: 15.0
+
+           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+        """,
     )
     strip_idp_domain = Bool(
         config=True,
-        help="Removed in 15.0, use :attr:`.CILogonOAuthenticator.allowed_idps`.",
+        help="""
+        .. versionremoved:: 15.0
+
+           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+        """,
     )
     shown_idps = List(
         config=True,
-        help="Removed in 16.0, use :attr:`.CILogonOAuthenticator.allowed_idps`.",
+        help="""
+        .. versionremoved:: 16.0
+
+           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+        """,
     )
     additional_username_claims = List(
         config=True,
-        help="Removed in 16.0, use :attr:`.CILogonOAuthenticator.allowed_idps`.",
+        help="""
+        .. versionremoved:: 16.0
+
+           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+        """,
     )
 
     def user_info_to_username(self, user_info):

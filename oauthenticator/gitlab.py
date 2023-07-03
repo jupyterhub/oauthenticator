@@ -133,11 +133,19 @@ class GitLabOAuthenticator(OAuthenticator):
     }
     gitlab_group_whitelist = Set(
         config=True,
-        help="Deprecated in 0.12, use :attr:`.GitLabOAuthenticator.allowed_gitlab_groups`.",
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`.GitLabOAuthenticator.allowed_gitlab_groups`.
+        """,
     )
     gitlab_project_id_whitelist = Set(
         config=True,
-        help="Deprecated in 0.12, use :attr:`.GitLabOAuthenticator.allowed_project_ids`.",
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`.GitLabOAuthenticator.allowed_project_ids`.
+        """,
     )
 
     gitlab_version = None

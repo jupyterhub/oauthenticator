@@ -45,7 +45,11 @@ class BitbucketOAuthenticator(OAuthenticator):
     }
     team_whitelist = Set(
         config=True,
-        help="Deprecated in 0.12, use :attr:`.BitbucketOAuthenticator.allowed_teams`.",
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`.BitbucketOAuthenticator.allowed_teams`.
+        """,
     )
 
     async def _fetch_user_teams(self, access_token, token_type):

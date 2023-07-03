@@ -142,15 +142,27 @@ class GitHubOAuthenticator(OAuthenticator):
     }
     github_client_id = Unicode(
         config=True,
-        help="Deprecated in 0.1, use :attr:`.GitHubOAuthenticator.client_id`.",
+        help="""
+        .. deprecated:: 0.1
+
+           Use :attr:`.GitHubOAuthenticator.client_id`.
+        """,
     )
     github_client_secret = Unicode(
         config=True,
-        help="Deprecated in 0.1, use :attr:`.GitHubOAuthenticator.client_secret`.",
+        help="""
+        .. deprecated:: 0.1
+
+           Use :attr:`.GitHubOAuthenticator.client_secret`.
+        """,
     )
     github_organization_whitelist = Set(
         config=True,
-        help="Deprecated in 0.12, use :attr:`.GitHubOAuthenticator.allowed_organizations`.",
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`.GitHubOAuthenticator.allowed_organizations`.
+        """,
     )
 
     async def check_allowed(self, username, auth_model):
