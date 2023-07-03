@@ -590,7 +590,7 @@ class OAuthenticator(Authenticator):
         """
         if not self.validate_username(user.name):
             raise ValueError("Invalid username: %s" % user.name)
-        if self.allow_existing_users:
+        if not self.allow_all and self.allow_existing_users:
             self.allowed_users.add(user.name)
 
     def login_url(self, base_url):
