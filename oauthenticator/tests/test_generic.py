@@ -152,7 +152,7 @@ def get_authenticator(generic_client):
         ),
     ],
 )
-async def test_generic_asd(
+async def test_generic(
     get_authenticator,
     generic_client,
     test_variation_id,

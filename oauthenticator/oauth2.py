@@ -197,26 +197,6 @@ class OAuthCallbackHandler(BaseHandler):
             return super().get_next_url(user)
         return url_path_join(self.hub.server.base_url, "home")
 
-    async def _login_user_pre_08(self):
-        """login_user simplifies the login+cookie+auth_state process in JupyterHub 0.8
-
-        _login_user_07 is for backward-compatibility with JupyterHub 0.7
-        """
-        user_info = await self.authenticator.get_authenticated_user(self, None)
-        if user_info is None:
-            return
-        if isinstance(user_info, dict):
-            username = user_info["name"]
-        else:
-            username = user_info
-        user = self.user_from_username(username)
-        self.set_login_cookie(user)
-        return user
-
-    if not hasattr(BaseHandler, "login_user"):
-        # JupyterHub 0.7 doesn't have .login_user
-        login_user = _login_user_pre_08
-
     async def get(self):
         self.check_arguments()
         user = await self.login_user()
@@ -320,7 +300,7 @@ class OAuthenticator(Authenticator):
 
     # Enable refresh_pre_spawn by default if self.enable_auth_state
     @default("refresh_pre_spawn")
-    def _refresh_pre_spawn(self):
+    def _refresh_pre_spawn_default(self):
         if self.enable_auth_state:
             return True
 
