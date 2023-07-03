@@ -260,6 +260,14 @@ class CILogonOAuthenticator(OAuthenticator):
            Use :attr:`.CILogonOAuthenticator.allowed_idps`.
         """,
     )
+    username_claim = Unicode(
+        config=True,
+        help="""
+        .. versionremoved:: 16.0
+
+           Use :attr:`.CILogonOAuthenticator.allowed_idps`.
+        """,
+    )
 
     def user_info_to_username(self, user_info):
         """
