@@ -94,6 +94,19 @@ def render_autodoc_modules():
 render_autodoc_modules()
 
 
+# -- Add versionremoved directive ---------------------------------------------------
+# ref: https://github.com/sphinx-doc/sphinx/issues/11480
+#
+from sphinx.domains.changeset import VersionChange, versionlabel_classes, versionlabels
+
+
+def setup(app):
+    if "versionremoved" not in versionlabels:
+        versionlabels["versionremoved"] = "Removed in version %s"
+        versionlabel_classes["versionremoved"] = "removed"
+        app.add_directive("versionremoved", VersionChange)
+
+
 # -- General Sphinx configuration ---------------------------------------------------
 # ref: https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 #

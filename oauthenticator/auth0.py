@@ -10,11 +10,6 @@ from .oauth2 import OAuthenticator
 
 
 class Auth0OAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "username_key": ("username_claim", "16.0.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     user_auth_state_key = "auth0_user"
 
     @default("login_service")
@@ -60,13 +55,6 @@ class Auth0OAuthenticator(OAuthenticator):
         # This is allowed to be empty unless auth0_domain is not supplied either
         return os.getenv("AUTH0_SUBDOMAIN", "")
 
-    username_key = Unicode(
-        config=True,
-        help="""
-        Deprecated, use `Auth0OAuthenticator.username_claim`
-        """,
-    )
-
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
         return f"https://{self.auth0_domain}/v2/logout"
@@ -82,6 +70,20 @@ class Auth0OAuthenticator(OAuthenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return f"https://{self.auth0_domain}/userinfo"
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "username_key": ("username_claim", "16.0.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    username_key = Unicode(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`username_claim`.
+        """,
+    )
 
 
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):

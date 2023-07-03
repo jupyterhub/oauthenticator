@@ -13,19 +13,6 @@ from .oauth2 import OAuthenticator
 
 
 class GenericOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "username_key": ("username_claim", "16.0.0"),
-        "extra_params": ("token_params", "16.0.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
-    extra_params = Dict(
-        config=True,
-        help="""
-        Deprecated, use `GenericOAuthenticator.token_params`
-        """,
-    )
-
     @default("login_service")
     def _login_service_default(self):
         return os.environ.get("LOGIN_SERVICE", "OAuth 2.0")
@@ -69,12 +56,6 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    username_key = Union(
-        [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
-        config=True,
-        help="""Deprecated, use `GenericOAuthenticator.username_claim`""",
-    )
-
     username_claim = Union(
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
         config=True,
@@ -104,6 +85,30 @@ class GenericOAuthenticator(OAuthenticator):
         return AsyncHTTPClient(
             force_instance=True, defaults=dict(validate_cert=self.tls_verify)
         )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "username_key": ("username_claim", "16.0.0"),
+        "extra_params": ("token_params", "16.0.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    username_key = Union(
+        [Unicode(), Callable()],
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`username_claim`.
+        """,
+    )
+    extra_params = Dict(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`token_params`.
+        """,
+    )
 
     def user_info_to_username(self, user_info):
         """

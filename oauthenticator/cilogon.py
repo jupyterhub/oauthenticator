@@ -40,22 +40,6 @@ class CILogonLoginHandler(OAuthLoginHandler):
 
 
 class CILogonOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        # <deprecated-config>:
-        #   (
-        #    <new-config>,
-        #    <deprecation-version>,
-        #    <deprecated-config-and-new-config-have-same-type>
-        #   )
-        "idp_whitelist": ("allowed_idps", "0.12.0", False),
-        "idp": ("shown_idps", "15.0.0", False),
-        "strip_idp_domain": ("allowed_idps", "15.0.0", False),
-        "shown_idps": ("allowed_idps", "16.0.0", False),
-        "username_claim": ("allowed_idps", "16.0.0", False),
-        "additional_username_claims": ("allowed_idps", "16.0.0", False),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     login_handler = CILogonLoginHandler
 
     user_auth_state_key = "cilogon_user"
@@ -86,14 +70,6 @@ class CILogonOAuthenticator(OAuthenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return f"https://{self.cilogon_host}/oauth2/userinfo"
-
-    @default("username_claim")
-    def _username_claim_default(self):
-        """What keys are available will depend on the scopes requested.
-        See https://www.cilogon.org/oidc for details.
-        Note that this option can be overridden for specific identity providers via `allowed_idps[<identity provider>]["username_derivation"]["username_claim"]`.
-        """
-        return "eppn"
 
     scope = List(
         Unicode(),
@@ -128,13 +104,6 @@ class CILogonOAuthenticator(OAuthenticator):
 
         return scopes
 
-    idp_whitelist = List(
-        config=True,
-        help="""
-        Deprecated, use `CIlogonOAuthenticator.allowed_idps`
-        """,
-    )
-
     allowed_idps = Dict(
         config=True,
         help="""
@@ -159,44 +128,43 @@ class CILogonOAuthenticator(OAuthenticator):
                     "username_derivation": {
                         "username_claim": "username",
                         "action": "prefix",
-                        "prefix": "gh",
+                        "prefix": "github",
                     },
                 },
                 "http://google.com/accounts/o8/id": {
                     "username_derivation": {
                         "username_claim": "username",
+                        "action": "prefix",
+                        "prefix": "google",
                     },
                     "allowed_domains": ["uni.edu", "something.org"],
                 },
             }
 
         Where `username_derivation` defines:
-            * :attr:`username_claim`: string
+
+            * `username_claim`: string (required)
                 The claim in the `userinfo` response from which to get the
                 JupyterHub username. Examples include: `eppn`, `email`. What
-                keys are available will depend on the scopes requested. It will
-                overwrite any value set through
-                CILogonOAuthenticator.username_claim for this identity provider.
-            * :attr:`action`: string What action to perform on the username.
-                Available options are "strip_idp_domain", which will strip the
-                domain from the username if specified and "prefix", which will
-                prefix the hub username with "prefix:".
-            * :attr:`domain:` string
+                keys are available will depend on the scopes requested.
+            * `action`: string
+                What action to perform on the username. Available options are
+                "strip_idp_domain", which will strip the domain from the
+                username if specified and "prefix", which will prefix the hub
+                username with "prefix:".
+            * `domain:` string (required if action is strip_idp_domain)
                 The domain after "@" which will be stripped from the username if
                 it exists and if the action is "strip_idp_domain".
-            * :attr:`prefix`: string The prefix which will be added at the
-                beginning of the username followed by a semi-column ":", if the
-                action is "prefix".
-            * :attr:`allowed_domains`: string It defines which domains will be
-                allowed to login using the specific identity provider.
+            * `prefix`: string (required if action is prefix)
+                The prefix which will be added at the beginning of the username
+                followed by a semi-column ":", if the action is "prefix".
+            * `allowed_domains`: string
+                It defines which domains will be allowed to login using the
+                specific identity provider.
 
-        Requirements:
-            * if `username_derivation.action` is `strip_idp_domain`, then `username_derivation.domain` must also be specified
-            * if `username_derivation.action` is `prefix`, then `username_derivation.prefix` must also be specified.
-            * `username_claim` must be provided for each idp in `allowed_idps`
+        .. versionchanged:: 15.0
 
-        .. versionchanged:: 15.0.0
-            `CILogonOAuthenticaor.allowed_idps` changed type from list to dict
+           Changed format from a list to a dictionary.
         """,
     )
 
@@ -231,39 +199,6 @@ class CILogonOAuthenticator(OAuthenticator):
 
         return idps
 
-    strip_idp_domain = Bool(
-        False,
-        config=True,
-        help="""
-        Deprecated, use `CILogonOAuthenticator.allowed_idps[<ipd>]["username_derivation"]["action"] = "strip_idp_domain"`
-        to enable it and `CIlogonOAuthenticator.allowed_idps[<idp>]["username_derivation"]["domain"]` to list the domain
-        which will be stripped
-        """,
-    )
-
-    idp = Unicode(
-        config=True,
-        help="""
-        Deprecated, use `CILogonOAuthenticator.shown_idps`.
-        """,
-    )
-
-    shown_idps = List(
-        Unicode(),
-        config=True,
-        help="""
-        Deprecated, `CILogonOAuthenticator.allowed_idps` will determine the idps
-        shown.
-
-        A list of identity providers to be shown as login options. The `idp`
-        attribute is the SAML Entity ID of the user's selected identity
-        provider.
-
-        See https://cilogon.org/include/idplist.xml for the list of identity
-        providers supported by CILogon.
-        """,
-    )
-
     skin = Unicode(
         config=True,
         help="""
@@ -274,15 +209,62 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "idp_whitelist": ("allowed_idps", "0.12.0", False),
+        "idp": ("shown_idps", "15.0.0", False),
+        "strip_idp_domain": ("allowed_idps", "15.0.0", False),
+        "shown_idps": ("allowed_idps", "16.0.0", False),
+        "additional_username_claims": ("allowed_idps", "16.0.0", False),
+        "username_claim": ("allowed_idps", "16.0.0", False),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    idp_whitelist = List(
+        config=True,
+        help="""
+        .. versionremoved:: 0.12
+
+           Use :attr:`allowed_idps`.
+        """,
+    )
+    idp = Unicode(
+        config=True,
+        help="""
+        .. versionremoved:: 15.0
+
+           Use :attr:`allowed_idps`.
+        """,
+    )
+    strip_idp_domain = Bool(
+        config=True,
+        help="""
+        .. versionremoved:: 15.0
+
+           Use :attr:`allowed_idps`.
+        """,
+    )
+    shown_idps = List(
+        config=True,
+        help="""
+        .. versionremoved:: 16.0
+
+           Use :attr:`allowed_idps`.
+        """,
+    )
     additional_username_claims = List(
         config=True,
         help="""
-        Deprecated, use `CILogonOAuthenticator.allowed_idps["username_derivation"]["username_claim"]`.
+        .. versionremoved:: 16.0
 
-        Additional claims to check if the username_claim fails.
+           Use :attr:`allowed_idps`.
+        """,
+    )
+    username_claim = Unicode(
+        config=True,
+        help="""
+        .. versionremoved:: 16.0
 
-        This is useful for linked identities where not all of them return the
-        primary username_claim.
+           Use :attr:`allowed_idps`.
         """,
     )
 

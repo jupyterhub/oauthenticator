@@ -11,11 +11,6 @@ from .oauth2 import OAuthenticator
 
 
 class BitbucketOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "team_whitelist": ("allowed_teams", "0.12.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
     client_id_env = "BITBUCKET_CLIENT_ID"
     client_secret_env = "BITBUCKET_CLIENT_SECRET"
     user_auth_state_key = "bitbucket_user"
@@ -36,17 +31,24 @@ class BitbucketOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return "https://api.bitbucket.org/2.0/user"
 
-    team_whitelist = Set(
-        config=True,
-        help="""
-        Deprecated, use `BitbucketOAuthenticator.allowed_teams`
-        """,
-    )
-
     allowed_teams = Set(
         config=True,
         help="""
         Allow members of selected Bitbucket teams to sign in.
+        """,
+    )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "team_whitelist": ("allowed_teams", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    team_whitelist = Set(
+        config=True,
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`allowed_teams`.
         """,
     )
 
