@@ -9,25 +9,28 @@ command line for details.
 ### Breaking changes
 
 - [All] Users are now authorized based on _either_ being part of
-  `Authenticator.admin_users`, `Authenticator.allowed_users`, an Authenticator
-  specific allowed group/team/organization, or if by being part of the existing
-  users if new config `OAuthenticator.allow_existing_users` is True.
+  {attr}`.OAuthenticator.admin_users`, {attr}`.OAuthenticator.allowed_users`, an
+  Authenticator specific allowed group/team/organization, or if by being part of
+  the existing users if new config {attr}`.OAuthenticator.allow_existing_users`
+  is True.
 - [All] Existing users (listed via `/hub/admin`) will now only be allowed if
-  `OAuthenticator.allow_existing_users` is True, while before this version they
-  were allowed if `Authenticator.allowed_users` was configured.
-- [Google] If `GoogleOAuthenticator.admin_google_groups` is configured, users
-  logging in not explicitly there or in `Authenticator.admin_users` will get
-  their admin status revoked.
-- [Generic, Google] `GenericOAuthenticator.allowed_groups`,
-  `GenericOAuthenticator.allowed_groups`
-  `GoogleOAuthenticator.allowed_google_groups`, and
-  `GoogleOAuthenticator.admin_google_groups` are now Set based configuration
-  instead of List based configuration. It is still possible to set these with
-  lists as as they are converted to sets automatically, but anyone reading and
-  adding entries must now use set logic and not list logic.
+  {attr}`.OAuthenticator.allow_existing_users` is True, while before this
+  version they were allowed if {attr}`.OAuthenticator.allowed_users` was
+  configured.
+- [Google] If {attr}`.GoogleOAuthenticator.admin_google_groups` is configured,
+  users logging in not explicitly there or in
+  {attr}`.OAuthenticator.admin_users` will get their admin status revoked.
+- [Generic, Google] {attr}`.GenericOAuthenticator.allowed_groups`,
+  {attr}`.GenericOAuthenticator.allowed_groups`
+  {attr}`.GoogleOAuthenticator.allowed_google_groups`, and
+  {attr}`.GoogleOAuthenticator.admin_google_groups` are now Set based
+  configuration instead of List based configuration. It is still possible to set
+  these with lists as as they are converted to sets automatically, but anyone
+  reading and adding entries must now use set logic and not list logic.
 - [Google] Authentication state's `google_groups` is now a set, not a list.
-- [CILogon] `allowed_idps` is now required config, and `shown_idps`,
-  `username_claim`, `additional_username_claims` must no longer be configured.
+- [CILogon] {attr}`.CILogonOAuthenticator.allowed_idps` is now required config,
+  and `shown_idps`, `username_claim`, `additional_username_claims` must no
+  longer be configured.
 
 (changelog:version-15)=
 
