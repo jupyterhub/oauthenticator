@@ -302,7 +302,16 @@ class OAuthenticator(Authenticator):
     authorize_url = Unicode(
         config=True,
         help="""
-        The authenticate url for initiating oauth
+        The URL to where the user is to be redirected initially based on the
+        OAuth2 protocol. The user is supposed to be redirected back with a
+        `authorization grant code`_ after interacting successfully with the
+        identity provider.
+
+        .. _authorization grant code: https://www.rfc-editor.org/rfc/rfc6749#section-1.3.1
+
+        For more context, see the `Protocol Flow section
+        <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
+        standard document, specifically steps A-B.
         """,
     )
 
@@ -313,7 +322,15 @@ class OAuthenticator(Authenticator):
     token_url = Unicode(
         config=True,
         help="""
-        The url retrieving an access token at the completion of oauth
+        The URL to where this authenticator makes a request to acquire an
+        `access token`_ based on the authorization code received by the user
+        returning from the :attr:`authorize_url`.
+
+        .. _access token: https://www.rfc-editor.org/rfc/rfc6749#section-1.4
+
+        For more context, see the `Protocol Flow section
+        <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
+        standard document, specifically steps C-D.
         """,
     )
 
@@ -324,7 +341,13 @@ class OAuthenticator(Authenticator):
     userdata_url = Unicode(
         config=True,
         help="""
-        The url for retrieving user data with a completed access token
+        The URL to where this authenticator makes a request to acquire user
+        details with an access token received via a request to the
+        :attr:`token_url`.
+
+        For more context, see the `Protocol Flow section
+        <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
+        standard document, specifically steps E-F.
         """,
     )
 
@@ -336,8 +359,8 @@ class OAuthenticator(Authenticator):
         "username",
         config=True,
         help="""
-        Field in userdata reply to use for username The field in the userdata
-        response from which to get the JupyterHub username.
+        The key to get the JupyterHub username from in the data response to the
+        request made to :attr:`userdata_url`.
 
         Examples include: email, username, nickname
 
