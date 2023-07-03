@@ -257,13 +257,8 @@ class OAuthenticator(Authenticator):
         help="""
         Allow existing users to login.
 
-        With this enabled, JupyterHub admin users can visit `/hub/admin` or use
-        JupyterHub's REST API to add and remove users as a way to allow them
-        access.
-
-        The username for existing users must match the normalized username
-        returned by the authenticator. When creating users, only lowercase
-        letters should be used unless `MWOAuthenticator` is used.
+        An existing user is a user in JupyterHub's database of users, and it
+        includes all users that has previously logged in.
 
         .. warning::
 
@@ -272,11 +267,27 @@ class OAuthenticator(Authenticator):
            there because they have once been declared in config such as
            `allowed_users` or once been allowed to sign in.
 
+        .. warning::
+
+           When this is enabled and you are to remove access for one or more
+           users allowed via other config options, you must make sure that they
+           are not part of the database of users still. This can be tricky to do
+           if you stop allowing a group of externally managed users for example.
+
+        With this enabled, JupyterHub admin users can visit `/hub/admin` or use
+        JupyterHub's REST API to add and remove users as a way to allow them
+        access.
+
+        The username for existing users must match the normalized username
+        returned by the authenticator. When creating users, only lowercase
+        letters should be used unless `MWOAuthenticator` is used.
+
         .. note::
 
            Allowing existing users is done by adding existing users on startup
            and newly created users to the `allowed_users` set. Due to that, you
-           can't rely on this config to independently allow existing users.
+           can't rely on this config to independently allow existing users if
+           you for example would reset `allowed_users` after startup.
 
         .. versionadded:: 16.0
 
