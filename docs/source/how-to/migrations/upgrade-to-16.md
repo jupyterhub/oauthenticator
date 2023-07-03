@@ -6,8 +6,6 @@ The following section describes what to pay attention to when upgrading to OAuth
 
 ## New
 
-1. The name of the user key expected to be present in `auth_state` is now configurable through {attr}`.OAuthenticator.user_auth_state_key` for _all oauthenticators_, and it defaults to their prior specific values.
-
 2. The [`Authenticator.refresh_pre_spawn`](https://jupyterhub.readthedocs.io/en/stable/reference/api/auth.html#jupyterhub.auth.Authenticator.refresh_pre_spawn) option is enabled by default if {attr}`.OAuthenticator.enable_auth_state` is set.
 
 3. The userdata query parameters {attr}`.OAuthenticator.userdata_params` to be added to the request sent to {attr}`.OAuthenticator.userdata_url` to get user data login information is now a configurable feature of _all the oauthenticators_.
