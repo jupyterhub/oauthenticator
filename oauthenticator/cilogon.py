@@ -128,44 +128,43 @@ class CILogonOAuthenticator(OAuthenticator):
                     "username_derivation": {
                         "username_claim": "username",
                         "action": "prefix",
-                        "prefix": "gh",
+                        "prefix": "github",
                     },
                 },
                 "http://google.com/accounts/o8/id": {
                     "username_derivation": {
                         "username_claim": "username",
+                        "action": "prefix",
+                        "prefix": "google",
                     },
                     "allowed_domains": ["uni.edu", "something.org"],
                 },
             }
 
         Where `username_derivation` defines:
-            * :attr:`username_claim`: string
+
+            * `username_claim`: string (required)
                 The claim in the `userinfo` response from which to get the
                 JupyterHub username. Examples include: `eppn`, `email`. What
-                keys are available will depend on the scopes requested. It will
-                overwrite any value set through
-                CILogonOAuthenticator.username_claim for this identity provider.
-            * :attr:`action`: string What action to perform on the username.
-                Available options are "strip_idp_domain", which will strip the
-                domain from the username if specified and "prefix", which will
-                prefix the hub username with "prefix:".
-            * :attr:`domain:` string
+                keys are available will depend on the scopes requested.
+            * `action`: string
+                What action to perform on the username. Available options are
+                "strip_idp_domain", which will strip the domain from the
+                username if specified and "prefix", which will prefix the hub
+                username with "prefix:".
+            * `domain:` string (required if action is strip_idp_domain)
                 The domain after "@" which will be stripped from the username if
                 it exists and if the action is "strip_idp_domain".
-            * :attr:`prefix`: string The prefix which will be added at the
-                beginning of the username followed by a semi-column ":", if the
-                action is "prefix".
-            * :attr:`allowed_domains`: string It defines which domains will be
-                allowed to login using the specific identity provider.
+            * `prefix`: string (required if action is prefix)
+                The prefix which will be added at the beginning of the username
+                followed by a semi-column ":", if the action is "prefix".
+            * `allowed_domains`: string
+                It defines which domains will be allowed to login using the
+                specific identity provider.
 
-        Requirements:
-            * if `username_derivation.action` is `strip_idp_domain`, then `username_derivation.domain` must also be specified
-            * if `username_derivation.action` is `prefix`, then `username_derivation.prefix` must also be specified.
-            * `username_claim` must be provided for each idp in `allowed_idps`
+        .. versionchanged:: 15.0
 
-        .. versionchanged:: 15.0.0
-            `CILogonOAuthenticaor.allowed_idps` changed type from list to dict
+           Changed format from a list to a dictionary.
         """,
     )
 
