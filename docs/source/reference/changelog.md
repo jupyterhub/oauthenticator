@@ -57,10 +57,7 @@ changes_ and _deprecations_ you should read through before upgrading.
 
 #### Highlights
 
-- [All] {attr}`.OAuthenticator.refresh_pre_spawn` is now by default enabled if
-  {attr}`.OAuthenticator.enable_auth_state` is enabled.
-
-- [All] Low level configuration in `GenericOAuthenticator` has been moved to
+- [All] Low level configurations in `GenericOAuthenticator` has been moved to
   the common base class `OAuthenticator` and is therefore available to all
   authenticators.
 
