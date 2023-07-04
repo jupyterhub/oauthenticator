@@ -33,14 +33,14 @@ command line for details.
   and `shown_idps`, `username_claim`, `additional_username_claims` must no
   longer be configured.
 - [Okpy] The public functions `OkpyOAuthenticator.get_auth_request` and
-  `OkpyOAuthenticator.get_user_info_request` was removed.
+  `OkpyOAuthenticator.get_user_info_request` were removed.
 
 ### Deprecations
 
-- [Generic, Auth0] `username_key` is deprecated and is being replaced by
+- [Generic, Auth0] `username_key` is deprecated and is replaced by
   {attr}`.OAuthenticator.username_claim`.
 - [Generic] {attr}`.GenericOAuthenticator.extra_params` is deprecated and is
-  being replaced by {attr}`.OAuthenticator.token_params`.
+  replaced by {attr}`.OAuthenticator.token_params`.
 
 ### Highlights
 
@@ -50,7 +50,7 @@ command line for details.
 - [All] {attr}`.OAuthenticator.refresh_pre_spawn` is now by default enabled if
   {attr}`.OAuthenticator.enable_auth_state` is enabled.
 
-- [All] Low level configurations in `GenericOAuthenticator` has been moved to
+- [All] Low level configuration in `GenericOAuthenticator` has been moved to
   the common base class `OAuthenticator` and is therefore available to all
   authenticators.
 

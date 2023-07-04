@@ -303,8 +303,8 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""
         The URL to where the user is to be redirected initially based on the
-        OAuth2 protocol. The user is supposed to be redirected back with a
-        `authorization grant code`_ after interacting successfully with the
+        OAuth2 protocol. The user will be redirected back with an
+        `authorization grant code`_ after authenticating successfully with the
         identity provider.
 
         .. _authorization grant code: https://www.rfc-editor.org/rfc/rfc6749#section-1.3.1
@@ -527,7 +527,7 @@ class OAuthenticator(Authenticator):
 
             # Example: validate against certain root certificates
             c.OAuthenticator.http_request_kwargs = {
-                "ca_certs": "/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+                "ca_certs": "/path/to/a.crt",
             }
 
         See :external:py:class:`tornado.httpclient.HTTPRequest` for all kwargs

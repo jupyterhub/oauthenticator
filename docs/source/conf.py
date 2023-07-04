@@ -231,5 +231,4 @@ rediraffe_redirects = {
     # 2023-06-29 docs refresh
     "topic/cilogon": "tutorials/provider-specific-setup/providers/cilogon",
     "tutorials/provider-specific-setup/providers/awscognito": "tutorials/provider-specific-setup/providers/generic",
-    "how-to/migrations/upgrade-to-16": "reference/changelog",
 }
