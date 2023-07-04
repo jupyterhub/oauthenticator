@@ -517,14 +517,22 @@ class OAuthenticator(Authenticator):
         help="""
         Extra default kwargs passed to all HTTPRequests.
 
-        For example, to use a HTTP proxy for all requests:
+        .. code-block:: python
 
-        `c.OAuthenticator.http_request_kwargs = {"proxy_host": "proxy.example.com", "proxy_port": 8080}`
+            # Example: send requests through a proxy
+            c.OAuthenticator.http_request_kwargs = {
+                "proxy_host": "proxy.example.com",
+                "proxy_port": 8080,
+            }
 
-        See the `tornado.httpclient.HTTPRequest` documentation for all options and limitations:
-        https://www.tornadoweb.org/en/stable/httpclient.html#tornado.httpclient.HTTPRequest
+            # Example: validate against certain root certificates
+            c.OAuthenticator.http_request_kwargs = {
+                "ca_certs": "/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            }
 
-        Note that some of these are dependent on the httpclient implementation.
+        See :external:py:class:`tornado.httpclient.HTTPRequest` for all kwargs
+        options you can pass. Note that the HTTP client making these requests is
+        :external:py:class:`tornado.httpclient.AsyncHTTPClient`.
         """,
     )
 
