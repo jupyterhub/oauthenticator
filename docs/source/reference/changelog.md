@@ -87,6 +87,7 @@ in issue [#634](https://github.com/jupyterhub/oauthenticator/issues/634).
 
 #### Maintenance and upkeep improvements
 
+- [OpenShift] Remove ca_certs, deprecate validate_cert, fix unreleased regression [#640](https://github.com/jupyterhub/oauthenticator/pull/640) ([@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
 - maint: cleanup 0.7 workaround and adjust two non-exposed func names [#630](https://github.com/jupyterhub/oauthenticator/pull/630) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 - refactor: separate deprecated config for readability [#628](https://github.com/jupyterhub/oauthenticator/pull/628) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 - maint: remove unused file common.py [#624](https://github.com/jupyterhub/oauthenticator/pull/624) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
@@ -111,6 +112,7 @@ in issue [#634](https://github.com/jupyterhub/oauthenticator/issues/634).
 
 #### Documentation improvements
 
+- docs: coalesce v16 upgrade page into changelog, improve helpstrings [#637](https://github.com/jupyterhub/oauthenticator/pull/637) ([@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
 - docs: a major refresher of the documentation [#627](https://github.com/jupyterhub/oauthenticator/pull/627) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
 - `http_request_kwargs`: link to Tornado `HTTPRequest` doc [#614](https://github.com/jupyterhub/oauthenticator/pull/614) ([@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio))
 - docs: update broken links [#604](https://github.com/jupyterhub/oauthenticator/pull/604) ([@consideRatio](https://github.com/consideRatio))
