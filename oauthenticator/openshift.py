@@ -1,10 +1,11 @@
 """
 A JupyterHub authenticator class for use with OpenShift as an identity provider.
 """
+import json
 import os
 
-import requests
 from jupyterhub.auth import LocalAuthenticator
+from tornado.httpclient import HTTPClient, HTTPRequest
 from traitlets import Bool, Set, Unicode, default
 
 from oauthenticator.oauth2 import OAuthenticator
@@ -24,6 +25,13 @@ class OpenShiftOAuthenticator(OAuthenticator):
     @default("username_claim")
     def _username_claim_default(self):
         return "name"
+
+    @default("http_request_kwargs")
+    def _http_request_kwargs_default(self):
+        ca_cert_file = "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        if self.validate_server_cert and os.path.exists(ca_cert_file):
+            return {"ca_certs": ca_cert_file}
+        return {}
 
     openshift_url = Unicode(
         os.environ.get('OPENSHIFT_URL')
@@ -53,34 +61,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
         """,
     )
 
-    ca_certs = Unicode(
-        config=True,
-        help="""
-        Path to a certificate authority (CA) certificate file. Used to trust the
-        certificates from a specific CA.
-        """,
-    )
-
-    # FIXME: validate_cert is defined here, but OAuthenticator also defines
-    #        validate_server_cert. If both should exist separately its too
-    #        confusing without further documentation, and if only one should
-    #        exist the one here should be deprecated in favor of the other.
-    #
-    validate_cert = Bool(
-        True,
-        config=True,
-        help="""
-        Set to False to disable certificate validation.
-        """,
-    )
-
-    @default("ca_certs")
-    def _ca_certs_default(self):
-        ca_cert_file = "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-        if self.validate_cert and os.path.exists(ca_cert_file):
-            return ca_cert_file
-        return ''
-
     openshift_auth_api_url = Unicode(
         config=True,
         help="""
@@ -101,8 +81,13 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _openshift_auth_api_url_default(self):
         auth_info_url = f"{self.openshift_url}/.well-known/oauth-authorization-server"
 
-        resp = requests.get(auth_info_url, verify=self.ca_certs or self.validate_cert)
-        resp_json = resp.json()
+        # Makes a request like OAuthenticator.httpfetch would but non-async as
+        # this code run during startup when we can't yet use async
+        # functionality.
+        client = HTTPClient()
+        req = HTTPRequest(auth_info_url, **self.http_request_kwargs)
+        resp = client.fetch(req)
+        resp_json = json.loads(resp.body.decode("utf8", "replace"))
 
         return resp_json.get('issuer')
 
@@ -130,6 +115,29 @@ class OpenShiftOAuthenticator(OAuthenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return f"{self.openshift_rest_api_url}/apis/user.openshift.io/v1/users/~"
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "ca_certs": ("http_request_kwargs", "16.0.0", False),
+        "validate_cert": ("validate_server_cert", "16.0.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    ca_certs = Unicode(
+        config=True,
+        help="""
+        .. versionremoved:: 16.0
+
+           Use :attr:`http_request_kwargs`.
+        """,
+    )
+    validate_cert = Bool(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`validate_server_cert`.
+        """,
+    )
 
     def user_info_to_username(self, user_info):
         """
