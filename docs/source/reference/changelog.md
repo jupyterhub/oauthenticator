@@ -55,16 +55,19 @@ changes_ and _deprecations_ you should read through before upgrading.
 - [OpenShift] {attr}`.OpenShiftOAuthenticator.validate_cert` is deprecated and
   is being replaced by {attr}`.OAuthenticator.validate_server_cert`.
 
-#### Highlights
+#### A new structure
 
-- [All] Low level configurations in `GenericOAuthenticator` has been moved to
-  the common base class `OAuthenticator` and is therefore available to all
-  authenticators.
+The authenticators are no longer overriding the `authenticate` method, but
+instead relying on the OAuthenticator base class `authenticate` method which
+calls a few lower level methods that can be overridden if needed. Like this, a
+lot of code has been absorbed into the OAuthenticator base class that was
+previously duplicated across authenticators.
 
-  - {attr}`.OAuthenticator.basic_auth`
-  - {attr}`.OAuthenticator.token_params`
-  - {attr}`.OAuthenticator.userdata_params`
-  - {attr}`.OAuthenticator.userdata_token_method`
+To learn more about this new structure the provider specific authenticator
+classes rely on, please for now inspect the source code for the
+`OAuthenticator.authenticate` method and `OAuthenticator.check_allowed` method.
+Plans on writing more thorough documentation about this new structure is tracked
+in issue [#634](https://github.com/jupyterhub/oauthenticator/issues/634).
 
 #### New features added
 
