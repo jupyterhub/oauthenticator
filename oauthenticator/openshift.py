@@ -86,6 +86,14 @@ class OpenShiftOAuthenticator(OAuthenticator):
         help="""
         Used to determine the default values for `authorize_url` and
         `token_url`.
+
+        By default, this is determined on startup by a request to the
+        `openshift_url` appended with "/.well-known/oauth-authorization-server",
+        where "issuer" is extracted from the response.
+
+        For more context, see the `Obtaining Authorization Server Metadata
+        section <https://datatracker.ietf.org/doc/html/rfc8414#section-3>`_ in
+        an OAuth2 standard document.
         """,
     )
 
