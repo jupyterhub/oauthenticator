@@ -33,9 +33,9 @@ command line for details.
   and `shown_idps`, `username_claim`, `additional_username_claims` were removed.
 - [Okpy] The public functions `OkpyOAuthenticator.get_auth_request` and
   `OkpyOAuthenticator.get_user_info_request` were removed.
-- [OpenShift] The config `ca_certs` was removed but
-  {attr}`.OpenShiftOAuthenticator.http_request_kwargs` can still be configured
-  with a `ca_certs` key for the same result. OpenShift's default `ca_certs`
+- [OpenShift] The config `ca_certs` was removed. Use
+  {attr}`.OAuthenticator.http_request_kwargs`
+  with a `ca_certs` key instead. OpenShift's default `ca_certs`
   remains unchanged.
 
 ### Deprecations
