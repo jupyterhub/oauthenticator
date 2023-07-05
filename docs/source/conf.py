@@ -107,7 +107,7 @@ def setup(app):
         app.add_directive("versionremoved", VersionChange)
 
 
-# -- General Sphinx configuration ---------------------------------------------------
+# -- General Sphinx configuration --------------------------------------------
 # ref: https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 #
 extensions = [
@@ -132,6 +132,29 @@ default_role = "literal"
 # Disable autosummary otherwise it will overwrite the oauthenticators docs in the `gen` directory.
 # Reference: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html#confval-autosummary_generate
 autosummary_generate = False
+
+
+# -- Options for intersphinx extension ---------------------------------------
+# ref: https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
+#
+# The extension makes us able to link like to other projects like below.
+#
+#     rST  - :external:py:class:`tornado.httpclient.AsyncHTTPClient`
+#     MyST - {external:py:class}`tornado.httpclient.AsyncHTTPClient`
+#
+# To see what we can link to, do the following where "objects.inv" is appended
+# to the sphinx based website:
+#
+#     python -m sphinx.ext.intersphinx https://www.tornadoweb.org/en/stable/objects.inv
+#
+intersphinx_mapping = {
+    "tornado": ("https://www.tornadoweb.org/en/stable/", None),
+    "jupyterhub": ("https://jupyterhub.readthedocs.io/en/stable/", None),
+}
+
+# intersphinx_disabled_reftypes set based on recommendation in
+# https://docs.readthedocs.io/en/stable/guides/intersphinx.html#using-intersphinx
+intersphinx_disabled_reftypes = ["*"]
 
 
 # -- Options for HTML output -------------------------------------------------

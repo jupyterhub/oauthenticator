@@ -34,10 +34,9 @@ Things like how to write your own `oauthenticator` or how to migrate to a newer 
 :maxdepth: 1
 :caption: How-to guides
 
-how-to/migrations/upgrade-to-15
-how-to/migrations/upgrade-to-16
 how-to/custom-403
 how-to/writing-an-oauthenticator
+how-to/migrations/upgrade-to-15
 ```
 
 ## Topic guides

@@ -8,6 +8,7 @@ command line for details.
 
 ### Breaking changes
 
+- Support for Python 3.7 has been dropped, Python 3.8+ is now required.
 - [All] Users are now authorized based on _either_ being part of
   {attr}`.OAuthenticator.admin_users`, {attr}`.OAuthenticator.allowed_users`, an
   Authenticator specific allowed group/team/organization, or if by being part of
@@ -31,6 +32,32 @@ command line for details.
 - [CILogon] {attr}`.CILogonOAuthenticator.allowed_idps` is now required config,
   and `shown_idps`, `username_claim`, `additional_username_claims` must no
   longer be configured.
+- [Okpy] The public functions `OkpyOAuthenticator.get_auth_request` and
+  `OkpyOAuthenticator.get_user_info_request` were removed.
+
+### Deprecations
+
+- [Generic, Auth0] `username_key` is deprecated and is replaced by
+  {attr}`.OAuthenticator.username_claim`.
+- [Generic] {attr}`.GenericOAuthenticator.extra_params` is deprecated and is
+  replaced by {attr}`.OAuthenticator.token_params`.
+
+### Highlights
+
+- [All] The project has been refactored greatly to make it easier to use,
+  understand, and maintain code and documentation.
+
+- [All] {attr}`.OAuthenticator.refresh_pre_spawn` is now by default enabled if
+  {attr}`.OAuthenticator.enable_auth_state` is enabled.
+
+- [All] Low level configuration in `GenericOAuthenticator` has been moved to
+  the common base class `OAuthenticator` and is therefore available to all
+  authenticators.
+
+  - {attr}`.OAuthenticator.basic_auth`
+  - {attr}`.OAuthenticator.token_params`
+  - {attr}`.OAuthenticator.userdata_params`
+  - {attr}`.OAuthenticator.userdata_token_method`
 
 (changelog:version-15)=
 
