@@ -65,13 +65,14 @@ previously duplicated across authenticators.
 
 To learn more about this new structure the provider specific authenticator
 classes rely on, please for now inspect the source code for the
-`OAuthenticator.authenticate` method and `OAuthenticator.check_allowed` method.
+[`OAuthenticator.authenticate`](https://github.com/jupyterhub/oauthenticator/blob/16.0.0/oauthenticator/oauth2.py#L901) and
+[`OAuthenticator.check_allowed`](https://github.com/jupyterhub/oauthenticator/blob/16.0.0/oauthenticator/oauth2.py#L945) methods.
 Plans on writing more thorough documentation about this new structure is tracked
 in issue [#634](https://github.com/jupyterhub/oauthenticator/issues/634).
 
 #### New features added
 
-- breaking: add allow_existing_users config [#631](https://github.com/jupyterhub/oauthenticator/pull/631) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- [All] breaking: add allow_existing_users config [#631](https://github.com/jupyterhub/oauthenticator/pull/631) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 - [All] breaking, add allow_all config defaulting to False (CILogon: require allowed_idps) [#625](https://github.com/jupyterhub/oauthenticator/pull/625) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
 - [All] Add `http_request_kwargs` config option [#578](https://github.com/jupyterhub/oauthenticator/pull/578) ([@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 
