@@ -206,7 +206,7 @@ linkcheck_anchors_ignore = [
 #
 rediraffe_branch = "main"
 rediraffe_redirects = {
-    "geting-started": "tutorials/general-setup",
+    "getting-started": "tutorials/general-setup",
     "install": "tutorials/install",
     "changelog": "reference/changelog",
     "cilogon": "topic/cilogon",
