@@ -8,6 +8,16 @@ command line for details.
 
 ## 16.0
 
+### 16.0.1 - 2023-07-05
+
+#### Bugs fixed
+
+- Ensure login_service remain configurable [#644](https://github.com/jupyterhub/oauthenticator/pull/644) ([@consideRatio](https://github.com/consideRatio))
+
+#### Documentation improvements
+
+- docs: fix redirection config typo for getting-started [#642](https://github.com/jupyterhub/oauthenticator/pull/642) ([@consideRatio](https://github.com/consideRatio))
+
 ### 16.0.0 - 2023-07-05
 
 The project has been refactored greatly to make it easier to use, understand,
