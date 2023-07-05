@@ -30,10 +30,13 @@ command line for details.
   reading and adding entries must now use set logic and not list logic.
 - [Google] Authentication state's `google_groups` is now a set, not a list.
 - [CILogon] {attr}`.CILogonOAuthenticator.allowed_idps` is now required config,
-  and `shown_idps`, `username_claim`, `additional_username_claims` must no
-  longer be configured.
+  and `shown_idps`, `username_claim`, `additional_username_claims` were removed.
 - [Okpy] The public functions `OkpyOAuthenticator.get_auth_request` and
   `OkpyOAuthenticator.get_user_info_request` were removed.
+- [OpenShift] The config `ca_certs` was removed. Use
+  {attr}`.OAuthenticator.http_request_kwargs`
+  with a `ca_certs` key instead. OpenShift's default `ca_certs`
+  remains unchanged.
 
 ### Deprecations
 
@@ -41,6 +44,8 @@ command line for details.
   {attr}`.OAuthenticator.username_claim`.
 - [Generic] {attr}`.GenericOAuthenticator.extra_params` is deprecated and is
   replaced by {attr}`.OAuthenticator.token_params`.
+- [OpenShift] {attr}`.OpenShiftOAuthenticator.validate_cert` is deprecated and
+  is being replaced by {attr}`.OAuthenticator.validate_server_cert`.
 
 ### Highlights
 
