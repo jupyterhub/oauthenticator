@@ -241,6 +241,21 @@ class OAuthenticator(Authenticator):
     # dictionary that user info will be saved
     user_auth_state_key = "oauth_user"
 
+    login_service = Unicode(
+        "OAuth 2.0",
+        config=True,
+        help="""
+        Name of the login service or identity provider that this authenticator
+        is using to authenticate users.
+
+        This config influences the text on a button shown to unauthenticated
+        users before they click it to login, assuming :attr:`auto_login` isn't
+        configured True.
+
+        The login button's text will be "Login with <login_service>".
+        """,
+    )
+
     allow_all = Bool(
         False,
         config=True,
