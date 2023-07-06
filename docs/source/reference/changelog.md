@@ -8,6 +8,16 @@ command line for details.
 
 ## 16.0
 
+### 16.0.2 - 2023-07-06
+
+#### Bugs fixed
+
+- [Generic] breaking fix: change basic_auth default to False [#648](https://github.com/jupyterhub/oauthenticator/pull/648) ([@consideRatio](https://github.com/consideRatio))
+
+#### Maintenance and upkeep improvements
+
+- [Generic] Deprecate tls_verify in favor of validate_server_cert [#647](https://github.com/jupyterhub/oauthenticator/pull/647) ([@consideRatio](https://github.com/consideRatio))
+
 ### 16.0.1 - 2023-07-05
 
 #### Bugs fixed
@@ -23,6 +33,11 @@ command line for details.
 The project has been refactored greatly to make it easier to use, understand,
 and maintain its code and documentation. This release has several _breaking
 changes_ and _deprecations_ you should read through before upgrading.
+
+```{note}
+This changelog entry was updated to capture changes in 16.0.2, please upgrade
+directly to 16.0.2 or higher.
+```
 
 #### Breaking changes
 
@@ -55,6 +70,8 @@ changes_ and _deprecations_ you should read through before upgrading.
   {attr}`.OAuthenticator.http_request_kwargs`
   with a `ca_certs` key instead. OpenShift's default `ca_certs`
   remains unchanged.
+- [Generic] {attr}`.GenericOAuthenticator.basic_auth` behavior changed in 16.0.0
+  and defaults to False in version 16.0.2.
 
 #### Deprecations
 
@@ -62,8 +79,9 @@ changes_ and _deprecations_ you should read through before upgrading.
   {attr}`.OAuthenticator.username_claim`.
 - [Generic] {attr}`.GenericOAuthenticator.extra_params` is deprecated and is
   replaced by {attr}`.OAuthenticator.token_params`.
-- [OpenShift] {attr}`.OpenShiftOAuthenticator.validate_cert` is deprecated and
-  is being replaced by {attr}`.OAuthenticator.validate_server_cert`.
+- [Generic, OpenShift] `GenericOAuthenticator.tls_verify` and
+  `OpenShiftOAuthenticator.validate_cert` are deprecated and are replaced by
+  {attr}`.OAuthenticator.validate_server_cert`.
 
 #### A new structure
 
