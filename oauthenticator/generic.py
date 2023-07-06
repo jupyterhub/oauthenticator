@@ -76,10 +76,6 @@ class GenericOAuthenticator(OAuthenticator):
         help="Require valid tls certificates in HTTP requests",
     )
 
-    @default("basic_auth")
-    def _basic_auth_default(self):
-        return os.environ.get('OAUTH2_BASIC_AUTH', 'True').lower() in {'true', '1'}
-
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient(
