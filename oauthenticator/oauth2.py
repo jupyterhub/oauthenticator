@@ -408,7 +408,7 @@ class OAuthenticator(Authenticator):
     userdata_params = Dict(
         config=True,
         help="""
-        Userdata params to get user data login information
+        Userdata params to get user data login information.
         """,
     )
 
@@ -417,7 +417,9 @@ class OAuthenticator(Authenticator):
         os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
         config=True,
         help="""
-        Method for sending access token in userdata request. Supported methods: header, url. Default: header
+        Method for sending access token in userdata request.
+
+        Supported methods: header, url.
         """,
     )
 
@@ -425,7 +427,8 @@ class OAuthenticator(Authenticator):
     token_params = Dict(
         config=True,
         help="""
-        Extra parameters for first POST request exchanging the OAuth code for an Access Token
+        Extra parameters for first POST request exchanging the OAuth code for an
+        Access Token
         """,
     )
 
