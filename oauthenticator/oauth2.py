@@ -473,7 +473,28 @@ class OAuthenticator(Authenticator):
         os.environ.get("OAUTH2_BASIC_AUTH", "False").lower() in {"true", "1"},
         config=True,
         help="""
-        Whether or not to use basic authentication for access token request
+        Whether or to use HTTP Basic authentication instead of form based
+        authentication in requests to :attr:`token_url`.
+
+        When using HTTP Basic authentication, a HTTP header is set with the
+        :attr:`client_id` and :attr:`client_secret` encoded in it.
+
+        When using form based authentication, the `client_id` and
+        `client_secret` is put in the HTTP POST request's body.
+
+        .. versionchanged:: 16.0.0
+
+           This configuration now toggles between HTTP Basic authentication and
+           form based authentication when working against the `token_url`.
+
+           Previously when this was configured True, both would be used contrary
+           to a recommendation in `OAuth 2.0 documentation
+           <https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1>`_.
+
+        .. versionchanged:: 16.0.2
+
+           The default value for this configuration for GenericOAuthenticator
+           changed from True to False.
         """,
     )
 
