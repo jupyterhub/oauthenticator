@@ -70,22 +70,17 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    tls_verify = Bool(
-        os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
-        config=True,
-        help="Require valid tls certificates in HTTP requests",
-    )
-
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient(
-            force_instance=True, defaults=dict(validate_cert=self.tls_verify)
+            force_instance=True, defaults=dict(validate_cert=self.validate_server_cert)
         )
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {
         "username_key": ("username_claim", "16.0.0"),
         "extra_params": ("token_params", "16.0.0"),
+        "tls_verify": ("validate_server_cert", "16.0.2"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
     username_key = Union(
@@ -103,6 +98,14 @@ class GenericOAuthenticator(OAuthenticator):
         .. deprecated:: 16.0
 
            Use :attr:`token_params`.
+        """,
+    )
+    tls_verify = Bool(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`validate_server_cert`.
         """,
     )
 
