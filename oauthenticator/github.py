@@ -114,6 +114,16 @@ class GitHubOAuthenticator(OAuthenticator):
         """,
     )
 
+    allowed_repositories = Set(
+        config=True,
+        help="""
+        Allow users with read access to specified repositories by specifying
+        repositories like `org-a/repo-1`.
+
+        Requires `repo` to be set in `scope`.
+        """,
+    )
+
     populate_teams_in_auth_state = Bool(
         False,
         config=True,
@@ -182,6 +192,17 @@ class GitHubOAuthenticator(OAuthenticator):
                 ):
                     return True
             message = f"User {username} is not part of allowed_organizations"
+            self.log.warning(message)
+
+        if self.allowed_repositories:
+            access_token = auth_model["auth_state"]["token_response"]["access_token"]
+            token_type = auth_model["auth_state"]["token_response"]["token_type"]
+            for repo in self.allowed_repositories:
+                if await self._check_membership_allowed_repository(
+                    repo, username, access_token, token_type
+                ):
+                    return True
+            message = f"User {username} does not have access to allowed_repositories"
             self.log.warning(message)
 
         # users should be explicitly allowed via config, otherwise they aren't
@@ -336,6 +357,44 @@ class GitHubOAuthenticator(OAuthenticator):
                 message = ''
             self.log.debug(
                 f"{username} does not appear to be a member of {org_team} (status={resp.code}): {message}",
+            )
+        return False
+
+    async def _check_membership_allowed_repository(
+        self, owner_repo, username, access_token, token_type
+    ):
+        """
+        Checks if a user is allowed to read the repo via
+        GitHub's REST API. The `repo` scope is required to check access.
+
+        The `owner_repo` parameter accepts values like `OWNER/REPO`.
+        """
+        headers = self.build_userdata_request_headers(access_token, token_type)
+
+        # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
+        owner, repo = owner_repo.split("/")
+        api_url = f"{self.github_api}/repos/{owner}/{repo}"
+
+        self.log.debug(f"Checking GitHub repo access: {username} for {owner}/{repo}?")
+        resp = await self.httpfetch(
+            api_url,
+            parse_json=False,
+            raise_error=False,
+            method="GET",
+            headers=headers,
+            validate_cert=self.validate_server_cert,
+        )
+        if resp.code == 200:
+            self.log.debug(f"Allowing {username} as access of {owner}/{repo}")
+            return True
+        else:
+            try:
+                resp_json = json.loads((resp.body or b'').decode('utf8', 'replace'))
+                message = resp_json.get('message', '')
+            except ValueError:
+                message = ''
+            self.log.debug(
+                f"{username} does not appear to have access to {owner}/{repo} (status={resp.code}): {message}",
             )
         return False
 
