@@ -229,7 +229,9 @@ class GitHubOAuthenticator(OAuthenticator):
         # Note that the retrieved scopes will be empty for GitHub Apps https://docs.github.com/en/developers/apps
         access_token = auth_model["auth_state"]["token_response"]["access_token"]
         token_type = auth_model["auth_state"]["token_response"]["token_type"]
-        granted_scopes = auth_model["auth_state"].get("scope", [])
+        granted_scopes = [
+            scope for scope in auth_model["auth_state"].get("scope", []) if scope
+        ]
         if not user_info["email"] and (
             "user" in granted_scopes
             or "user:email" in granted_scopes
