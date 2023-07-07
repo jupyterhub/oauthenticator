@@ -205,23 +205,30 @@ class GitHubOAuthenticator(OAuthenticator):
         # - about /user/emails: https://docs.github.com/en/rest/reference/users#list-email-addresses-for-the-authenticated-user
         #
         # Note that the read:user scope does not imply the user:emails scope!
+        # Note that the retrieved scopes will be empty for GitHub Apps https://docs.github.com/en/developers/apps
         access_token = auth_model["auth_state"]["token_response"]["access_token"]
         token_type = auth_model["auth_state"]["token_response"]["token_type"]
         granted_scopes = auth_model["auth_state"].get("scope", [])
         if not user_info["email"] and (
-            "user" in granted_scopes or "user:email" in granted_scopes
+            "user" in granted_scopes
+            or "user:email" in granted_scopes
+            or not granted_scopes
         ):
-            resp_json = await self.httpfetch(
+            resp = await self.httpfetch(
                 f"{self.github_api}/user/emails",
                 "fetching user emails",
                 method="GET",
+                parse_json=False,
+                raise_error=False,
                 headers=self.build_userdata_request_headers(access_token, token_type),
                 validate_cert=self.validate_server_cert,
             )
-            for val in resp_json:
-                if val["primary"]:
-                    user_info["email"] = val["email"]
-                    break
+            if resp.code == 200:
+                resp_json = json.loads((resp.body or b'').decode('utf8', 'replace'))
+                for val in resp_json:
+                    if val["primary"]:
+                        user_info["email"] = val["email"]
+                        break
 
         if self.populate_teams_in_auth_state:
             if "read:org" not in self.scope:
