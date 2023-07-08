@@ -27,7 +27,7 @@ class bdist_egg_disabled(bdist_egg):
 setup_args = dict(
     name='oauthenticator',
     packages=find_packages(),
-    version="16.0.3",
+    version="16.0.4.dev",
     description="OAuthenticator: Authenticate JupyterHub users with common OAuth providers",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
