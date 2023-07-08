@@ -35,22 +35,24 @@ and maintain its code and documentation. This release has several _breaking
 changes_ and _deprecations_ you should read through before upgrading.
 
 ```{note}
-This changelog entry was updated to capture changes in 16.0.2, please upgrade
-directly to 16.0.2 or higher.
+This changelog entry has been updated to capture previously undocumented changes
+and new changes in 16.0.2, please upgrade directly to 16.0.2 or higher.
 ```
 
 #### Breaking changes
 
 - Support for Python 3.7 has been dropped, Python 3.8+ is now required.
-- [All] Users are now authorized based on _either_ being part of
+- [All] If no configuration allows a user, then users are no longer allowed by
+  default. The new config {attr}`.OAuthenticator.allow_all` can be configured
+  True to allow all users.
+- [All] Users are now allowed based on _either_ being part of:
   {attr}`.OAuthenticator.admin_users`, {attr}`.OAuthenticator.allowed_users`, an
-  Authenticator specific allowed group/team/organization, or if by being part of
-  the existing users if new config {attr}`.OAuthenticator.allow_existing_users`
-  is True.
-- [All] Existing users (listed via `/hub/admin`) will now only be allowed if
-  {attr}`.OAuthenticator.allow_existing_users` is True, while before this
-  version they were allowed if {attr}`.OAuthenticator.allowed_users` was
+  Authenticator specific config allowing a group/team/organization, or by being
+  an existing user if new config {attr}`.OAuthenticator.allow_existing_users` is
   configured.
+- [All] Existing users (listed via `/hub/admin`) will now only be allowed if
+  {attr}`.OAuthenticator.allow_existing_users` is True, while before existing
+  users were allowed if {attr}`.OAuthenticator.allowed_users` was configured.
 - [Google] If {attr}`.GoogleOAuthenticator.admin_google_groups` is configured,
   users logging in not explicitly there or in
   {attr}`.OAuthenticator.admin_users` will get their admin status revoked.
@@ -100,7 +102,7 @@ in issue [#634](https://github.com/jupyterhub/oauthenticator/issues/634).
 
 #### New features added
 
-- [All] breaking: add allow_existing_users config [#631](https://github.com/jupyterhub/oauthenticator/pull/631) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- [All] breaking: add allow_existing_users config defaulting to False [#631](https://github.com/jupyterhub/oauthenticator/pull/631) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 - [All] breaking, add allow_all config defaulting to False (CILogon: require allowed_idps) [#625](https://github.com/jupyterhub/oauthenticator/pull/625) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
 - [All] Add `http_request_kwargs` config option [#578](https://github.com/jupyterhub/oauthenticator/pull/578) ([@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 
