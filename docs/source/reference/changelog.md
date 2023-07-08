@@ -8,6 +8,12 @@ command line for details.
 
 ## 16.0
 
+### 16.0.3 - 2023-07-08
+
+#### Documentation improvements
+
+- docs: update v16 changelog to capture missed change about allow_all [#651](https://github.com/jupyterhub/oauthenticator/pull/651) ([@consideRatio](https://github.com/consideRatio))
+
 ### 16.0.2 - 2023-07-06
 
 #### Bugs fixed
