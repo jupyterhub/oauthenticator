@@ -7,6 +7,7 @@ import warnings
 
 from jupyterhub.auth import LocalAuthenticator
 from requests.utils import parse_header_links
+from tornado.httpclient import HTTPClientError
 from traitlets import Bool, Set, Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -237,21 +238,27 @@ class GitHubOAuthenticator(OAuthenticator):
             or "user:email" in granted_scopes
             or not granted_scopes
         ):
-            resp = await self.httpfetch(
-                f"{self.github_api}/user/emails",
-                "fetching user emails",
-                method="GET",
-                parse_json=False,
-                raise_error=False,
-                headers=self.build_userdata_request_headers(access_token, token_type),
-                validate_cert=self.validate_server_cert,
-            )
-            if resp.code == 200:
-                resp_json = json.loads((resp.body or b'').decode('utf8', 'replace'))
+            try:
+                resp_json = await self.httpfetch(
+                    f"{self.github_api}/user/emails",
+                    "fetching user emails",
+                    method="GET",
+                    headers=self.build_userdata_request_headers(
+                        access_token, token_type
+                    ),
+                    validate_cert=self.validate_server_cert,
+                )
                 for val in resp_json:
                     if val["primary"]:
                         user_info["email"] = val["email"]
                         break
+            except HTTPClientError as e:
+                if e.code == 403 and not granted_scopes:
+                    # This means granted_scopes is empty (GitHub App) but we don't have permission to
+                    # read users email
+                    pass
+                else:
+                    raise e
 
         if self.populate_teams_in_auth_state:
             if "read:org" not in self.scope:
