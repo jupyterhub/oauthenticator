@@ -6,8 +6,9 @@ OAuthenticator provides plugins for JupyterHub to use common OAuth providers,
 as well as base classes for writing your own Authenticators with any OAuth 2.0 provider.
 
 ```{warning}
-The OAuthenticator package is not accepting new OAuth providers,
-but you can write your own OAuthenticator by `oauthenticator.oauth2.OAuthenticator`
+The OAuthenticator package is not accepting new OAuth providers, but you can
+either use the `GenericOAuthenticator` or write your own based on the
+`OAuthenticator` base class.
 ```
 
 ## Get Started Guide
@@ -33,9 +34,9 @@ Things like how to write your own `oauthenticator` or how to migrate to a newer 
 :maxdepth: 1
 :caption: How-to guides
 
+how-to/custom-403
 how-to/writing-an-oauthenticator
 how-to/migrations/upgrade-to-15
-how-to/migrations/upgrade-to-16
 ```
 
 ## Topic guides

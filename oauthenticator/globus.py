@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Globus OAuth2 with JupyterHub
+A JupyterHub authenticator class for use with Globus as an identity provider.
 """
 import base64
 import os
@@ -59,13 +59,19 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
 
 
 class GlobusOAuthenticator(OAuthenticator):
-    """The Globus OAuthenticator handles both authorization and passing
-    transfer tokens to the spawner."""
+    """
+    The Globus OAuthenticator handles authentication, authorization, and sets
+    transfer tokens on the spawner environment variables via a pre_spawn_start
+    hook.
+    """
 
-    login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
 
     user_auth_state_key = "globus_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Globus")
 
     @default("userdata_url")
     def _userdata_url_default(self):
@@ -81,13 +87,18 @@ class GlobusOAuthenticator(OAuthenticator):
 
     revocation_url = Unicode(
         "https://auth.globus.org/v2/oauth2/token/revoke",
-        help="Globus URL to revoke live tokens.",
         config=True,
+        help="""
+        Globus URL to revoke live tokens.
+        """,
     )
+
     globus_groups_url = Unicode(
         "https://groups.api.globus.org/v2/groups/my_groups",
-        help="Globus URL to get list of user's Groups.",
         config=True,
+        help="""
+        Globus URL to get list of user's Groups.
+        """,
     )
 
     identity_provider = Unicode(
@@ -108,12 +119,12 @@ class GlobusOAuthenticator(OAuthenticator):
 
     username_from_email = Bool(
         False,
+        config=True,
         help="""
         Create username from email address, not preferred username. If an
         identity provider is specified, email address must be from the same
         domain. Email scope will be set automatically.
         """,
-        config=True,
     )
 
     @default("username_claim")
@@ -172,8 +183,8 @@ class GlobusOAuthenticator(OAuthenticator):
     allowed_globus_groups = Set(
         config=True,
         help="""
-        Allow members of defined Globus Groups, specified with their UUIDs, to
-        login.
+        Allow members of selected Globus groups to sign in. Globus groups should
+        be specified using their UUIDs.
 
         If this is configured, the default value of the scope configuration is
         appended with the scope
@@ -184,8 +195,11 @@ class GlobusOAuthenticator(OAuthenticator):
     admin_globus_groups = Set(
         config=True,
         help="""
-        Allow members of defined Globus Groups, specified with their UUIDs, to
-        login as admin users.
+        Allow members of selected Globus groups to sign in and consider them as
+        JupyterHub admins. Globus groups should be specified using their UUIDs.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
 
         If this is configured, the default value of the scope configuration is
         appended with the scope
@@ -194,7 +208,8 @@ class GlobusOAuthenticator(OAuthenticator):
     )
 
     async def pre_spawn_start(self, user, spawner):
-        """Add tokens to the spawner whenever the spawner starts a notebook.
+        """
+        Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
         globus-sdk-python.readthedocs.io/en/stable/tutorial/#tutorial-step4
         """

@@ -1,5 +1,5 @@
 """
-Authenticator to use GitHub OAuth with JupyterHub
+A JupyterHub authenticator class for use with GitHub as an identity provider.
 """
 import json
 import os
@@ -13,19 +13,23 @@ from .oauth2 import OAuthenticator
 
 
 class GitHubOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
-    login_service = "GitHub"
     user_auth_state_key = "github_user"
 
-    github_url = Unicode("https://github.com", config=True)
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "GitHub")
 
     @default("username_claim")
     def _username_claim_default(self):
         return "login"
+
+    github_url = Unicode(
+        config=True,
+        help="""
+        Used to determine the default values for `github_api`, `authorize_url`,
+        `token_url`, and `userdata_url`.
+        """,
+    )
 
     @default("github_url")
     def _github_url_default(self):
@@ -59,13 +63,23 @@ class GitHubOAuthenticator(OAuthenticator):
         # ensure no trailing slash
         return github_url.rstrip("/")
 
-    github_api = Unicode("https://api.github.com", config=True)
+    github_api = Unicode(
+        config=True,
+        help="""
+        URL to the GitHub REST API to use.
+
+        Determined based on `github_url` by default and may never need to be
+        explicitly set.
+        """,
+    )
 
     @default("github_api")
     def _github_api_default(self):
         if self.github_url == "https://github.com":
             return "https://api.github.com"
         else:
+            # Only github.com has its api at api.github.com, enterprise server
+            # deployments has it in the same domain path under /api/v3
             return self.github_url + "/api/v3"
 
     @default("authorize_url")
@@ -80,40 +94,29 @@ class GitHubOAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return f"{self.github_api}/user"
 
-    # deprecated names
-    github_client_id = Unicode(config=True, help="DEPRECATED")
-
-    def _github_client_id_changed(self, name, old, new):
-        self.log.warning("github_client_id is deprecated, use client_id")
-        self.client_id = new
-
-    github_client_secret = Unicode(config=True, help="DEPRECATED")
-
-    def _github_client_secret_changed(self, name, old, new):
-        self.log.warning("github_client_secret is deprecated, use client_secret")
-        self.client_secret = new
-
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
 
-    github_organization_whitelist = Set(
-        help="Deprecated, use `GitHubOAuthenticator.allowed_organizations`",
-        config=True,
-    )
-
     allowed_organizations = Set(
+        config=True,
         help="""
         Allow members of organizations or organizations' teams by specifying
-        strings like `org-a` and/or `org-b:team-1`.
+        organization names like `org-a` and/or an organizations' team names like
+        `org-b:team-1`.
+
+        The names can have a human friendly variant with spaces etc, but you
+        should specify the name as seen in a URL. As an example, it should be
+        `jupyterhub:mybinder-org-operators` for the team
+        https://github.com/orgs/jupyterhub/teams/mybinder-org-operators.
 
         Requires `read:org` to be set in `scope` to not just allow based on
         public membership.
         """,
-        config=True,
     )
 
     populate_teams_in_auth_state = Bool(
         False,
+        config=True,
         help="""
         Populates the authentication state dictionary `auth_state` with a key
         `teams` assigned the list of teams the current user is a member of at
@@ -128,7 +131,38 @@ class GitHubOAuthenticator(OAuthenticator):
         persisted via `enable_auth_state`. For more information, see
         https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
         """,
+    )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "github_client_id": ("client_id", "0.1.0"),
+        "github_client_secret": ("client_secret", "0.1.0"),
+        "github_organization_whitelist": ("allowed_organizations", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    github_client_id = Unicode(
         config=True,
+        help="""
+        .. deprecated:: 0.1
+
+           Use :attr:`client_id`.
+        """,
+    )
+    github_client_secret = Unicode(
+        config=True,
+        help="""
+        .. deprecated:: 0.1
+
+           Use :attr:`client_secret`.
+        """,
+    )
+    github_organization_whitelist = Set(
+        config=True,
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`allowed_organizations`.
+        """,
     )
 
     async def check_allowed(self, username, auth_model):

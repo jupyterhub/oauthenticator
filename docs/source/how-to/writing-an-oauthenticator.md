@@ -12,7 +12,7 @@ and configuration to set the necessary configuration variables.
 - login_service
 - userdata_url
 - token_url
-- username_key
+- username_claim
 
 Example config:
 

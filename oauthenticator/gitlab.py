@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use GitLab OAuth with JupyterHub
+A JupyterHub authenticator class for use with GitLab as an identity provider.
 """
 import os
 import warnings
@@ -21,23 +21,21 @@ def _api_headers(access_token):
 
 
 class GitLabOAuthenticator(OAuthenticator):
-    # see gitlab_scopes.md for details about scope config
-    # set scopes via config, e.g.
-    # c.GitLabOAuthenticator.scope = ['read_user']
-
-    _deprecated_oauth_aliases = {
-        "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
-        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
-    login_service = "GitLab"
     user_auth_state_key = "gitlab_user"
-
     client_id_env = 'GITLAB_CLIENT_ID'
     client_secret_env = 'GITLAB_CLIENT_SECRET'
 
-    gitlab_url = Unicode("https://gitlab.com", config=True)
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "GitLab")
+
+    gitlab_url = Unicode(
+        config=True,
+        help="""
+        Used to determine the default values for `gitlab_api`, `authorize_url`,
+        `token_url`.
+        """,
+    )
 
     @default("gitlab_url")
     def _default_gitlab_url(self):
@@ -68,18 +66,6 @@ class GitLabOAuthenticator(OAuthenticator):
 
         return gitlab_url
 
-    gitlab_api_version = CUnicode('4', config=True)
-
-    @default('gitlab_api_version')
-    def _gitlab_api_version_default(self):
-        return os.environ.get('GITLAB_API_VERSION') or '4'
-
-    gitlab_api = Unicode(config=True)
-
-    @default("gitlab_api")
-    def _default_gitlab_api(self):
-        return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
-
     @default("authorize_url")
     def _authorize_url_default(self):
         return f"{self.gitlab_url}/oauth/authorize"
@@ -88,27 +74,78 @@ class GitLabOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return f"{self.gitlab_url}/oauth/token"
 
+    gitlab_api_version = CUnicode(
+        config=True,
+        help="""
+        Used to determine the default values for `gitlab_api`.
+
+        For details, see https://docs.gitlab.com/ee/api/rest/.
+        """,
+    )
+
+    @default("gitlab_api_version")
+    def _gitlab_api_version_default(self):
+        return os.environ.get("GITLAB_API_VERSION") or "4"
+
+    gitlab_api = Unicode(
+        config=True,
+        help="""
+        Used to determine the default value for `userdata_url`.
+        """,
+    )
+
+    @default("gitlab_api")
+    def _default_gitlab_api(self):
+        return f"{self.gitlab_url}/api/v{self.gitlab_api_version}"
+
     @default("userdata_url")
     def _userdata_url_default(self):
         return f"{self.gitlab_api}/user"
 
-    gitlab_group_whitelist = Set(
-        help="Deprecated, use `GitLabOAuthenticator.allowed_gitlab_groups`",
-        config=True,
-    )
-
     allowed_gitlab_groups = Set(
-        config=True, help="Automatically allow members of selected groups"
-    )
-
-    gitlab_project_id_whitelist = Set(
-        help="Deprecated, use `GitLabOAuthenticator.allowed_project_ids`",
         config=True,
+        help="""
+        Allow members of selected GitLab groups to sign in.
+
+        Note that for each group allowed, an additional REST API call needs to
+        be made when a user is signing in. To reduce the risk of JupyterHub
+        being rate limited, don't specify too many.
+        """,
     )
 
     allowed_project_ids = Set(
         config=True,
-        help="Automatically allow members with Developer access to selected project ids",
+        help="""
+        Allow members with Developer access or higher in selected project ids to
+        sign in.
+
+        Note that for each project allowed, an additional REST API call needs to
+        be made when a user is signing in. To reduce the risk of JupyterHub
+        being rate limited, don't specify too many.
+        """,
+    )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "gitlab_group_whitelist": ("allowed_gitlab_groups", "0.12.0"),
+        "gitlab_project_id_whitelist": ("allowed_project_ids", "0.12.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    gitlab_group_whitelist = Set(
+        config=True,
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`allowed_gitlab_groups`.
+        """,
+    )
+    gitlab_project_id_whitelist = Set(
+        config=True,
+        help="""
+        .. deprecated:: 0.12
+
+           Use :attr:`allowed_project_ids`.
+        """,
     )
 
     gitlab_version = None
@@ -214,5 +251,4 @@ class GitLabOAuthenticator(OAuthenticator):
 
 
 class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
-
     """A version that mixes in local system user creation"""

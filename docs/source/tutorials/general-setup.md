@@ -2,89 +2,80 @@
 
 # General setup
 
-The general steps to take when using `OAuthenticator`:
+This project provides _JupyterHub Authenticator classes_. A JupyterHub
+authenticator class helps JupyterHub to delegate the task of deciding who a user
+is (authentication) and if the user should be granted access to sign in
+(authorization).
 
-1. Register an OAuth2 application with the identity provider
-2. Configure JupyterHub to use an authenticator class compatible with the identity provider
-3. Configure the chosen authenticator class
+This section describes general steps to setup a JupyterHub to use one of these
+projects' authenticator classes.
 
-## Set chosen OAuthenticator
+1. Decide on an _identity provider_
 
-The first step is to tell JupyterHub to use your chosen authenticator class.
-Each authenticator is provided in a submodule of `oauthenticator`, and
-each authenticator has a variant with `Local`
-(e.g. `LocalGitHubOAuthenticator`), which will map OAuth usernames
-onto local system usernames.
+   As an example, if you want users to login with their GitHub accounts, then
+   GitHub is the identity provider.
 
-In `jupyterhub_config.py`, add:
+2. Register an _OAuth2 application_ with the identity provider
 
-```python
-from oauthenticator.github import GitHubOAuthenticator
-c.JupyterHub.authenticator_class = GitHubOAuthenticator
-```
+   The identity provider needs to allow you to register an OAuth2 application,
+   and you can typically search the internet for guides on doing this for the
+   identity provider.
 
-## Set callback URL, client ID, and client secret
+   When doing this, you should at some point declare a _redirect url_. This
+   should be `https://[your-domain]/hub/oauth_callback` where you replace
+   `[your-domain]`.
 
-All `OAuthenticators` require setting a callback URL, client ID, and
-client secret. You will generally get these when you register your OAuth
-application with your OAuth provider. Provider-specific details are
-available in sections below. When registering your oauth application
-with your provider, you will probably need to specify a callback URL.
-The callback URL should look like:
+   After this step, you should have a _client id_, a _client secret_.
 
-```
-http[s]://[your-host]/hub/oauth_callback
-```
+   [redirect url]: https://www.oauth.com/oauth2-servers/redirect-uris/
 
-where `[your-host]` is where your server will be running. Such as
-`example.com:8000`.
+3. Configure JupyterHub to use one compatible authenticator class
 
-You can also set these values in your **configuration file**,
-`jupyterhub_config.py`:
-
-```python
-# Replace MyOAuthenticator with your selected OAuthenticator class (e.g. c.GithubOAuthenticator).
-c.MyOAuthenticator.oauth_callback_url = 'http[s]://[your-host]/hub/oauth_callback'
-c.MyOAuthenticator.client_id = 'your-client-id'
-c.MyOAuthenticator.client_secret = 'your-client-secret'
-```
-
-```{note}
-When JupyterHub runs, these values can also be retrieved from the
-**environment variables** `OAUTH_CALLBACK_URL`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`.
-But this approach is not recommended and might be deprecated in the future.
-```
-
-## (Optional) Use a custom 403 error
-
-1. Custom message
-
-   When a user successfully logins at an OAuth provider,
-   but is forbidden access based on the config,
-   e.g. the `allowed_users` list or the `blocked_users` list,
-   the following message is shown by default:
-
-   ```{important}
-   *Looks like you have not been added to the list of allowed users for this hub. Please contact the hub administrator.*
-   ```
-
-   But you can show a customized 403 error message instead,
-   by changing the OAuthenticator config:
+   The authenticator class can be the general purpose `GenericOAuthenticator`
+   class, or a specialized authenticator class like `GitHubOAuthentator`.
 
    ```python
-   # Replace MyOAuthenticator with your selected OAuthenticator class (e.g. c.GithubOAuthenticator).
-   c.MyOAuthenticator.custom_403_message = "Your message for the user"
+   # code for a jupyterhub_config.py file...
+   c.JupyterHub.authenticator_class = "github"
    ```
 
-2. Custom HTML page
-   You can also show a customized 403 HTML page message by creating a
-   [custom HTML template](https://jupyterhub.readthedocs.io/en/stable/reference/templates.html),
-   and point JupyterHub to it.
+4. Configure the authenticator base class
 
-   An example custom 403 html page can be found in the
-   [examples directory](https://github.com/jupyterhub/oauthenticator/tree/main/examples/templates)
+   Based on the information from step 2, configure the following.
 
    ```python
-   # Replace MyOAuthenticator with your selected OAuthenticator class (e.g. c.GithubOAuthenticator).
-   c.JupyterHub.template_paths = ["examples/templates"]
+   # code for a jupyterhub_config.py file...
+   c.OAuthenticator.oauth_callback_url = "https://[your-domain]/hub/oauth_callback"
+   c.OAuthenticator.client_id = "[your oauth2 application id]"
+   c.OAuthenticator.client_secret = "[your oauth2 application secret]"
+   ```
+
+5. Configure the authenticator class further
+
+   By default, no users will be allowed access. At this point you should
+   configure what users should be granted access. The OAuthenticator base class
+   provides the following config you can read more about in the configuration
+   reference.
+
+   - {attr}`.OAuthenticator.allow_all`
+   - {attr}`.OAuthenticator.allow_existing_users`
+   - {attr}`.OAuthenticator.allowed_users`
+   - {attr}`.OAuthenticator.admin_users`
+
+   Your authenticator class may have unique config, so in the end it can look
+   something like this:
+
+   ```
+   c.JupyterHub.authenticator_class = "github"
+
+   c.OAuthenticator.oauth_callback_url = "https://my-jupyterhub.prg/hub/oauth_callback"
+   c.OAuthenticator.client_id = "1234-5678-9012-3456"
+   c.OAuthenticator.client_secret = "abcd-edfg-ijkl-mnop"
+
+   c.OAuthenticator.allow_existing_users = True
+   c.OAuthenticator.allowed_users = {"github-user-1", "github-user-2"}
+   c.OAuthenticator.admin_users = {"github-user-3"}
+
+   c.GitHubOAuthenticator.allowed_organizations = {"github-organization-1"}
+   c.GitHubOAuthenticator.scope = ["user:email", "read:org"]
    ```

@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use generic OAuth2 with JupyterHub
+A JupyterHub authenticator class for use with any OAuth2 based identity provider.
 """
 import os
 from functools import reduce
@@ -13,17 +13,9 @@ from .oauth2 import OAuthenticator
 
 
 class GenericOAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "username_key": ("username_claim", "16.0.0"),
-        "extra_params": ("token_params", "16.0.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
-    extra_params = Dict(
-        help="Deprecated, use `GenericOAuthenticator.token_params`"
-    ).tag(config=True)
-
-    login_service = Unicode("OAuth 2.0", config=True)
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "OAuth 2.0")
 
     claim_groups_key = Union(
         [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],
@@ -39,49 +31,83 @@ class GenericOAuthenticator(OAuthenticator):
     allowed_groups = Set(
         Unicode(),
         config=True,
-        help="Automatically allow members of selected groups",
+        help="""
+        Allow members of selected groups to sign in.
+
+        When configuring this you may need to configure `claim_groups_key` as
+        well as it determines the key in the `userdata_url` response that is
+        assumed to list the groups a user is a member of.
+        """,
     )
 
     admin_groups = Set(
         Unicode(),
         config=True,
-        help="Groups whose members should have Jupyterhub admin privileges",
-    )
+        help="""
+        Allow members of selected groups to sign in and consider them as
+        JupyterHub admins.
 
-    username_key = Union(
-        [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
-        config=True,
-        help="""Deprecated, use `GenericOAuthenticator.username_claim`""",
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+
+        When configuring this you may need to configure `claim_groups_key` as
+        well as it determines the key in the `userdata_url` response that is
+        assumed to list the groups a user is a member of.
+        """,
     )
 
     username_claim = Union(
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
         config=True,
         help="""
-        Userdata username key from returned json for USERDATA_URL.
+        When `userdata_url` returns a json response, the username will be taken
+        from this key.
 
         Can be a string key name or a callable that accepts the returned
-        json (as a dict) and returns the username.  The callable is useful
-        e.g. for extracting the username from a nested object in the
+        userdata json (as a dict) and returns the username.  The callable is
+        useful e.g. for extracting the username from a nested object in the
         response.
         """,
     )
 
-    tls_verify = Bool(
-        os.environ.get('OAUTH2_TLS_VERIFY', 'True').lower() in {'true', '1'},
-        config=True,
-        help="Require valid tls certificates in HTTP requests",
-    )
-
-    @default("basic_auth")
-    def _basic_auth_default(self):
-        return os.environ.get('OAUTH2_BASIC_AUTH', 'True').lower() in {'true', '1'}
-
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient(
-            force_instance=True, defaults=dict(validate_cert=self.tls_verify)
+            force_instance=True, defaults=dict(validate_cert=self.validate_server_cert)
         )
+
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "username_key": ("username_claim", "16.0.0"),
+        "extra_params": ("token_params", "16.0.0"),
+        "tls_verify": ("validate_server_cert", "16.0.2"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    username_key = Union(
+        [Unicode(), Callable()],
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`username_claim`.
+        """,
+    )
+    extra_params = Dict(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`token_params`.
+        """,
+    )
+    tls_verify = Bool(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`validate_server_cert`.
+        """,
+    )
 
     def user_info_to_username(self, user_info):
         """

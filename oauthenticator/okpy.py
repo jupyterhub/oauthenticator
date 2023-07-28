@@ -1,6 +1,8 @@
 """
-Custom Authenticator to use okpy OAuth with JupyterHub
+A JupyterHub authenticator class for use with Okpy as an identity provider.
 """
+import os
+
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import OAuth2Mixin
 from traitlets import default
@@ -9,9 +11,11 @@ from .oauth2 import OAuthenticator
 
 
 class OkpyOAuthenticator(OAuthenticator, OAuth2Mixin):
-    login_service = "OK"
-
     user_auth_state_key = "okpy_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "OK")
 
     @default("authorize_url")
     def _authorize_url_default(self):

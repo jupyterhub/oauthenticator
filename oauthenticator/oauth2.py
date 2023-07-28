@@ -1,7 +1,7 @@
 """
-Base classes for Custom Authenticator to use OAuth with JupyterHub
+Base classes for use by OAuth2 based JupyterHub authenticator classes.
 
-Most of the code c/o Kyle Kelley (@rgbkrk)
+Founded based on work by Kyle Kelley (@rgbkrk)
 """
 import base64
 import json
@@ -197,26 +197,6 @@ class OAuthCallbackHandler(BaseHandler):
             return super().get_next_url(user)
         return url_path_join(self.hub.server.base_url, "home")
 
-    async def _login_user_pre_08(self):
-        """login_user simplifies the login+cookie+auth_state process in JupyterHub 0.8
-
-        _login_user_07 is for backward-compatibility with JupyterHub 0.7
-        """
-        user_info = await self.authenticator.get_authenticated_user(self, None)
-        if user_info is None:
-            return
-        if isinstance(user_info, dict):
-            username = user_info["name"]
-        else:
-            username = user_info
-        user = self.user_from_username(username)
-        self.set_login_cookie(user)
-        return user
-
-    if not hasattr(BaseHandler, "login_user"):
-        # JupyterHub 0.7 doesn't have .login_user
-        login_user = _login_user_pre_08
-
     async def get(self):
         self.check_arguments()
         user = await self.login_user()
@@ -239,21 +219,42 @@ class OAuthLogoutHandler(LogoutHandler):
 
 
 class OAuthenticator(Authenticator):
-    """Base class for OAuthenticators
+    """
+    Base class for OAuthenticators.
 
-    Subclasses must override:
+    Subclasses should, in an increasing level of customization:
 
-    login_service (string identifying the service provider)
-    authenticate (method takes one arg - the request handler handling the oauth callback)
+    - Override the constant `user_auth_state_key`
+    - Override various config's default values, such as
+      `authorize_url`, `token_url`, `userdata_url`, and `login_service`.
+    - Override various methods called by the `authenticate` method, which
+      subclasses should not override.
+    - Override handler classes such as `login_handler`, `callback_handler`, and
+      `logout_handler`.
     """
 
     login_handler = OAuthLoginHandler
     callback_handler = OAuthCallbackHandler
     logout_handler = OAuthLogoutHandler
 
-    # The name of the user key expected to be present in `auth_state`
-    # To be overridden by each oauthenticator
+    # user_auth_state_key represents the name of the key in the `auth_state`
+    # dictionary that user info will be saved
     user_auth_state_key = "oauth_user"
+
+    login_service = Unicode(
+        "OAuth 2.0",
+        config=True,
+        help="""
+        Name of the login service or identity provider that this authenticator
+        is using to authenticate users.
+
+        This config influences the text on a button shown to unauthenticated
+        users before they click it to login, assuming :attr:`auto_login` isn't
+        configured True.
+
+        The login button's text will be "Login with <login_service>".
+        """,
+    )
 
     allow_all = Bool(
         False,
@@ -265,8 +266,68 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    allow_existing_users = Bool(
+        False,
+        config=True,
+        help="""
+        Allow existing users to login.
+
+        An existing user is a user in JupyterHub's database of users, and it
+        includes all users that has previously logged in.
+
+        .. warning::
+
+           Before enabling this you should review the existing users in the
+           JupyterHub admin panel at `/hub/admin`. You may find users existing
+           there because they have once been declared in config such as
+           `allowed_users` or once been allowed to sign in.
+
+        .. warning::
+
+           When this is enabled and you are to remove access for one or more
+           users allowed via other config options, you must make sure that they
+           are not part of the database of users still. This can be tricky to do
+           if you stop allowing a group of externally managed users for example.
+
+        With this enabled, JupyterHub admin users can visit `/hub/admin` or use
+        JupyterHub's REST API to add and remove users as a way to allow them
+        access.
+
+        The username for existing users must match the normalized username
+        returned by the authenticator. When creating users, only lowercase
+        letters should be used unless `MWOAuthenticator` is used.
+
+        .. note::
+
+           Allowing existing users is done by adding existing users on startup
+           and newly created users to the `allowed_users` set. Due to that, you
+           can't rely on this config to independently allow existing users if
+           you for example would reset `allowed_users` after startup.
+
+        .. versionadded:: 16.0
+
+        .. versionchanged:: 16.0
+
+           Before this config was available, the default behavior was to allow
+           existing users if `allowed_users` was configured with one or more
+           user.
+        """,
+    )
+
     authorize_url = Unicode(
-        config=True, help="""The authenticate url for initiating oauth"""
+        config=True,
+        help="""
+        The URL to where the user is to be redirected initially based on the
+        OAuth2 protocol. The user will be redirected back with an
+        `authorization grant code`_ after authenticating successfully with the
+        identity provider.
+
+        .. _authorization grant code: https://www.rfc-editor.org/rfc/rfc6749#section-1.3.1
+
+        For more context, see the `Protocol Flow section
+        <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
+        standard document, specifically steps A-B.
+        """,
     )
 
     @default("authorize_url")
@@ -275,7 +336,17 @@ class OAuthenticator(Authenticator):
 
     token_url = Unicode(
         config=True,
-        help="""The url retrieving an access token at the completion of oauth""",
+        help="""
+        The URL to where this authenticator makes a request to acquire an
+        `access token`_ based on the authorization code received by the user
+        returning from the :attr:`authorize_url`.
+
+        .. _access token: https://www.rfc-editor.org/rfc/rfc6749#section-1.4
+
+        For more context, see the `Protocol Flow section
+        <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
+        standard document, specifically steps C-D.
+        """,
     )
 
     @default("token_url")
@@ -284,7 +355,15 @@ class OAuthenticator(Authenticator):
 
     userdata_url = Unicode(
         config=True,
-        help="""The url for retrieving user data with a completed access token""",
+        help="""
+        The URL to where this authenticator makes a request to acquire user
+        details with an access token received via a request to the
+        :attr:`token_url`.
+
+        For more context, see the `Protocol Flow section
+        <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
+        standard document, specifically steps E-F.
+        """,
     )
 
     @default("userdata_url")
@@ -295,8 +374,8 @@ class OAuthenticator(Authenticator):
         "username",
         config=True,
         help="""
-        Field in userdata reply to use for username The field in the userdata
-        response from which to get the JupyterHub username.
+        The key to get the JupyterHub username from in the data response to the
+        request made to :attr:`userdata_url`.
 
         Examples include: email, username, nickname
 
@@ -307,73 +386,129 @@ class OAuthenticator(Authenticator):
 
     # Enable refresh_pre_spawn by default if self.enable_auth_state
     @default("refresh_pre_spawn")
-    def _refresh_pre_spawn(self):
+    def _refresh_pre_spawn_default(self):
         if self.enable_auth_state:
             return True
 
         return False
 
-    logout_redirect_url = Unicode(config=True, help="""URL for logging out of Auth0""")
-
-    # Originally a GenericOAuthenticator only trait
-    userdata_params = Dict(
-        help="Userdata params to get user data login information"
-    ).tag(config=True)
-
-    # Originally a GenericOAuthenticator only trait
-    userdata_token_method = Unicode(
-        os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
+    logout_redirect_url = Unicode(
         config=True,
-        help="Method for sending access token in userdata request. Supported methods: header, url. Default: header",
+        help="""
+        When configured, users are not presented with the JupyterHub logout
+        page, but instead redirected to this destination.
+        """,
     )
-
-    # Originally a GenericOAuthenticator only trait
-    token_params = Dict(
-        help="Extra parameters for first POST request exchanging the OAuth code for an Access Token"
-    ).tag(config=True)
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
         return os.getenv("OAUTH_LOGOUT_REDIRECT_URL", "")
 
+    # Originally a GenericOAuthenticator only trait
+    userdata_params = Dict(
+        config=True,
+        help="""
+        Userdata params to get user data login information.
+        """,
+    )
+
+    # Originally a GenericOAuthenticator only trait
+    userdata_token_method = Unicode(
+        os.environ.get("OAUTH2_USERDATA_REQUEST_TYPE", "header"),
+        config=True,
+        help="""
+        Method for sending access token in userdata request.
+
+        Supported methods: header, url.
+        """,
+    )
+
+    # Originally a GenericOAuthenticator only trait
+    token_params = Dict(
+        config=True,
+        help="""
+        Extra parameters for first POST request exchanging the OAuth code for an
+        Access Token
+        """,
+    )
+
     custom_403_message = Unicode(
         "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
         config=True,
-        help="""The message to be shown when user was not allowed""",
+        help="""
+        The message to be shown when user was not allowed
+        """,
     )
 
     scope = List(
         Unicode(),
         config=True,
-        help="""The OAuth scopes to request.
+        help="""
+        The OAuth scopes to request.
+
         See the OAuth documentation of your OAuth provider for options.
-        For GitHub in particular, you can see github_scopes.md in this repo.
         """,
     )
 
     extra_authorize_params = Dict(
         config=True,
-        help="""Extra GET params to send along with the initial OAuth request
-        to the OAuth provider.""",
+        help="""
+        Extra GET params to send along with the initial OAuth request to the
+        OAuth provider.
+        """,
     )
 
-    login_service = "override in subclass"
     oauth_callback_url = Unicode(
         os.getenv("OAUTH_CALLBACK_URL", ""),
         config=True,
-        help="""Callback URL to use.
-        Typically `https://{host}/hub/oauth_callback`""",
+        help="""
+        Callback URL to use.
+        
+        When registering an OAuth2 application with an identity provider, this
+        is typically called the redirect url.
+
+        Should very likely be set to `https://[your-domain]/hub/oauth_callback`.
+        """,
     )
 
     # Originally a GenericOAuthenticator only trait
     basic_auth = Bool(
         os.environ.get("OAUTH2_BASIC_AUTH", "False").lower() in {"true", "1"},
         config=True,
-        help="Whether or not to use basic authentication for access token request",
+        help="""
+        Whether or to use HTTP Basic authentication instead of form based
+        authentication in requests to :attr:`token_url`.
+
+        When using HTTP Basic authentication, a HTTP header is set with the
+        :attr:`client_id` and :attr:`client_secret` encoded in it.
+
+        When using form based authentication, the `client_id` and
+        `client_secret` is put in the HTTP POST request's body.
+
+        .. versionchanged:: 16.0.0
+
+           This configuration now toggles between HTTP Basic authentication and
+           form based authentication when working against the `token_url`.
+
+           Previously when this was configured True, both would be used contrary
+           to a recommendation in `OAuth 2.0 documentation
+           <https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1>`_.
+
+        .. versionchanged:: 16.0.2
+
+           The default value for this configuration for GenericOAuthenticator
+           changed from True to False.
+        """,
     )
 
     client_id_env = ""
-    client_id = Unicode(config=True)
+    client_id = Unicode(
+        config=True,
+        help="""
+        The client id of the OAuth2 application registered with the identity
+        provider.
+        """,
+    )
 
     def _client_id_default(self):
         if self.client_id_env:
@@ -383,7 +518,13 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_CLIENT_ID", "")
 
     client_secret_env = ""
-    client_secret = Unicode(config=True)
+    client_secret = Unicode(
+        config=True,
+        help="""
+        The client secret of the OAuth2 application registered with the identity
+        provider.
+        """,
+    )
 
     def _client_secret_default(self):
         if self.client_secret_env:
@@ -393,7 +534,15 @@ class OAuthenticator(Authenticator):
         return os.getenv("OAUTH_CLIENT_SECRET", "")
 
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
-    validate_server_cert = Bool(config=True)
+    validate_server_cert = Bool(
+        config=True,
+        help="""
+        Determines if certificates are validated.
+
+        Only set this to False if you feel confident it will not be a security
+        concern.
+        """,
+    )
 
     def _validate_server_cert_default(self):
         env_value = os.getenv(self.validate_server_cert_env, "")
@@ -403,19 +552,27 @@ class OAuthenticator(Authenticator):
             return True
 
     http_request_kwargs = Dict(
-        {},
-        help="""Extra default kwargs passed to all HTTPRequests.
-
-        For example, to use a HTTP proxy for all requests:
-
-        `c.OAuthenticator.http_request_kwargs = {"proxy_host": "proxy.example.com", "proxy_port": 8080}`
-
-        See the `tornado.httpclient.HTTPRequest` documentation for all options and limitations:
-        https://www.tornadoweb.org/en/stable/httpclient.html#tornado.httpclient.HTTPRequest
-
-        Note that some of these are dependent on the httpclient implementation.
-        """,
         config=True,
+        help="""
+        Extra default kwargs passed to all HTTPRequests.
+
+        .. code-block:: python
+
+            # Example: send requests through a proxy
+            c.OAuthenticator.http_request_kwargs = {
+                "proxy_host": "proxy.example.com",
+                "proxy_port": 8080,
+            }
+
+            # Example: validate against certain root certificates
+            c.OAuthenticator.http_request_kwargs = {
+                "ca_certs": "/path/to/a.crt",
+            }
+
+        See :external:py:class:`tornado.httpclient.HTTPRequest` for all kwargs
+        options you can pass. Note that the HTTP client making these requests is
+        :external:py:class:`tornado.httpclient.AsyncHTTPClient`.
+        """,
     )
 
     http_client = Any()
@@ -498,6 +655,24 @@ class OAuthenticator(Authenticator):
         return await self.fetch(
             req, label=label, parse_json=parse_json, raise_error=raise_error
         )
+
+    def add_user(self, user):
+        """
+        Overrides `Authenticator.add_user`, a hook called for all users in the
+        database on startup and for each user being created.
+
+        The purpose of the override is to implement the `allow_existing_users`
+        config by adding users to the `allowed_users` set only if
+        `allow_existing_users` is truthy. The overridden behavior is to do it if
+        `allowed_users` is truthy.
+
+        The implementation is adjusted from JupyterHub 4.0.1:
+        https://github.com/jupyterhub/jupyterhub/blob/4.0.1/jupyterhub/auth.py#L625-L648
+        """
+        if not self.validate_username(user.name):
+            raise ValueError("Invalid username: %s" % user.name)
+        if not self.allow_all and self.allow_existing_users:
+            self.allowed_users.add(user.name)
 
     def login_url(self, base_url):
         return url_path_join(base_url, "oauth_login")
@@ -840,6 +1015,16 @@ class OAuthenticator(Authenticator):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
+    # _deprecated_oauth_aliases should be a dictionary with a format as:
+    #
+    # {
+    #     "old_config": (
+    #         "new_config",
+    #         "16.0.0",      # version when it became deprecated
+    #         False,         # if new config can be updated with a warning
+    #     ),
+    # }
+    #
     _deprecated_oauth_aliases = {}
 
     def _deprecated_oauth_trait(self, change):
