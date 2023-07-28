@@ -24,6 +24,12 @@ class OrcidOAuthenticator(OAuthenticator):
     def _scope_default(self):
         return ["openid", "/authenticate"]
 
+    def normalize_username(self, username):
+        """
+        Override normalize_username to avoid lowercasing (ORCID iDs with trailing valid 'X')
+        """
+        return username
+
     @default("username_claim")
     def _username_claim_default(self):
         return "sub"

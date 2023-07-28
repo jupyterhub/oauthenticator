@@ -295,7 +295,7 @@ class OAuthenticator(Authenticator):
 
         The username for existing users must match the normalized username
         returned by the authenticator. When creating users, only lowercase
-        letters should be used unless `MWOAuthenticator` is used.
+        letters should be used unless `MWOAuthenticator` or `OrcidOAuthenticator` is used.
 
         .. note::
 
