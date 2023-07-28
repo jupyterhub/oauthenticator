@@ -1,14 +1,4 @@
-import functools
-import json
-import logging
-import re
-from io import BytesIO
-from urllib.parse import parse_qs, urlparse
-
-from pytest import fixture, mark
-from tornado.httpclient import HTTPResponse
-from tornado.httputil import HTTPHeaders
-from traitlets.config import Config
+from pytest import fixture
 
 from ..orcid import OrcidOAuthenticator
 from .mocks import setup_oauth_mock

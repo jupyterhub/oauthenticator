@@ -3,15 +3,13 @@ Authenticator to use ORCID iD OAuth with JupyterHub
 
 Derived from the GitHub OAuth authenticator.
 """
-import json
 import os
-import warnings
 
 from jupyterhub.auth import LocalAuthenticator
-from requests.utils import parse_header_links
-from traitlets import Bool, Set, Unicode, default
+from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
+
 
 # TODO: Implementations for `user_is_authorized` and `update_auth_model` for auth logic
 class OrcidOAuthenticator(OAuthenticator):
@@ -31,6 +29,7 @@ class OrcidOAuthenticator(OAuthenticator):
         return "sub"
 
     orcid_url = Unicode("https://orcid.org", config=True)
+
     @default("orcid_url")
     def _orcid_url_default(self):
         orcid_url = os.environ.get("ORCID_URL")
@@ -39,6 +38,7 @@ class OrcidOAuthenticator(OAuthenticator):
         return orcid_url
 
     orcid_api = Unicode("https://pub.orcid.org", config=True)
+
     @default("orcid_api")
     def _orcid_api_default(self):
         orcid_api = os.environ.get("ORCID_API")
@@ -60,6 +60,7 @@ class OrcidOAuthenticator(OAuthenticator):
 
     client_id_env = 'ORCID_CLIENT_ID'
     client_secret_env = 'ORCID_CLIENT_SECRET'
+
 
 class LocalOrcidOAuthenticator(LocalAuthenticator, OrcidOAuthenticator):
 
