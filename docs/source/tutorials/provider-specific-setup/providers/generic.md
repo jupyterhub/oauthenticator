@@ -178,10 +178,10 @@ The above `username_claim` value selects the ORCID iD from the JSON response as 
 
 ```json
 {
-    "sub": "0000-0002-2601-8132",
-    "name": "Credit Name",
-    "family_name": "Jones",
-    "given_name": "Tom"
+  "sub": "0000-0002-2601-8132",
+  "name": "Credit Name",
+  "family_name": "Jones",
+  "given_name": "Tom"
 }
 ```
 
