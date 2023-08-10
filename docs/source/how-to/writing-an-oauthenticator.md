@@ -4,6 +4,10 @@ There are two ways to write your own OAuthenticator.
 
 ## Using GenericOAuthenticator
 
+```{note}
+Before writing your own config, [](tutorials:provider-specific:generic) may already have an example for your service.
+```
+
 The first and simplest is to use the `oauthenticator.generic.GenericOAuthenticator` class
 and configuration to set the necessary configuration variables.
 
@@ -27,9 +31,6 @@ c.GenericOAuthenticator.userdata_url = 'url-retrieving-user-data-with-access-tok
 c.GenericOAuthenticator.token_url = 'url-retrieving-access-token-oauth-completion'
 c.GenericOAuthenticator.username_claim = 'username-key-for-USERDATA-URL'
 ```
-
-Checkout [](tutorials:provider-specific:generic:moodle) and [](tutorials:provider-specific:generic:yandex) for how to configure
-GenericOAuthenticator for Moodle and Yandex.
 
 ## Writing your own OAuthenticator class
 
