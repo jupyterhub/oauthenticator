@@ -8,6 +8,28 @@ command line for details.
 
 ## 16.0
 
+### 16.0.4 - 2023-08-11
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.0.3...7937cd6a7f8c123a9b50cad37af3ff3a9a610e71))
+
+#### Bugs fixed
+
+- [Google] Fix regression in v16 of no longer stripping username's domain if `hosted_domain` has a single entry [#661](https://github.com/jupyterhub/oauthenticator/pull/661) ([@consideratio](https://github.com/consideratio), [@minrk](https://github.com/minrk), [@taylorgibson](https://github.com/taylorgibson))
+
+#### Documentation improvements
+
+- Add ORCID iD example configuration [#657](https://github.com/jupyterhub/oauthenticator/pull/657) ([@matthewwiese](https://github.com/matthewwiese), [@manics](https://github.com/manics))
+- Fix typo in authenticator class for google [#653](https://github.com/jupyterhub/oauthenticator/pull/653) ([@stes](https://github.com/stes), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-07-08&to=2023-08-11&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-07-08..2023-08-11&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2023-07-08..2023-08-11&type=Issues)) | @matthewwiese ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amatthewwiese+updated%3A2023-07-08..2023-08-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-07-08..2023-08-11&type=Issues)) | @NickolausDS ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ANickolausDS+updated%3A2023-07-08..2023-08-11&type=Issues)) | @stes ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Astes+updated%3A2023-07-08..2023-08-11&type=Issues)) | @taylorgibson ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ataylorgibson+updated%3A2023-07-08..2023-08-11&type=Issues))
+
 ### 16.0.3 - 2023-07-08
 
 #### Documentation improvements
