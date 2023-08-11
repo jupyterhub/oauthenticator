@@ -185,7 +185,12 @@ async def test_google(
         assert auth_model == None
 
 
-async def test_hosted_domain(google_client):
+async def test_hosted_domain_single_entry(google_client):
+    """
+    Tests that sign in is restricted to the listed domain and that the username
+    represents the part before the `@domain.com` as expected when hosted_domain
+    contains a single entry.
+    """
     c = Config()
     c.GoogleOAuthenticator.hosted_domain = ["In-Hosted-Domain.com"]
     c.GoogleOAuthenticator.allow_all = True
@@ -195,6 +200,40 @@ async def test_hosted_domain(google_client):
     handler = google_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model
+    assert auth_model["name"] == "user1"
+
+    handled_user_model = user_model("user1@not-in-hosted-domain.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    with raises(HTTPError) as exc:
+        await authenticator.get_authenticated_user(handler, None)
+    assert exc.value.status_code == 403
+
+
+async def test_hosted_domain_multiple_entries(google_client):
+    """
+    Tests that sign in is restricted to the listed domains and that the username
+    represents the full email as expected when hosted_domain contains multiple
+    entries.
+    """
+    c = Config()
+    c.GoogleOAuthenticator.hosted_domain = [
+        "In-Hosted-Domain1.com",
+        "In-Hosted-Domain2.com",
+    ]
+    c.GoogleOAuthenticator.allow_all = True
+    authenticator = GoogleOAuthenticator(config=c)
+
+    handled_user_model = user_model("user1@iN-hosteD-domaiN1.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
+    assert auth_model["name"] == "user1@in-hosted-domain1.com"
+
+    handled_user_model = user_model("user2@iN-hosteD-domaiN2.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
+    assert auth_model["name"] == "user2@in-hosted-domain2.com"
 
     handled_user_model = user_model("user1@not-in-hosted-domain.com")
     handler = google_client.handler_for_user(handled_user_model)
