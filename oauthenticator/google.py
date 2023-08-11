@@ -112,7 +112,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         1. Restrict sign-in to a list of email domain names, such as
            `["mycollege.edu"]` or `["college1.edu", "college2.edu"]`.
-        2. If a single domain is specified, the username will be stripped.
+        2. If a single domain is specified, the username will be stripped to exclude the `@domain` part.
 
         Note that users with email domains in this list must still be allowed
         via another config, such as `allow_all`, `allowed_users`, or
