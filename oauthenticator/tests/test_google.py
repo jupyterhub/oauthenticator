@@ -209,6 +209,21 @@ async def test_hosted_domain_single_entry(google_client):
     assert exc.value.status_code == 403
 
 
+@mark.parametrize(
+    "name, allowed",
+    [
+        ("allowed", True),
+        ("notallowed", False),
+    ],
+)
+async def test_check_allowed_no_auth_state(google_client, name, allowed):
+    authenticator = GoogleOAuthenticator(allowed_users={"allowed"})
+    # allow check always gets called with no auth model during Hub startup
+    # these are previously-allowed users who should pass until subsequent
+    # this check is removed in JupyterHub 5
+    assert await authenticator.check_allowed(name, None)
+
+
 async def test_hosted_domain_multiple_entries(google_client):
     """
     Tests that sign in is restricted to the listed domains and that the username

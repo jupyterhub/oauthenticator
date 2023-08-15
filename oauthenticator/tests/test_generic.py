@@ -238,3 +238,18 @@ async def test_generic_claim_groups_key_nested_strings(
 
     assert auth_model
     assert auth_model["admin"]
+
+
+@mark.parametrize(
+    "name, allowed",
+    [
+        ("allowed", True),
+        ("notallowed", False),
+    ],
+)
+async def test_check_allowed_no_auth_state(get_authenticator, name, allowed):
+    authenticator = get_authenticator(allowed_users={"allowed"})
+    # allow check always gets called with no auth model during Hub startup
+    # these are previously-allowed users who should pass until subsequent
+    # this check is removed in JupyterHub 5
+    assert await authenticator.check_allowed(name, None)
