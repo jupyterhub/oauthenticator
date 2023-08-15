@@ -463,7 +463,7 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""
         Callback URL to use.
-        
+
         When registering an OAuth2 application with an identity provider, this
         is typically called the redirect url.
 
@@ -994,7 +994,7 @@ class OAuthenticator(Authenticator):
         method and return True when this method returns True or if a user is
         allowed via the additional config.
         """
-        # A workaround for JupyterHub<=4.0.1, described in
+        # A workaround for JupyterHub < 5.0 described in
         # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True

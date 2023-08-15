@@ -291,6 +291,11 @@ class GlobusOAuthenticator(OAuthenticator):
         Overrides the OAuthenticator.check_allowed to also allow users part of
         `allowed_globus_groups`.
         """
+        # A workaround for JupyterHub < 5.0 described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
+
         # before considering allowing a username by being recognized in a list
         # of usernames or similar, we must ensure that the authenticated user is
         # from an allowed identity provider domain.

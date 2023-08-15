@@ -313,6 +313,21 @@ async def test_globus(
         assert auth_model == None
 
 
+@mark.parametrize(
+    "name, allowed",
+    [
+        ("allowed", True),
+        ("notallowed", False),
+    ],
+)
+async def test_check_allowed_no_auth_state(name, allowed):
+    authenticator = GlobusOAuthenticator(allowed_users={"allowed"})
+    # allow check always gets called with no auth model during Hub startup
+    # these are previously-allowed users who should pass until subsequent
+    # this check is removed in JupyterHub 5
+    assert await authenticator.check_allowed(name, None)
+
+
 async def test_globus_pre_spawn_start(mock_globus_user):
     authenticator = GlobusOAuthenticator()
     spawner = Mock()
