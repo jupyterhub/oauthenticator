@@ -8,7 +8,24 @@ command line for details.
 
 ## 16.0
 
-### 16.0.4 - 2023-08-11
+### [16.0.5] - 2023-08-15
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5))
+
+#### Bugs fixed
+
+- [Google, Globus] handle auth_model is None in google, globus [#665](https://github.com/jupyterhub/oauthenticator/pull/665) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-08-11&to=2023-08-15&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-08-11..2023-08-15&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-08-11..2023-08-15&type=Issues))
+
+### [16.0.4] - 2023-08-11
 
 ([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.0.3...7937cd6a7f8c123a9b50cad37af3ff3a9a610e71))
 
@@ -30,13 +47,13 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-07-08..2023-08-11&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2023-07-08..2023-08-11&type=Issues)) | @matthewwiese ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amatthewwiese+updated%3A2023-07-08..2023-08-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-07-08..2023-08-11&type=Issues)) | @NickolausDS ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3ANickolausDS+updated%3A2023-07-08..2023-08-11&type=Issues)) | @stes ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Astes+updated%3A2023-07-08..2023-08-11&type=Issues)) | @taylorgibson ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ataylorgibson+updated%3A2023-07-08..2023-08-11&type=Issues))
 
-### 16.0.3 - 2023-07-08
+### [16.0.3] - 2023-07-08
 
 #### Documentation improvements
 
 - docs: update v16 changelog to capture missed change about allow_all [#651](https://github.com/jupyterhub/oauthenticator/pull/651) ([@consideRatio](https://github.com/consideRatio))
 
-### 16.0.2 - 2023-07-06
+### [16.0.2] - 2023-07-06
 
 #### Bugs fixed
 
@@ -46,7 +63,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 - [Generic] Deprecate tls_verify in favor of validate_server_cert [#647](https://github.com/jupyterhub/oauthenticator/pull/647) ([@consideRatio](https://github.com/consideRatio))
 
-### 16.0.1 - 2023-07-05
+### [16.0.1] - 2023-07-05
 
 #### Bugs fixed
 
@@ -56,7 +73,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 - docs: fix redirection config typo for getting-started [#642](https://github.com/jupyterhub/oauthenticator/pull/642) ([@consideRatio](https://github.com/consideRatio))
 
-### 16.0.0 - 2023-07-05
+### [16.0.0] - 2023-07-05
 
 The project has been refactored greatly to make it easier to use, understand,
 and maintain its code and documentation. This release has several _breaking
@@ -199,7 +216,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ## 15.0
 
-### 15.1.0 - 2022-09-08
+### [15.1.0] - 2022-09-08
 
 #### New features added
 
@@ -220,7 +237,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2022-06-09..2022-09-08&type=Issues) | [@dingobar](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adingobar+updated%3A2022-06-09..2022-09-08&type=Issues) | [@drhagen](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Adrhagen+updated%3A2022-06-09..2022-09-08&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2022-06-09..2022-09-08&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2022-06-09..2022-09-08&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2022-06-09..2022-09-08&type=Issues) | [@terrencegf](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aterrencegf+updated%3A2022-06-09..2022-09-08&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2022-06-09..2022-09-08&type=Issues)
 
-### 15.0.1
+### [15.0.1] - 2022-06-09
 
 #### Bugs fixed
 
@@ -234,7 +251,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2022-06-03..2022-06-09&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2022-06-03..2022-06-09&type=Issues) | [@Marcalberga](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AMarcalberga+updated%3A2022-06-03..2022-06-09&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Awelcome+updated%3A2022-06-03..2022-06-09&type=Issues)
 
-### 15.0.0
+### [15.0.0] - 2022-06-03
 
 If you are using AzureAD, MediaWiki, and CILogon authenticators, make sure to
 read about the breaking changes.
@@ -700,7 +717,16 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/14.2.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.0.5...HEAD
+[16.0.5]: https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5
+[16.0.4]: https://github.com/jupyterhub/oauthenticator/compare/16.0.3...16.0.4
+[16.0.3]: https://github.com/jupyterhub/oauthenticator/compare/16.0.2...16.0.3
+[16.0.2]: https://github.com/jupyterhub/oauthenticator/compare/16.0.1...16.0.2
+[16.0.1]: https://github.com/jupyterhub/oauthenticator/compare/16.0.0...16.0.1
+[16.0.0]: https://github.com/jupyterhub/oauthenticator/compare/15.1.0...16.0.0
+[15.1.0]: https://github.com/jupyterhub/oauthenticator/compare/15.0.1...15.1.0
+[15.0.1]: https://github.com/jupyterhub/oauthenticator/compare/15.0.0...15.0.1
+[15.0.0]: https://github.com/jupyterhub/oauthenticator/compare/14.2.0...15.0.0
 [14.2.0]: https://github.com/jupyterhub/oauthenticator/compare/14.1.0...14.2.0
 [14.1.0]: https://github.com/jupyterhub/oauthenticator/compare/14.0.0...14.1.0
 [14.0.0]: https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0
