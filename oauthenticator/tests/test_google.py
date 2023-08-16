@@ -182,7 +182,7 @@ async def test_google(
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
         if authenticator.allowed_google_groups or authenticator.admin_google_groups:
-            assert user_info["google_groups"] == {"group1"}
+            assert user_info["google_groups"] == ["group1"]
     else:
         assert auth_model == None
 

@@ -186,10 +186,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
-            user_groups = user_info["google_groups"] = self._fetch_user_groups(
-                user_email, user_domain
-            )
-        user_info["google_groups"] = user_groups
+            user_groups = self._fetch_user_groups(user_email, user_domain)
+        # sets are not JSONable, cast to list for auth_state
+        user_info["google_groups"] = list(user_groups)
 
         if auth_model["admin"]:
             # auth_model["admin"] being True means the user was in admin_users
@@ -241,7 +240,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             return True
 
         if self.allowed_google_groups:
-            user_groups = user_info["google_groups"]
+            user_groups = set(user_info["google_groups"])
             allowed_groups = self.allowed_google_groups.get(user_domain, set())
             if any(user_groups & allowed_groups):
                 return True
