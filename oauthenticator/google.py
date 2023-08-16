@@ -197,7 +197,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if self.admin_google_groups:
             # admin status should in this case be True or False, not None
             admin_groups = self.admin_google_groups.get(user_domain, set())
-            auth_model["admin"] = any(user_groups & admin_groups)
+            auth_model["admin"] = bool(user_groups & admin_groups)
 
         return auth_model
 
@@ -242,7 +242,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if self.allowed_google_groups:
             user_groups = set(user_info["google_groups"])
             allowed_groups = self.allowed_google_groups.get(user_domain, set())
-            if any(user_groups & allowed_groups):
+            if user_groups & allowed_groups:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

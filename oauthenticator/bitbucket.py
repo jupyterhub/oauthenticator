@@ -93,7 +93,7 @@ class BitbucketOAuthenticator(OAuthenticator):
 
         if self.allowed_teams:
             user_teams = set(auth_model["auth_state"].get("user_teams", []))
-            if any(user_teams & self.allowed_teams):
+            if user_teams & self.allowed_teams:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

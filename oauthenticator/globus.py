@@ -314,7 +314,7 @@ class GlobusOAuthenticator(OAuthenticator):
 
         if self.allowed_globus_groups:
             user_groups = set(auth_model["auth_state"]["globus_groups"])
-            if any(user_groups & self.allowed_globus_groups):
+            if user_groups & self.allowed_globus_groups:
                 return True
             self.log.warning(f"{username} not in an allowed Globus Group")
 
@@ -344,7 +344,7 @@ class GlobusOAuthenticator(OAuthenticator):
 
         if self.admin_globus_groups:
             # admin status should in this case be True or False, not None
-            auth_model["admin"] = any(user_groups & self.admin_globus_groups)
+            auth_model["admin"] = bool(user_groups & self.admin_globus_groups)
 
         return auth_model
 
