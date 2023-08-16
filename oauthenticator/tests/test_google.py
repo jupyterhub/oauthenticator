@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import re
 from unittest import mock
@@ -176,6 +177,7 @@ async def test_google(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "access_token" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]

@@ -1,3 +1,5 @@
+import json
+
 from pytest import fixture, mark
 from traitlets.config import Config
 
@@ -78,6 +80,7 @@ async def test_okpy(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "access_token" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert user_info == handled_user_model

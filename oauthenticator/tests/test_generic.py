@@ -1,3 +1,4 @@
+import json
 from functools import partial
 
 from pytest import fixture, mark
@@ -175,6 +176,7 @@ async def test_generic(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "access_token" in auth_state
         assert "oauth_user" in auth_state
         assert "refresh_token" in auth_state

@@ -303,6 +303,7 @@ async def test_globus(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "tokens" in auth_state
         assert "transfer.api.globus.org" in auth_state["tokens"]
         user_info = auth_state[authenticator.user_auth_state_key]

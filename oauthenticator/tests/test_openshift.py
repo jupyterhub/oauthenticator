@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from traitlets.config import Config
 
@@ -157,6 +159,7 @@ async def test_openshift(
         assert auth_model["name"] == handled_user_model["metadata"]["name"]
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "access_token" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert user_info == handled_user_model
