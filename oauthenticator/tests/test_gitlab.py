@@ -110,6 +110,7 @@ async def test_gitlab(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "access_token" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert user_info == handled_user_model
@@ -215,6 +216,7 @@ async def test_allowed_groups(gitlab_client, paginate):
     handler = gitlab_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model
+    assert json.dumps(auth_model["auth_state"])
 
     handled_user_model = user_model("user-not-in-group")
     handler = gitlab_client.handler_for_user(handled_user_model)
@@ -299,6 +301,7 @@ async def test_allowed_project_ids(gitlab_client):
     handler = gitlab_client.handler_for_user(developer_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model
+    assert json.dumps(auth_model["auth_state"])
 
     # Forbidden, project doesn't exist
     authenticator.allowed_project_ids = [0]
@@ -311,6 +314,7 @@ async def test_allowed_project_ids(gitlab_client):
     handler = gitlab_client.handler_for_user(developer_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model
+    assert json.dumps(auth_model["auth_state"])
 
 
 @mark.parametrize(

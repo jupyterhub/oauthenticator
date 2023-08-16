@@ -161,7 +161,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             # admin status should in this case be True or False, not None
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = set(user_info["groups"])
-            auth_model["admin"] = any(user_groups & self.admin_groups)
+            auth_model["admin"] = bool(user_groups & self.admin_groups)
 
         return auth_model
 
@@ -176,7 +176,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
         if self.allowed_groups:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = set(user_info["groups"])
-            if any(user_groups & self.allowed_groups):
+            if user_groups & self.allowed_groups:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

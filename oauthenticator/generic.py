@@ -159,7 +159,7 @@ class GenericOAuthenticator(OAuthenticator):
             # admin status should in this case be True or False, not None
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = self.get_user_groups(user_info)
-            auth_model["admin"] = any(user_groups & self.admin_groups)
+            auth_model["admin"] = bool(user_groups & self.admin_groups)
 
         return auth_model
 
