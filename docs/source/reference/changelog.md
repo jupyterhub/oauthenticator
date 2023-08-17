@@ -8,6 +8,28 @@ command line for details.
 
 ## 16.0
 
+### [16.0.6] - 2023-08-17
+
+16.0.6 is a bugfix release, fixing a crash on startup when combining enable_auth_state with Google, Globus, or Bitbucket.
+The group membership fields are lists, which were switched to sets in 16.0, but that is not allowed by JupyterHub's JSON serialization of auth_state.
+
+#### Bugs fixed
+
+- [Google, Globus, Bitbucket] Ensure auth_state is JSON serializable (lists are, not sets) [#668](https://github.com/jupyterhub/oauthenticator/pull/668) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- GitHub/GitLab typo [#669](https://github.com/jupyterhub/oauthenticator/pull/669) ([@tico24](https://github.com/tico24), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-08-15&to=2023-08-17&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-08-15..2023-08-17&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-08-15..2023-08-17&type=Issues)) | @tico24 ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Atico24+updated%3A2023-08-15..2023-08-17&type=Issues))
+
 ### [16.0.5] - 2023-08-15
 
 ([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5))
@@ -108,7 +130,7 @@ and new changes in 16.0.2, please upgrade directly to 16.0.2 or higher.
   configuration instead of List based configuration. It is still possible to set
   these with lists as as they are converted to sets automatically, but anyone
   reading and adding entries must now use set logic and not list logic.
-- [Google] Authentication state's `google_groups` is now a set, not a list.
+- <del>[Google] Authentication state's `google_groups` is now a set, not a list.</del> (reverted in 16.0.6 as JupyterHub's auth_state must be JSON-serializable and doesn't allow sets)
 - [CILogon] {attr}`.CILogonOAuthenticator.allowed_idps` is now required config,
   and `shown_idps`, `username_claim`, `additional_username_claims` were removed.
 - [Okpy] The public functions `OkpyOAuthenticator.get_auth_request` and
@@ -717,7 +739,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.0.5...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.0.6...HEAD
+[16.0.6]: https://github.com/jupyterhub/oauthenticator/compare/16.0.5...16.0.6
 [16.0.5]: https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5
 [16.0.4]: https://github.com/jupyterhub/oauthenticator/compare/16.0.3...16.0.4
 [16.0.3]: https://github.com/jupyterhub/oauthenticator/compare/16.0.2...16.0.3
