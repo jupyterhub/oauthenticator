@@ -1,7 +1,7 @@
 # GitHub Setup
 
 You need to have an GitHub OAuth application registered ahead of time, see
-GitLab's official documentation about [registering an app].
+GitHub's official documentation about [registering an app].
 
 [registering an app]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
 
