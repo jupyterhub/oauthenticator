@@ -8,6 +8,7 @@ from traitlets.config import Config
 from ..oauth2 import (
     STATE_COOKIE_NAME,
     OAuthenticator,
+    OAuthLoginHandler,
     OAuthLogoutHandler,
     _deserialize_state,
     _serialize_state,
@@ -24,6 +25,55 @@ async def test_serialize_state():
     assert isinstance(b64_state, str)
     state2 = _deserialize_state(b64_state)
     assert state2 == state1
+
+
+def test_login_states():
+    login_url = "http://myhost/login"
+    login_request_uri = "http://myhost/login?next=/ABC"
+    authenticator = OAuthenticator()
+    login_handler = mock_handler(
+        OAuthLoginHandler,
+        uri=login_request_uri,
+        authenticator=authenticator,
+        login_url=login_url,
+    )
+
+    state_id = '66383228bb924e9bb8a8ff9e311b7966'
+    login_handler._generate_state_id = Mock(return_value=state_id)
+
+    login_handler.set_state_cookie = Mock()
+    login_handler.authorize_redirect = Mock()
+
+    login_handler.get()  # no await, we've mocked the authorizer_redirect to NOT be async
+
+    expected_cookie_value = _serialize_state(
+        {
+            'state_id': state_id,
+            'next_url': '/ABC',
+        }
+    )
+
+    login_handler.set_state_cookie.assert_called_once_with(expected_cookie_value)
+
+    expected_state_param_value = _serialize_state(
+        {
+            'state_id': state_id,
+        }
+    )
+
+    login_handler.authorize_redirect.assert_called_once()
+    assert (
+        login_handler.authorize_redirect.call_args.kwargs['extra_params']['state']
+        == expected_state_param_value
+    )
+
+
+def test_callback_check_states_match():
+    raise NotImplementedError
+
+
+def test_callback_check_states_nomatch():
+    raise NotImplementedError
 
 
 async def test_custom_logout(monkeypatch):

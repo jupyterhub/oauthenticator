@@ -70,13 +70,16 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     def _OAUTH_USERINFO_URL(self):
         return self.authenticator.userdata_url
 
-    def set_state_cookie(self, state):
-        self._set_cookie(STATE_COOKIE_NAME, state, expires_days=1, httponly=True)
+    def set_state_cookie(self, state_cookie_value):
+        self._set_cookie(
+            STATE_COOKIE_NAME, state_cookie_value, expires_days=1, httponly=True
+        )
 
-    _state = None
+    def _generate_state_id(self):
+        return uuid.uuid4().hex
 
-    def get_state(self):
-        next_url = original_next_url = self.get_argument("next", None)
+    def _get_next_url(self):
+        next_url = self.get_argument("next", None)
         if next_url:
             # avoid browsers treating \ as /
             next_url = next_url.replace("\\", quote("\\"))
@@ -86,23 +89,22 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
             next_url = urlinfo._replace(
                 scheme="", netloc="", path="/" + urlinfo.path.lstrip("/")
             ).geturl()
-            if next_url != original_next_url:
-                self.log.warning(
-                    f"Ignoring next_url {original_next_url}, using {next_url}"
-                )
-        if self._state is None:
-            self._state = _serialize_state(
-                {"state_id": uuid.uuid4().hex, "next_url": next_url}
-            )
-        return self._state
+            return next_url
 
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
         token_params = self.authenticator.extra_authorize_params.copy()
         self.log.info(f"OAuth redirect: {redirect_uri}")
-        state = self.get_state()
-        self.set_state_cookie(state)
-        token_params["state"] = state
+
+        state_id = self._generate_state_id()
+        next_url = self._get_next_url()
+
+        cookie_state = _serialize_state({"state_id": state_id, "next_url": next_url})
+        self.set_state_cookie(cookie_state)
+
+        authorize_state = _serialize_state({"state_id": state_id})
+        token_params["state"] = authorize_state
+
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
@@ -147,8 +149,12 @@ class OAuthCallbackHandler(BaseHandler):
             raise web.HTTPError(400, "OAuth state missing from cookies")
         if not url_state:
             raise web.HTTPError(400, "OAuth state missing from URL")
-        if cookie_state != url_state:
-            self.log.warning(f"OAuth state mismatch: {cookie_state} != {url_state}")
+        cookie_state_id = _deserialize_state(cookie_state).get('state_id')
+        url_state_id = _deserialize_state(url_state).get('state_id')
+        if cookie_state_id != url_state_id:
+            self.log.warning(
+                f"OAuth state mismatch: {cookie_state_id} != {url_state_id}"
+            )
             raise web.HTTPError(400, "OAuth state mismatch")
 
     def check_error(self):
@@ -187,7 +193,7 @@ class OAuthCallbackHandler(BaseHandler):
 
     def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
-        state = self.get_state_url()
+        state = self.get_state_cookie()
         if state:
             next_url = _deserialize_state(state).get("next_url")
             if next_url:
