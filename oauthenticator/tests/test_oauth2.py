@@ -2,18 +2,20 @@ import re
 import uuid
 from unittest.mock import Mock, PropertyMock
 
-from pytest import mark
+from pytest import mark, raises
+from tornado.web import HTTPError
 from traitlets.config import Config
 
 from ..oauth2 import (
     STATE_COOKIE_NAME,
+    OAuthCallbackHandler,
     OAuthenticator,
     OAuthLoginHandler,
     OAuthLogoutHandler,
     _deserialize_state,
     _serialize_state,
 )
-from .mocks import mock_handler
+from .mocks import mock_handler, mock_login_user_coro
 
 
 async def test_serialize_state():
@@ -27,19 +29,20 @@ async def test_serialize_state():
     assert state2 == state1
 
 
-def test_login_states():
-    login_url = "http://myhost/login"
-    login_request_uri = "http://myhost/login?next=/ABC"
+TEST_STATE_ID = '123'
+TEST_NEXT_URL = '/ABC'
+
+
+async def test_login_states():
+    login_request_uri = f"http://myhost/login?next={TEST_NEXT_URL}"
     authenticator = OAuthenticator()
     login_handler = mock_handler(
         OAuthLoginHandler,
         uri=login_request_uri,
         authenticator=authenticator,
-        login_url=login_url,
     )
 
-    state_id = '66383228bb924e9bb8a8ff9e311b7966'
-    login_handler._generate_state_id = Mock(return_value=state_id)
+    login_handler._generate_state_id = Mock(return_value=TEST_STATE_ID)
 
     login_handler.set_state_cookie = Mock()
     login_handler.authorize_redirect = Mock()
@@ -48,8 +51,8 @@ def test_login_states():
 
     expected_cookie_value = _serialize_state(
         {
-            'state_id': state_id,
-            'next_url': '/ABC',
+            'state_id': TEST_STATE_ID,
+            'next_url': TEST_NEXT_URL,
         }
     )
 
@@ -57,7 +60,7 @@ def test_login_states():
 
     expected_state_param_value = _serialize_state(
         {
-            'state_id': state_id,
+            'state_id': TEST_STATE_ID,
         }
     )
 
@@ -68,12 +71,55 @@ def test_login_states():
     )
 
 
-def test_callback_check_states_match():
-    raise NotImplementedError
+async def test_callback_check_states_match(monkeypatch):
+    url_state = _serialize_state({'state_id': TEST_STATE_ID})
+    callback_request_uri = f"http://myhost/callback?code=123&state={url_state}"
+
+    cookie_state = _serialize_state(
+        {
+            'state_id': TEST_STATE_ID,
+            'next_url': TEST_NEXT_URL,
+        }
+    )
+
+    authenticator = OAuthenticator()
+    callback_handler = mock_handler(
+        OAuthCallbackHandler,
+        uri=callback_request_uri,
+        authenticator=authenticator,
+    )
+
+    callback_handler.get_secure_cookie = Mock(return_value=cookie_state.encode('utf8'))
+    callback_handler.login_user = Mock(return_value=mock_login_user_coro())
+    callback_handler.redirect = Mock()
+
+    await callback_handler.get()
+
+    callback_handler.redirect.assert_called_once_with('/ABC')
 
 
-def test_callback_check_states_nomatch():
-    raise NotImplementedError
+async def test_callback_check_states_nomatch():
+    wrong_url_state = _serialize_state({'state_id': 'wr0ng'})
+    callback_request_uri = f"http://myhost/callback?code=123&state={wrong_url_state}"
+
+    cookie_state = _serialize_state(
+        {
+            'state_id': TEST_STATE_ID,
+            'next_url': TEST_NEXT_URL,
+        }
+    )
+
+    authenticator = OAuthenticator()
+    callback_handler = mock_handler(
+        OAuthCallbackHandler,
+        uri=callback_request_uri,
+        authenticator=authenticator,
+    )
+
+    callback_handler.get_secure_cookie = Mock(return_value=cookie_state.encode('utf8'))
+
+    with raises(HTTPError, match="OAuth state mismatch"):
+        await callback_handler.get()
 
 
 async def test_custom_logout(monkeypatch):
