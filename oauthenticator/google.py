@@ -162,6 +162,23 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
+    def user_info_to_username(self, user_info):
+        """
+        Overrides the default implementation to conditionally also strip the
+        user email's domain name from the username based on the hosted_domain
+        configuration. The domain saved to user_info for use by authorization
+        logic.
+        """
+        username = super().user_info_to_username(user_info)
+        user_email = user_info["email"]
+        user_domain = user_info["domain"] = user_email.split("@")[1].lower()
+
+        if len(self.hosted_domain) == 1 and self.hosted_domain[0] == user_domain:
+            # unambiguous domain, use only base name
+            username = username.split("@")[0]
+
+        return username
+
     async def update_auth_model(self, auth_model):
         """
         Fetch and store `google_groups` in auth state if `allowed_google_groups`
@@ -177,12 +194,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
-        user_domain = user_info["domain"] = user_email.split("@")[1].lower()
-
-        if len(self.hosted_domain) == 1 and self.hosted_domain[0] == user_domain:
-            # unambiguous domain, use only base name
-            username = user_email.split('@')[0]
-            auth_model["name"] = username
+        user_domain = user_info["domain"]
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
