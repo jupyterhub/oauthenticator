@@ -8,6 +8,21 @@ command line for details.
 
 ## 16.0
 
+### [16.0.7] - 2023-08-21
+
+#### Bugs fixed
+
+- [Google] admin_users should like before v16 list final usernames [#673](https://github.com/jupyterhub/oauthenticator/pull/673) ([@consideRatio](https://github.com/consideRatio), [@jinserk](https://github.com/jinserk), [@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-08-15&to=2023-08-17&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-08-15..2023-08-21&type=Issues)) | @jinserk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajinserk+updated%3A2023-08-15..2023-08-21&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2023-08-15..2023-08-21&type=Issues))
+
 ### [16.0.6] - 2023-08-17
 
 16.0.6 is a bugfix release, fixing a crash on startup when combining enable_auth_state with Google, Globus, or Bitbucket.
@@ -739,7 +754,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.0.6...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...HEAD
+[16.0.7]: https://github.com/jupyterhub/oauthenticator/compare/16.0.6...16.0.7
 [16.0.6]: https://github.com/jupyterhub/oauthenticator/compare/16.0.5...16.0.6
 [16.0.5]: https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5
 [16.0.4]: https://github.com/jupyterhub/oauthenticator/compare/16.0.3...16.0.4
