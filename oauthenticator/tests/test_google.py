@@ -195,7 +195,8 @@ async def test_hosted_domain_single_entry(google_client):
     """
     c = Config()
     c.GoogleOAuthenticator.hosted_domain = ["In-Hosted-Domain.com"]
-    c.GoogleOAuthenticator.allow_all = True
+    c.GoogleOAuthenticator.admin_users = {"user1"}
+    c.GoogleOAuthenticator.allowed_users = {"user2"}
     authenticator = GoogleOAuthenticator(config=c)
 
     handled_user_model = user_model("user1@iN-hosteD-domaiN.com")
@@ -203,6 +204,14 @@ async def test_hosted_domain_single_entry(google_client):
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model
     assert auth_model["name"] == "user1"
+    assert auth_model["admin"] == True
+
+    handled_user_model = user_model("user2@iN-hosteD-domaiN.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
+    assert auth_model["name"] == "user2"
+    assert auth_model["admin"] == None
 
     handled_user_model = user_model("user1@not-in-hosted-domain.com")
     handler = google_client.handler_for_user(handled_user_model)
