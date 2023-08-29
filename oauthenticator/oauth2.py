@@ -735,7 +735,7 @@ class OAuthenticator(Authenticator):
 
         if self.basic_auth:
             b64key = base64.b64encode(
-                bytes("{self.client_id}:{self.client_secret}", "utf8")
+                bytes(f"{self.client_id}:{self.client_secret}", "utf8")
             )
             headers.update({"Authorization": f'Basic {b64key.decode("utf8")}'})
         return headers
