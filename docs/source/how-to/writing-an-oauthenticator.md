@@ -21,7 +21,7 @@ and configuration to set the necessary configuration variables.
 Example config:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 c.GenericOAuthenticator.oauth_callback_url = 'https://{host}/hub/oauth_callback'
 c.GenericOAuthenticator.client_id = 'OAUTH-CLIENT-ID'
