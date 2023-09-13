@@ -10,7 +10,7 @@ The GenericOAuthenticator can be configured to be used against an OpenID Connect
 (OIDC) based identity provider, and this is an example demonstrating that.
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 # OAuth2 application info
 # -----------------------
@@ -55,7 +55,7 @@ Moodle.
 Use the `GenericOAuthenticator` for Jupyterhub by editing your `jupyterhub_config.py` accordingly:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 c.GenericOAuthenticator.oauth_callback_url = 'https://YOUR-JUPYTERHUB.com/hub/oauth_callback'
 c.GenericOAuthenticator.client_id = 'MOODLE-CLIENT-ID'
@@ -80,7 +80,7 @@ Use the `GenericOAuthenticator` for Jupyterhub by editing your
 `jupyterhub_config.py` accordingly:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 c.GenericOAuthenticator.client_id = 'NEXTCLOUD-CLIENT-ID'
 c.GenericOAuthenticator.client_secret = 'NEXTCLOUD-CLIENT-SECRET-KEY'
@@ -109,7 +109,7 @@ Choose **Yandex.Passport API** in Permissions and check these options:
 Set the above settings in your `jupyterhub_config.py`:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
 c.OAuthenticator.client_id = "[your app ID]"
 c.OAuthenticator.client_secret = "[your app Password]"
@@ -135,7 +135,7 @@ OAuth2 application.
 Set the above settings in your `jupyterhub_config.py`:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
 c.OAuthenticator.client_id = "[your oauth2 application id]"
 c.OAuthenticator.client_secret = "[your oauth2 application secret]"
@@ -159,7 +159,7 @@ Follow the ORCID [API Tutorial](https://info.orcid.org/documentation/api-tutoria
 Edit your `jupyterhub_config.py` with the following:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 # Fill these in with your values
 c.GenericOAuthenticator.oauth_callback_url = "YOUR CALLBACK URL"
