@@ -7,6 +7,8 @@ additionalProperties: false
 required:
   - username_derivation
 properties:
+  allow_all:
+    type: boolean
   allowed_domains:
     type: array
     items:
