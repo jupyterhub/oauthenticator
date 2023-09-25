@@ -123,28 +123,36 @@ class CILogonOAuthenticator(OAuthenticator):
                         "action": "strip_idp_domain",
                         "domain": "utoronto.ca",
                     },
-                },
-                "https://github.com/login/oauth/authorize": {
-                    "username_derivation": {
-                        "username_claim": "username",
-                        "action": "prefix",
-                        "prefix": "github",
-                    },
+                    "allow_all": True,
                 },
                 "http://google.com/accounts/o8/id": {
                     "username_derivation": {
-                        "username_claim": "username",
+                        "username_claim": "email",
                         "action": "prefix",
                         "prefix": "google",
                     },
                     "allowed_domains": ["uni.edu", "something.org"],
                 },
+                "https://github.com/login/oauth/authorize": {
+                    "username_derivation": {
+                        "username_claim": "preferred_username",
+                        "action": "prefix",
+                        "prefix": "github",
+                    },
+                    # allow_all or allowed_domains not specified for ths idp,
+                    # this means that its users must be explicitly allowed
+                    # with a config such as allowed_users or admin_users.
+                },
             }
+            c.Authenticator.admin_users = ["github-user1"]
+            c.Authenticator.allowed_users = ["github-user2"]
 
-        Where `username_derivation` defines:
+        This is a description of the configuration you can pass to
+        `allowed_idps`.
 
+        * `username_derivation`: string (required)
             * `username_claim`: string (required)
-                The claim in the `userinfo` response from which to get the
+                The claim in the `userinfo` response from which to define the
                 JupyterHub username. Examples include: `eppn`, `email`. What
                 keys are available will depend on the scopes requested.
             * `action`: string
@@ -158,9 +166,13 @@ class CILogonOAuthenticator(OAuthenticator):
             * `prefix`: string (required if action is prefix)
                 The prefix which will be added at the beginning of the username
                 followed by a semi-column ":", if the action is "prefix".
-            * `allowed_domains`: string
-                It defines which domains will be allowed to login using the
-                specific identity provider.
+        * `allow_all`: bool (defaults to False)
+            Configuring this allows all users authenticating with this identity
+            provider.
+        * `allowed_domains`: list of strings
+            Configuring this together with a `username_claim` that is an email
+            address enables users to be allowed if their `username_claim` ends
+            with `@` followed by a domain in this list.
 
         .. versionchanged:: 15.0
 
@@ -336,24 +348,26 @@ class CILogonOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Overrides the OAuthenticator.check_allowed to also allow users part of
-        an `allowed_domains` as configured under `allowed_idps`.
+        Overrides the OAuthenticator.check_allowed to also allow users based on
+        idp specific config `allow_all` and `allowed_domains` as configured
+        under `allowed_idps`.
         """
         if await super().check_allowed(username, auth_model):
             return True
 
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_idp = user_info["idp"]
+
+        idp_allow_all = self.allowed_idps[user_idp].get("allow_all")
+        if idp_allow_all:
+            return True
+
         idp_allowed_domains = self.allowed_idps[user_idp].get("allowed_domains")
         if idp_allowed_domains:
             unprocessed_username = self._user_info_to_unprocessed_username(user_info)
             user_domain = unprocessed_username.split("@", 1)[1].lower()
             if user_domain in idp_allowed_domains:
                 return True
-
-            message = f"Login with domain @{user_domain} is not allowed"
-            self.log.warning(message)
-            raise web.HTTPError(403, message)
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False

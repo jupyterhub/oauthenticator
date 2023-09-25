@@ -3,7 +3,6 @@ import logging
 
 from jsonschema.exceptions import ValidationError
 from pytest import fixture, mark, raises
-from tornado.web import HTTPError
 from traitlets.config import Config
 from traitlets.traitlets import TraitError
 
@@ -98,6 +97,306 @@ async def test_cilogon(
         user_info = auth_state[authenticator.user_auth_state_key]
         assert user_info == handled_user_model
         assert auth_model["name"] == user_info["name"]
+    else:
+        assert auth_model == None
+
+
+@mark.parametrize(
+    "test_variation_id,idp_config,class_config,test_user_name,expect_allowed,expect_admin",
+    [
+        # test of minimal idp specific config
+        (
+            "1 - not allowed",
+            {
+                "username_derivation": {
+                    "username_claim": "name",
+                },
+            },
+            {},
+            "user1",
+            False,
+            False,
+        ),
+        # tests of allow_all
+        (
+            "2 - allowed by allow_all",
+            {
+                "username_derivation": {
+                    "username_claim": "name",
+                },
+                "allow_all": True,
+            },
+            {},
+            "user1",
+            True,
+            None,
+        ),
+        (
+            "3 - not allowed by allow_all",
+            {
+                "username_derivation": {
+                    "username_claim": "name",
+                },
+                "allow_all": True,
+            },
+            {},
+            "user1",
+            True,
+            None,
+        ),
+        # tests of allowed_domains
+        (
+            "4 - allowed by allowed_domains",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                },
+                "allowed_domains": ["allowed-domain.org"],
+            },
+            {},
+            "user1@allowed-domain.org",
+            True,
+            None,
+        ),
+        (
+            "5 - not allowed by allowed_domains",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                },
+                "allowed_domains": ["allowed-domain.org"],
+            },
+            {},
+            "user1@not-allowed-domain.org",
+            False,
+            None,
+        ),
+        (
+            "6 - allowed by allowed_domains (domain stripping action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "allowed-domain.org",
+                },
+                "allowed_domains": ["allowed-domain.org"],
+            },
+            {},
+            "user1@allowed-domain.org",
+            True,
+            None,
+        ),
+        (
+            "7 - not allowed by allowed_domains (domain stripping action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "allowed-domain.org",
+                },
+                "allowed_domains": ["allowed-domain.org"],
+            },
+            {},
+            "user1@not-allowed-domain.org",
+            False,
+            None,
+        ),
+        (
+            "8 - allowed by allowed_domains (prefix action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+                "allowed_domains": ["allowed-domain.org"],
+            },
+            {},
+            "user1@allowed-domain.org",
+            True,
+            None,
+        ),
+        (
+            "9 - not allowed by allowed_domains (prefix action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+                "allowed_domains": ["allowed-domain.org"],
+            },
+            {},
+            "user1@not-allowed-domain.org",
+            False,
+            None,
+        ),
+        # test of allowed_users and admin_users together with
+        # username_derivation actions to verify the final usernames is what
+        # matters when describing allowed_users and admin_users
+        (
+            "10 - allowed by allowed_users (domain stripping action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "domain.org",
+                },
+            },
+            {
+                "allowed_users": ["user1"],
+            },
+            "user1@domain.org",
+            True,
+            None,
+        ),
+        (
+            "11 - allowed by admin_users (domain stripping action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "domain.org",
+                },
+            },
+            {
+                "admin_users": ["user1"],
+            },
+            "user1@domain.org",
+            True,
+            True,
+        ),
+        (
+            "12 - allowed by allowed_users (prefix action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+            },
+            {
+                "allowed_users": ["some-prefix:user1@domain.org"],
+            },
+            "user1@domain.org",
+            True,
+            None,
+        ),
+        (
+            "13 - allowed by admin_users (prefix action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+            },
+            {
+                "admin_users": ["some-prefix:user1@domain.org"],
+            },
+            "user1@domain.org",
+            True,
+            True,
+        ),
+        (
+            "14 - not allowed by allowed_users (domain stripping action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "domain.org",
+                },
+            },
+            {
+                "allowed_users": ["user1@domain.org"],
+            },
+            "user1@domain.org",
+            False,
+            None,
+        ),
+        (
+            "15 - not allowed by admin_users (domain stripping action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "strip_idp_domain",
+                    "domain": "domain.org",
+                },
+            },
+            {
+                "admin_users": ["user1@domain.org"],
+            },
+            "user1@domain.org",
+            False,
+            None,
+        ),
+        (
+            "16 - not allowed by allowed_users (prefix action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+            },
+            {
+                "allowed_users": ["user1@domain.org"],
+            },
+            "user1@domain.org",
+            False,
+            None,
+        ),
+        (
+            "17 - not allowed by admin_users (prefix action involved)",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+            },
+            {
+                "admin_users": ["user1@domain.org"],
+            },
+            "user1@domain.org",
+            False,
+            None,
+        ),
+    ],
+)
+async def test_cilogon_allowed_idps(
+    cilogon_client,
+    test_variation_id,
+    idp_config,
+    class_config,
+    test_user_name,
+    expect_allowed,
+    expect_admin,
+):
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.CILogonOAuthenticator = Config(class_config)
+    test_idp = "https://some-idp.com/login/oauth/authorize"
+    c.CILogonOAuthenticator.allowed_idps = {
+        test_idp: idp_config,
+    }
+    authenticator = CILogonOAuthenticator(config=c)
+
+    username_claim = idp_config["username_derivation"]["username_claim"]
+    handled_user_model = user_model(test_user_name, username_claim, idp=test_idp)
+    handler = cilogon_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    if expect_allowed:
+        assert auth_model
+        assert set(auth_model) == {"name", "admin", "auth_state"}
+        assert auth_model["admin"] == expect_admin
+        auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
+        assert "access_token" in auth_state
+        assert "token_response" in auth_state
+        user_info = auth_state[authenticator.user_auth_state_key]
+        assert user_info == handled_user_model
     else:
         assert auth_model == None
 
@@ -302,6 +601,10 @@ async def test_config_scopes_validation():
 
 
 async def test_allowed_idps_username_derivation_actions(cilogon_client):
+    """
+    Tests all `allowed_idps[].username_derivation.action` config choices:
+    `strip_idp_domain`, `prefix`, and no action specified.
+    """
     c = Config()
     c.CILogonOAuthenticator.allow_all = True
     c.CILogonOAuthenticator.allowed_idps = {
@@ -316,7 +619,7 @@ async def test_allowed_idps_username_derivation_actions(cilogon_client):
             'username_derivation': {
                 'username_claim': 'nickname',
                 'action': 'prefix',
-                'prefix': 'idp',
+                'prefix': 'some-prefix',
             },
         },
         'https://no-action.example.com/login/oauth/authorize': {
@@ -359,7 +662,7 @@ async def test_allowed_idps_username_derivation_actions(cilogon_client):
     )
     auth_model = await authenticator.get_authenticated_user(handler, None)
     print(json.dumps(auth_model, sort_keys=True, indent=4))
-    assert auth_model['name'] == 'idp:jtkirk'
+    assert auth_model['name'] == 'some-prefix:jtkirk'
 
     # Test no action
     handler = cilogon_client.handler_for_user(
@@ -372,87 +675,3 @@ async def test_allowed_idps_username_derivation_actions(cilogon_client):
     auth_model = await authenticator.get_authenticated_user(handler, None)
     print(json.dumps(auth_model, sort_keys=True, indent=4))
     assert auth_model['name'] == 'jtkirk'
-
-
-async def test_not_allowed_domains_and_stripping(cilogon_client):
-    c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
-        'https://some-idp.com/login/oauth/authorize': {
-            'username_derivation': {
-                'username_claim': 'email',
-                'action': 'strip_idp_domain',
-                'domain': 'uni.edu',
-            },
-            'allowed_domains': ['pink.org'],
-        },
-    }
-
-    authenticator = CILogonOAuthenticator(config=c)
-
-    # Test stripping domain not allowed
-    handler = cilogon_client.handler_for_user(
-        user_model(
-            'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
-        )
-    )
-
-    # The domain to be stripped isn't allowed, so it should fail
-    with raises(HTTPError):
-        await authenticator.get_authenticated_user(handler, None)
-
-
-async def test_allowed_domains_and_stripping(cilogon_client):
-    c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
-        'https://some-idp.com/login/oauth/authorize': {
-            'username_derivation': {
-                'username_claim': 'email',
-                'action': 'strip_idp_domain',
-                'domain': 'pink.org',
-            },
-            'allowed_domains': ['pink.org'],
-        },
-    }
-
-    authenticator = CILogonOAuthenticator(config=c)
-
-    # Test stripping allowed domain
-    handler = cilogon_client.handler_for_user(
-        user_model(
-            'jtkirk@pink.org', 'email', idp='https://some-idp.com/login/oauth/authorize'
-        )
-    )
-    auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model['name'] == 'jtkirk'
-
-
-async def test_allowed_domains_no_stripping(cilogon_client):
-    c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
-        'https://some-idp.com/login/oauth/authorize': {
-            'username_derivation': {
-                'username_claim': 'email',
-            },
-            'allowed_domains': ['pink.org'],
-        },
-    }
-
-    authenticator = CILogonOAuthenticator(config=c)
-
-    # Test login with user not part of allowed_domains
-    handler = cilogon_client.handler_for_user(
-        user_model(
-            'jtkirk@uni.edu', 'email', idp='https://some-idp.com/login/oauth/authorize'
-        )
-    )
-    with raises(HTTPError):
-        auth_model = await authenticator.get_authenticated_user(handler, None)
-
-    # Test login with part of allowed_domains
-    handler = cilogon_client.handler_for_user(
-        user_model(
-            'jtkirk@pink.org', 'email', idp='https://some-idp.com/login/oauth/authorize'
-        )
-    )
-    auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model['name'] == 'jtkirk@pink.org'
