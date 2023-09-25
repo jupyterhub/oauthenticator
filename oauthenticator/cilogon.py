@@ -17,7 +17,7 @@ from .oauth2 import OAuthenticator, OAuthLoginHandler
 yaml = YAML(typ="safe", pure=True)
 
 
-def _get_select_idp_param(allowed_idps):
+def _get_select_idp_param(idps):
     """
     The "selected_idp" query parameter included when the user is redirected to
     CILogon should be a comma separated string of idps to choose from, where the
@@ -25,11 +25,11 @@ def _get_select_idp_param(allowed_idps):
     remaining idps has no meaning.
     """
     # pick the first idp marked as default, or fallback to the first idp
-    default_keys = [k for k, v in allowed_idps.items() if v.get("default")]
-    default_key = next(iter(default_keys), next(iter(allowed_idps)))
+    default_keys = [k for k, v in idps.items() if v.get("default")]
+    default_key = next(iter(default_keys), next(iter(idps)))
 
     # put the default idp first followed by the other idps
-    other_keys = [k for k, _ in allowed_idps.items() if k != default_key]
+    other_keys = [k for k, _ in idps.items() if k != default_key]
     selected_idp = ",".join([default_key] + other_keys)
 
     return selected_idp
@@ -41,7 +41,7 @@ class CILogonLoginHandler(OAuthLoginHandler):
     def authorize_redirect(self, *args, **kwargs):
         """
         Optionally add "skin" to redirect params, and always add "selected_idp"
-        (aka. "idphint") based on allowed_idps config.
+        (aka. "idphint") based on idps config.
 
         Related documentation at https://www.cilogon.org/oidc#h.p_IWGvXH0okDI_.
         """
@@ -49,9 +49,7 @@ class CILogonLoginHandler(OAuthLoginHandler):
         # include it, we then modify kwargs' extra_params dictionary
         extra_params = kwargs.setdefault('extra_params', {})
 
-        extra_params["selected_idp"] = _get_select_idp_param(
-            self.authenticator.allowed_idps
-        )
+        extra_params["selected_idp"] = _get_select_idp_param(self.authenticator.idps)
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
 
@@ -123,7 +121,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         return scopes
 
-    allowed_idps = Dict(
+    idps = Dict(
         config=True,
         help="""
         A dictionary of the only entity IDs that will be allowed to be used as
@@ -135,7 +133,7 @@ class CILogonOAuthenticator(OAuthenticator):
 
         For example::
 
-            c.CILogonOAuthenticator.allowed_idps = {
+            c.CILogonOAuthenticator.idps = {
                 "https://idpz.utorauth.utoronto.ca/shibboleth": {
                     "username_derivation": {
                         "username_claim": "email",
@@ -168,7 +166,7 @@ class CILogonOAuthenticator(OAuthenticator):
             c.Authenticator.allowed_users = ["github-user2"]
 
         This is a description of the configuration you can pass to
-        `allowed_idps`.
+        `idps`.
 
         * `default`: bool (optional)
             Determines the identity provider to be pre-selected in a list for
@@ -221,12 +219,12 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
 
-    @validate("allowed_idps")
-    def _validate_allowed_idps(self, proposal):
+    @validate("idps")
+    def _validate_idps(self, proposal):
         idps = proposal.value
 
         if not idps:
-            raise ValueError("One or more allowed_idps must be configured")
+            raise ValueError("One or more idps must be configured")
 
         for entity_id, idp_config in idps.items():
             # Validate `idp_config` config using the schema
@@ -237,7 +235,7 @@ class CILogonOAuthenticator(OAuthenticator):
                 # Raises useful exception if validation fails
                 jsonschema.validate(idp_config, schema)
 
-            # Make sure allowed_idps contains EntityIDs and not domain names.
+            # Make sure idps contains EntityIDs and not domain names.
             accepted_entity_id_scheme = ["urn", "https", "http"]
             entity_id_scheme = urlparse(entity_id).scheme
             if entity_id_scheme not in accepted_entity_id_scheme:
@@ -246,7 +244,7 @@ class CILogonOAuthenticator(OAuthenticator):
                     f"Trying to allow an auth provider: {entity_id}, that doesn't look like a valid CILogon EntityID.",
                 )
                 raise ValueError(
-                    "The keys of `allowed_idps` **must** be CILogon permitted EntityIDs. "
+                    "The keys of `idps` **must** be CILogon permitted EntityIDs. "
                     "See https://cilogon.org/idplist for the list of EntityIDs of each IDP."
                 )
 
@@ -269,12 +267,13 @@ class CILogonOAuthenticator(OAuthenticator):
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {
-        "idp_whitelist": ("allowed_idps", "0.12.0", False),
+        "idp_whitelist": ("idps", "0.12.0", False),
         "idp": ("shown_idps", "15.0.0", False),
-        "strip_idp_domain": ("allowed_idps", "15.0.0", False),
-        "shown_idps": ("allowed_idps", "16.0.0", False),
-        "additional_username_claims": ("allowed_idps", "16.0.0", False),
-        "username_claim": ("allowed_idps", "16.0.0", False),
+        "strip_idp_domain": ("idps", "15.0.0", False),
+        "shown_idps": ("idps", "16.0.0", False),
+        "additional_username_claims": ("idps", "16.0.0", False),
+        "username_claim": ("idps", "16.0.0", False),
+        "allowed_idps": ("idps", "17.4.0", True),
         **OAuthenticator._deprecated_oauth_aliases,
     }
     idp_whitelist = List(
@@ -282,7 +281,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 0.12
 
-           Use :attr:`allowed_idps`.
+           Use :attr:`idps`.
         """,
     )
     idp = Unicode(
@@ -290,7 +289,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 15.0
 
-           Use :attr:`allowed_idps`.
+           Use :attr:`idps`.
         """,
     )
     strip_idp_domain = Bool(
@@ -298,7 +297,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 15.0
 
-           Use :attr:`allowed_idps`.
+           Use :attr:`idps`.
         """,
     )
     shown_idps = List(
@@ -306,7 +305,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 16.0
 
-           Use :attr:`allowed_idps`.
+           Use :attr:`idps`.
         """,
     )
     additional_username_claims = List(
@@ -314,7 +313,7 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 16.0
 
-           Use :attr:`allowed_idps`.
+           Use :attr:`idps`.
         """,
     )
     username_claim = Unicode(
@@ -322,7 +321,15 @@ class CILogonOAuthenticator(OAuthenticator):
         help="""
         .. versionremoved:: 16.0
 
-           Use :attr:`allowed_idps`.
+           Use :attr:`idps`.
+        """,
+    )
+    allowed_idps = Dict(
+        config=True,
+        help="""
+        .. deprecated:: 17.4
+
+           Use :attr:`idps`.
         """,
     )
 
@@ -330,22 +337,22 @@ class CILogonOAuthenticator(OAuthenticator):
         """
         Overrides OAuthenticator.user_info_to_username that relies on
         username_claim to instead consider idp specific config in under
-        allowed_idps[user_info["idp"]]["username_derivation"].
+        idps[user_info["idp"]]["username_derivation"].
 
-        Returns a username based on user_info and configuration in allowed_idps
+        Returns a username based on user_info and configuration in idps
         under the associated idp's username_derivation config.
         """
         # NOTE: The first time we have received user_info is when
         #       user_info_to_username is called by OAuthenticator.authenticate,
         #       so we make a check here that the "idp" claim is received and
-        #       that we allowed_idps is configured to handle that idp.
+        #       that we idps is configured to handle that idp.
         #
         user_idp = user_info.get("idp")
         if not user_idp:
             message = "'idp' claim was not part of the response to the userdata_url"
             self.log.error(message)
             raise web.HTTPError(500, message)
-        if not self.allowed_idps.get(user_idp):
+        if not self.idps.get(user_idp):
             message = f"Login with identity provider {user_idp} is not pre-configured"
             self.log.error(message)
             raise web.HTTPError(403, message)
@@ -361,7 +368,7 @@ class CILogonOAuthenticator(OAuthenticator):
         specified under "username_derivation" for the associated idp.
         """
         user_idp = user_info["idp"]
-        username_derivation = self.allowed_idps[user_idp]["username_derivation"]
+        username_derivation = self.idps[user_idp]["username_derivation"]
         username_claim = username_derivation["username_claim"]
 
         username = user_info.get(username_claim)
@@ -378,7 +385,7 @@ class CILogonOAuthenticator(OAuthenticator):
         specified under "username_derivation" for the associated idp.
         """
         user_idp = user_info["idp"]
-        username_derivation = self.allowed_idps[user_idp]["username_derivation"]
+        username_derivation = self.idps[user_idp]["username_derivation"]
 
         # Optionally execute action "strip_idp_domain" or "prefix"
         action = username_derivation.get("action")
@@ -396,7 +403,7 @@ class CILogonOAuthenticator(OAuthenticator):
         """
         Overrides the OAuthenticator.check_allowed to also allow users based on
         idp specific config `allow_all` and `allowed_domains` as configured
-        under `allowed_idps`.
+        under `idps`.
         """
         if await super().check_allowed(username, auth_model):
             return True
@@ -404,15 +411,13 @@ class CILogonOAuthenticator(OAuthenticator):
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_idp = user_info["idp"]
 
-        idp_allow_all = self.allowed_idps[user_idp].get("allow_all")
+        idp_allow_all = self.idps[user_idp].get("allow_all")
         if idp_allow_all:
             return True
 
-        idp_allowed_domains = self.allowed_idps[user_idp].get("allowed_domains")
+        idp_allowed_domains = self.idps[user_idp].get("allowed_domains")
         if idp_allowed_domains:
-            idp_allowed_domains_claim = self.allowed_idps[user_idp].get(
-                "allowed_domains_claim"
-            )
+            idp_allowed_domains_claim = self.idps[user_idp].get("allowed_domains_claim")
             if idp_allowed_domains_claim:
                 raw_user_domain = user_info.get(idp_allowed_domains_claim)
                 if not raw_user_domain:
