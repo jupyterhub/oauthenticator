@@ -6,6 +6,35 @@ command line for details.
 
 ## [Unreleased]
 
+## 16.1
+
+### [16.1.0] - 2023-09-28
+
+#### New features added
+
+- [CILogon] Add allow_all as a idp specific config [#684](https://github.com/jupyterhub/oauthenticator/pull/684) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Enhancements made
+
+- Drop next_url from authorize_redirect state param [#671](https://github.com/jupyterhub/oauthenticator/pull/671) ([@johnpmayer](https://github.com/johnpmayer), [@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+
+#### Bugs fixed
+
+- [All] Fix broken `basic_auth` functionality [#678](https://github.com/jupyterhub/oauthenticator/pull/678) ([@jorado](https://github.com/jorado), [@manics](https://github.com/manics))
+
+#### Documentation improvements
+
+- docs: fix `"generic"` renamed to `"generic-oauth"` [#680](https://github.com/jupyterhub/oauthenticator/pull/680) ([@mehalter](https://github.com/mehalter), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-08-21&to=2023-09-28&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-08-21..2023-09-28&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2023-08-21..2023-09-28&type=Issues)) | @johnpmayer ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajohnpmayer+updated%3A2023-08-21..2023-09-28&type=Issues)) | @jorado ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajorado+updated%3A2023-08-21..2023-09-28&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2023-08-21..2023-09-28&type=Issues)) | @mehalter ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amehalter+updated%3A2023-08-21..2023-09-28&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-08-21..2023-09-28&type=Issues))
+
 ## 16.0
 
 ### [16.0.7] - 2023-08-21
@@ -47,8 +76,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ### [16.0.5] - 2023-08-15
 
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5))
-
 #### Bugs fixed
 
 - [Google, Globus] handle auth_model is None in google, globus [#665](https://github.com/jupyterhub/oauthenticator/pull/665) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
@@ -63,8 +90,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-08-11..2023-08-15&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-08-11..2023-08-15&type=Issues))
 
 ### [16.0.4] - 2023-08-11
-
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.0.3...7937cd6a7f8c123a9b50cad37af3ff3a9a610e71))
 
 #### Bugs fixed
 
@@ -391,8 +416,6 @@ read about the breaking changes.
 
 ### [14.0.0] - 2021-04-09
 
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/0.13.0...14.0.0))
-
 #### New features added
 
 - Support username_claim in Google OAuth [#401](https://github.com/jupyterhub/oauthenticator/pull/401) ([@dtaniwaki](https://github.com/dtaniwaki))
@@ -548,8 +571,6 @@ such as `AzureAd` and `Generic`.
 We don't plan to accept further contributions of new providers if they can be achieved through customization or configuration of existing classes.
 Rather, contributors are encouraged to provide example documentation for using new providers,
 or pull requests addressing gaps necessary to do so with the GenericOAuthenticator.
-
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/0.10.0...ae199077a3a580cb849af17ceccfe8e498134ea3))
 
 #### Merged PRs
 
@@ -754,7 +775,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...HEAD
+[16.1.0]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...16.1.0
 [16.0.7]: https://github.com/jupyterhub/oauthenticator/compare/16.0.6...16.0.7
 [16.0.6]: https://github.com/jupyterhub/oauthenticator/compare/16.0.5...16.0.6
 [16.0.5]: https://github.com/jupyterhub/oauthenticator/compare/16.0.4...16.0.5
