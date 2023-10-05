@@ -60,8 +60,6 @@ setup_args = dict(
             'google = oauthenticator.google:GoogleOAuthenticator',
             'local-google = oauthenticator.google:LocalGoogleOAuthenticator',
             'mediawiki = oauthenticator.mediawiki:MWOAuthenticator',
-            'okpy = oauthenticator.okpy:OkpyOAuthenticator',
-            'local-okpy = oauthenticator.okpy:LocalOkpyOAuthenticator',
             'openshift = oauthenticator.openshift:OpenShiftOAuthenticator',
             'local-openshift = oauthenticator.openshift:LocalOpenShiftOAuthenticator',
         ],

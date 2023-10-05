@@ -225,7 +225,6 @@ rediraffe_redirects = {
     "api/gen/oauthenticator.gitlab": "reference/api/gen/oauthenticator.gitlab",
     "api/gen/oauthenticator.globus": "reference/api/gen/oauthenticator.globus",
     "api/gen/oauthenticator.google": "reference/api/gen/oauthenticator.google",
-    "api/gen/oauthenticator.okpy": "reference/api/gen/oauthenticator.okpy",
     "api/gen/oauthenticator.openshift": "reference/api/gen/oauthenticator.openshift",
     "api/gen/oauthenticator.mediawiki": "reference/api/gen/oauthenticator.mediawiki",
     # 2023-06-29 docs refresh
