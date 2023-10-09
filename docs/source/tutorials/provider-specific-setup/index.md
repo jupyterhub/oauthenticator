@@ -23,7 +23,6 @@ providers/gitlab.md
 providers/globus.md
 providers/google.md
 providers/mediawiki.md
-providers/okpy.md
 providers/openshift.md
 providers/generic.md
 ```
