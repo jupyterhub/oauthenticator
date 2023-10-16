@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with OpenShift as an identity provider.
 """
+import concurrent.futures
 import json
 import os
 
@@ -81,15 +82,25 @@ class OpenShiftOAuthenticator(OAuthenticator):
     def _openshift_auth_api_url_default(self):
         auth_info_url = f"{self.openshift_url}/.well-known/oauth-authorization-server"
 
-        # Makes a request like OAuthenticator.httpfetch would but non-async as
-        # this code run during startup when we can't yet use async
-        # functionality.
-        client = HTTPClient()
-        req = HTTPRequest(auth_info_url, **self.http_request_kwargs)
-        resp = client.fetch(req)
-        resp_json = json.loads(resp.body.decode("utf8", "replace"))
+        # This code run during startup when we can't yet use async
+        # functionality. Due to this, Tornado's HTTPClient instead of
+        # AsyncHTTPClient is used. With HTTPClient we can still re-use
+        # `http_request_args` specific to Tornado's HTTP clients.
+        #
+        # A dedicated thread is used for HTTPClient because of
+        # https://github.com/tornadoweb/tornado/issues/2325#issuecomment-375972739.
+        #
+        def fetch_auth_info():
+            client = HTTPClient()
+            req = HTTPRequest(auth_info_url, **self.http_request_kwargs)
+            resp = client.fetch(req)
+            resp_json = json.loads(resp.body.decode("utf8", "replace"))
+            return resp_json
 
-        return resp_json.get('issuer')
+        with concurrent.futures.ThreadPoolExecutor(1) as executor:
+            future = executor.submit(fetch_auth_info)
+            return_value = future.result()
+            return return_value.get("issuer")
 
     @default("authorize_url")
     def _authorize_url_default(self):
