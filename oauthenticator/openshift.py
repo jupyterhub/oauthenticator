@@ -97,7 +97,7 @@ class OpenShiftOAuthenticator(OAuthenticator):
             resp_json = json.loads(resp.body.decode("utf8", "replace"))
             return resp_json
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(1) as executor:
             future = executor.submit(fetch_auth_info)
             return_value = future.result()
             return return_value.get("issuer")
