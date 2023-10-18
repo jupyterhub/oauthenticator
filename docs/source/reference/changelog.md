@@ -8,6 +8,39 @@ command line for details.
 
 ## 16.1
 
+### [16.1.1] - 2023-10-18
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.1.0...16.1.1))
+
+```{note}
+The OkpyOAuthenticator was removed in this patch release as its believed to have
+no users. If you were an active user, please re-configure to use
+GenericOAuthenticator [like described in this
+comment](https://github.com/jupyterhub/oauthenticator/pull/691#issuecomment-1753681643)
+and let us know in another comment.
+```
+
+#### Bugs fixed
+
+- [OpenShift] Fix fetching of default openshift_auth_api_url [#694](https://github.com/jupyterhub/oauthenticator/pull/694) ([@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics), [@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+- [Okpy] Remove the authenticator as it is no longer used [#691](https://github.com/jupyterhub/oauthenticator/pull/691) ([@yuvipanda](https://github.com/yuvipanda), [@GeorgianaElena](https://github.com/GeorgianaElena), [@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+
+#### Continuous integration improvements
+
+- Bump actions/checkout from 3 to 4 [#687](https://github.com/jupyterhub/oauthenticator/pull/687) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-09-28&to=2023-10-18&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-09-28..2023-10-18&type=Issues)) | @do-it-tim ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ado-it-tim+updated%3A2023-09-28..2023-10-18&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2023-09-28..2023-10-18&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2023-09-28..2023-10-18&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-09-28..2023-10-18&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2023-09-28..2023-10-18&type=Issues))
+
 ### [16.1.0] - 2023-09-28
 
 #### New features added
@@ -776,6 +809,7 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 - First release
 
 [unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...HEAD
+[16.1.1]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...16.1.1
 [16.1.0]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...16.1.0
 [16.0.7]: https://github.com/jupyterhub/oauthenticator/compare/16.0.6...16.0.7
 [16.0.6]: https://github.com/jupyterhub/oauthenticator/compare/16.0.5...16.0.6
