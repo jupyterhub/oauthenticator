@@ -64,7 +64,7 @@ omit = [
 github_url = "https://github.com/jupyterhub/oauthenticator"
 
 [tool.tbump.version]
-current = "16.1.1.dev"
+current = "16.1.1"
 regex = '''
     (?P<major>\d+)
     \.
