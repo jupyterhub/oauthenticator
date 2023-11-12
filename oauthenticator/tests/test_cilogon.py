@@ -73,7 +73,7 @@ async def test_cilogon(
     print(f"Running test variation id {test_variation_id}")
     c = Config()
     c.CILogonOAuthenticator = Config(class_config)
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         "https://some-idp.com/login/oauth/authorize": {
             "username_derivation": {
                 "username_claim": "name",
@@ -364,7 +364,7 @@ async def test_cilogon(
         ),
     ],
 )
-async def test_cilogon_allowed_idps(
+async def test_cilogon_idps(
     cilogon_client,
     test_variation_id,
     idp_config,
@@ -377,7 +377,7 @@ async def test_cilogon_allowed_idps(
     c = Config()
     c.CILogonOAuthenticator = Config(class_config)
     test_idp = "https://some-idp.com/login/oauth/authorize"
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         test_idp: idp_config,
     }
     authenticator = CILogonOAuthenticator(config=c)
@@ -409,7 +409,7 @@ async def test_cilogon_allowed_idps(
             {"idp_whitelist": ["dummy"]},
             {},
             logging.ERROR,
-            "CILogonOAuthenticator.idp_whitelist is deprecated in CILogonOAuthenticator 0.12.0, use CILogonOAuthenticator.allowed_idps instead",
+            "CILogonOAuthenticator.idp_whitelist is deprecated in CILogonOAuthenticator 0.12.0, use CILogonOAuthenticator.idps instead",
         ),
         (
             "idp",
@@ -423,28 +423,47 @@ async def test_cilogon_allowed_idps(
             {"strip_idp_domain": True},
             {},
             logging.ERROR,
-            "CILogonOAuthenticator.strip_idp_domain is deprecated in CILogonOAuthenticator 15.0.0, use CILogonOAuthenticator.allowed_idps instead",
+            "CILogonOAuthenticator.strip_idp_domain is deprecated in CILogonOAuthenticator 15.0.0, use CILogonOAuthenticator.idps instead",
         ),
         (
             "shown_idps",
             {"shown_idps": ["dummy"]},
             {},
             logging.ERROR,
-            "CILogonOAuthenticator.shown_idps is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.allowed_idps instead",
+            "CILogonOAuthenticator.shown_idps is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
         ),
         (
             "username_claim",
             {"username_claim": "dummy"},
             {},
             logging.ERROR,
-            "CILogonOAuthenticator.username_claim is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.allowed_idps instead",
+            "CILogonOAuthenticator.username_claim is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
         ),
         (
             "additional_username_claims",
             {"additional_username_claims": ["dummy"]},
             {},
             logging.ERROR,
-            "CILogonOAuthenticator.additional_username_claims is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.allowed_idps instead",
+            "CILogonOAuthenticator.additional_username_claims is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
+        ),
+        (
+            "allowed_idps",
+            {
+                "allowed_idps": {
+                    "https://github.com/login/oauth/authorize": {
+                        "username_derivation": {"username_claim": "email"}
+                    }
+                }
+            },
+            {
+                "idps": {
+                    "https://github.com/login/oauth/authorize": {
+                        "username_derivation": {"username_claim": "email"}
+                    }
+                }
+            },
+            logging.WARNING,
+            "CILogonOAuthenticator.allowed_idps is deprecated in CILogonOAuthenticator 16.1.0, use CILogonOAuthenticator.idps instead",
         ),
     ],
 )
@@ -480,21 +499,21 @@ async def test_deprecated_config(
     assert expected_log_tuple in captured_log_tuples
 
 
-async def test_config_allowed_idps_wrong_type(caplog):
+async def test_config_idps_wrong_type(caplog):
     """
     Test alllowed_idps is a dict
     """
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = ['pink']
+    c.CILogonOAuthenticator.idps = ['pink']
 
     with raises(TraitError):
         CILogonOAuthenticator(config=c)
 
 
-async def test_config_allowed_idps_required_username_derivation(caplog):
-    # Test username_derivation is a required field of allowed_idps
+async def test_config_idps_required_username_derivation(caplog):
+    # Test username_derivation is a required field of idps
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://github.com/login/oauth/authorize': {},
     }
 
@@ -502,13 +521,13 @@ async def test_config_allowed_idps_required_username_derivation(caplog):
         CILogonOAuthenticator(config=c)
 
 
-async def test_config_allowed_idps_invalid_entity_id(caplog):
+async def test_config_idps_invalid_entity_id(caplog):
     """
-    Test allowed_idps keys cannot be domains, but only valid CILogon entity ids,
+    Test idps keys cannot be domains, but only valid CILogon entity ids,
     i.e. only fully formed URLs
     """
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'uni.edu': {
             'username_derivation': {
                 'username_claim': 'email',
@@ -531,18 +550,18 @@ async def test_config_allowed_idps_invalid_entity_id(caplog):
     assert expected_deprecation_error in log_msgs
 
 
-async def test_config_allowed_idps_invalid_type(caplog):
+async def test_config_idps_invalid_type(caplog):
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://github.com/login/oauth/authorize': 'should-be-a-dict'
     }
     with raises(ValidationError, match="'should-be-a-dict' is not of type 'object'"):
         CILogonOAuthenticator(config=c)
 
 
-async def test_config_allowed_idps_unrecognized_options(caplog):
+async def test_config_idps_unrecognized_options(caplog):
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://github.com/login/oauth/authorize': {
             'username_derivation': {'a': 1, 'b': 2}
         }
@@ -551,9 +570,9 @@ async def test_config_allowed_idps_unrecognized_options(caplog):
         CILogonOAuthenticator(config=c)
 
 
-async def test_config_allowed_idps_domain_required(caplog):
+async def test_config_idps_domain_required(caplog):
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://github.com/login/oauth/authorize': {
             'username_derivation': {
                 'username_claim': 'email',
@@ -565,9 +584,9 @@ async def test_config_allowed_idps_domain_required(caplog):
         CILogonOAuthenticator(config=c)
 
 
-async def test_config_allowed_idps_prefix_required(caplog):
+async def test_config_idps_prefix_required(caplog):
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://github.com/login/oauth/authorize': {
             'username_derivation': {
                 'username_claim': 'email',
@@ -584,7 +603,7 @@ async def test_config_scopes_validation():
     Test that required scopes are appended if not configured.
     """
     c = Config()
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://some-idp.com/login/oauth/authorize': {
             'username_derivation': {
                 'username_claim': 'email',
@@ -600,14 +619,14 @@ async def test_config_scopes_validation():
     assert authenticator.scope == expected_scopes
 
 
-async def test_allowed_idps_username_derivation_actions(cilogon_client):
+async def test_idps_username_derivation_actions(cilogon_client):
     """
-    Tests all `allowed_idps[].username_derivation.action` config choices:
+    Tests all `idps[].username_derivation.action` config choices:
     `strip_idp_domain`, `prefix`, and no action specified.
     """
     c = Config()
     c.CILogonOAuthenticator.allow_all = True
-    c.CILogonOAuthenticator.allowed_idps = {
+    c.CILogonOAuthenticator.idps = {
         'https://strip-idp-domain.example.com/login/oauth/authorize': {
             'username_derivation': {
                 'username_claim': 'email',
