@@ -717,7 +717,7 @@ class OAuthenticator(Authenticator):
         Called by the :meth:`oauthenticator.OAuthenticator.token_to_user`
         """
 
-        # token_type is case-sensitive, but the headers are
+        # token_type is case-insensitive, but the headers are case-sensitive
         if token_type.lower() == "bearer":
             auth_token_type = "Bearer"
         else:
