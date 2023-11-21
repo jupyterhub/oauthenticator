@@ -15,6 +15,24 @@ from .oauth2 import OAuthenticator, OAuthLoginHandler
 yaml = YAML(typ="safe", pure=True)
 
 
+def _get_select_idp_param(allowed_idps):
+    """
+    The "selected_idp" query parameter included when the user is redirected to
+    CILogon should be a comma separated string of idps to choose from, where the
+    first entry is pre-selected as the default choice. The ordering of the
+    remaining idps has no meaning.
+    """
+    # pick the first idp marked as default, or fallback to the first idp
+    default_keys = [k for k, v in allowed_idps.items() if v.get("default")]
+    default_key = next(iter(default_keys), next(iter(allowed_idps)))
+
+    # put the default idp first followed by the other idps
+    other_keys = [k for k, _ in allowed_idps.items() if k != default_key]
+    selected_idp = ",".join([default_key] + other_keys)
+
+    return selected_idp
+
+
 class CILogonLoginHandler(OAuthLoginHandler):
     """See https://www.cilogon.org/oidc for general information."""
 
@@ -29,10 +47,9 @@ class CILogonLoginHandler(OAuthLoginHandler):
         # include it, we then modify kwargs' extra_params dictionary
         extra_params = kwargs.setdefault('extra_params', {})
 
-        # selected_idp should be a comma separated string
-        allowed_idps = ",".join(self.authenticator.allowed_idps.keys())
-        extra_params["selected_idp"] = allowed_idps
-
+        extra_params["selected_idp"] = _get_select_idp_param(
+            self.authenticator.allowed_idps
+        )
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
 
@@ -124,6 +141,7 @@ class CILogonOAuthenticator(OAuthenticator):
                         "domain": "utoronto.ca",
                     },
                     "allow_all": True,
+                    "default": True,
                 },
                 "http://google.com/accounts/o8/id": {
                     "username_derivation": {
@@ -150,6 +168,9 @@ class CILogonOAuthenticator(OAuthenticator):
         This is a description of the configuration you can pass to
         `allowed_idps`.
 
+        * `default`: bool (optional)
+            Determines the identity provider to be pre-selected in a list for
+            users arriving to CILogons login screen.
         * `username_derivation`: string (required)
             * `username_claim`: string (required)
                 The claim in the `userinfo` response from which to define the
