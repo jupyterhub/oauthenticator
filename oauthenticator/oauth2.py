@@ -716,10 +716,17 @@ class OAuthenticator(Authenticator):
         Builds and returns the headers to be used in the userdata request.
         Called by the :meth:`oauthenticator.OAuthenticator.token_to_user`
         """
+
+        # token_type is case-insensitive, but the headers are case-sensitive
+        if token_type.lower() == "bearer":
+            auth_token_type = "Bearer"
+        else:
+            auth_token_type = token_type
+
         return {
             "Accept": "application/json",
             "User-Agent": "JupyterHub",
-            "Authorization": f"{token_type} {access_token}",
+            "Authorization": f"{auth_token_type} {access_token}",
         }
 
     def build_token_info_request_headers(self):
