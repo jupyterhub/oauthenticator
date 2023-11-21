@@ -231,6 +231,19 @@ async def test_cilogon(
             False,
             None,
         ),
+        (
+            "A - allowed by allowed_domains via a wildcard",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                },
+                "allowed_domains": ["allowed-domain.org", "*.allowed-domain.org"],
+            },
+            {},
+            "user1@sub.allowed-domain.org",
+            True,
+            None,
+        ),
         # test of allowed_users and admin_users together with
         # username_derivation actions to verify the final usernames is what
         # matters when describing allowed_users and admin_users
