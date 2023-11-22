@@ -236,6 +236,11 @@ class CILogonOAuthenticator(OAuthenticator):
                     "See https://cilogon.org/idplist for the list of EntityIDs of each IDP."
                 )
 
+            # Make allowed_domains lowercase
+            idp_config["allowed_domains"] = [
+                ad.lower() for ad in idp_config.get("allowed_domains", [])
+            ]
+
         return idps
 
     skin = Unicode(
