@@ -6,7 +6,7 @@ from pytest import fixture, mark, raises
 from traitlets.config import Config
 from traitlets.traitlets import TraitError
 
-from ..cilogon import CILogonOAuthenticator
+from ..cilogon import CILogonOAuthenticator, _get_select_idp_param
 from .mocks import setup_oauth_mock
 
 
@@ -688,3 +688,44 @@ async def test_allowed_idps_username_derivation_actions(cilogon_client):
     auth_model = await authenticator.get_authenticated_user(handler, None)
     print(json.dumps(auth_model, sort_keys=True, indent=4))
     assert auth_model['name'] == 'jtkirk'
+
+
+@mark.parametrize(
+    "test_variation_id,allowed_idps,expected_return_value",
+    [
+        (
+            "default-specified",
+            {
+                'https://example4.org': {},
+                'https://example3.org': {'default': False},
+                'https://example2.org': {'default': True},
+                'https://example1.org': {},
+            },
+            "https://example2.org,https://example4.org,https://example3.org,https://example1.org",
+        ),
+        (
+            "no-truthy-default-specified",
+            {
+                'https://example4.org': {},
+                'https://example3.org': {'default': False},
+                'https://example2.org': {},
+                'https://example1.org': {},
+            },
+            "https://example4.org,https://example3.org,https://example2.org,https://example1.org",
+        ),
+        (
+            "no-default-specified-pick-first-entry",
+            {
+                'https://example4.org': {},
+                'https://example3.org': {},
+                'https://example2.org': {},
+                'https://example1.org': {},
+            },
+            "https://example4.org,https://example3.org,https://example2.org,https://example1.org",
+        ),
+    ],
+)
+async def test__get_selected_idp_param(
+    test_variation_id, allowed_idps, expected_return_value
+):
+    assert _get_select_idp_param(allowed_idps) == expected_return_value
