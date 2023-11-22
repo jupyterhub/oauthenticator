@@ -192,14 +192,27 @@ class CILogonOAuthenticator(OAuthenticator):
             Configuring this allows all users authenticating with this identity
             provider.
         * `allowed_domains`: list of strings
-            Configuring this together with a `username_claim` that is an email
-            address enables users to be allowed if their `username_claim` ends
-            with `@` followed by a domain in this list.
+            Allows users associated with a listed domain to sign in.
 
             Use of wildcards `*` and a bit more is supported via Python's
             `fnmatch` function since version 16.2. Setting `allowed_domains` to
             `["jupyter.org", "*.jupyter.org"]` would for example allow users
             with `jovyan@jupyter.org` or `jovyan@hub.jupyter.org` usernames.
+
+            The domain the user is associated with is based on the username by
+            default in version 16, but this can be reconfigured to be based on a
+            claim in the `userinfo` response via `allowed_domains_claim`. The
+            domain is treated case insensitive and can either be directly
+            specified by the claim's value or extracted from an email string.
+        * `allowed_domains_claim`: string (optional)
+            This configuration represents the claim in the `userinfo` response
+            to identify a domain that could allow a user to sign in via
+            `allowed_domains`.
+
+            The claim can defaults to the username claim in version 16, but this
+            will change to "email" in version 17.
+
+            .. versionadded:: 16.2
 
         .. versionchanged:: 15.0
 
@@ -396,8 +409,20 @@ class CILogonOAuthenticator(OAuthenticator):
 
         idp_allowed_domains = self.allowed_idps[user_idp].get("allowed_domains")
         if idp_allowed_domains:
-            unprocessed_username = self._user_info_to_unprocessed_username(user_info)
-            user_domain = unprocessed_username.split("@", 1)[1].lower()
+            idp_allowed_domains_claim = self.allowed_idps[user_idp].get(
+                "allowed_domains_claim"
+            )
+            if idp_allowed_domains_claim:
+                raw_user_domain = user_info.get(idp_allowed_domains_claim)
+                if not raw_user_domain:
+                    message = f"Configured allowed_domains_claim {idp_allowed_domains_claim} for {user_idp} was not found in the response {user_info.keys()}"
+                    self.log.error(message)
+                    raise web.HTTPError(500, message)
+            else:
+                raw_user_domain = self._user_info_to_unprocessed_username(user_info)
+
+            # refine a domain from a string that possibly looks like an email
+            user_domain = raw_user_domain.split("@")[-1].lower()
 
             for ad in idp_allowed_domains:
                 # fnmatch allow us to use wildcards like * and ?, but
