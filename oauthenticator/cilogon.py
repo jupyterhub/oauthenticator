@@ -2,6 +2,7 @@
 A JupyterHub authenticator class for use with CILogon as an identity provider.
 """
 import os
+from fnmatch import fnmatch
 from urllib.parse import urlparse
 
 import jsonschema
@@ -173,6 +174,11 @@ class CILogonOAuthenticator(OAuthenticator):
             Configuring this together with a `username_claim` that is an email
             address enables users to be allowed if their `username_claim` ends
             with `@` followed by a domain in this list.
+
+            Use of wildcards `*` and a bit more is supported via Python's
+            `fnmatch` function since version 16.2. Setting `allowed_domains` to
+            `["jupyter.org", "*.jupyter.org"]` would for example allow users
+            with `jovyan@jupyter.org` or `jovyan@hub.jupyter.org` usernames.
 
         .. versionchanged:: 15.0
 
@@ -366,8 +372,17 @@ class CILogonOAuthenticator(OAuthenticator):
         if idp_allowed_domains:
             unprocessed_username = self._user_info_to_unprocessed_username(user_info)
             user_domain = unprocessed_username.split("@", 1)[1].lower()
-            if user_domain in idp_allowed_domains:
-                return True
+
+            for ad in idp_allowed_domains:
+                # fnmatch allow us to use wildcards like * and ?, but
+                # not the full regex. For simple domain matching this is
+                # good enough. If we were to use regexes instead, people
+                # will have to escape all their '.'s, and since that is
+                # actually going to match 'any character' it is a
+                # possible security hole. For details see
+                # https://docs.python.org/3/library/fnmatch.html.
+                if fnmatch(user_domain, ad):
+                    return True
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False
