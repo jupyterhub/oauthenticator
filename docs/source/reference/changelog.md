@@ -6,6 +6,35 @@ command line for details.
 
 ## [Unreleased]
 
+## 16.2
+
+### [16.2.0] - 2023-11-23
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.1.1...16.2.0))
+
+#### New features added
+
+- [CILogon] Add idp config `allowed_domains_claim` for use with `allowed_domains` [#702](https://github.com/jupyterhub/oauthenticator/pull/702) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
+- [CILogon] allow fnmatch based expressions in `allowed_domains`, such as `*.jupyter.org` [#701](https://github.com/jupyterhub/oauthenticator/pull/701) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena), [@minrk](https://github.com/minrk))
+- [CILogon] add config to specify default idp under allowed_idps [#699](https://github.com/jupyterhub/oauthenticator/pull/699) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Bugs fixed
+
+- [All] Correcting Bearer Authorization header [#698](https://github.com/jupyterhub/oauthenticator/pull/698) ([@yaleman](https://github.com/yaleman), [@GeorgianaElena](https://github.com/GeorgianaElena), [@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio))
+
+#### Continuous integration improvements
+
+- ci: add test of python 3.12 [#700](https://github.com/jupyterhub/oauthenticator/pull/700) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-10-18&to=2023-11-23&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-10-18..2023-11-23&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2023-10-18..2023-11-23&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2023-10-18..2023-11-23&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-10-18..2023-11-23&type=Issues)) | @yaleman ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayaleman+updated%3A2023-10-18..2023-11-23&type=Issues))
+
 ## 16.1
 
 ### [16.1.1] - 2023-10-18
@@ -808,7 +837,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.2.0...HEAD
+[16.2.0]: https://github.com/jupyterhub/oauthenticator/compare/16.1.1...16.2.0
 [16.1.1]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...16.1.1
 [16.1.0]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...16.1.0
 [16.0.7]: https://github.com/jupyterhub/oauthenticator/compare/16.0.6...16.0.7
