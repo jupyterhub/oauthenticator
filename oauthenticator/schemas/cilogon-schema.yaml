@@ -13,6 +13,8 @@ properties:
     type: array
     items:
       type: string
+  allowed_domains_claim:
+    type: string
   username_derivation:
     type: object
     additionalProperties: false

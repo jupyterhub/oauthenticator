@@ -151,7 +151,7 @@ async def test_cilogon(
                 "username_derivation": {
                     "username_claim": "email",
                 },
-                "allowed_domains": ["allowed-domain.org"],
+                "allowed_domains": ["ALLOWED-domain.org"],
             },
             {},
             "user1@allowed-domain.org",
@@ -238,6 +238,20 @@ async def test_cilogon(
                     "username_claim": "email",
                 },
                 "allowed_domains": ["allowed-domain.org", "*.allowed-domain.org"],
+            },
+            {},
+            "user1@sub.allowed-domain.org",
+            True,
+            None,
+        ),
+        (
+            "B - allowed by allowed_domains and allowed_domains_claim",
+            {
+                "username_derivation": {
+                    "username_claim": "email",
+                },
+                "allowed_domains": ["allowed-domain.org", "*.allowed-domain.org"],
+                "allowed_domains_claim": "email",
             },
             {},
             "user1@sub.allowed-domain.org",
