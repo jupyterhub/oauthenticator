@@ -8,6 +8,14 @@ command line for details.
 
 ## 16.2
 
+### [16.2.1] - 2023-11-27
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.2.0...16.2.1))
+
+#### Bugs fixed
+
+- [CILogon] Fix missing schema entry for default under allowed_idps [#704](https://github.com/jupyterhub/oauthenticator/pull/704) ([@consideRatio](https://github.com/consideRatio))
+
 ### [16.2.0] - 2023-11-23
 
 ([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.1.1...16.2.0))
@@ -837,7 +845,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.2.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.2.1...HEAD
+[16.2.1]: https://github.com/jupyterhub/oauthenticator/compare/16.2.0...16.2.1
 [16.2.0]: https://github.com/jupyterhub/oauthenticator/compare/16.1.1...16.2.0
 [16.1.1]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...16.1.1
 [16.1.0]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...16.1.0
