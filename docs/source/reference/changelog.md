@@ -8,9 +8,13 @@ command line for details.
 
 ## 16.2
 
-### [16.2.0] - 2023-11-23
+### [16.2.1] - 2023-11-27
 
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.1.1...16.2.0))
+#### Bugs fixed
+
+- [CILogon] Fix missing schema entry for default under allowed_idps [#704](https://github.com/jupyterhub/oauthenticator/pull/704) ([@consideRatio](https://github.com/consideRatio))
+
+### [16.2.0] - 2023-11-23
 
 #### New features added
 
@@ -38,8 +42,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ## 16.1
 
 ### [16.1.1] - 2023-10-18
-
-([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.1.0...16.1.1))
 
 ```{note}
 The OkpyOAuthenticator was removed in this patch release as its believed to have
@@ -837,7 +839,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.2.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.2.1...HEAD
+[16.2.1]: https://github.com/jupyterhub/oauthenticator/compare/16.2.0...16.2.1
 [16.2.0]: https://github.com/jupyterhub/oauthenticator/compare/16.1.1...16.2.0
 [16.1.1]: https://github.com/jupyterhub/oauthenticator/compare/16.1.0...16.1.1
 [16.1.0]: https://github.com/jupyterhub/oauthenticator/compare/16.0.7...16.1.0
