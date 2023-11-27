@@ -636,6 +636,7 @@ async def test_allowed_idps_username_derivation_actions(cilogon_client):
     c.CILogonOAuthenticator.allow_all = True
     c.CILogonOAuthenticator.allowed_idps = {
         'https://strip-idp-domain.example.com/login/oauth/authorize': {
+            'default': True,
             'username_derivation': {
                 'username_claim': 'email',
                 'action': 'strip_idp_domain',
