@@ -25,6 +25,10 @@ class GenericOAuthenticator(OAuthenticator):
 
         Can be a string key name (use periods for nested keys), or a callable
         that accepts the returned json (as a dict) and returns the groups list.
+
+        This configures how group membership in the upstream provider is determined
+        for use by `allowed_groups`, `admin_groups`, etc.
+        It has no effect on its own, and is not related to users' _JupyterHub_ group membership.
         """,
     )
 
