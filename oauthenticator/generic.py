@@ -27,8 +27,8 @@ class GenericOAuthenticator(OAuthenticator):
         that accepts the returned json (as a dict) and returns the groups list.
 
         This configures how group membership in the upstream provider is determined
-        for use by `allowed_groups`, `admin_groups`, etc.
-        It has no effect on its own, and is not related to users' _JupyterHub_ group membership.
+        for use by `allowed_groups`, `admin_groups`, etc. If `manage_groups` is True,
+        this will also determine users' _JupyterHub_ group membership.
         """,
     )
 
@@ -153,16 +153,18 @@ class GenericOAuthenticator(OAuthenticator):
         Sets admin status to True or False if `admin_groups` is configured and
         the user isn't part of `admin_users` or `admin_groups`. Note that
         leaving it at None makes users able to retain an admin status while
-        setting it to False makes it be revoked.
+        setting it to False makes it be revoked. Also applies groups.
         """
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        user_groups = self.get_user_groups(user_info)
+        auth_model["groups"] = user_groups
+
         if auth_model["admin"]:
             # auth_model["admin"] being True means the user was in admin_users
             return auth_model
 
         if self.admin_groups:
             # admin status should in this case be True or False, not None
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = self.get_user_groups(user_info)
             auth_model["admin"] = bool(user_groups & self.admin_groups)
 
         return auth_model
