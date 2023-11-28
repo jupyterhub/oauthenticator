@@ -153,11 +153,16 @@ class GenericOAuthenticator(OAuthenticator):
         Sets admin status to True or False if `admin_groups` is configured and
         the user isn't part of `admin_users` or `admin_groups`. Note that
         leaving it at None makes users able to retain an admin status while
-        setting it to False makes it be revoked. Also applies groups.
+        setting it to False makes it be revoked.
+
+        Also populates groups if `manage_groups` is set.
         """
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-        user_groups = self.get_user_groups(user_info)
-        auth_model["groups"] = user_groups
+        if self.manage_groups or self.admin_groups:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = self.get_user_groups(user_info)
+
+        if self.manage_groups:
+            auth_model["groups"] = user_groups
 
         if auth_model["admin"]:
             # auth_model["admin"] being True means the user was in admin_users
