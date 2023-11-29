@@ -39,14 +39,12 @@ This is done by setting the `AzureAdOAuthenticator.groups_claim` to the name of 
 group-membership.
 
 ```python
-import os
-from oauthenticator.azuread import AzureAdOAuthenticator
-
-c.JupyterHub.authenticator_class = AzureAdOAuthenticator
+c.JupyterHub.authenticator_class = "azuread"
 
 # {...} other settings (see above)
 
-c.AzureAdOAuthenticator.user_groups_claim = 'groups'
+c.AzureAdOAuthenticator.manage_groups = True
+c.AzureAdOAuthenticator.user_groups_claim = 'groups'  # this is the default
 ```
 
 This requires Azure AD to be configured to include the group-membership in the access token.

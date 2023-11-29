@@ -22,7 +22,13 @@ class AzureAdOAuthenticator(OAuthenticator):
         return "name"
 
     user_groups_claim = Unicode(
-        "", config=True, help="Name of claim containing user group memberships"
+        "groups",
+        config=True,
+        help="""
+        Name of claim containing user group memberships.
+
+        Will populate JupyterHub groups if Authenticator.manage_groups is True.
+        """,
     )
 
     tenant_id = Unicode(
@@ -51,9 +57,9 @@ class AzureAdOAuthenticator(OAuthenticator):
     async def update_auth_model(self, auth_model, **kwargs):
         auth_model = await super().update_auth_model(auth_model, **kwargs)
 
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-        if self.user_groups_claim:
-            auth_model["groups"] = user_info.get(self.user_groups_claim)
+        if getattr(self, "manage_groups", False):
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            auth_model["groups"] = user_info[self.user_groups_claim]
 
         return auth_model
 
