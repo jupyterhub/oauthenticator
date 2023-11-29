@@ -1,5 +1,5 @@
 """
-Custom Authenticator to use Globus OAuth2 with JupyterHub
+A JupyterHub authenticator class for use with Globus as an identity provider.
 """
 import base64
 import os
@@ -7,7 +7,7 @@ import pickle
 import urllib
 
 from jupyterhub.auth import LocalAuthenticator
-from tornado.web import HTTPError
+from tornado import web
 from traitlets import Bool, List, Set, Unicode, default
 
 from .oauth2 import OAuthenticator, OAuthLogoutHandler
@@ -59,13 +59,19 @@ class GlobusLogoutHandler(OAuthLogoutHandler):
 
 
 class GlobusOAuthenticator(OAuthenticator):
-    """The Globus OAuthenticator handles both authorization and passing
-    transfer tokens to the spawner."""
+    """
+    The Globus OAuthenticator handles authentication, authorization, and sets
+    transfer tokens on the spawner environment variables via a pre_spawn_start
+    hook.
+    """
 
-    login_service = 'Globus'
     logout_handler = GlobusLogoutHandler
 
     user_auth_state_key = "globus_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Globus")
 
     @default("userdata_url")
     def _userdata_url_default(self):
@@ -81,31 +87,44 @@ class GlobusOAuthenticator(OAuthenticator):
 
     revocation_url = Unicode(
         "https://auth.globus.org/v2/oauth2/token/revoke",
-        help="Globus URL to revoke live tokens.",
         config=True,
+        help="""
+        Globus URL to revoke live tokens.
+        """,
     )
+
     globus_groups_url = Unicode(
         "https://groups.api.globus.org/v2/groups/my_groups",
-        help="Globus URL to get list of user's Groups.",
         config=True,
+        help="""
+        Globus URL to get list of user's Groups.
+        """,
     )
 
     identity_provider = Unicode(
-        help="""Restrict which institution a user
-    can use to login (GlobusID, University of Hogwarts, etc.). This should
-    be set in the app at developers.globus.org, but this acts as an additional
-    check to prevent unnecessary account creation."""
-    ).tag(config=True)
+        config=True,
+        help="""
+        Restrict which institution (domain) a user can use to login (GlobusID,
+        University of Hogwarts, etc.). This should be set in the app at
+        developers.globus.org, but this acts as an additional check to prevent
+        unnecessary account creation.
+
+        Note that users with an associated email domains must still be allowed
+        via another config, such as `allow_all`.
+        """,
+    )
 
     def _identity_provider_default(self):
         return os.getenv('IDENTITY_PROVIDER', '')
 
     username_from_email = Bool(
         False,
-        help="""Create username from email address, not preferred username. If
-        an identity provider is specified, email address must be from the same
-        domain. Email scope will be set automatically.""",
         config=True,
+        help="""
+        Create username from email address, not preferred username. If an
+        identity provider is specified, email address must be from the same
+        domain. Email scope will be set automatically.
+        """,
     )
 
     @default("username_claim")
@@ -115,9 +134,12 @@ class GlobusOAuthenticator(OAuthenticator):
         return "preferred_username"
 
     exclude_tokens = List(
-        help="""Exclude tokens from being passed into user environments
-        when they start notebooks, Terminals, etc."""
-    ).tag(config=True)
+        config=True,
+        help="""
+        Exclude tokens from being passed into user environments when they start
+        notebooks, Terminals, etc.
+        """,
+    )
 
     def _exclude_tokens_default(self):
         return ['auth.globus.org', 'groups.api.globus.org']
@@ -137,40 +159,57 @@ class GlobusOAuthenticator(OAuthenticator):
         return scopes
 
     globus_local_endpoint = Unicode(
-        help="""If Jupyterhub is also a Globus
-    endpoint, its endpoint id can be specified here."""
-    ).tag(config=True)
+        config=True,
+        help="""
+        If JupyterHub is also a Globus endpoint, its endpoint id can be
+        specified here.
+        """,
+    )
 
     def _globus_local_endpoint_default(self):
         return os.getenv('GLOBUS_LOCAL_ENDPOINT', '')
 
     revoke_tokens_on_logout = Bool(
-        help="""Revoke tokens so they cannot be used again. Single-user servers
-        MUST be restarted after logout in order to get a fresh working set of
-        tokens."""
-    ).tag(config=True)
+        config=True,
+        help="""
+        Revoke tokens so they cannot be used again. Single-user servers MUST be
+        restarted after logout in order to get a fresh working set of tokens.
+        """,
+    )
 
     def _revoke_tokens_on_logout_default(self):
         return False
 
     allowed_globus_groups = Set(
-        help="""Allow members of defined Globus Groups to access JupyterHub. Users in an
-        admin Globus Group are also automatically allowed. Groups are specified with their UUIDs. Setting this will
-        add the Globus Groups scope."""
-    ).tag(config=True)
+        config=True,
+        help="""
+        Allow members of selected Globus groups to sign in. Globus groups should
+        be specified using their UUIDs.
+
+        If this is configured, the default value of the scope configuration is
+        appended with the scope
+        `urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships`.
+        """,
+    )
 
     admin_globus_groups = Set(
-        help="""Set members of defined Globus Groups as JupyterHub admin users.
-        These users are automatically allowed to login to JupyterHub. Groups are specified with
-        their UUIDs. Setting this will add the Globus Groups scope."""
-    ).tag(config=True)
+        config=True,
+        help="""
+        Allow members of selected Globus groups to sign in and consider them as
+        JupyterHub admins. Globus groups should be specified using their UUIDs.
 
-    @staticmethod
-    def check_user_in_groups(member_groups, allowed_groups):
-        return bool(set(member_groups) & set(allowed_groups))
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+
+        If this is configured, the default value of the scope configuration is
+        appended with the scope
+        `urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships`.
+        """,
+    )
 
     async def pre_spawn_start(self, user, spawner):
-        """Add tokens to the spawner whenever the spawner starts a notebook.
+        """
+        Add tokens to the spawner whenever the spawner starts a notebook.
         This will allow users to create a transfer client:
         globus-sdk-python.readthedocs.io/en/stable/tutorial/#tutorial-step4
         """
@@ -212,7 +251,6 @@ class GlobusOAuthenticator(OAuthenticator):
         accounts) will correspond to a Globus User ID, so foouser@globusid.org
         will have the 'foouser' account in Jupyterhub.
         """
-
         tokens = self.get_globus_tokens(token_info)
         # historically, tokens have been organized by resource server for convenience.
         # If multiple scopes are requested from the same resource server, they will be
@@ -230,8 +268,8 @@ class GlobusOAuthenticator(OAuthenticator):
             self.user_auth_state_key: user_info,
         }
 
-    async def get_users_groups_ids(self, tokens):
-        user_group_ids = set()
+    async def _fetch_users_groups(self, tokens):
+        user_groups = set()
         # Get Groups access token, may not be in dict headed to auth state
         for token_dict in tokens:
             if token_dict['resource_server'] == 'groups.api.globus.org':
@@ -244,44 +282,69 @@ class GlobusOAuthenticator(OAuthenticator):
         )
         # Build set of Group IDs
         for group in groups_resp:
-            user_group_ids.add(group['id'])
+            user_groups.add(group['id'])
 
-        return user_group_ids
+        return user_groups
 
-    async def user_is_authorized(self, auth_model):
-        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+    async def check_allowed(self, username, auth_model):
+        """
+        Overrides the OAuthenticator.check_allowed to also allow users part of
+        `allowed_globus_groups`.
+        """
+        # A workaround for JupyterHub < 5.0 described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
 
-        if self.allowed_globus_groups or self.admin_globus_groups:
-            # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            user_group_ids = await self.get_users_groups_ids(tokens)
-            if not self.check_user_in_groups(
-                user_group_ids, self.allowed_globus_groups
-            ):
-                if not self.check_user_in_groups(
-                    user_group_ids, self.admin_globus_groups
-                ):
-                    username = self.user_info_to_username(
-                        auth_model["auth_state"][self.user_auth_state_key]
-                    )
-                    self.log.warning(f"{username} not in an allowed Globus Group")
-                    return False
+        # before considering allowing a username by being recognized in a list
+        # of usernames or similar, we must ensure that the authenticated user is
+        # from an allowed identity provider domain.
+        if self.identity_provider:
+            # It's possible for identity provider domains to be namespaced
+            # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_domain = user_info.get(self.username_claim).split('@', 1)[-1]
+            if user_domain != self.identity_provider:
+                message = f"This site is restricted to {self.identity_provider} accounts. Link your account at app.globus.org/account."
+                self.log.warning(message)
+                raise web.HTTPError(403, message)
 
-        return True
+        if await super().check_allowed(username, auth_model):
+            return True
+
+        if self.allowed_globus_groups:
+            user_groups = set(auth_model["auth_state"]["globus_groups"])
+            if user_groups & self.allowed_globus_groups:
+                return True
+            self.log.warning(f"{username} not in an allowed Globus Group")
+
+        # users should be explicitly allowed via config, otherwise they aren't
+        return False
 
     async def update_auth_model(self, auth_model):
-        username = self.user_info_to_username(
-            auth_model["auth_state"][self.user_auth_state_key]
-        )
-        tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+        """
+        Fetch and store `globus_groups` in auth state if `allowed_globus_groups`
+        or `admin_globus_groups` is configured.
+
+        Sets admin status to True or False if `admin_globus_groups` is
+        configured and the user isn't part of `admin_users`. Note that leaving
+        it at None makes users able to retain an admin status while setting it
+        to False makes it be revoked.
+        """
+        user_groups = set()
+        if self.allowed_globus_groups or self.admin_globus_groups:
+            tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
+            user_groups = await self._fetch_users_groups(tokens)
+        # sets are not JSONable, cast to list for auth_state
+        auth_model["auth_state"]["globus_groups"] = list(user_groups)
+
+        if auth_model["admin"]:
+            # auth_model["admin"] being True means the user was in admin_users
+            return auth_model
 
         if self.admin_globus_groups:
-            # If any of these configurations are set, user must be in the allowed or admin Globus Group
-            user_group_ids = await self.get_users_groups_ids(tokens)
-            # Admin users are being managed via Globus Groups
-            # Default to False
-            auth_model['admin'] = False
-            if self.check_user_in_groups(user_group_ids, self.admin_globus_groups):
-                auth_model['admin'] = True
+            # admin status should in this case be True or False, not None
+            auth_model["admin"] = bool(user_groups & self.admin_globus_groups)
 
         return auth_model
 
@@ -291,17 +354,7 @@ class GlobusOAuthenticator(OAuthenticator):
         accounts) will correspond to a Globus User ID, so foouser@globusid.org
         will have the 'foouser' account in Jupyterhub.
         """
-
-        # It's possible for identity provider domains to be namespaced
-        # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
-        username, domain = user_info.get(self.username_claim).split('@', 1)
-        if self.identity_provider and domain != self.identity_provider:
-            raise HTTPError(
-                403,
-                f"This site is restricted to {self.identity_provider} accounts. "
-                "Please link your account at app.globus.org/account.",
-            )
-        return username
+        return user_info.get(self.username_claim).split('@')[0]
 
     def get_default_headers(self):
         return {"Accept": "application/json", "User-Agent": "JupyterHub"}
@@ -328,7 +381,6 @@ class GlobusOAuthenticator(OAuthenticator):
                 <Additional services>...
             }
         """
-
         access_tokens = [
             token_dict.get('access_token') for token_dict in services.values()
         ]

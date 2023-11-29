@@ -44,33 +44,3 @@ To use this expanded user information, you will need to subclass your
 current spawner and modify the subclass to read these fields from
 `auth_state` and then use this information to provision your Notebook or
 Lab user.
-
-## Restricting access
-
-### Organizations
-
-If you would like to restrict access to members of specific GitHub organizations
-you can pass a list of organization names to `allowed_organizations`.
-
-For example, the below will ensure that only members of `org_a` or
-`org_b` will be authorized to access.
-
-`c.GitHubOAuthenticator.allowed_organizations = ["org_a", "org_b"]`
-
-### Teams
-
-It is also possible to restrict access to members of specific teams within
-organizations using the syntax: `<organization>:<team-name>`.
-
-For example, the below will only allow members of `org_a`, or
-`team_1` in `org_b` access. Members of `org_b` but not `team_1` will be
-unauthorized to access.
-
-`c.GitHubOAuthenticator.allowed_organizations = ["org_a", "org_b:team_1"]`
-
-### Notes
-
-- Restricting access by either organization or team requires the `read:org`
-  scope
-- Ensure you use the organization/team name as it appears in the GitHub url
-  - E.g. Use `jupyter` instead of `Project Jupyter`

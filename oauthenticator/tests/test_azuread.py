@@ -1,4 +1,5 @@
 """test azure ad"""
+import json
 import os
 import re
 import time
@@ -6,23 +7,27 @@ import uuid
 from unittest import mock
 
 import jwt
-import pytest
+from pytest import fixture, mark
 from traitlets.config import Config
 
 from ..azuread import AzureAdOAuthenticator
 from .mocks import setup_oauth_mock
 
 
-async def test_tenant_id_from_env():
-    tenant_id = "some_random_id"
-    with mock.patch.dict(os.environ, {"AAD_TENANT_ID": tenant_id}):
-        aad = AzureAdOAuthenticator()
-        assert aad.tenant_id == tenant_id
+@fixture
+def azure_client(client):
+    setup_oauth_mock(
+        client,
+        host=['login.microsoftonline.com'],
+        access_token_path=re.compile('^/[^/]+/oauth2/token$'),
+        token_request_style='jwt',
+    )
+    return client
 
 
 def user_model(tenant_id, client_id, name):
     """Return a user model"""
-    # model derived from https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens#v20
+    # id_token derived from https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens#v20
     now = int(time.time())
     id_token = jwt.encode(
         {
@@ -44,10 +49,11 @@ def user_model(tenant_id, client_id, name):
                 "a992b3d5-1966-4af4-abed-6ef021417be4",
                 "ceb90a42-030f-44f1-a0c7-825b572a3b07",
             ],
+            # different from 'groups' for tests
             "grp": [
-                "96000b2c-7333-4f6e-a2c3-e7608fa2d131",
-                "a992b3d5-1966-4af4-abed-6ef021417be4",
-                "ceb90a42-030f-44f1-a0c7-825b572a3b07",
+                "96000b2c-7333-4f6e-a2c3",
+                "a992b3d5-1966-4af4-abed",
+                "ceb90a42-030f-44f1-a0c7",
             ],
         },
         os.urandom(5),
@@ -59,71 +65,115 @@ def user_model(tenant_id, client_id, name):
     }
 
 
-@pytest.fixture
-def azure_client(client):
-    setup_oauth_mock(
-        client,
-        host=['login.microsoftonline.com'],
-        access_token_path=re.compile('^/[^/]+/oauth2/token$'),
-        token_request_style='jwt',
-    )
-    return client
-
-
-@pytest.mark.parametrize(
-    'username_claim, user_groups_claim, manage_groups',
+@mark.parametrize(
+    "test_variation_id,class_config,expect_allowed,expect_admin",
     [
-        (None, None, False),
-        ('name', None, False),
-        ('oid', None, False),
-        ('preferred_username', None, False),
-        (None, None, True),
-        (None, "groups", True),
-        (None, "grp", True),
+        # no allow config tested
+        ("00", {}, False, None),
+        # allow config, individually tested
+        ("01", {"allow_all": True}, True, None),
+        ("02", {"allowed_users": {"user1"}}, True, None),
+        ("03", {"allowed_users": {"not-test-user"}}, False, None),
+        ("04", {"admin_users": {"user1"}}, True, True),
+        ("05", {"admin_users": {"not-test-user"}}, False, None),
+        # allow config, some combinations of two tested
+        (
+            "10",
+            {
+                "allow_all": False,
+                "allowed_users": {"not-test-user"},
+            },
+            False,
+            None,
+        ),
+        (
+            "11",
+            {
+                "admin_users": {"user1"},
+                "allowed_users": {"not-test-user"},
+            },
+            True,
+            True,
+        ),
+        # test username_claim
+        (
+            "20",
+            {"allow_all": True, "username_claim": "name"},
+            True,
+            None,
+        ),
+        (
+            "21",
+            {"allow_all": True, "username_claim": "oid"},
+            True,
+            None,
+        ),
+        (
+            "22",
+            {"allow_all": True, "username_claim": "preferred_username"},
+            True,
+            None,
+        ),
+        # test user_groups_claim
+        (
+            "30",
+            {"allow_all": True, "user_groups_claim": "groups"},
+            True,
+            None,
+        ),
+        (
+            "31",
+            {"allow_all": True, "user_groups_claim": "grp"},
+            True,
+            None,
+        ),
     ],
 )
-async def test_azuread(username_claim, user_groups_claim, manage_groups, azure_client):
-    cfg = Config()
-    cfg.AzureAdOAuthenticator = Config(
-        {
-            "tenant_id": str(uuid.uuid1()),
-            "client_id": str(uuid.uuid1()),
-            "client_secret": str(uuid.uuid1()),
-            "manage_groups": manage_groups,
-        }
+async def test_azuread(
+    azure_client,
+    test_variation_id,
+    class_config,
+    expect_allowed,
+    expect_admin,
+):
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.AzureAdOAuthenticator = Config(class_config)
+    c.AzureAdOAuthenticator.tenant_id = str(uuid.uuid1())
+    c.AzureAdOAuthenticator.client_id = str(uuid.uuid1())
+    c.AzureAdOAuthenticator.client_secret = str(uuid.uuid1())
+    authenticator = AzureAdOAuthenticator(config=c)
+
+    handled_user_model = user_model(
+        tenant_id=authenticator.tenant_id,
+        client_id=authenticator.client_id,
+        name="user1",
     )
+    handler = azure_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
 
-    if username_claim:
-        cfg.AzureAdOAuthenticator.username_claim = username_claim
-    if user_groups_claim:
-        cfg.AzureAdOAuthenticator.user_groups_claim = user_groups_claim
-
-    authenticator = AzureAdOAuthenticator(config=cfg)
-
-    handler = azure_client.handler_for_user(
-        user_model(
-            tenant_id=authenticator.tenant_id,
-            client_id=authenticator.client_id,
-            name="somebody",
-        )
-    )
-
-    user_info = await authenticator.authenticate(handler)
-    assert sorted(user_info) == ['auth_state', 'groups', 'name']
-    auth_state = user_info['auth_state']
-    assert 'access_token' in auth_state
-    assert 'user' in auth_state
-
-    auth_state_user_info = auth_state['user']
-    assert auth_state_user_info['aud'] == authenticator.client_id
-
-    username = user_info['name']
-    if username_claim:
-        assert username == auth_state_user_info[username_claim]
+    if expect_allowed:
+        assert auth_model
+        expected_keys = {"name", "admin", "auth_state"}
+        if authenticator.user_groups_claim:
+            expected_keys.add("groups")
+        assert set(auth_model) == expected_keys
+        assert auth_model["admin"] == expect_admin
+        auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
+        assert "access_token" in auth_state
+        user_info = auth_state[authenticator.user_auth_state_key]
+        assert user_info["aud"] == authenticator.client_id
+        assert auth_model["name"] == user_info[authenticator.username_claim]
+        if authenticator.user_groups_claim:
+            groups = auth_model['groups']
+            assert groups == user_info[authenticator.user_groups_claim]
     else:
-        # The default AzureADOAuthenticator `username_claim` is "name"
-        assert username == auth_state_user_info["name"]
+        assert auth_model == None
 
-    if user_groups_claim:
-        groups = user_info['groups']
-        assert groups == auth_state_user_info[user_groups_claim]
+
+async def test_tenant_id_from_env():
+    tenant_id = "some_random_id"
+    with mock.patch.dict(os.environ, {"AAD_TENANT_ID": tenant_id}):
+        aad = AzureAdOAuthenticator()
+        assert aad.tenant_id == tenant_id

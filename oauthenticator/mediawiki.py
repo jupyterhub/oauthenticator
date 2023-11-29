@@ -1,7 +1,5 @@
 """
-Custom Authenticator to use MediaWiki OAuth with JupyterHub
-
-Requires `mwoauth` package.
+A JupyterHub authenticator class for use with MediaWiki as an identity provider.
 """
 import json
 import os
@@ -12,7 +10,7 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
 from mwoauth import ConsumerToken, Handshaker
 from mwoauth.tokens import RequestToken
-from traitlets import Any, Integer, Unicode
+from traitlets import Any, Integer, Unicode, default
 
 from oauthenticator import OAuthCallbackHandler, OAuthenticator
 
@@ -77,40 +75,52 @@ class MWCallbackHandler(OAuthCallbackHandler):
 
 
 class MWOAuthenticator(OAuthenticator):
-    login_service = 'MediaWiki'
     login_handler = MWLoginHandler
     callback_handler = MWCallbackHandler
+
+    user_auth_state_key = "MEDIAWIKI_USER_IDENTITY"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "MediaWiki")
 
     mw_index_url = Unicode(
         os.environ.get('MW_INDEX_URL', 'https://meta.wikimedia.org/w/index.php'),
         config=True,
-        help='Full path to index.php of the MW instance to use to log in',
+        help="""
+        Full path to index.php of the MW instance to use to log in
+        """,
     )
 
     executor_threads = Integer(
         12,
-        help="""Number of executor threads.
+        config=True,
+        help="""
+        Number of executor threads.
 
         MediaWiki OAuth requests happen in this thread,
         so it is mostly waiting for network replies.
         """,
-        config=True,
     )
-    executor = Any()
 
-    def normalize_username(self, username):
-        """
-        Override normalize_username to avoid lowercasing usernames
-        """
-        return username
+    executor = Any()
 
     def _executor_default(self):
         return ThreadPoolExecutor(self.executor_threads)
 
-    # We're overriding this method because mediawiki it's more special
-    # and needs a Handshaker object to send the tokes request.
-    # So, we're building the params directly in the `get_token_info`.
+    def normalize_username(self, username):
+        """
+        Override normalize_username to avoid lowercasing usernames.
+        """
+        username = username.replace(' ', '_')
+        return username
+
     def build_access_tokens_request_params(self, handler, data=None):
+        """
+        We're overriding this method because mediawiki needs a Handshaker object
+        to send the tokes request. So, we're building the params directly in the
+        `get_token_info`.
+        """
         return None
 
     async def get_token_info(self, handler, params):
@@ -137,16 +147,11 @@ class MWOAuthenticator(OAuthenticator):
             self.executor.submit(handshaker.identify, token_info["access_token"])
         )
 
-    async def update_auth_model(self, auth_model):
-        auth_model['name'] = auth_model['name'].replace(' ', '_')
-        return auth_model
-
     def build_auth_state_dict(self, token_info, user_info):
-        username = self.user_info_to_username(user_info)
         # this shouldn't be necessary anymore,
         # but keep for backward-compatibility
         return {
             'ACCESS_TOKEN_KEY': token_info["access_token"].key,
             'ACCESS_TOKEN_SECRET': token_info["access_token"].secret,
-            'MEDIAWIKI_USER_IDENTITY': user_info,
+            self.user_auth_state_key: user_info,
         }

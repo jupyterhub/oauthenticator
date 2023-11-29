@@ -1,55 +1,46 @@
 # Globus Setup
 
-Visit https://developers.globus.org/ to set up your app. Ensure _Native
-App_ is unchecked and make sure the callback URL looks like:
+You need to have an Globus OAuth application registered ahead of time, see
+Globus's official documentation about [registering an app].
 
-```
-https://[your-host]/hub/oauth_callback
-```
+[registering an app]: https://docs.globus.org/api/auth/developer-guide/#register-app
 
-Set scopes for authorization and transfer. The defaults include:
+When you register the application, make sure _Native App_ is unchecked and that the callback URL looks like `https://[your-domain]/hub/oauth_callback`.
 
-```
-openid profile urn:globus:auth:scope:transfer.api.globus.org:all
-```
+## JupyterHub configuration
 
-Set the above settings in your `jupyterhub_config`:
+Your `jupyterhub_config.py` file should look something like this:
 
 ```python
-# Tell JupyterHub to create system accounts
-from oauthenticator.globus import GlobusOAuthenticator
-c.JupyterHub.authenticator_class = GlobusOAuthenticator
-c.GlobusOAuthenticator.oauth_callback_url = 'https://[your-host]/hub/oauth_callback'
-c.GlobusOAuthenticator.client_id = '[your app client id]'
-c.GlobusOAuthenticator.client_secret = '[your app client secret]'
+c.JupyterHub.authenticator_class = "globus"
+c.OAuthenticator.oauth_callback_url = "https://[your-domain]/hub/oauth_callback"
+c.OAuthenticator.client_id = "[your oauth2 application id]"
+c.OAuthenticator.client_secret = "[your oauth2 application secret]"
 ```
-
-Alternatively you can set env variables for the following:
-`OAUTH_CALLBACK_URL`, `OAUTH_CLIENT_ID`, and
-`OAUTH_CLIENT_SECRET`. Setting `JUPYTERHUB_CRYPT_KEY` is required,
-and can be generated with OpenSSL: `openssl rand -hex 32`
 
 You are all set by this point! Be sure to check below for tweaking
 settings related to User Identity, Transfer, and additional security.
 
 ## User Identity
 
-By default, `identity_provider = ''` will allow anyone to login.
-If you want to use a _Linked Identity_ such as
-`malcolm@universityofindependence.edu`, go to your [App Developer
-page](https://developers.globus.org) and set _Required Identity
-Provider_ for your app to `<Your University>`, and set the following
-in the config:
+You can restrict users to a specific identity provider with config like:
 
 ```python
-c.GlobusOAuthenticator.identity_provider = 'uchicago.edu'
+c.GlobusOAuthenticator.identity_provider = "uchicago.edu"
 ```
 
-**Pitfall**: Don't set 'Required Identity Provider' on pre-existing apps!
+If a user has _Linked Identity_ such as `malcolm@universityofindependence.edu`,
+go to your [App Developer page](https://developers.globus.org) and set _Required
+Identity Provider_ for your app to `<Your University>`.
+
+```{warning}
+Don't set 'Required Identity Provider' on pre-existing apps!
+
 Previous user login consents will be tied to the identity users initially used
 to login, and will continue to be tied to that identity after changing this
 setting. Create a new Globus App with your preferred 'Required Identity Provider'
 to avoid this problem.
+```
 
 ## Username from Email Address
 
@@ -77,7 +68,10 @@ If you want to change other behavior, you can modify the defaults below:
 
 ```python
 # Allow saving user tokens to the database
+# - requires JUPYTERHUB_CRYPT_KEY to be set, see
+#   https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state
 c.GlobusOAuthenticator.enable_auth_state = True
+
 # Default scopes are below if unspecified. Add a custom transfer server if you have one.
 c.GlobusOAuthenticator.scope = ['openid', 'profile', 'urn:globus:auth:scope:transfer.api.globus.org:all']
 # Default tokens excluded from being passed into the spawner environment
@@ -116,19 +110,17 @@ Groups.
 
 ```python
 # Groups of allowed users
-c.GlobusOAuthenticator.allowed_globus_groups = set
-authenticator.allowed_globus_groups =  {
-      'd11abe71-5132-4c04-a4ad-50926885dc8c',
-      '21c6bc5d-fc12-4f60-b999-76766cd596c2',
+c.GlobusOAuthenticator.allowed_globus_groups = {
+    'd11abe71-5132-4c04-a4ad-50926885dc8c',
+    '21c6bc5d-fc12-4f60-b999-76766cd596c2',
 }
 # Admin users
-authenticator.admin_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
+c.GlobusOAuthenticator.admin_globus_groups = {'3f1f85c4-f084-4173-9efb-7c7e0b44291a'}
 ```
 
-When any of these are set, the Globus Groups API scope will be
-included in the default list of scopes. When
-`c.GlobusOAuthenticator.admin_globus_groups` is set, only members of
-those groups will be JupyterHub admins.
+When any of these are set, the Globus Groups API scope will be included in the
+default list of scopes. When `c.GlobusOAuthenticator.admin_globus_groups` is
+set, only members of those groups will be JupyterHub admins.
 
 To block users, the [`c.Authenticator.blocked_users`](https://jupyterhub.readthedocs.io/en/stable/reference/api/auth.html#jupyterhub.auth.Authenticator.blocked_users)
 configuration can be used. Or, users can be removed from the allowed

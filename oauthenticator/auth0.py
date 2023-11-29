@@ -1,37 +1,5 @@
 """
-Custom Authenticator to use Auth0 OAuth with JupyterHub
-
-Derived using the Github and Google OAuthenticator implementations as examples.
-
-The following environment variables may be used for configuration:
-
-* AUTH0_DOMAIN - The domain for your Auth0 account
-* AUTH0_SUBDOMAIN - Alternative to AUTH0_DOMAIN if your domain ends with .auth0.com
-* OAUTH_CLIENT_ID - Your client id
-* OAUTH_CLIENT_SECRET - Your client secret
-* OAUTH_CALLBACK_URL - Your callback handler URL
-
-You must provide either AUTH0_DOMAIN or AUTH0_SUBDOMAIN. If both are provided,
-AUTH0_DOMAIN will take precedence.
-
-Additionally, if you are concerned about your secrets being exposed by
-an env dump(I know I am!) you can set the client_secret, client_id and
-oauth_callback_url directly on the config for Auth0OAuthenticator.
-
-One instance of this could be adding the following to your jupyterhub_config.py::
-
-  c.Auth0OAuthenticator.auth0_domain = 'auth.example.com'
-  c.Auth0OAuthenticator.client_id = 'YOUR_CLIENT_ID'
-  c.Auth0OAuthenticator.client_secret = 'YOUR_CLIENT_SECRET'
-  c.Auth0OAuthenticator.oauth_callback_url = 'YOUR_CALLBACK_URL'
-  c.Auth0OAuthenticator.scope = ['openid','profile','email']
-
-If you are using the environment variable config, all you should need to
-do is define them in the environment then add the following line to 
-jupyterhub_config.py :
-
-  c.JupyterHub.authenticator_class = 'oauthenticator.auth0.Auth0OAuthenticator'
-
+A JupyterHub authenticator class for use with Auth0 as an identity provider.
 """
 import os
 
@@ -42,25 +10,25 @@ from .oauth2 import OAuthenticator
 
 
 class Auth0OAuthenticator(OAuthenticator):
-    _deprecated_oauth_aliases = {
-        "username_key": ("username_claim", "16.0.0"),
-        **OAuthenticator._deprecated_oauth_aliases,
-    }
-
-    login_service = "Auth0"
     user_auth_state_key = "auth0_user"
+
+    @default("login_service")
+    def _login_service_default(self):
+        return os.environ.get("LOGIN_SERVICE", "Auth0")
 
     @default("username_claim")
     def _username_claim_default(self):
         return "email"
 
-    auth0_subdomain = Unicode(config=True)
-    auth0_domain = Unicode(config=True)
+    auth0_domain = Unicode(
+        config=True,
+        help="""
+        The domain for your Auth0 account.
 
-    @default("auth0_subdomain")
-    def _auth0_subdomain_default(self):
-        # This is allowed to be empty unless auth0_domain is not supplied either
-        return os.getenv("AUTH0_SUBDOMAIN", "")
+        Used to determine the default values for `logout_redirect_url`,
+        `authorize_url`, `token_url`, and `userdata_url`.
+        """,
+    )
 
     @default("auth0_domain")
     def _auth0_domain_default(self):
@@ -70,16 +38,22 @@ class Auth0OAuthenticator(OAuthenticator):
         if self.auth0_subdomain:
             return f"{self.auth0_subdomain}.auth0.com"
         raise ValueError(
-            "Please specify $AUTH0_DOMAIN env, $AUTH0_SUBDOMAIN env, "
-            "{part}.auth0_domain config, or {part}.auth0_subdomain config".format(
-                part=self.__class__.__name__
-            )
+            "Configuring either auth0_domain or auth0_subdomain is required"
         )
 
-    username_key = Unicode(
+    auth0_subdomain = Unicode(
         config=True,
-        help="Deprecated, use `Auth0OAuthenticator.username_claim`",
+        help="""
+        A shorthand for configuring `auth0_domain`, if configured to
+        "something", it is the same as configuring `auth0_domain` to
+        "something.auth0.com".
+        """,
     )
+
+    @default("auth0_subdomain")
+    def _auth0_subdomain_default(self):
+        # This is allowed to be empty unless auth0_domain is not supplied either
+        return os.getenv("AUTH0_SUBDOMAIN", "")
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
@@ -97,7 +71,20 @@ class Auth0OAuthenticator(OAuthenticator):
     def _userdata_url_default(self):
         return f"https://{self.auth0_domain}/userinfo"
 
+    # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
+    _deprecated_oauth_aliases = {
+        "username_key": ("username_claim", "16.0.0"),
+        **OAuthenticator._deprecated_oauth_aliases,
+    }
+    username_key = Unicode(
+        config=True,
+        help="""
+        .. deprecated:: 16.0
+
+           Use :attr:`username_claim`.
+        """,
+    )
+
 
 class LocalAuth0OAuthenticator(LocalAuthenticator, Auth0OAuthenticator):
-
     """A version that mixes in local system user creation"""

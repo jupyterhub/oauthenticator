@@ -34,17 +34,17 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
         include:
           - python: "3.9"
             oldest_dependencies: oldest_dependencies
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: "${{ matrix.python }}"
@@ -66,6 +66,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -v --color=yes --cov=oauthenticator oauthenticator
+          pytest
 
+      # GitHub action reference: https://github.com/codecov/codecov-action
       - uses: codecov/codecov-action@v3

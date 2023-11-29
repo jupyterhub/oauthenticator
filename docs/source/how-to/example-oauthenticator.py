@@ -1,7 +1,6 @@
 """
 Example OAuthenticator to use with My Service
 """
-
 from jupyterhub.auth import LocalAuthenticator
 
 from oauthenticator.oauth2 import OAuthenticator, OAuthLoginHandler
@@ -88,9 +87,9 @@ class MyServiceOAuthenticator(OAuthenticator):
     # Updates `auth_model` dict if any fields have changed or additional information is available
     # or returns the unchanged `auth_model`.
     # Returns the model unchanged by default.
-    # Should be overridden to take into account  additional checks such as against group/admin/team membership.
+    # Should be overridden to take into account additional checks such as against group/admin/team membership.
     # if the OAuth provider has such a concept
-    async def update_auth_model(self, auth_model, **kwargs):
+    async def update_auth_model(self, username, auth_model):
         pass
 
 
