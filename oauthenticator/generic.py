@@ -164,7 +164,7 @@ class GenericOAuthenticator(OAuthenticator):
             user_groups = self.get_user_groups(user_info)
 
         if manage_groups:
-            auth_model["groups"] = user_groups
+            auth_model["groups"] = sorted(user_groups)
 
         if auth_model["admin"]:
             # auth_model["admin"] being True means the user was in admin_users

@@ -1,6 +1,7 @@
 import json
 from functools import partial
 
+import pytest
 from pytest import fixture, mark
 from traitlets.config import Config
 
@@ -151,6 +152,15 @@ def get_authenticator(generic_client):
             False,
             False,
         ),
+        (
+            "20",
+            {
+                "manage_groups": True,
+                "allow_all": True,
+            },
+            True,
+            None,
+        ),
     ],
 )
 async def test_generic(
@@ -166,6 +176,13 @@ async def test_generic(
     c.GenericOAuthenticator = Config(class_config)
     c.GenericOAuthenticator.username_claim = "username"
     authenticator = get_authenticator(config=c)
+    manage_groups = False
+    if "manage_groups" in class_config:
+        try:
+            manage_groups = authenticator.manage_groups
+        except AttributeError:
+            pytest.skip("manage_groups requires jupyterhub 2.2")
+            1 / 0
 
     handled_user_model = user_model("user1")
     handler = generic_client.handler_for_user(handled_user_model)
@@ -173,7 +190,10 @@ async def test_generic(
 
     if expect_allowed:
         assert auth_model
-        assert set(auth_model) == {"name", "admin", "auth_state"}
+        expected_keys = {"name", "admin", "auth_state"}
+        if manage_groups:
+            expected_keys.add("groups")
+        assert set(auth_model) == expected_keys
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
         assert json.dumps(auth_state)
@@ -183,6 +203,9 @@ async def test_generic(
         assert "scope" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
+        if manage_groups:
+            assert auth_model["groups"] == user_info[authenticator.claim_groups_key]
+
     else:
         assert auth_model == None
 
