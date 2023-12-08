@@ -5,6 +5,7 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 """
 import base64
 import json
+import jwt
 import os
 import uuid
 from urllib.parse import quote, urlencode, urlparse, urlunparse
@@ -361,9 +362,14 @@ class OAuthenticator(Authenticator):
 
     userdata_url = Unicode(
         config=True,
+        allow_none=True,
         help="""
         The URL to where this authenticator makes a request to acquire user
         details with an access token received via a request to the
+        :attr:`token_url`.
+
+        If this is explicitly set to None, this authenticator will attempt
+        to instead use an id token if one was provided by the
         :attr:`token_url`.
 
         For more context, see the `Protocol Flow section
@@ -863,6 +869,8 @@ class OAuthenticator(Authenticator):
         Determines who the logged-in user by sending a "GET" request to
         :data:`oauthenticator.OAuthenticator.userdata_url` using the `access_token`.
 
+        If `userdata_url` is None, checks for an `id_token` instead.
+
         Args:
             token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
 
@@ -871,6 +879,26 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
+        if self.userdata_url is None:
+            # Use id token instead of exchanging access token with userinfo endpoint.
+            id_token = token_info.get("id_token", None)
+            if not id_token:
+                raise web.HTTPError(
+                    500,
+                    f"An id token was not returned: {token_info}\nPlease configure authenticator.userdata_url"
+                )
+            try:
+                # Here we parse the id token. Note that per OIDC spec (core v1.0 sect. 3.1.3.7.6) we can skip
+                # signature validation as the hub has obtained the tokens from the id provider directly (using
+                # https). Google suggests all token validation may be skipped assuming the provider is trusted.
+                # https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
+                # https://developers.google.com/identity/openid-connect/openid-connect#obtainuserinfo
+                return jwt.decode(id_token,
+                                  audience=self.client_id,
+                                  options=dict(verify_signature=False, verify_aud=True, verify_exp=True))
+            except Exception as err:
+                raise web.HTTPError(500, f"Unable to decode id token: {id_token}\n{err}")
+
         access_token = token_info["access_token"]
         token_type = token_info["token_type"]
 

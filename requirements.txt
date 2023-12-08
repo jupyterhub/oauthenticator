@@ -7,3 +7,5 @@ requests
 ruamel.yaml
 tornado
 traitlets
+# PyJWT is used for parsing id tokens
+pyjwt
