@@ -31,3 +31,20 @@ AzureAdOAuthenticator expands OAuthenticator with the following config that may
 be relevant to read more about in the configuration reference:
 
 - {attr}`.AzureAdOAuthenticator.tenant_id`
+
+## Loading user groups
+
+The `AzureAdOAuthenticator` can load the group-membership of users from the access token.
+This is done by setting the `AzureAdOAuthenticator.groups_claim` to the name of the claim that contains the
+group-membership.
+
+```python
+c.JupyterHub.authenticator_class = "azuread"
+
+# {...} other settings (see above)
+
+c.AzureAdOAuthenticator.manage_groups = True
+c.AzureAdOAuthenticator.user_groups_claim = 'groups'  # this is the default
+```
+
+This requires Azure AD to be configured to include the group-membership in the access token.
