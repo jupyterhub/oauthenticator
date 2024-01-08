@@ -102,7 +102,8 @@ setup_args['extras_require'] = {
     # dependencies above.
     'test': [
         'pytest>=2.8',
-        'pytest-asyncio',
+        # FIXME: unpin pytest-asyncio
+        'pytest-asyncio>=0.17,<0.23',
         'pytest-cov',
         'requests-mock',
         # dependencies from azuread:
