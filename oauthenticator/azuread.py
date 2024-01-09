@@ -73,6 +73,10 @@ class AzureAdOAuthenticator(OAuthenticator):
 
         return decoded
 
+"""add auth.type as oauthenticator.azuread.MyAzureAdOAuthenticator in tljh-config"""
+class MyAzureAdOAuthenticator(AzureAdOAuthenticator):
+    def normalize_username(self, username):
+       return username.replace(' ', '_')
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
     """A version that mixes in local system user creation"""
