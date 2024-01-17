@@ -187,12 +187,14 @@ async def test_generic(
     else:
         assert auth_model == None
 
+
 async def test_username_claim_callable(
     get_authenticator,
     generic_client,
 ):
     c = Config()
     c.GenericOAuthenticator = Config()
+
     def username_claim(user_info):
         username = user_info["sub"]
         if username.startswith("oauth2|cilogon"):
@@ -200,6 +202,7 @@ async def test_username_claim_callable(
             cilogon_sub_parts = cilogon_sub.split("/")
             username = f"oauth2|cilogon|{cilogon_sub_parts[3]}|{cilogon_sub_parts[5]}"
         return username
+
     c.GenericOAuthenticator.username_claim = username_claim
     c.GenericOAuthenticator.allow_all = True
     authenticator = get_authenticator(config=c)

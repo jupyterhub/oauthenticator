@@ -18,7 +18,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default, Union, Callable
+from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -771,7 +771,6 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-
 
         if callable(self.username_claim):
             username = self.username_claim(user_info)
