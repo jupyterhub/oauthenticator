@@ -12,6 +12,7 @@ def user_model(username, **kwargs):
     """Return a user model"""
     return {
         "username": username,
+        "sub": "oauth2|cilogon|http://cilogon.org/servera/users/43431",
         "scope": "basic",
         "groups": ["group1"],
         **kwargs,
@@ -185,6 +186,29 @@ async def test_generic(
         assert auth_model["name"] == user_info[authenticator.username_claim]
     else:
         assert auth_model == None
+
+async def test_username_claim_callable(
+    get_authenticator,
+    generic_client,
+):
+    c = Config()
+    c.GenericOAuthenticator = Config()
+    def username_claim(user_info):
+        username = user_info["sub"]
+        if username.startswith("oauth2|cilogon"):
+            cilogon_sub = username.rsplit("|", 1)[-1]
+            cilogon_sub_parts = cilogon_sub.split("/")
+            username = f"oauth2|cilogon|{cilogon_sub_parts[3]}|{cilogon_sub_parts[5]}"
+        return username
+    c.GenericOAuthenticator.username_claim = username_claim
+    c.GenericOAuthenticator.allow_all = True
+    authenticator = get_authenticator(config=c)
+
+    handled_user_model = user_model("user1")
+    handler = generic_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    assert auth_model["name"] == "oauth2|cilogon|servera|43431"
 
 
 async def test_generic_data(get_authenticator, generic_client):

@@ -113,17 +113,6 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    def user_info_to_username(self, user_info):
-        """
-        Overrides OAuthenticator.user_info_to_username to support the
-        GenericOAuthenticator unique feature of allowing username_claim to be a
-        callable function.
-        """
-        if callable(self.username_claim):
-            return self.username_claim(user_info)
-        else:
-            return super().user_info_to_username(user_info)
-
     def get_user_groups(self, user_info):
         """
         Returns a set of groups the user belongs to based on claim_groups_key
