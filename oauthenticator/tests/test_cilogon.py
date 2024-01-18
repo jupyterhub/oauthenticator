@@ -100,6 +100,7 @@ async def test_cilogon(
     else:
         assert auth_model == None
 
+
 async def test_username_claim_callable(
     cilogon_client,
 ):
@@ -113,7 +114,6 @@ async def test_username_claim_callable(
             },
         },
     }
-
 
     authenticator = CILogonOAuthenticator(config=c)
 
