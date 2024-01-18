@@ -100,6 +100,29 @@ async def test_cilogon(
     else:
         assert auth_model == None
 
+async def test_username_claim_callable(
+    cilogon_client,
+):
+    c = Config()
+    c.CILogonOAuthenticator = Config()
+
+    c.CILogonOAuthenticator.allowed_idps = {
+        "https://some-idp.com/login/oauth/authorize": {
+            "username_derivation": {
+                "username_claim": lambda user_info: f"prefixed-{user_info['username']}",
+            },
+        },
+    }
+
+
+    authenticator = CILogonOAuthenticator(config=c)
+
+    handled_user_model = user_model("user1", "username")
+    handler = cilogon_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    assert auth_model["name"] == f"prefixed-user1"
+
 
 @mark.parametrize(
     "test_variation_id,idp_config,class_config,test_user_name,expect_allowed,expect_admin",

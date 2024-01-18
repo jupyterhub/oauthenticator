@@ -363,7 +363,11 @@ class CILogonOAuthenticator(OAuthenticator):
         username_derivation = self.allowed_idps[user_idp]["username_derivation"]
         username_claim = username_derivation["username_claim"]
 
-        username = user_info.get(username_claim)
+        if callable(username_claim):
+            username = username_claim(user_info)
+        else:
+            username = user_info.get(self.username_claim, None)
+
         if not username:
             message = f"Configured username_claim {username_claim} for {user_idp} was not found in the response {user_info.keys()}"
             self.log.error(message)
