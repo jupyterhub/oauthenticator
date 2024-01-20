@@ -456,6 +456,24 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    required_scopes = List(
+        Unicode(),
+        config=True,
+        help="""
+        List of scopes that must be granted to allow login.
+
+        All the scopes listed in this config must be present in the OAuth2 grant
+        from the authorizing server to allow the user to login. We request all
+        the scopes listed in the 'scope' config, but only a subset of these may
+        be granted by the authorization server. This may happen if the user does not
+        have permissions to access a requested scope, or has chosen to not give consent
+        for a particular scope. If the scopes listed in this config are not granted,
+        the user will not be allowed to log in.
+
+        See the OAuth documentation of your OAuth provider for various options.
+        """,
+    )
+
     extra_authorize_params = Dict(
         config=True,
         help="""
@@ -1024,6 +1042,15 @@ class OAuthenticator(Authenticator):
         # automatically with existing users if it was configured truthy
         if username in self.allowed_users:
             return True
+
+        # If we specific scope grants are required, validate that they have been granted
+        if self.required_scopes:
+            granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
+            missing_scopes = set(self.required_scopes) - set(granted_scopes)
+            if missing_scopes:
+                return False
+            else:
+                return True
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False
