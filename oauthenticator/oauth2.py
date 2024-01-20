@@ -1048,6 +1048,7 @@ class OAuthenticator(Authenticator):
             granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
             missing_scopes = set(self.required_scopes) - set(granted_scopes)
             if missing_scopes:
+                self.log.info(f"Denying access to user {username} - scopes {missing_scopes} were not granted")
                 return False
             else:
                 return True
