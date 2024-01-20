@@ -104,7 +104,7 @@ def setup_oauth_mock(
     user_path=None,
     token_type='Bearer',
     token_request_style='post',
-    scope=""
+    scope="",
 ):
     """setup the mock client for OAuth
 

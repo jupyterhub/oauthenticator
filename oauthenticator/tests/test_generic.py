@@ -25,7 +25,7 @@ def generic_client(client):
         host='generic.horse',
         access_token_path='/oauth/access_token',
         user_path='/oauth/userinfo',
-        scope='basic'
+        scope='basic',
     )
     return client
 
@@ -202,13 +202,11 @@ async def test_generic_data(get_authenticator, generic_client):
 
 
 @mark.parametrize(
-        ["requested_scopes", "allowed"],
-        [
-            (["advanced"], False),
-            (["basic"], True)
-        ]
+    ["requested_scopes", "allowed"], [(["advanced"], False), (["basic"], True)]
 )
-async def test_required_scopes(get_authenticator, generic_client, requested_scopes, allowed):
+async def test_required_scopes(
+    get_authenticator, generic_client, requested_scopes, allowed
+):
     c = Config()
     c.GenericOAuthenticator.required_scopes = requested_scopes
     c.GenericOAuthenticator.scope = list(requested_scopes)
