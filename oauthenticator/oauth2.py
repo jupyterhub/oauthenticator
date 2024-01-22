@@ -470,6 +470,10 @@ class OAuthenticator(Authenticator):
         for a particular scope. If the scopes listed in this config are not granted,
         the user will not be allowed to log in.
 
+        The granted scopes will be part of the access token (fetched from self.token_url).
+        See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3 for more
+        information.
+
         See the OAuth documentation of your OAuth provider for various options.
         """,
     )
