@@ -157,13 +157,11 @@ class GenericOAuthenticator(OAuthenticator):
 
         Also populates groups if `manage_groups` is set.
         """
-        # Authenticator.manage_groups is new in jupyterhub 2.2
-        manage_groups = getattr(self, "manage_groups", False)
-        if manage_groups or self.admin_groups:
+        if self.manage_groups or self.admin_groups:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = self.get_user_groups(user_info)
 
-        if manage_groups:
+        if self.manage_groups:
             auth_model["groups"] = sorted(user_groups)
 
         if auth_model["admin"]:

@@ -1,7 +1,6 @@
 import json
 from functools import partial
 
-import pytest
 from pytest import fixture, mark
 from traitlets.config import Config
 
@@ -178,11 +177,7 @@ async def test_generic(
     authenticator = get_authenticator(config=c)
     manage_groups = False
     if "manage_groups" in class_config:
-        try:
-            manage_groups = authenticator.manage_groups
-        except AttributeError:
-            pytest.skip("manage_groups requires jupyterhub 2.2")
-            1 / 0
+        manage_groups = authenticator.manage_groups
 
     handled_user_model = user_model("user1")
     handler = generic_client.handler_for_user(handled_user_model)
