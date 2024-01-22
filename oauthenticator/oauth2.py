@@ -770,7 +770,7 @@ class OAuthenticator(Authenticator):
         """
         username = user_info.get(self.username_claim, None)
         if not username:
-            message = (f"No {self.username_claim} found in {user_info}",)
+            message = (f"No {self.username_claim} found in {user_info}. Maybe the hub needs to be configured to request more scopes?",)
             self.log.error(message)
             raise ValueError(message)
 
