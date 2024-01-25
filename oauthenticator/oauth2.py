@@ -1053,7 +1053,7 @@ class OAuthenticator(Authenticator):
             missing_scopes = set(self.required_scopes) - set(granted_scopes)
             if missing_scopes:
                 self.log.info(
-                    f"Denying access to user {username} - scopes {missing_scopes} were not granted"
+                    f"Denying access to user {username}. {self.scope} scopes were requested, {self.required_scopes} are required for authorization, but only {granted_scopes} were granted"
                 )
                 return False
             else:
