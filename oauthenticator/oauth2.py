@@ -479,7 +479,7 @@ class OAuthenticator(Authenticator):
     )
 
     @validate('required_scopes')
-    def _required_scopes_validation(self, proposal: list[str]):
+    def _required_scopes_validation(self, proposal):
         # required scopes must be a subset of requested scopes
         if set(proposal.value) - set(self.scope):
             raise ValueError(f"Required Scopes must be a subset of Requested Scopes. {self.scope} is requested but {proposal.value} is required")
