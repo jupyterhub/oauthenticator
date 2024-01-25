@@ -50,7 +50,7 @@ class Auth0OAuthenticator(OAuthenticator):
         Must be explicitly added to the "Allowed Logout URLs" in the configuration
         for this Auth0 application. See https://auth0.com/docs/authenticate/login/logout/redirect-users-after-logout
         for more information.
-        """
+        """,
     )
 
     auth0_subdomain = Unicode(
@@ -73,7 +73,9 @@ class Auth0OAuthenticator(OAuthenticator):
         if self.logout_redirect_to_url:
             # If a redirectTo is set, we must also include the `client_id`
             # Auth0 expects `client_id` to be snake cased while `redirectTo` is camel cased
-            params = urlencode({"client_id": self.client_id, "redirectTo": self.logout_redirect_to_url})
+            params = urlencode(
+                {"client_id": self.client_id, "redirectTo": self.logout_redirect_to_url}
+            )
             url = f"{url}?{params}"
         return url
 

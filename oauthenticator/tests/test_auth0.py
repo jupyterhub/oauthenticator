@@ -96,10 +96,16 @@ async def test_auth0(
         assert auth_model == None
 
 
-@mark.parametrize(("logout_redirect_to_url", "redirect_url"), [
-    ("", f"https://{AUTH0_DOMAIN}/v2/logout"),
-    ("https://hub-url.com", f"https://{AUTH0_DOMAIN}/v2/logout?client_id=&redirectTo=https%3A%2F%2Fhub-url.com")
-])
+@mark.parametrize(
+    ("logout_redirect_to_url", "redirect_url"),
+    [
+        ("", f"https://{AUTH0_DOMAIN}/v2/logout"),
+        (
+            "https://hub-url.com",
+            f"https://{AUTH0_DOMAIN}/v2/logout?client_id=&redirectTo=https%3A%2F%2Fhub-url.com",
+        ),
+    ],
+)
 async def test_custom_logout(monkeypatch, logout_redirect_to_url, redirect_url):
     authenticator = Auth0OAuthenticator()
     authenticator.logout_redirect_to_url = logout_redirect_to_url
