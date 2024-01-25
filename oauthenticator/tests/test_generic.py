@@ -1,7 +1,9 @@
 import json
+import re
 from functools import partial
+from tornado import web
 
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
@@ -215,8 +217,32 @@ async def test_required_scopes(
     handled_user_model = user_model("user1")
     handler = generic_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.authenticate(handler)
-    assert allowed == await authenticator.check_allowed(auth_model["name"], auth_model)
+    if allowed:
+        assert await authenticator.check_allowed(auth_model["name"], auth_model)
+    else:
+        with raises(web.HTTPError):
+            await authenticator.check_allowed(auth_model["name"], auth_model)
 
+async def test_required_scopes_validation_scope_subset(
+    get_authenticator
+):
+    c = Config()
+    # Test that if we require more scopes than we request, validation fails
+    c.GenericOAuthenticator.required_scopes = ["a", "b"]
+    c.GenericOAuthenticator.scope = ["a"]
+    with raises(ValueError, match=re.escape("Required Scopes must be a subset of Requested Scopes. ['a'] is requested but ['a', 'b'] is required")):
+        get_authenticator(config=c)
+
+async def test_required_scopes_validation_no_allow_all(
+    get_authenticator
+):
+    c = Config()
+    # Test that we can't have allow all and required_scopes together
+    c.GenericOAuthenticator.required_scopes = ["a"]
+    c.GenericOAuthenticator.scope = ["a", "b"]
+    c.GenericOAuthenticator.allow_all = True
+    with raises(ValueError, match=re.escape("Required Scopes is mutually exclusive with allow_all. Unset one of those configuration properties")):
+        get_authenticator(config=c)
 
 async def test_generic_callable_username_key(get_authenticator, generic_client):
     c = Config()

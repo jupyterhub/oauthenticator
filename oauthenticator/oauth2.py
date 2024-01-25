@@ -18,7 +18,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default
+from traitlets import Any, Bool, Dict, List, Unicode, default, validate
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -477,6 +477,16 @@ class OAuthenticator(Authenticator):
         See the OAuth documentation of your OAuth provider for various options.
         """,
     )
+
+    @validate('required_scopes')
+    def _required_scopes_validation(self, proposal: list[str]):
+        # required scopes must be a subset of requested scopes
+        if set(proposal.value) - set(self.scope):
+            raise ValueError(f"Required Scopes must be a subset of Requested Scopes. {self.scope} is requested but {proposal.value} is required")
+        if self.allow_all:
+            # Can't set allow_all *and* require scopes
+            raise ValueError("Required Scopes is mutually exclusive with allow_all. Unset one of those configuration properties")
+        return proposal.value
 
     extra_authorize_params = Dict(
         config=True,
@@ -1020,6 +1030,8 @@ class OAuthenticator(Authenticator):
         """
         Returns True for users allowed to be authorized
 
+        If a user must be *disallowed*, raises a 403 exception.
+
         Overrides Authenticator.check_allowed that is called from
         `Authenticator.get_authenticated_user` after
         `OAuthenticator.authenticate` has been called, and therefore also after
@@ -1037,6 +1049,19 @@ class OAuthenticator(Authenticator):
         if self.allow_all:
             return True
 
+        # If we specific scope grants are required, validate that they have been granted
+        # If not, we explicitly raise an exception here, since they should not be allowed
+        # *regardless* of any other config allowing them access.
+        if self.required_scopes:
+            granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
+            missing_scopes = set(self.required_scopes) - set(granted_scopes)
+            if missing_scopes:
+                message = f"Denying access to user {username}. {self.scope} scopes were requested, {self.required_scopes} are required for authorization, but only {granted_scopes} were granted"
+                self.log.info(message)
+                raise web.HTTPError(403, message)
+            else:
+                return True
+
         # allow users with admin status set to True via admin_users config or
         # update_auth_model override
         if auth_model["admin"]:
@@ -1046,18 +1071,6 @@ class OAuthenticator(Authenticator):
         # automatically with existing users if it was configured truthy
         if username in self.allowed_users:
             return True
-
-        # If we specific scope grants are required, validate that they have been granted
-        if self.required_scopes:
-            granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
-            missing_scopes = set(self.required_scopes) - set(granted_scopes)
-            if missing_scopes:
-                self.log.info(
-                    f"Denying access to user {username}. {self.scope} scopes were requested, {self.required_scopes} are required for authorization, but only {granted_scopes} were granted"
-                )
-                return False
-            else:
-                return True
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False
