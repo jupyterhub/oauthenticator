@@ -483,9 +483,6 @@ class OAuthenticator(Authenticator):
         # required scopes must be a subset of requested scopes
         if set(proposal.value) - set(self.scope):
             raise ValueError(f"Required Scopes must be a subset of Requested Scopes. {self.scope} is requested but {proposal.value} is required")
-        if self.allow_all:
-            # Can't set allow_all *and* require scopes
-            raise ValueError("Required Scopes is mutually exclusive with allow_all. Unset one of those configuration properties")
         return proposal.value
 
     extra_authorize_params = Dict(
@@ -1046,11 +1043,8 @@ class OAuthenticator(Authenticator):
         if auth_model is None:
             return True
 
-        if self.allow_all:
-            return True
-
         # If we specific scope grants are required, validate that they have been granted
-        # If not, we explicitly raise an exception here, since they should not be allowed
+        # If not, we explicitly raise an exception here, since the user should not be allowed
         # *regardless* of any other config allowing them access.
         if self.required_scopes:
             granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
@@ -1059,8 +1053,9 @@ class OAuthenticator(Authenticator):
                 message = f"Denying access to user {username}. {self.scope} scopes were requested, {self.required_scopes} are required for authorization, but only {granted_scopes} were granted"
                 self.log.info(message)
                 raise web.HTTPError(403, message)
-            else:
-                return True
+
+        if self.allow_all:
+            return True
 
         # allow users with admin status set to True via admin_users config or
         # update_auth_model override

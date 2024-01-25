@@ -233,16 +233,6 @@ async def test_required_scopes_validation_scope_subset(
     with raises(ValueError, match=re.escape("Required Scopes must be a subset of Requested Scopes. ['a'] is requested but ['a', 'b'] is required")):
         get_authenticator(config=c)
 
-async def test_required_scopes_validation_no_allow_all(
-    get_authenticator
-):
-    c = Config()
-    # Test that we can't have allow all and required_scopes together
-    c.GenericOAuthenticator.required_scopes = ["a"]
-    c.GenericOAuthenticator.scope = ["a", "b"]
-    c.GenericOAuthenticator.allow_all = True
-    with raises(ValueError, match=re.escape("Required Scopes is mutually exclusive with allow_all. Unset one of those configuration properties")):
-        get_authenticator(config=c)
 
 async def test_generic_callable_username_key(get_authenticator, generic_client):
     c = Config()
