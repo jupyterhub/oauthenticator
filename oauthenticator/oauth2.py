@@ -268,6 +268,9 @@ class OAuthenticator(Authenticator):
         help="""
         Allow all authenticated users to login.
 
+        Note that if required_scopes is set, users who aren't granted the scopes
+        listed in that will still not be allowed to login.
+
         .. versionadded:: 16.0
         """,
     )
