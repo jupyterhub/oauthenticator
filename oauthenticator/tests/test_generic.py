@@ -1,9 +1,9 @@
 import json
 import re
 from functools import partial
-from tornado import web
 
 from pytest import fixture, mark, raises
+from tornado import web
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
@@ -223,14 +223,18 @@ async def test_required_scopes(
         with raises(web.HTTPError):
             await authenticator.check_allowed(auth_model["name"], auth_model)
 
-async def test_required_scopes_validation_scope_subset(
-    get_authenticator
-):
+
+async def test_required_scopes_validation_scope_subset(get_authenticator):
     c = Config()
     # Test that if we require more scopes than we request, validation fails
     c.GenericOAuthenticator.required_scopes = ["a", "b"]
     c.GenericOAuthenticator.scope = ["a"]
-    with raises(ValueError, match=re.escape("Required Scopes must be a subset of Requested Scopes. ['a'] is requested but ['a', 'b'] is required")):
+    with raises(
+        ValueError,
+        match=re.escape(
+            "Required Scopes must be a subset of Requested Scopes. ['a'] is requested but ['a', 'b'] is required"
+        ),
+    ):
         get_authenticator(config=c)
 
 
