@@ -212,6 +212,7 @@ async def test_required_scopes(
     c = Config()
     c.GenericOAuthenticator.required_scopes = requested_scopes
     c.GenericOAuthenticator.scope = list(requested_scopes)
+    c.GenericOAuthenticator.allow_all = True
     authenticator = get_authenticator(config=c)
 
     handled_user_model = user_model("user1")
