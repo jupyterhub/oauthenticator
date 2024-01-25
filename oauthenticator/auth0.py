@@ -2,6 +2,7 @@
 A JupyterHub authenticator class for use with Auth0 as an identity provider.
 """
 import os
+from urllib.parse import urlencode
 
 from jupyterhub.auth import LocalAuthenticator
 from traitlets import Unicode, default
@@ -41,6 +42,17 @@ class Auth0OAuthenticator(OAuthenticator):
             "Configuring either auth0_domain or auth0_subdomain is required"
         )
 
+    logout_redirect_to_url = Unicode(
+        config=True,
+        help="""
+        Redirect to this URL after the user is logged out.
+
+        Must be explicitly added to the "Allowed Logout URLs" in the configuration
+        for this Auth0 application. See https://auth0.com/docs/authenticate/login/logout/redirect-users-after-logout
+        for more information.
+        """
+    )
+
     auth0_subdomain = Unicode(
         config=True,
         help="""
@@ -57,7 +69,13 @@ class Auth0OAuthenticator(OAuthenticator):
 
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
-        return f"https://{self.auth0_domain}/v2/logout"
+        url = f"https://{self.auth0_domain}/v2/logout"
+        if self.logout_redirect_to_url:
+            # If a redirectTo is set, we must also include the `client_id`
+            # Auth0 expects `client_id` to be snake cased while `redirectTo` is camel cased
+            params = urlencode({"client_id": self.client_id, "redirectTo": self.logout_redirect_to_url})
+            url = f"{url}?{params}"
+        return url
 
     @default("authorize_url")
     def _authorize_url_default(self):

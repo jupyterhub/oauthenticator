@@ -96,8 +96,13 @@ async def test_auth0(
         assert auth_model == None
 
 
-async def test_custom_logout(monkeypatch):
+@mark.parametrize(("logout_redirect_to_url", "redirect_url"), [
+    ("", f"https://{AUTH0_DOMAIN}/v2/logout"),
+    ("https://hub-url.com", f"https://{AUTH0_DOMAIN}/v2/logout?client_id=&redirectTo=https%3A%2F%2Fhub-url.com")
+])
+async def test_custom_logout(monkeypatch, logout_redirect_to_url, redirect_url):
     authenticator = Auth0OAuthenticator()
+    authenticator.logout_redirect_to_url = logout_redirect_to_url
     logout_handler = mock_handler(OAuthLogoutHandler, authenticator=authenticator)
     monkeypatch.setattr(web.RequestHandler, 'redirect', Mock())
 
@@ -114,8 +119,7 @@ async def test_custom_logout(monkeypatch):
     # Check redirection to the custom logout url
     authenticator.auth0_domain = AUTH0_DOMAIN
     await logout_handler.get()
-    custom_logout_url = f'https://{AUTH0_DOMAIN}/v2/logout'
-    logout_handler.redirect.assert_called_with(custom_logout_url)
+    logout_handler.redirect.assert_called_with(redirect_url)
 
 
 @mark.parametrize(
