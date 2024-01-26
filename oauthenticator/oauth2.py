@@ -268,9 +268,6 @@ class OAuthenticator(Authenticator):
         help="""
         Allow all authenticated users to login.
 
-        Note that if required_scopes is set, users who aren't granted the scopes
-        listed in that will still not be allowed to login.
-
         .. versionadded:: 16.0
         """,
     )
@@ -459,19 +456,18 @@ class OAuthenticator(Authenticator):
         """,
     )
 
-    required_scopes = List(
+    allowed_scopes = List(
         Unicode(),
         config=True,
         help="""
-        List of scopes that must be granted to allow login.
+        Allow users who have been granted *all* these scopes to log in.
 
-        All the scopes listed in this config must be present in the OAuth2 grant
-        from the authorizing server to allow the user to login. We request all
-        the scopes listed in the 'scope' config, but only a subset of these may
-        be granted by the authorization server. This may happen if the user does not
-        have permissions to access a requested scope, or has chosen to not give consent
-        for a particular scope. If the scopes listed in this config are not granted,
-        the user will not be allowed to log in.
+        We request all the scopes listed in the 'scope' config, but only a
+        subset of these may be granted by the authorization server. This may
+        happen if the user does not have permissions to access a requested
+        scope, or has chosen to not give consent for a particular scope. If the
+        scopes listed in this config are not granted, the user will not be
+        allowed to log in.
 
         The granted scopes will be part of the access token (fetched from self.token_url).
         See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3 for more
@@ -481,12 +477,12 @@ class OAuthenticator(Authenticator):
         """,
     )
 
-    @validate('required_scopes')
-    def _required_scopes_validation(self, proposal):
-        # required scopes must be a subset of requested scopes
+    @validate('allowed_scopes')
+    def _allowed_scopes_validation(self, proposal):
+        # allowed scopes must be a subset of requested scopes
         if set(proposal.value) - set(self.scope):
             raise ValueError(
-                f"Required Scopes must be a subset of Requested Scopes. {self.scope} is requested but {proposal.value} is required"
+                f"Allowed Scopes must be a subset of Requested Scopes. {self.scope} is requested but {proposal.value} is allowed"
             )
         return proposal.value
 
@@ -1048,16 +1044,14 @@ class OAuthenticator(Authenticator):
         if auth_model is None:
             return True
 
-        # If we specific scope grants are required, validate that they have been granted
-        # If not, we explicitly raise an exception here, since the user should not be allowed
-        # *regardless* of any other config allowing them access.
-        if self.required_scopes:
+        # Allow users who have been granted specific scopes that grant them entry
+        if self.allowed_scopes:
             granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
-            missing_scopes = set(self.required_scopes) - set(granted_scopes)
-            if missing_scopes:
-                message = f"Denying access to user {username}. {self.scope} scopes were requested, {self.required_scopes} are required for authorization, but only {granted_scopes} were granted"
+            missing_scopes = set(self.allowed_scopes) - set(granted_scopes)
+            if not missing_scopes:
+                message = f"Granting access to user {username}, as they had {self.allowed_scopes}"
                 self.log.info(message)
-                raise web.HTTPError(403, message)
+                return True
 
         if self.allow_all:
             return True

@@ -204,25 +204,20 @@ async def test_generic_data(get_authenticator, generic_client):
 
 
 @mark.parametrize(
-    ["requested_scopes", "allowed"], [(["advanced"], False), (["basic"], True)]
+    ["allowed_scopes", "allowed"], [(["advanced"], False), (["basic"], True)]
 )
-async def test_required_scopes(
-    get_authenticator, generic_client, requested_scopes, allowed
+async def test_allowed_scopes(
+    get_authenticator, generic_client, allowed_scopes, allowed
 ):
     c = Config()
-    c.GenericOAuthenticator.required_scopes = requested_scopes
-    c.GenericOAuthenticator.scope = list(requested_scopes)
-    c.GenericOAuthenticator.allow_all = True
+    c.GenericOAuthenticator.allowed_scopes = allowed_scopes
+    c.GenericOAuthenticator.scope = list(allowed_scopes)
     authenticator = get_authenticator(config=c)
 
     handled_user_model = user_model("user1")
     handler = generic_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.authenticate(handler)
-    if allowed:
-        assert await authenticator.check_allowed(auth_model["name"], auth_model)
-    else:
-        with raises(web.HTTPError):
-            await authenticator.check_allowed(auth_model["name"], auth_model)
+    assert allowed == await authenticator.check_allowed(auth_model["name"], auth_model)
 
 
 async def test_required_scopes_validation_scope_subset(get_authenticator):
