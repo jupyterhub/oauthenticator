@@ -482,7 +482,7 @@ class OAuthenticator(Authenticator):
         # allowed scopes must be a subset of requested scopes
         if set(proposal.value) - set(self.scope):
             raise ValueError(
-                f"Allowed Scopes must be a subset of Requested Scopes. {self.scope} is requested but {proposal.value} is allowed"
+                f"Allowed scopes must be a subset of requested scopes. {self.scope} is requested but {proposal.value} is allowed"
             )
         return proposal.value
 

@@ -219,15 +219,15 @@ async def test_allowed_scopes(
     assert allowed == await authenticator.check_allowed(auth_model["name"], auth_model)
 
 
-async def test_required_scopes_validation_scope_subset(get_authenticator):
+async def test_allowed_scopes_validation_scope_subset(get_authenticator):
     c = Config()
     # Test that if we require more scopes than we request, validation fails
-    c.GenericOAuthenticator.required_scopes = ["a", "b"]
+    c.GenericOAuthenticator.allowed_scopes = ["a", "b"]
     c.GenericOAuthenticator.scope = ["a"]
     with raises(
         ValueError,
         match=re.escape(
-            "Required Scopes must be a subset of Requested Scopes. ['a'] is requested but ['a', 'b'] is required"
+            "Allowed scopes must be a subset of requested scopes. ['a'] is requested but ['a', 'b'] is allowed"
         ),
     ):
         get_authenticator(config=c)
