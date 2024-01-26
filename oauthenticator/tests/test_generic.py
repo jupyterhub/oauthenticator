@@ -3,7 +3,6 @@ import re
 from functools import partial
 
 from pytest import fixture, mark, raises
-from tornado import web
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
