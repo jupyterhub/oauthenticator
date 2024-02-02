@@ -5,11 +5,11 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 """
 import base64
 import json
-import jwt
 import os
 import uuid
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
+import jwt
 from jupyterhub.auth import Authenticator
 from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from jupyterhub.handlers import BaseHandler, LogoutHandler
@@ -885,7 +885,7 @@ class OAuthenticator(Authenticator):
             if not id_token:
                 raise web.HTTPError(
                     500,
-                    f"An id token was not returned: {token_info}\nPlease configure authenticator.userdata_url"
+                    f"An id token was not returned: {token_info}\nPlease configure authenticator.userdata_url",
                 )
             try:
                 # Here we parse the id token. Note that per OIDC spec (core v1.0 sect. 3.1.3.7.6) we can skip
@@ -893,11 +893,17 @@ class OAuthenticator(Authenticator):
                 # https). Google suggests all token validation may be skipped assuming the provider is trusted.
                 # https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
                 # https://developers.google.com/identity/openid-connect/openid-connect#obtainuserinfo
-                return jwt.decode(id_token,
-                                  audience=self.client_id,
-                                  options=dict(verify_signature=False, verify_aud=True, verify_exp=True))
+                return jwt.decode(
+                    id_token,
+                    audience=self.client_id,
+                    options=dict(
+                        verify_signature=False, verify_aud=True, verify_exp=True
+                    ),
+                )
             except Exception as err:
-                raise web.HTTPError(500, f"Unable to decode id token: {id_token}\n{err}")
+                raise web.HTTPError(
+                    500, f"Unable to decode id token: {id_token}\n{err}"
+                )
 
         access_token = token_info["access_token"]
         token_type = token_info["token_type"]

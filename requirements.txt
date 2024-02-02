@@ -1,11 +1,11 @@
 # jsonschema is used for validating authenticator configurations
 jsonschema
 jupyterhub>=2.2
+# PyJWT is used for parsing id tokens
+pyjwt
 # requests is already required by JupyterHub, but explicitly ask for it since we use it
 requests
 # ruamel.yaml is used to read and write .yaml files.
 ruamel.yaml
 tornado
 traitlets
-# PyJWT is used for parsing id tokens
-pyjwt
