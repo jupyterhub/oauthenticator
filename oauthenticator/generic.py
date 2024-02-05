@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with any OAuth2 based identity provider.
 """
+
 import os
 from functools import reduce
 

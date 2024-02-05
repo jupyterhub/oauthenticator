@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with OpenShift as an identity provider.
 """
+
 import concurrent.futures
 import json
 import os

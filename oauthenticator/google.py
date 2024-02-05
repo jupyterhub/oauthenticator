@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with Google as an identity provider.
 """
+
 import os
 
 from jupyterhub.auth import LocalAuthenticator
