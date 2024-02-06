@@ -1,6 +1,7 @@
 """
 Example OAuthenticator to use with My Service
 """
+
 from jupyterhub.auth import LocalAuthenticator
 
 from oauthenticator.oauth2 import OAuthenticator, OAuthLoginHandler

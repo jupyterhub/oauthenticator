@@ -1,4 +1,5 @@
 """test azure ad"""
+
 import json
 import os
 import re

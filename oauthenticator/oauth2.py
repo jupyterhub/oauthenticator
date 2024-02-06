@@ -3,6 +3,7 @@ Base classes for use by OAuth2 based JupyterHub authenticator classes.
 
 Founded based on work by Kyle Kelley (@rgbkrk)
 """
+
 import base64
 import json
 import os

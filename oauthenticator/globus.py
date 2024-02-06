@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with Globus as an identity provider.
 """
+
 import base64
 import os
 import pickle
