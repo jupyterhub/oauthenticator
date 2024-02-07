@@ -19,7 +19,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default
+from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -377,14 +377,17 @@ class OAuthenticator(Authenticator):
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
 
-    username_claim = Unicode(
-        "username",
+    username_claim = Union(
+        [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
         config=True,
         help="""
-        The key to get the JupyterHub username from in the data response to the
-        request made to :attr:`userdata_url`.
+        When `userdata_url` returns a json response, the username will be taken
+        from this key.
 
-        Examples include: email, username, nickname
+        Can be a string key name or a callable that accepts the returned
+        userdata json (as a dict) and returns the username.  The callable is
+        useful e.g. for extracting the username from a nested object in the
+        response or doing other post processing.
 
         What keys are available will depend on the scopes requested and the
         authenticator used.
@@ -769,7 +772,11 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-        username = user_info.get(self.username_claim, None)
+
+        if callable(self.username_claim):
+            username = self.username_claim(user_info)
+        else:
+            username = user_info.get(self.username_claim, None)
         if not username:
             message = (f"No {self.username_claim} found in {user_info}",)
             self.log.error(message)
