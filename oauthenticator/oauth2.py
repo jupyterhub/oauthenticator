@@ -295,7 +295,7 @@ class OAuthenticator(Authenticator):
 
            When this is enabled and you wish to remove access for one or more
            users previously allowed, you must make sure that they
-           are not removed from the jupyterhub database. This can be tricky to do
+           are removed from the jupyterhub database. This can be tricky to do
            if you stop allowing a group of externally managed users for example.
 
         With this enabled, JupyterHub admin users can visit `/hub/admin` or use
@@ -1098,9 +1098,7 @@ OAuthenticator.class_traits()[
 ].help = """
 Set of usernames that should be allowed to login.
 
-If unspecified, grants no access.
-
-At least one `allow` configuration must be specified
+If unspecified, grants no access. You must set at least one other `allow` configuration
 if any users are to have permission to access the Hub.
 
 Any users in `admin_users` will be added to this set.

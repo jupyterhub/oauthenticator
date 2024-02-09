@@ -13,7 +13,7 @@ There are also lots of OAuth providers, and as a result, lots of ways to tell OA
 
 ## Default behavior: nobody is allowed!
 
-Assuming you have provided no `allow` configuration, the default behavior of OAuthenticator (starting with version 16) is to not allow any users unless explicitly authorized via _some_ `allow` configuration.
+The default behavior of OAuthenticator (starting with version 16) is to block all users unless explicitly authorized via _some_ `allow` configuration.
 If you want anyone to be able to use your hub, you must specify at least one `allow` configuration.
 
 ```{versionchanged} 16
@@ -91,7 +91,7 @@ Configuration documentation for {attr}`.OAuthenticator.allowed_users`
 ### `allow_existing_users`
 
 JupyterHub can allow you to add and remove users while the Hub is running via the admin page.
-If you add or remove users this way, they will be added to the JupyterHub database, but their ability to login will not be affected unless they are also granted access via an `allow` rule.
+If you add or remove users this way, they will be added to the JupyterHub database, but they will not be able to login unless they are also granted access via an `allow` rule.
 
 To enable managing users via the admin panel, set
 
@@ -121,7 +121,7 @@ Each OAuthenticator provider may have its own provider-specific rules to allow g
 ## Blocking Access
 
 It's possible that you want to limit who has access to your Hub to less than all of the users granted access by your `allow` configuration.
-`block` configuration always has higher priority than `allow` configuration, so if a user is explicitly allowed _and_ explicitly blocked, they will not be able to login.
+`block` configuration always has higher priority than `allow` configuration, so if a user is both allowed _and_ blocked, they will not be able to login.
 
 The only `block` configuration is the base Authenticators `block_users`,
 a set of usernames that will not be allowed to login.
@@ -133,7 +133,7 @@ Removing a user's login permissions (e.g. removing them from a GitLab project wh
 it does not remove the user from the JupyterHub database.
 This means that:
 
-1. any API tokens, that the user still has access to will continue to be valid, and can continue to be used, and
+1. any API tokens that the user still has access to will continue to be valid, and can continue to be used
 2. any still-valid browser sessions will continue to be logged in.
 
 ```{important}
