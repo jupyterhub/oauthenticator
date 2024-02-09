@@ -1,6 +1,6 @@
 # Generic OAuth with mock provider
 
-This example uses [mock-oauth2-server][] to launch a standalone local OAuth2 provider and configures GenericOAuthenticator to use it.
+This example uses [mock-oauth2-server] to launch a standalone local OAuth2 provider and configures GenericOAuthenticator to use it.
 
 mock-auth2-server implements OpenID Connect (OIDC), and can be used to test GenericOAuthenticator configurations for use with OIDC providers without needing to register your application with a real OAuth provider.
 
