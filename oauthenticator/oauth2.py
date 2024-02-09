@@ -269,6 +269,8 @@ class OAuthenticator(Authenticator):
         help="""
         Allow all authenticated users to login.
 
+        Overrides all other `allow` configuration.
+
         .. versionadded:: 16.0
         """,
     )
@@ -280,7 +282,7 @@ class OAuthenticator(Authenticator):
         Allow existing users to login.
 
         An existing user is a user in JupyterHub's database of users, and it
-        includes all users that has previously logged in.
+        includes all users that have previously logged in.
 
         .. warning::
 
@@ -291,9 +293,9 @@ class OAuthenticator(Authenticator):
 
         .. warning::
 
-           When this is enabled and you are to remove access for one or more
-           users allowed via other config options, you must make sure that they
-           are not part of the database of users still. This can be tricky to do
+           When this is enabled and you wish to remove access for one or more
+           users previously allowed, you must make sure that they
+           are not removed from the jupyterhub database. This can be tricky to do
            if you stop allowing a group of externally managed users for example.
 
         With this enabled, JupyterHub admin users can visit `/hub/admin` or use
@@ -1086,3 +1088,20 @@ class OAuthenticator(Authenticator):
                 self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
             )
         super().__init__(**kwargs)
+
+
+# patch allowed_users help string to match our definition
+# base Authenticator class help string gives the wrong impression
+# when combined with other allow options
+OAuthenticator.class_traits()[
+    "allowed_users"
+].help = """
+Set of usernames that should be allowed to login.
+
+If unspecified, grants no access.
+
+At least one `allow` configuration must be specified
+if any users are to have permission to access the Hub.
+
+Any users in `admin_users` will be added to this set.
+"""
