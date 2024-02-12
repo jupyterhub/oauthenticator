@@ -112,7 +112,6 @@ Configuration documentation for {attr}`.OAuthenticator.allow_existing_users`
 
 Each OAuthenticator provider may have its own provider-specific rules to allow groups of users access, such as:
 
-- {attr}`.CILogonOAuthenticator.allowed_idps`
 - {attr}`.GitHubOAuthenticator.allowed_organizations`
 - {attr}`.GitLabOAuthenticator.allowed_gitlab_groups`
 - {attr}`.GlobusOAuthenticator.allowed_globus_groups`
