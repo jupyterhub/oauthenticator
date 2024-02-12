@@ -281,15 +281,19 @@ class OAuthenticator(Authenticator):
         help="""
         Allow existing users to login.
 
-        An existing user is a user in JupyterHub's database of users, and it
-        includes all users that have previously logged in.
+        Enable this if you want to manage user access via the JupyterHub admin page (/hub/admin).
+
+        With this enabled, all users present in the JupyterHub database are allowed to login.
+        This has the effect of any user who has _previously_ been allowed to login
+        via any means will continue to be allowed until the user is deleted via the /hub/admin page
+        or REST API.
 
         .. warning::
 
            Before enabling this you should review the existing users in the
            JupyterHub admin panel at `/hub/admin`. You may find users existing
-           there because they have once been declared in config such as
-           `allowed_users` or once been allowed to sign in.
+           there because they have previously been declared in config such as
+           `allowed_users` or allowed to sign in.
 
         .. warning::
 
@@ -299,19 +303,7 @@ class OAuthenticator(Authenticator):
            if you stop allowing a group of externally managed users for example.
 
         With this enabled, JupyterHub admin users can visit `/hub/admin` or use
-        JupyterHub's REST API to add and remove users as a way to allow them
-        access.
-
-        The username for existing users must match the normalized username
-        returned by the authenticator. When creating users, only lowercase
-        letters should be used unless `MWOAuthenticator` is used.
-
-        .. note::
-
-           Allowing existing users is done by adding existing users on startup
-           and newly created users to the `allowed_users` set. Due to that, you
-           can't rely on this config to independently allow existing users if
-           you for example would reset `allowed_users` after startup.
+        JupyterHub's REST API to add and remove users to manage who can login.
 
         .. versionadded:: 16.0
 
