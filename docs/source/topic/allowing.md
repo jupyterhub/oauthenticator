@@ -108,7 +108,7 @@ Once the user has been added to the database, the only way to revoke their acces
 Configuration documentation for {attr}`.OAuthenticator.allow_existing_users`
 ```
 
-### provider-specific rules
+### Provider-specific rules
 
 Each OAuthenticator provider may have its own provider-specific rules to allow groups of users access, such as:
 
@@ -137,6 +137,6 @@ This means that:
 
 ```{important}
 To fully remove a user's access to JupyterHub,
-their login permission must be revoked _and_ their User fully deleted from the Hub,
+their login permission must be revoked _and_ their user fully deleted from the Hub,
 e.g. via the admin page.
 ```
