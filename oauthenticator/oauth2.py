@@ -269,6 +269,8 @@ class OAuthenticator(Authenticator):
         help="""
         Allow all authenticated users to login.
 
+        Overrides all other `allow` configuration.
+
         .. versionadded:: 16.0
         """,
     )
@@ -279,37 +281,29 @@ class OAuthenticator(Authenticator):
         help="""
         Allow existing users to login.
 
-        An existing user is a user in JupyterHub's database of users, and it
-        includes all users that has previously logged in.
+        Enable this if you want to manage user access via the JupyterHub admin page (/hub/admin).
+
+        With this enabled, all users present in the JupyterHub database are allowed to login.
+        This has the effect of any user who has _previously_ been allowed to login
+        via any means will continue to be allowed until the user is deleted via the /hub/admin page
+        or REST API.
 
         .. warning::
 
            Before enabling this you should review the existing users in the
            JupyterHub admin panel at `/hub/admin`. You may find users existing
-           there because they have once been declared in config such as
-           `allowed_users` or once been allowed to sign in.
+           there because they have previously been declared in config such as
+           `allowed_users` or allowed to sign in.
 
         .. warning::
 
-           When this is enabled and you are to remove access for one or more
-           users allowed via other config options, you must make sure that they
-           are not part of the database of users still. This can be tricky to do
+           When this is enabled and you wish to remove access for one or more
+           users previously allowed, you must make sure that they
+           are removed from the jupyterhub database. This can be tricky to do
            if you stop allowing a group of externally managed users for example.
 
         With this enabled, JupyterHub admin users can visit `/hub/admin` or use
-        JupyterHub's REST API to add and remove users as a way to allow them
-        access.
-
-        The username for existing users must match the normalized username
-        returned by the authenticator. When creating users, only lowercase
-        letters should be used unless `MWOAuthenticator` is used.
-
-        .. note::
-
-           Allowing existing users is done by adding existing users on startup
-           and newly created users to the `allowed_users` set. Due to that, you
-           can't rely on this config to independently allow existing users if
-           you for example would reset `allowed_users` after startup.
+        JupyterHub's REST API to add and remove users to manage who can login.
 
         .. versionadded:: 16.0
 
@@ -1086,3 +1080,18 @@ class OAuthenticator(Authenticator):
                 self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
             )
         super().__init__(**kwargs)
+
+
+# patch allowed_users help string to match our definition
+# base Authenticator class help string gives the wrong impression
+# when combined with other allow options
+OAuthenticator.class_traits()[
+    "allowed_users"
+].help = """
+Set of usernames that should be allowed to login.
+
+If unspecified, grants no access. You must set at least one other `allow` configuration
+if any users are to have permission to access the Hub.
+
+Any usernames in `admin_users` will also be allowed to login.
+"""
