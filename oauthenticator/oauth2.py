@@ -360,21 +360,36 @@ class OAuthenticator(Authenticator):
     def _token_url_default(self):
         return os.environ.get("OAUTH2_TOKEN_URL", "")
 
+    userdata_from_id_token = Bool(
+        False,
+        config=True,
+        help="""
+        Extract user details from an id token received via a request to
+        :attr:`token_url`, rather than making a follow-up request to the
+        userinfo endpoint :attr:`userdata_url`.
+
+        Should only be used if :attr:`token_url` uses HTTPS, to ensure
+        token authenticity.
+
+        For more context, see `Authentication using the Authorization
+        Code Flow
+        <https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth>`_
+        in the OIDC Core standard document.
+        """,
+    )
+
     userdata_url = Unicode(
         config=True,
-        allow_none=True,
         help="""
         The URL to where this authenticator makes a request to acquire user
         details with an access token received via a request to the
         :attr:`token_url`.
 
-        If this is explicitly set to None, this authenticator will attempt
-        to instead use an id token if one was provided by the
-        :attr:`token_url`.
-
         For more context, see the `Protocol Flow section
         <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
         standard document, specifically steps E-F.
+
+        Incompatible with :attr:`userdata_from_id_token`.
         """,
     )
 
@@ -869,7 +884,8 @@ class OAuthenticator(Authenticator):
         Determines who the logged-in user by sending a "GET" request to
         :data:`oauthenticator.OAuthenticator.userdata_url` using the `access_token`.
 
-        If `userdata_url` is None, checks for an `id_token` instead.
+        If :data:`oauthenticator.OAuthenticator.userdata_from_id_token` is set then
+        extracts the corresponding info from an `id_token` instead.
 
         Args:
             token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
@@ -879,8 +895,12 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-        if self.userdata_url is None:
+        if self.userdata_from_id_token:
             # Use id token instead of exchanging access token with userinfo endpoint.
+            if self.userdata_url:
+                raise ValueError(
+                    "Cannot specify both authenticator.userdata_url and authenticator.userdata_from_id_token."
+                )
             id_token = token_info.get("id_token", None)
             if not id_token:
                 raise web.HTTPError(
