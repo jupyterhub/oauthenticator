@@ -17,7 +17,7 @@ The default behavior of OAuthenticator (starting with version 16) is to block al
 If you want anyone to be able to use your hub, you must specify at least one `allow` configuration.
 
 ```{versionchanged} 16
-Prior to OAuthenticator 16, `allow_all` was _implied_ if `allowed_users` was not specified.
+Prior to OAuthenticator 16, `allow_all` was _implied_ if no other `allow` configuration was specified.
 Starting from 16, `allow_all` can only be enabled explicitly.
 ```
 
