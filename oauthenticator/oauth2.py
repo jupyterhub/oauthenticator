@@ -1093,5 +1093,5 @@ Set of usernames that should be allowed to login.
 If unspecified, grants no access. You must set at least one other `allow` configuration
 if any users are to have permission to access the Hub.
 
-Any users in `admin_users` will be added to this set.
+Any usernames in `admin_users` will also be allowed to login.
 """

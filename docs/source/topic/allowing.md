@@ -82,7 +82,7 @@ c.OAuthenticator.allowed_users = {"mensah", "ratthi"}
 
 If this is your only configuration, only these users will be allowed, no others.
 
-Note that any additional usernames in the deprecated `admin_users` configuration will also be added to the `allowed_users` set.
+Note that any additional usernames in the deprecated `admin_users` configuration will also be allowed to login.
 
 ```{seealso}
 Configuration documentation for {attr}`.OAuthenticator.allowed_users`
