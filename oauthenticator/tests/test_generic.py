@@ -1,4 +1,5 @@
 import json
+import jwt
 from functools import partial
 
 from pytest import fixture, mark
@@ -18,6 +19,11 @@ def user_model(username, **kwargs):
     }
 
 
+@fixture(params=[True, False])
+def userdata_from_id_token(request):
+    return request.param
+
+
 @fixture
 def generic_client(client):
     setup_oauth_mock(
@@ -25,6 +31,18 @@ def generic_client(client):
         host='generic.horse',
         access_token_path='/oauth/access_token',
         user_path='/oauth/userinfo',
+    )
+    return client
+
+
+@fixture
+def generic_client_variant(client, userdata_from_id_token):
+    setup_oauth_mock(
+        client,
+        host='generic.horse',
+        access_token_path='/oauth/access_token',
+        user_path='/oauth/userinfo',
+        token_request_style='jwt' if userdata_from_id_token else 'post',
     )
     return client
 
@@ -37,12 +55,31 @@ def _get_authenticator(**kwargs):
     )
 
 
+def _get_authenticator_for_id_token(**kwargs):
+    return GenericOAuthenticator(
+        token_url='https://generic.horse/oauth/access_token',
+        userdata_from_id_token=True,
+        **kwargs,
+    )
+
+
 @fixture
 def get_authenticator(generic_client):
     """
     http_client can't be configured, only passed as argument to the constructor.
     """
     return partial(_get_authenticator, http_client=generic_client)
+
+
+@fixture
+def get_authenticator_variant(generic_client, userdata_from_id_token):
+    """
+    http_client can't be configured, only passed as argument to the constructor.
+    """
+    return partial(
+        _get_authenticator_for_id_token if userdata_from_id_token else _get_authenticator,
+        http_client=generic_client
+    )
 
 
 @mark.parametrize(
@@ -163,24 +200,27 @@ def get_authenticator(generic_client):
     ],
 )
 async def test_generic(
-    get_authenticator,
-    generic_client,
+    get_authenticator_variant,
+    generic_client_variant,
     test_variation_id,
     class_config,
     expect_allowed,
     expect_admin,
+    userdata_from_id_token,
 ):
     print(f"Running test variation id {test_variation_id}")
     c = Config()
     c.GenericOAuthenticator = Config(class_config)
     c.GenericOAuthenticator.username_claim = "username"
-    authenticator = get_authenticator(config=c)
+    authenticator = get_authenticator_variant(config=c)
     manage_groups = False
     if "manage_groups" in class_config:
         manage_groups = authenticator.manage_groups
 
     handled_user_model = user_model("user1")
-    handler = generic_client.handler_for_user(handled_user_model)
+    if userdata_from_id_token:
+        handled_user_model = dict(id_token=jwt.encode(handled_user_model, key="foo"))
+    handler = generic_client_variant.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
 
     if expect_allowed:
