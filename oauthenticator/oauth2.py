@@ -19,7 +19,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default
+from traitlets import Any, Bool, Dict, List, Unicode, default, validate
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -396,6 +396,14 @@ class OAuthenticator(Authenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
+
+    @validate("userdata_url")
+    def _validate_userdata_url(self, proposal):
+        if proposal.value and self.userdata_from_id_token:
+            raise ValueError(
+                "Cannot specify both authenticator.userdata_url and authenticator.userdata_from_id_token."
+            )
+        return proposal.value
 
     username_claim = Unicode(
         "username",
@@ -897,10 +905,6 @@ class OAuthenticator(Authenticator):
         """
         if self.userdata_from_id_token:
             # Use id token instead of exchanging access token with userinfo endpoint.
-            if self.userdata_url:
-                raise ValueError(
-                    "Cannot specify both authenticator.userdata_url and authenticator.userdata_from_id_token."
-                )
             id_token = token_info.get("id_token", None)
             if not id_token:
                 raise web.HTTPError(
