@@ -88,8 +88,6 @@ with open('requirements.txt') as f:
 
 
 setup_args['extras_require'] = {
-    # azuread is required for use of AzureADOAuthenticator
-    'azuread': ['pyjwt>=2'],
     # googlegroups is required for use of GoogleOAuthenticator configured with
     # either admin_google_groups and/or allowed_google_groups.
     'googlegroups': [
@@ -106,8 +104,6 @@ setup_args['extras_require'] = {
         'pytest-asyncio>=0.17,<0.23',
         'pytest-cov',
         'requests-mock',
-        # dependencies from azuread:
-        'pyjwt>=2',
         # dependencies from googlegroups:
         'google-api-python-client',
         'google-auth-oauthlib',

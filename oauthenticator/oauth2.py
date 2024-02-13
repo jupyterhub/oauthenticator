@@ -10,6 +10,7 @@ import os
 import uuid
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
+import jwt
 from jupyterhub.auth import Authenticator
 from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from jupyterhub.handlers import BaseHandler, LogoutHandler
@@ -19,7 +20,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default
+from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default, validate
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -354,6 +355,24 @@ class OAuthenticator(Authenticator):
     def _token_url_default(self):
         return os.environ.get("OAUTH2_TOKEN_URL", "")
 
+    userdata_from_id_token = Bool(
+        False,
+        config=True,
+        help="""
+        Extract user details from an id token received via a request to
+        :attr:`token_url`, rather than making a follow-up request to the
+        userinfo endpoint :attr:`userdata_url`.
+
+        Should only be used if :attr:`token_url` uses HTTPS, to ensure
+        token authenticity.
+
+        For more context, see `Authentication using the Authorization
+        Code Flow
+        <https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth>`_
+        in the OIDC Core standard document.
+        """,
+    )
+
     userdata_url = Unicode(
         config=True,
         help="""
@@ -364,12 +383,22 @@ class OAuthenticator(Authenticator):
         For more context, see the `Protocol Flow section
         <https://www.rfc-editor.org/rfc/rfc6749#section-1.2>`_ in the OAuth2
         standard document, specifically steps E-F.
+
+        Incompatible with :attr:`userdata_from_id_token`.
         """,
     )
 
     @default("userdata_url")
     def _userdata_url_default(self):
         return os.environ.get("OAUTH2_USERDATA_URL", "")
+
+    @validate("userdata_url")
+    def _validate_userdata_url(self, proposal):
+        if proposal.value and self.userdata_from_id_token:
+            raise ValueError(
+                "Cannot specify both authenticator.userdata_url and authenticator.userdata_from_id_token."
+            )
+        return proposal.value
 
     username_claim = Union(
         [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
@@ -865,6 +894,9 @@ class OAuthenticator(Authenticator):
         Determines who the logged-in user by sending a "GET" request to
         :data:`oauthenticator.OAuthenticator.userdata_url` using the `access_token`.
 
+        If :data:`oauthenticator.OAuthenticator.userdata_from_id_token` is set then
+        extracts the corresponding info from an `id_token` instead.
+
         Args:
             token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
 
@@ -873,6 +905,32 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
+        if self.userdata_from_id_token:
+            # Use id token instead of exchanging access token with userinfo endpoint.
+            id_token = token_info.get("id_token", None)
+            if not id_token:
+                raise web.HTTPError(
+                    500,
+                    f"An id token was not returned: {token_info}\nPlease configure authenticator.userdata_url",
+                )
+            try:
+                # Here we parse the id token. Note that per OIDC spec (core v1.0 sect. 3.1.3.7.6) we can skip
+                # signature validation as the hub has obtained the tokens from the id provider directly (using
+                # https). Google suggests all token validation may be skipped assuming the provider is trusted.
+                # https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
+                # https://developers.google.com/identity/openid-connect/openid-connect#obtainuserinfo
+                return jwt.decode(
+                    id_token,
+                    audience=self.client_id,
+                    options=dict(
+                        verify_signature=False, verify_aud=True, verify_exp=True
+                    ),
+                )
+            except Exception as err:
+                raise web.HTTPError(
+                    500, f"Unable to decode id token: {id_token}\n{err}"
+                )
+
         access_token = token_info["access_token"]
         token_type = token_info["token_type"]
 

@@ -1,22 +1,31 @@
 import json
 from functools import partial
 
+import jwt
 from pytest import fixture, mark
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
 from .mocks import setup_oauth_mock
 
+client_id = "jupyterhub-oauth-client"
+
 
 def user_model(username, **kwargs):
     """Return a user model"""
     return {
         "username": username,
+        "aud": client_id,
         "sub": "oauth2|cilogon|http://cilogon.org/servera/users/43431",
         "scope": "basic",
         "groups": ["group1"],
         **kwargs,
     }
+
+
+@fixture(params=["id_token", "userdata_url"])
+def userdata_from_id_token(request):
+    return request.param == "id_token"
 
 
 @fixture
@@ -30,10 +39,32 @@ def generic_client(client):
     return client
 
 
+@fixture
+def generic_client_variant(client, userdata_from_id_token):
+    setup_oauth_mock(
+        client,
+        host='generic.horse',
+        access_token_path='/oauth/access_token',
+        user_path='/oauth/userinfo',
+        token_request_style='jwt' if userdata_from_id_token else 'post',
+    )
+    return client
+
+
 def _get_authenticator(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
         userdata_url='https://generic.horse/oauth/userinfo',
+        client_id=client_id,
+        **kwargs,
+    )
+
+
+def _get_authenticator_for_id_token(**kwargs):
+    return GenericOAuthenticator(
+        token_url='https://generic.horse/oauth/access_token',
+        userdata_from_id_token=True,
+        client_id=client_id,
         **kwargs,
     )
 
@@ -44,6 +75,21 @@ def get_authenticator(generic_client):
     http_client can't be configured, only passed as argument to the constructor.
     """
     return partial(_get_authenticator, http_client=generic_client)
+
+
+@fixture
+def get_authenticator_variant(generic_client, userdata_from_id_token):
+    """
+    http_client can't be configured, only passed as argument to the constructor.
+    """
+    return partial(
+        (
+            _get_authenticator_for_id_token
+            if userdata_from_id_token
+            else _get_authenticator
+        ),
+        http_client=generic_client,
+    )
 
 
 @mark.parametrize(
@@ -164,24 +210,27 @@ def get_authenticator(generic_client):
     ],
 )
 async def test_generic(
-    get_authenticator,
-    generic_client,
+    get_authenticator_variant,
+    generic_client_variant,
     test_variation_id,
     class_config,
     expect_allowed,
     expect_admin,
+    userdata_from_id_token,
 ):
     print(f"Running test variation id {test_variation_id}")
     c = Config()
     c.GenericOAuthenticator = Config(class_config)
     c.GenericOAuthenticator.username_claim = "username"
-    authenticator = get_authenticator(config=c)
+    authenticator = get_authenticator_variant(config=c)
     manage_groups = False
     if "manage_groups" in class_config:
         manage_groups = authenticator.manage_groups
 
     handled_user_model = user_model("user1")
-    handler = generic_client.handler_for_user(handled_user_model)
+    if userdata_from_id_token:
+        handled_user_model = dict(id_token=jwt.encode(handled_user_model, key="foo"))
+    handler = generic_client_variant.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
 
     if expect_allowed:
