@@ -5,6 +5,7 @@ JupyterHub config file enabling gist-access via environment variables
 2. pass select auth_state to Spawner via environment variables
 3. enable auth_state via `JUPYTERHUB_CRYPT_KEY` and `enable_auth_state = True`
 """
+
 import os
 import pprint
 import warnings

@@ -3,6 +3,7 @@ Base classes for use by OAuth2 based JupyterHub authenticator classes.
 
 Founded based on work by Kyle Kelley (@rgbkrk)
 """
+
 import base64
 import json
 import os
@@ -19,7 +20,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Dict, List, Unicode, default, validate
+from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default, validate
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -269,6 +270,8 @@ class OAuthenticator(Authenticator):
         help="""
         Allow all authenticated users to login.
 
+        Overrides all other `allow` configuration.
+
         .. versionadded:: 16.0
         """,
     )
@@ -279,37 +282,29 @@ class OAuthenticator(Authenticator):
         help="""
         Allow existing users to login.
 
-        An existing user is a user in JupyterHub's database of users, and it
-        includes all users that has previously logged in.
+        Enable this if you want to manage user access via the JupyterHub admin page (/hub/admin).
+
+        With this enabled, all users present in the JupyterHub database are allowed to login.
+        This has the effect of any user who has _previously_ been allowed to login
+        via any means will continue to be allowed until the user is deleted via the /hub/admin page
+        or REST API.
 
         .. warning::
 
            Before enabling this you should review the existing users in the
            JupyterHub admin panel at `/hub/admin`. You may find users existing
-           there because they have once been declared in config such as
-           `allowed_users` or once been allowed to sign in.
+           there because they have previously been declared in config such as
+           `allowed_users` or allowed to sign in.
 
         .. warning::
 
-           When this is enabled and you are to remove access for one or more
-           users allowed via other config options, you must make sure that they
-           are not part of the database of users still. This can be tricky to do
+           When this is enabled and you wish to remove access for one or more
+           users previously allowed, you must make sure that they
+           are removed from the jupyterhub database. This can be tricky to do
            if you stop allowing a group of externally managed users for example.
 
         With this enabled, JupyterHub admin users can visit `/hub/admin` or use
-        JupyterHub's REST API to add and remove users as a way to allow them
-        access.
-
-        The username for existing users must match the normalized username
-        returned by the authenticator. When creating users, only lowercase
-        letters should be used unless `MWOAuthenticator` is used.
-
-        .. note::
-
-           Allowing existing users is done by adding existing users on startup
-           and newly created users to the `allowed_users` set. Due to that, you
-           can't rely on this config to independently allow existing users if
-           you for example would reset `allowed_users` after startup.
+        JupyterHub's REST API to add and remove users to manage who can login.
 
         .. versionadded:: 16.0
 
@@ -405,14 +400,17 @@ class OAuthenticator(Authenticator):
             )
         return proposal.value
 
-    username_claim = Unicode(
-        "username",
+    username_claim = Union(
+        [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
         config=True,
         help="""
-        The key to get the JupyterHub username from in the data response to the
-        request made to :attr:`userdata_url`.
+        When `userdata_url` returns a json response, the username will be taken
+        from this key.
 
-        Examples include: email, username, nickname
+        Can be a string key name or a callable that accepts the returned
+        userdata json (as a dict) and returns the username.  The callable is
+        useful e.g. for extracting the username from a nested object in the
+        response or doing other post processing.
 
         What keys are available will depend on the scopes requested and the
         authenticator used.
@@ -797,7 +795,11 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-        username = user_info.get(self.username_claim, None)
+
+        if callable(self.username_claim):
+            username = self.username_claim(user_info)
+        else:
+            username = user_info.get(self.username_claim, None)
         if not username:
             message = (f"No {self.username_claim} found in {user_info}",)
             self.log.error(message)
@@ -1136,3 +1138,18 @@ class OAuthenticator(Authenticator):
                 self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
             )
         super().__init__(**kwargs)
+
+
+# patch allowed_users help string to match our definition
+# base Authenticator class help string gives the wrong impression
+# when combined with other allow options
+OAuthenticator.class_traits()[
+    "allowed_users"
+].help = """
+Set of usernames that should be allowed to login.
+
+If unspecified, grants no access. You must set at least one other `allow` configuration
+if any users are to have permission to access the Hub.
+
+Any usernames in `admin_users` will also be allowed to login.
+"""

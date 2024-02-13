@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with any OAuth2 based identity provider.
 """
+
 import os
 from functools import reduce
 
@@ -60,20 +61,6 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    username_claim = Union(
-        [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
-        config=True,
-        help="""
-        When `userdata_url` returns a json response, the username will be taken
-        from this key.
-
-        Can be a string key name or a callable that accepts the returned
-        userdata json (as a dict) and returns the username.  The callable is
-        useful e.g. for extracting the username from a nested object in the
-        response.
-        """,
-    )
-
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient(
@@ -112,17 +99,6 @@ class GenericOAuthenticator(OAuthenticator):
            Use :attr:`validate_server_cert`.
         """,
     )
-
-    def user_info_to_username(self, user_info):
-        """
-        Overrides OAuthenticator.user_info_to_username to support the
-        GenericOAuthenticator unique feature of allowing username_claim to be a
-        callable function.
-        """
-        if callable(self.username_claim):
-            return self.username_claim(user_info)
-        else:
-            return super().user_info_to_username(user_info)
 
     def get_user_groups(self, user_info):
         """

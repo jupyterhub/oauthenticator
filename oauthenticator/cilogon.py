@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with CILogon as an identity provider.
 """
+
 import os
 from fnmatch import fnmatch
 from urllib.parse import urlparse
