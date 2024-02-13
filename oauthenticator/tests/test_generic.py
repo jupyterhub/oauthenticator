@@ -1,7 +1,7 @@
 import json
-import jwt
 from functools import partial
 
+import jwt
 from pytest import fixture, mark
 from traitlets.config import Config
 
@@ -77,8 +77,12 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
     http_client can't be configured, only passed as argument to the constructor.
     """
     return partial(
-        _get_authenticator_for_id_token if userdata_from_id_token else _get_authenticator,
-        http_client=generic_client
+        (
+            _get_authenticator_for_id_token
+            if userdata_from_id_token
+            else _get_authenticator
+        ),
+        http_client=generic_client,
     )
 
 
