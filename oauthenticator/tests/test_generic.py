@@ -8,20 +8,23 @@ from traitlets.config import Config
 from ..generic import GenericOAuthenticator
 from .mocks import setup_oauth_mock
 
+client_id = "jupyterhub-oauth-client"
+
 
 def user_model(username, **kwargs):
     """Return a user model"""
     return {
         "username": username,
+        "aud": client_id,
         "scope": "basic",
         "groups": ["group1"],
         **kwargs,
     }
 
 
-@fixture(params=[True, False])
+@fixture(params=["id_token", "userdata_url"])
 def userdata_from_id_token(request):
-    return request.param
+    return request.param == "id_token"
 
 
 @fixture
@@ -51,6 +54,7 @@ def _get_authenticator(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
         userdata_url='https://generic.horse/oauth/userinfo',
+        client_id=client_id,
         **kwargs,
     )
 
@@ -59,6 +63,7 @@ def _get_authenticator_for_id_token(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
         userdata_from_id_token=True,
+        client_id=client_id,
         **kwargs,
     )
 
