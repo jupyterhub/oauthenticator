@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with MediaWiki as an identity provider.
 """
+
 import json
 import os
 from asyncio import wrap_future

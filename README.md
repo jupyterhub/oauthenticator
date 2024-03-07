@@ -16,7 +16,7 @@ plugged in and used with JupyterHub.
 The following authentication services are supported through their own authenticator: [Auth0](oauthenticator/auth0.py),
 [Azure AD](oauthenticator/azuread.py), [Bitbucket](oauthenticator/bitbucket.py), [CILogon](oauthenticator/cilogon.py), [FeiShu](https://github.com/tezignlab/jupyterhub_feishu_authenticator),
 [GitHub](oauthenticator/github.py), [GitLab](oauthenticator/gitlab.py), [Globus](oauthenticator/globus.py),
-[Google](oauthenticator/google.py), [MediaWiki](oauthenticator/mediawiki.py), [Okpy](oauthenticator/okpy.py),
+[Google](oauthenticator/google.py), [MediaWiki](oauthenticator/mediawiki.py),
 [OpenShift](oauthenticator/openshift.py).
 
 There is also a [GenericAuthenticator](oauthenticator/generic.py)

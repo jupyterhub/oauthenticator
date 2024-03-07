@@ -1,7 +1,9 @@
 """
 A JupyterHub authenticator class for use with CILogon as an identity provider.
 """
+
 import os
+from fnmatch import fnmatch
 from urllib.parse import urlparse
 
 import jsonschema
@@ -13,6 +15,24 @@ from traitlets import Bool, Dict, List, Unicode, default, validate
 from .oauth2 import OAuthenticator, OAuthLoginHandler
 
 yaml = YAML(typ="safe", pure=True)
+
+
+def _get_select_idp_param(allowed_idps):
+    """
+    The "selected_idp" query parameter included when the user is redirected to
+    CILogon should be a comma separated string of idps to choose from, where the
+    first entry is pre-selected as the default choice. The ordering of the
+    remaining idps has no meaning.
+    """
+    # pick the first idp marked as default, or fallback to the first idp
+    default_keys = [k for k, v in allowed_idps.items() if v.get("default")]
+    default_key = next(iter(default_keys), next(iter(allowed_idps)))
+
+    # put the default idp first followed by the other idps
+    other_keys = [k for k, _ in allowed_idps.items() if k != default_key]
+    selected_idp = ",".join([default_key] + other_keys)
+
+    return selected_idp
 
 
 class CILogonLoginHandler(OAuthLoginHandler):
@@ -29,10 +49,9 @@ class CILogonLoginHandler(OAuthLoginHandler):
         # include it, we then modify kwargs' extra_params dictionary
         extra_params = kwargs.setdefault('extra_params', {})
 
-        # selected_idp should be a comma separated string
-        allowed_idps = ",".join(self.authenticator.allowed_idps.keys())
-        extra_params["selected_idp"] = allowed_idps
-
+        extra_params["selected_idp"] = _get_select_idp_param(
+            self.authenticator.allowed_idps
+        )
         if self.authenticator.skin:
             extra_params["skin"] = self.authenticator.skin
 
@@ -123,28 +142,40 @@ class CILogonOAuthenticator(OAuthenticator):
                         "action": "strip_idp_domain",
                         "domain": "utoronto.ca",
                     },
-                },
-                "https://github.com/login/oauth/authorize": {
-                    "username_derivation": {
-                        "username_claim": "username",
-                        "action": "prefix",
-                        "prefix": "github",
-                    },
+                    "allow_all": True,
+                    "default": True,
                 },
                 "http://google.com/accounts/o8/id": {
                     "username_derivation": {
-                        "username_claim": "username",
+                        "username_claim": "email",
                         "action": "prefix",
                         "prefix": "google",
                     },
                     "allowed_domains": ["uni.edu", "something.org"],
                 },
+                "https://github.com/login/oauth/authorize": {
+                    "username_derivation": {
+                        "username_claim": "preferred_username",
+                        "action": "prefix",
+                        "prefix": "github",
+                    },
+                    # allow_all or allowed_domains not specified for ths idp,
+                    # this means that its users must be explicitly allowed
+                    # with a config such as allowed_users or admin_users.
+                },
             }
+            c.Authenticator.admin_users = ["github-user1"]
+            c.Authenticator.allowed_users = ["github-user2"]
 
-        Where `username_derivation` defines:
+        This is a description of the configuration you can pass to
+        `allowed_idps`.
 
+        * `default`: bool (optional)
+            Determines the identity provider to be pre-selected in a list for
+            users arriving to CILogons login screen.
+        * `username_derivation`: string (required)
             * `username_claim`: string (required)
-                The claim in the `userinfo` response from which to get the
+                The claim in the `userinfo` response from which to define the
                 JupyterHub username. Examples include: `eppn`, `email`. What
                 keys are available will depend on the scopes requested.
             * `action`: string
@@ -158,9 +189,31 @@ class CILogonOAuthenticator(OAuthenticator):
             * `prefix`: string (required if action is prefix)
                 The prefix which will be added at the beginning of the username
                 followed by a semi-column ":", if the action is "prefix".
-            * `allowed_domains`: string
-                It defines which domains will be allowed to login using the
-                specific identity provider.
+        * `allow_all`: bool (defaults to False)
+            Configuring this allows all users authenticating with this identity
+            provider.
+        * `allowed_domains`: list of strings
+            Allows users associated with a listed domain to sign in.
+
+            Use of wildcards `*` and a bit more is supported via Python's
+            `fnmatch` function since version 16.2. Setting `allowed_domains` to
+            `["jupyter.org", "*.jupyter.org"]` would for example allow users
+            with `jovyan@jupyter.org` or `jovyan@hub.jupyter.org` usernames.
+
+            The domain the user is associated with is based on the username by
+            default in version 16, but this can be reconfigured to be based on a
+            claim in the `userinfo` response via `allowed_domains_claim`. The
+            domain is treated case insensitive and can either be directly
+            specified by the claim's value or extracted from an email string.
+        * `allowed_domains_claim`: string (optional)
+            This configuration represents the claim in the `userinfo` response
+            to identify a domain that could allow a user to sign in via
+            `allowed_domains`.
+
+            The claim can defaults to the username claim in version 16, but this
+            will change to "email" in version 17.
+
+            .. versionadded:: 16.2
 
         .. versionchanged:: 15.0
 
@@ -196,6 +249,11 @@ class CILogonOAuthenticator(OAuthenticator):
                     "The keys of `allowed_idps` **must** be CILogon permitted EntityIDs. "
                     "See https://cilogon.org/idplist for the list of EntityIDs of each IDP."
                 )
+
+            # Make allowed_domains lowercase
+            idp_config["allowed_domains"] = [
+                ad.lower() for ad in idp_config.get("allowed_domains", [])
+            ]
 
         return idps
 
@@ -336,24 +394,47 @@ class CILogonOAuthenticator(OAuthenticator):
 
     async def check_allowed(self, username, auth_model):
         """
-        Overrides the OAuthenticator.check_allowed to also allow users part of
-        an `allowed_domains` as configured under `allowed_idps`.
+        Overrides the OAuthenticator.check_allowed to also allow users based on
+        idp specific config `allow_all` and `allowed_domains` as configured
+        under `allowed_idps`.
         """
         if await super().check_allowed(username, auth_model):
             return True
 
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_idp = user_info["idp"]
+
+        idp_allow_all = self.allowed_idps[user_idp].get("allow_all")
+        if idp_allow_all:
+            return True
+
         idp_allowed_domains = self.allowed_idps[user_idp].get("allowed_domains")
         if idp_allowed_domains:
-            unprocessed_username = self._user_info_to_unprocessed_username(user_info)
-            user_domain = unprocessed_username.split("@", 1)[1].lower()
-            if user_domain in idp_allowed_domains:
-                return True
+            idp_allowed_domains_claim = self.allowed_idps[user_idp].get(
+                "allowed_domains_claim"
+            )
+            if idp_allowed_domains_claim:
+                raw_user_domain = user_info.get(idp_allowed_domains_claim)
+                if not raw_user_domain:
+                    message = f"Configured allowed_domains_claim {idp_allowed_domains_claim} for {user_idp} was not found in the response {user_info.keys()}"
+                    self.log.error(message)
+                    raise web.HTTPError(500, message)
+            else:
+                raw_user_domain = self._user_info_to_unprocessed_username(user_info)
 
-            message = f"Login with domain @{user_domain} is not allowed"
-            self.log.warning(message)
-            raise web.HTTPError(403, message)
+            # refine a domain from a string that possibly looks like an email
+            user_domain = raw_user_domain.split("@")[-1].lower()
+
+            for ad in idp_allowed_domains:
+                # fnmatch allow us to use wildcards like * and ?, but
+                # not the full regex. For simple domain matching this is
+                # good enough. If we were to use regexes instead, people
+                # will have to escape all their '.'s, and since that is
+                # actually going to match 'any character' it is a
+                # possible security hole. For details see
+                # https://docs.python.org/3/library/fnmatch.html.
+                if fnmatch(user_domain, ad):
+                    return True
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False

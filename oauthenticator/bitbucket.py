@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with Bitbucket as an identity provider.
 """
+
 import os
 
 from jupyterhub.auth import LocalAuthenticator
@@ -73,11 +74,13 @@ class BitbucketOAuthenticator(OAuthenticator):
         Fetch and store `user_teams` in auth state if `allowed_teams` is
         configured.
         """
+        user_teams = set()
         if self.allowed_teams:
             access_token = auth_model["auth_state"]["token_response"]["access_token"]
             token_type = auth_model["auth_state"]["token_response"]["token_type"]
             user_teams = await self._fetch_user_teams(access_token, token_type)
-            auth_model["auth_state"]["user_teams"] = user_teams
+        # sets are not JSONable, cast to list for auth_state
+        auth_model["auth_state"]["user_teams"] = list(user_teams)
 
         return auth_model
 
@@ -90,8 +93,8 @@ class BitbucketOAuthenticator(OAuthenticator):
             return True
 
         if self.allowed_teams:
-            user_teams = auth_model["auth_state"]["user_teams"]
-            if any(user_teams & self.allowed_teams):
+            user_teams = set(auth_model["auth_state"].get("user_teams", []))
+            if user_teams & self.allowed_teams:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

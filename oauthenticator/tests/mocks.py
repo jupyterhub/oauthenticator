@@ -1,4 +1,5 @@
 """Mocking utilities for testing"""
+
 import json
 import os
 import re
@@ -253,6 +254,10 @@ def mock_handler(Handler, uri='https://hub.example.com', method='GET', **setting
     )
     handler._transforms = []
     return handler
+
+
+async def mock_login_user_coro():
+    return True
 
 
 async def no_code_test(authenticator):

@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with Google as an identity provider.
 """
+
 import os
 
 from jupyterhub.auth import LocalAuthenticator
@@ -108,19 +109,28 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Unicode(),
         config=True,
         help="""
-        Restrict sign-in to a list of email domain names, such as
-        `["mycollege.edu"]`.
+        This config has two functions.
+
+        1. Restrict sign-in to a list of email domain names, such as
+           `["mycollege.edu"]` or `["college1.edu", "college2.edu"]`.
+        2. If a single domain is specified, the username will be stripped to exclude the `@domain` part.
 
         Note that users with email domains in this list must still be allowed
         via another config, such as `allow_all`, `allowed_users`, or
         `allowed_google_groups`.
+
+        ```{warning} Disruptive config changes
+        Changing this config either to or from having a single entry is a
+        disruptive change as the same Google user will get a new username,
+        either without or with a domain name included.
+        ```
         """,
     )
 
     @default('hosted_domain')
     def _hosted_domain_from_env(self):
         domains = []
-        for domain in os.environ.get('HOSTED_DOMAIN', '').split(';'):
+        for domain in os.environ.get('HOSTED_DOMAIN', '').lower().split(';'):
             if domain:
                 # check falsy to avoid trailing separators
                 # adding empty domains
@@ -153,6 +163,23 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
+    def user_info_to_username(self, user_info):
+        """
+        Overrides the default implementation to conditionally also strip the
+        user email's domain name from the username based on the hosted_domain
+        configuration. The domain saved to user_info for use by authorization
+        logic.
+        """
+        username = super().user_info_to_username(user_info)
+        user_email = user_info["email"]
+        user_domain = user_info["domain"] = user_email.split("@")[1].lower()
+
+        if len(self.hosted_domain) == 1 and self.hosted_domain[0] == user_domain:
+            # unambiguous domain, use only base name
+            username = username.split("@")[0]
+
+        return username
+
     async def update_auth_model(self, auth_model):
         """
         Fetch and store `google_groups` in auth state if `allowed_google_groups`
@@ -162,17 +189,19 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         configured and the user isn't part of `admin_users`. Note that leaving
         it at None makes users able to retain an admin status while setting it
         to False makes it be revoked.
+
+        Strips the domain from the username if `hosted_domain` is configured
+        with a single entry.
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
         user_email = user_info["email"]
-        user_domain = user_info["domain"] = user_email.split("@")[1].lower()
+        user_domain = user_info["domain"]
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
-            user_groups = user_info["google_groups"] = self._fetch_user_groups(
-                user_email, user_domain
-            )
-        user_info["google_groups"] = user_groups
+            user_groups = self._fetch_user_groups(user_email, user_domain)
+        # sets are not JSONable, cast to list for auth_state
+        user_info["google_groups"] = list(user_groups)
 
         if auth_model["admin"]:
             # auth_model["admin"] being True means the user was in admin_users
@@ -181,7 +210,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if self.admin_google_groups:
             # admin status should in this case be True or False, not None
             admin_groups = self.admin_google_groups.get(user_domain, set())
-            auth_model["admin"] = any(user_groups & admin_groups)
+            auth_model["admin"] = bool(user_groups & admin_groups)
 
         return auth_model
 
@@ -190,6 +219,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Overrides the OAuthenticator.check_allowed to also allow users part of
         `allowed_google_groups`.
         """
+        # A workaround for JupyterHub < 5.0 described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
+
         # before considering allowing a username by being recognized in a list
         # of usernames or similar, we must ensure that the authenticated user
         # has a verified email and is part of hosted_domain if configured.
@@ -219,9 +253,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             return True
 
         if self.allowed_google_groups:
-            user_groups = user_info["google_groups"]
+            user_groups = set(user_info["google_groups"])
             allowed_groups = self.allowed_google_groups.get(user_domain, set())
-            if any(user_groups & allowed_groups):
+            if user_groups & allowed_groups:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

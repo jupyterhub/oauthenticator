@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with Azure AD as an identity provider.
 """
+
 import os
 
 import jwt
@@ -20,6 +21,16 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default("username_claim")
     def _username_claim_default(self):
         return "name"
+
+    user_groups_claim = Unicode(
+        "groups",
+        config=True,
+        help="""
+        Name of claim containing user group memberships.
+
+        Will populate JupyterHub groups if Authenticator.manage_groups is True.
+        """,
+    )
 
     tenant_id = Unicode(
         config=True,
@@ -43,6 +54,15 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url_default(self):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
+
+    async def update_auth_model(self, auth_model, **kwargs):
+        auth_model = await super().update_auth_model(auth_model, **kwargs)
+
+        if getattr(self, "manage_groups", False):
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            auth_model["groups"] = user_info[self.user_groups_claim]
+
+        return auth_model
 
     async def token_to_user(self, token_info):
         id_token = token_info['id_token']

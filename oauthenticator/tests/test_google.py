@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import re
 from unittest import mock
@@ -176,25 +177,89 @@ async def test_google(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "access_token" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
         if authenticator.allowed_google_groups or authenticator.admin_google_groups:
-            assert user_info["google_groups"] == {"group1"}
+            assert user_info["google_groups"] == ["group1"]
     else:
         assert auth_model == None
 
 
-async def test_hosted_domain(google_client):
+async def test_hosted_domain_single_entry(google_client):
+    """
+    Tests that sign in is restricted to the listed domain and that the username
+    represents the part before the `@domain.com` as expected when hosted_domain
+    contains a single entry.
+    """
     c = Config()
     c.GoogleOAuthenticator.hosted_domain = ["In-Hosted-Domain.com"]
-    c.GoogleOAuthenticator.allow_all = True
+    c.GoogleOAuthenticator.admin_users = {"user1"}
+    c.GoogleOAuthenticator.allowed_users = {"user2"}
     authenticator = GoogleOAuthenticator(config=c)
 
     handled_user_model = user_model("user1@iN-hosteD-domaiN.com")
     handler = google_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
     assert auth_model
+    assert auth_model["name"] == "user1"
+    assert auth_model["admin"] == True
+
+    handled_user_model = user_model("user2@iN-hosteD-domaiN.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
+    assert auth_model["name"] == "user2"
+    assert auth_model["admin"] == None
+
+    handled_user_model = user_model("user1@not-in-hosted-domain.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    with raises(HTTPError) as exc:
+        await authenticator.get_authenticated_user(handler, None)
+    assert exc.value.status_code == 403
+
+
+@mark.parametrize(
+    "name, allowed",
+    [
+        ("allowed", True),
+        ("notallowed", False),
+    ],
+)
+async def test_check_allowed_no_auth_state(google_client, name, allowed):
+    authenticator = GoogleOAuthenticator(allowed_users={"allowed"})
+    # allow check always gets called with no auth model during Hub startup
+    # these are previously-allowed users who should pass until subsequent
+    # this check is removed in JupyterHub 5
+    assert await authenticator.check_allowed(name, None)
+
+
+async def test_hosted_domain_multiple_entries(google_client):
+    """
+    Tests that sign in is restricted to the listed domains and that the username
+    represents the full email as expected when hosted_domain contains multiple
+    entries.
+    """
+    c = Config()
+    c.GoogleOAuthenticator.hosted_domain = [
+        "In-Hosted-Domain1.com",
+        "In-Hosted-Domain2.com",
+    ]
+    c.GoogleOAuthenticator.allow_all = True
+    authenticator = GoogleOAuthenticator(config=c)
+
+    handled_user_model = user_model("user1@iN-hosteD-domaiN1.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
+    assert auth_model["name"] == "user1@in-hosted-domain1.com"
+
+    handled_user_model = user_model("user2@iN-hosteD-domaiN2.com")
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model
+    assert auth_model["name"] == "user2@in-hosted-domain2.com"
 
     handled_user_model = user_model("user1@not-in-hosted-domain.com")
     handler = google_client.handler_for_user(handled_user_model)

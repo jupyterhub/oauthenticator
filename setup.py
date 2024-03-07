@@ -27,7 +27,7 @@ class bdist_egg_disabled(bdist_egg):
 setup_args = dict(
     name='oauthenticator',
     packages=find_packages(),
-    version="16.0.3.dev",
+    version="16.2.2.dev",
     description="OAuthenticator: Authenticate JupyterHub users with common OAuth providers",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -60,8 +60,6 @@ setup_args = dict(
             'google = oauthenticator.google:GoogleOAuthenticator',
             'local-google = oauthenticator.google:LocalGoogleOAuthenticator',
             'mediawiki = oauthenticator.mediawiki:MWOAuthenticator',
-            'okpy = oauthenticator.okpy:OkpyOAuthenticator',
-            'local-okpy = oauthenticator.okpy:LocalOkpyOAuthenticator',
             'openshift = oauthenticator.openshift:OpenShiftOAuthenticator',
             'local-openshift = oauthenticator.openshift:LocalOpenShiftOAuthenticator',
         ],
@@ -90,8 +88,6 @@ with open('requirements.txt') as f:
 
 
 setup_args['extras_require'] = {
-    # azuread is required for use of AzureADOAuthenticator
-    'azuread': ['pyjwt>=2'],
     # googlegroups is required for use of GoogleOAuthenticator configured with
     # either admin_google_groups and/or allowed_google_groups.
     'googlegroups': [
@@ -104,11 +100,10 @@ setup_args['extras_require'] = {
     # dependencies above.
     'test': [
         'pytest>=2.8',
-        'pytest-asyncio',
+        # FIXME: unpin pytest-asyncio
+        'pytest-asyncio>=0.17,<0.23',
         'pytest-cov',
         'requests-mock',
-        # dependencies from azuread:
-        'pyjwt>=2',
         # dependencies from googlegroups:
         'google-api-python-client',
         'google-auth-oauthlib',

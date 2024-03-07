@@ -7,10 +7,16 @@ additionalProperties: false
 required:
   - username_derivation
 properties:
+  allow_all:
+    type: boolean
   allowed_domains:
     type: array
     items:
       type: string
+  allowed_domains_claim:
+    type: string
+  default:
+    type: boolean
   username_derivation:
     type: object
     additionalProperties: false

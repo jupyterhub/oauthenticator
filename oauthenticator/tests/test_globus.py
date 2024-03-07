@@ -303,14 +303,30 @@ async def test_globus(
         assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert json.dumps(auth_state)
         assert "tokens" in auth_state
         assert "transfer.api.globus.org" in auth_state["tokens"]
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
         if authenticator.allowed_globus_groups or authenticator.admin_globus_groups:
-            assert auth_state["globus_groups"] == {"group1"}
+            assert auth_state["globus_groups"] == ["group1"]
     else:
         assert auth_model == None
+
+
+@mark.parametrize(
+    "name, allowed",
+    [
+        ("allowed", True),
+        ("notallowed", False),
+    ],
+)
+async def test_check_allowed_no_auth_state(name, allowed):
+    authenticator = GlobusOAuthenticator(allowed_users={"allowed"})
+    # allow check always gets called with no auth model during Hub startup
+    # these are previously-allowed users who should pass until subsequent
+    # this check is removed in JupyterHub 5
+    assert await authenticator.check_allowed(name, None)
 
 
 async def test_globus_pre_spawn_start(mock_globus_user):

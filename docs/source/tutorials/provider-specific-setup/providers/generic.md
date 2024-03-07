@@ -10,7 +10,7 @@ The GenericOAuthenticator can be configured to be used against an OpenID Connect
 (OIDC) based identity provider, and this is an example demonstrating that.
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 # OAuth2 application info
 # -----------------------
@@ -55,7 +55,7 @@ Moodle.
 Use the `GenericOAuthenticator` for Jupyterhub by editing your `jupyterhub_config.py` accordingly:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 c.GenericOAuthenticator.oauth_callback_url = 'https://YOUR-JUPYTERHUB.com/hub/oauth_callback'
 c.GenericOAuthenticator.client_id = 'MOODLE-CLIENT-ID'
@@ -80,7 +80,7 @@ Use the `GenericOAuthenticator` for Jupyterhub by editing your
 `jupyterhub_config.py` accordingly:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 
 c.GenericOAuthenticator.client_id = 'NEXTCLOUD-CLIENT-ID'
 c.GenericOAuthenticator.client_secret = 'NEXTCLOUD-CLIENT-SECRET-KEY'
@@ -109,7 +109,7 @@ Choose **Yandex.Passport API** in Permissions and check these options:
 Set the above settings in your `jupyterhub_config.py`:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
 c.OAuthenticator.client_id = "[your app ID]"
 c.OAuthenticator.client_secret = "[your app Password]"
@@ -135,7 +135,7 @@ OAuth2 application.
 Set the above settings in your `jupyterhub_config.py`:
 
 ```python
-c.JupyterHub.authenticator_class = "generic"
+c.JupyterHub.authenticator_class = "generic-oauth"
 c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
 c.OAuthenticator.client_id = "[your oauth2 application id]"
 c.OAuthenticator.client_secret = "[your oauth2 application secret]"
@@ -147,3 +147,42 @@ c.GenericOAuthenticator.authorize_url = "https://your-AWSCognito-domain/oauth2/a
 c.GenericOAuthenticator.token_url = "https://your-AWSCognito-domain/oauth2/token"
 c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/userInfo"
 ```
+
+## Setup for ORCID iD
+
+```{note}
+The `GenericOAuthenticator` will by default lowercase your username. For example, an ORCID iD of `0000-0002-9079-593X` will produce a JupyterHub username of `0000-0002-9079-593x`.
+```
+
+Follow the ORCID [API Tutorial](https://info.orcid.org/documentation/api-tutorials/api-tutorial-get-and-authenticated-orcid-id/) to create an application via the Developer Tools submenu after clicking on your name in the top right of the page.
+
+Edit your `jupyterhub_config.py` with the following:
+
+```python
+c.JupyterHub.authenticator_class = "generic-oauth"
+
+# Fill these in with your values
+c.GenericOAuthenticator.oauth_callback_url = "YOUR CALLBACK URL"
+c.GenericOAuthenticator.client_id = "YOUR CLIENT ID"
+c.GenericOAuthenticator.client_secret = "YOUR CLIENT SECRET"
+
+c.GenericOAuthenticator.login_service = "ORCID iD" # Text of login button
+c.GenericOAuthenticator.authorize_url = "https://orcid.org/oauth/authorize"
+c.GenericOAuthenticator.token_url = "https://orcid.org/oauth/token"
+c.GenericOAuthenticator.scope = ["/authenticate", "openid"]
+c.GenericOAuthenticator.userdata_url = "https://orcid.org/oauth/userinfo"
+c.GenericOAuthenticator.username_claim = "sub"
+```
+
+The above `username_claim` value selects the ORCID iD from the JSON response as the individual's JupyterHub username. An example response is below:
+
+```json
+{
+  "sub": "0000-0002-2601-8132",
+  "name": "Credit Name",
+  "family_name": "Jones",
+  "given_name": "Tom"
+}
+```
+
+Please refer to the [Authorization Code Flow](https://github.com/ORCID/ORCID-Source/blob/main/orcid-web/ORCID_AUTH_WITH_OPENID_CONNECT.md#authorization-code-flow) section of the ORCID documentation for more information.

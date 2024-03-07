@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with any OAuth2 based identity provider.
 """
+
 import os
 from functools import reduce
 
@@ -25,6 +26,10 @@ class GenericOAuthenticator(OAuthenticator):
 
         Can be a string key name (use periods for nested keys), or a callable
         that accepts the returned json (as a dict) and returns the groups list.
+
+        This configures how group membership in the upstream provider is determined
+        for use by `allowed_groups`, `admin_groups`, etc. If `manage_groups` is True,
+        this will also determine users' _JupyterHub_ group membership.
         """,
     )
 
@@ -53,20 +58,6 @@ class GenericOAuthenticator(OAuthenticator):
         When configuring this you may need to configure `claim_groups_key` as
         well as it determines the key in the `userdata_url` response that is
         assumed to list the groups a user is a member of.
-        """,
-    )
-
-    username_claim = Union(
-        [Unicode(os.environ.get('OAUTH2_USERNAME_KEY', 'username')), Callable()],
-        config=True,
-        help="""
-        When `userdata_url` returns a json response, the username will be taken
-        from this key.
-
-        Can be a string key name or a callable that accepts the returned
-        userdata json (as a dict) and returns the username.  The callable is
-        useful e.g. for extracting the username from a nested object in the
-        response.
         """,
     )
 
@@ -109,17 +100,6 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    def user_info_to_username(self, user_info):
-        """
-        Overrides OAuthenticator.user_info_to_username to support the
-        GenericOAuthenticator unique feature of allowing username_claim to be a
-        callable function.
-        """
-        if callable(self.username_claim):
-            return self.username_claim(user_info)
-        else:
-            return super().user_info_to_username(user_info)
-
     def get_user_groups(self, user_info):
         """
         Returns a set of groups the user belongs to based on claim_groups_key
@@ -150,16 +130,23 @@ class GenericOAuthenticator(OAuthenticator):
         the user isn't part of `admin_users` or `admin_groups`. Note that
         leaving it at None makes users able to retain an admin status while
         setting it to False makes it be revoked.
+
+        Also populates groups if `manage_groups` is set.
         """
+        if self.manage_groups or self.admin_groups:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = self.get_user_groups(user_info)
+
+        if self.manage_groups:
+            auth_model["groups"] = sorted(user_groups)
+
         if auth_model["admin"]:
             # auth_model["admin"] being True means the user was in admin_users
             return auth_model
 
         if self.admin_groups:
             # admin status should in this case be True or False, not None
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = self.get_user_groups(user_info)
-            auth_model["admin"] = any(user_groups & self.admin_groups)
+            auth_model["admin"] = bool(user_groups & self.admin_groups)
 
         return auth_model
 
