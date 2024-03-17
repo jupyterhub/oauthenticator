@@ -126,7 +126,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
            Changing this config either to or from having a single entry is a
            disruptive change as the same Google user will get a new username,
            either without or with a domain name included.
-        :::
 
         .. versionchanged:: 16.1
 
