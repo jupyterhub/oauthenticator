@@ -46,7 +46,6 @@ def generic_client_variant(client, userdata_from_id_token):
         host='generic.horse',
         access_token_path='/oauth/access_token',
         user_path='/oauth/userinfo',
-        token_request_style='jwt' if userdata_from_id_token else 'post',
     )
     return client
 
