@@ -104,7 +104,6 @@ def setup_oauth_mock(
     access_token_path,
     user_path=None,
     token_type='Bearer',
-    token_request_style='post',
 ):
     """setup the mock client for OAuth
 
@@ -127,9 +126,6 @@ def setup_oauth_mock(
         user_path (str): The path for requesting  (e.g. /user)
         token_type (str): the token_type field for the provider
     """
-
-    if user_path is None and token_request_style != "jwt":
-        raise TypeError("user_path is required unless token_request_style is jwt")
 
     client.oauth_codes = oauth_codes = {}
     client.access_tokens = access_tokens = {}
@@ -165,7 +161,7 @@ def setup_oauth_mock(
             'access_token': token,
             'token_type': token_type,
         }
-        if token_request_style == 'jwt':
+        if 'id_token' in user:
             model['id_token'] = user['id_token']
         return model
 
