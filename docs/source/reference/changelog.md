@@ -6,6 +6,48 @@ command line for details.
 
 ## [Unreleased]
 
+### 16.3.0 - 2024-03-20
+
+```{important}
+This release includes a security patch for {attr}`.GoogleOAuthenticator.hosted_domain`,
+see [GHSA-55m3-44xf-hg4h] for details.
+
+[GHSA-55m3-44xf-hg4h]: https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-55m3-44xf-hg4h
+```
+
+OAuthenticator now requires JupyterHub >=2.2.
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.2.1...16.3.0))
+
+#### New features added
+
+- [All] Add `userdata_from_id_token` as alternative to `userdata_url` [#725](https://github.com/jupyterhub/oauthenticator/pull/725) ([@benjimin](https://github.com/benjimin), [@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+- [All] Make `username_claim` callable (except for CILogon), like it has been in Generic [#717](https://github.com/jupyterhub/oauthenticator/pull/717) ([@yuvipanda](https://github.com/yuvipanda), [@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena), [@manics](https://github.com/manics))
+- [AzureAD] Support `manage_groups` [#710](https://github.com/jupyterhub/oauthenticator/pull/710) ([@minrk](https://github.com/minrk), [@yuvipanda](https://github.com/yuvipanda), [@GeorgianaElena](https://github.com/GeorgianaElena))
+- [Generic] Add support for `manage_groups` [#708](https://github.com/jupyterhub/oauthenticator/pull/708) ([@benjimin](https://github.com/benjimin), [@manics](https://github.com/manics), [@minrk](https://github.com/minrk), [@yuvipanda](https://github.com/yuvipanda))
+- [AzureAD] Add an implementation for `Authenticator.manage_groups=True` [#573](https://github.com/jupyterhub/oauthenticator/pull/573) ([@thomafred](https://github.com/thomafred), [@yuvipanda](https://github.com/yuvipanda), [@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Maintenance and upkeep improvements
+
+- test: simplify by removing `token_request_style` parameter for mock function [#734](https://github.com/jupyterhub/oauthenticator/pull/734) ([@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+- Require jupyterhub>=2.2 [#720](https://github.com/jupyterhub/oauthenticator/pull/720) ([@manics](https://github.com/manics), [@yuvipanda](https://github.com/yuvipanda), [@consideRatio](https://github.com/consideRatio))
+- temporary pin for pytest-asyncio [#715](https://github.com/jupyterhub/oauthenticator/pull/715) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+#### Documentation improvements
+
+- add example for deploying with mock-oauth2-server [#730](https://github.com/jupyterhub/oauthenticator/pull/730) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+- add dedicated doc on details of allowing access [#729](https://github.com/jupyterhub/oauthenticator/pull/729) ([@minrk](https://github.com/minrk), [@GeorgianaElena](https://github.com/GeorgianaElena), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+- clarify what claim_groups_key is used for [#707](https://github.com/jupyterhub/oauthenticator/pull/707) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2023-11-27&to=2024-03-20&type=c))
+
+@benjimin ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abenjimin+updated%3A2023-11-27..2024-03-20&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2023-11-27..2024-03-20&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2023-11-27..2024-03-20&type=Issues)) | @krassowski ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Akrassowski+updated%3A2023-11-27..2024-03-20&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2023-11-27..2024-03-20&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2023-11-27..2024-03-20&type=Issues)) | @thomafred ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Athomafred+updated%3A2023-11-27..2024-03-20&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2023-11-27..2024-03-20&type=Issues))
+
 ## 16.2
 
 ### [16.2.1] - 2023-11-27
