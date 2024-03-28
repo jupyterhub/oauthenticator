@@ -23,8 +23,8 @@ properties:
     required:
       - username_claim
     properties:
-      username_claim:
-        type: string
+      # FIXME: This needs to take a string or a callable
+      username_claim: {}
       action:
         type: string
         enum:
