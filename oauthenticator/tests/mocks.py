@@ -1,4 +1,5 @@
 """Mocking utilities for testing"""
+
 import json
 import os
 import re
@@ -129,9 +130,6 @@ def setup_oauth_mock(
         scope (str): The scope field returned by the provider
     """
 
-    if user_path is None and token_request_style != "jwt":
-        raise TypeError("user_path is required unless token_request_style is jwt")
-
     client.oauth_codes = oauth_codes = {}
     client.access_tokens = access_tokens = {}
 
@@ -168,7 +166,7 @@ def setup_oauth_mock(
         }
         if scope:
             model['scope'] = scope
-        if token_request_style == 'jwt':
+        if 'id_token' in user:
             model['id_token'] = user['id_token']
         return model
 

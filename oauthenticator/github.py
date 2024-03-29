@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with GitHub as an identity provider.
 """
+
 import json
 import os
 import warnings

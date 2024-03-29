@@ -2,21 +2,31 @@ import json
 import re
 from functools import partial
 
+import jwt
 from pytest import fixture, mark, raises
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
 from .mocks import setup_oauth_mock
 
+client_id = "jupyterhub-oauth-client"
+
 
 def user_model(username, **kwargs):
     """Return a user model"""
     return {
         "username": username,
+        "aud": client_id,
+        "sub": "oauth2|cilogon|http://cilogon.org/servera/users/43431",
         "scope": "basic",
         "groups": ["group1"],
         **kwargs,
     }
+
+
+@fixture(params=["id_token", "userdata_url"])
+def userdata_from_id_token(request):
+    return request.param == "id_token"
 
 
 @fixture
@@ -31,10 +41,31 @@ def generic_client(client):
     return client
 
 
+@fixture
+def generic_client_variant(client, userdata_from_id_token):
+    setup_oauth_mock(
+        client,
+        host='generic.horse',
+        access_token_path='/oauth/access_token',
+        user_path='/oauth/userinfo',
+    )
+    return client
+
+
 def _get_authenticator(**kwargs):
     return GenericOAuthenticator(
         token_url='https://generic.horse/oauth/access_token',
         userdata_url='https://generic.horse/oauth/userinfo',
+        client_id=client_id,
+        **kwargs,
+    )
+
+
+def _get_authenticator_for_id_token(**kwargs):
+    return GenericOAuthenticator(
+        token_url='https://generic.horse/oauth/access_token',
+        userdata_from_id_token=True,
+        client_id=client_id,
         **kwargs,
     )
 
@@ -45,6 +76,21 @@ def get_authenticator(generic_client):
     http_client can't be configured, only passed as argument to the constructor.
     """
     return partial(_get_authenticator, http_client=generic_client)
+
+
+@fixture
+def get_authenticator_variant(generic_client, userdata_from_id_token):
+    """
+    http_client can't be configured, only passed as argument to the constructor.
+    """
+    return partial(
+        (
+            _get_authenticator_for_id_token
+            if userdata_from_id_token
+            else _get_authenticator
+        ),
+        http_client=generic_client,
+    )
 
 
 @mark.parametrize(
@@ -153,29 +199,47 @@ def get_authenticator(generic_client):
             False,
             False,
         ),
+        (
+            "20",
+            {
+                "manage_groups": True,
+                "allow_all": True,
+            },
+            True,
+            None,
+        ),
     ],
 )
 async def test_generic(
-    get_authenticator,
-    generic_client,
+    get_authenticator_variant,
+    generic_client_variant,
     test_variation_id,
     class_config,
     expect_allowed,
     expect_admin,
+    userdata_from_id_token,
 ):
     print(f"Running test variation id {test_variation_id}")
     c = Config()
     c.GenericOAuthenticator = Config(class_config)
     c.GenericOAuthenticator.username_claim = "username"
-    authenticator = get_authenticator(config=c)
+    authenticator = get_authenticator_variant(config=c)
+    manage_groups = False
+    if "manage_groups" in class_config:
+        manage_groups = authenticator.manage_groups
 
     handled_user_model = user_model("user1")
-    handler = generic_client.handler_for_user(handled_user_model)
+    if userdata_from_id_token:
+        handled_user_model = dict(id_token=jwt.encode(handled_user_model, key="foo"))
+    handler = generic_client_variant.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
 
     if expect_allowed:
         assert auth_model
-        assert set(auth_model) == {"name", "admin", "auth_state"}
+        expected_keys = {"name", "admin", "auth_state"}
+        if manage_groups:
+            expected_keys.add("groups")
+        assert set(auth_model) == expected_keys
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
         assert json.dumps(auth_state)
@@ -185,8 +249,37 @@ async def test_generic(
         assert "scope" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
+        if manage_groups:
+            assert auth_model["groups"] == user_info[authenticator.claim_groups_key]
+
     else:
         assert auth_model == None
+
+
+async def test_username_claim_callable(
+    get_authenticator,
+    generic_client,
+):
+    c = Config()
+    c.GenericOAuthenticator = Config()
+
+    def username_claim(user_info):
+        username = user_info["sub"]
+        if username.startswith("oauth2|cilogon"):
+            cilogon_sub = username.rsplit("|", 1)[-1]
+            cilogon_sub_parts = cilogon_sub.split("/")
+            username = f"oauth2|cilogon|{cilogon_sub_parts[3]}|{cilogon_sub_parts[5]}"
+        return username
+
+    c.GenericOAuthenticator.username_claim = username_claim
+    c.GenericOAuthenticator.allow_all = True
+    authenticator = get_authenticator(config=c)
+
+    handled_user_model = user_model("user1")
+    handler = generic_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    assert auth_model["name"] == "oauth2|cilogon|servera|43431"
 
 
 async def test_generic_data(get_authenticator, generic_client):

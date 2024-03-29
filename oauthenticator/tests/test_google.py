@@ -5,22 +5,23 @@ import re
 from unittest import mock
 
 from pytest import fixture, mark, raises
-from tornado.web import HTTPError
 from traitlets.config import Config
 
 from ..google import GoogleOAuthenticator
 from .mocks import setup_oauth_mock
 
 
-def user_model(email, username="user1"):
+def user_model(email, username="user1", hd=None):
     """Return a user model"""
-    return {
+    model = {
         'sub': hashlib.md5(email.encode()).hexdigest(),
         'email': email,
         'custom': username,
-        'hd': email.split('@')[1],
         'verified_email': True,
     }
+    if hd:
+        model['hd'] = hd
+    return model
 
 
 @fixture
@@ -187,37 +188,49 @@ async def test_google(
         assert auth_model == None
 
 
-async def test_hosted_domain_single_entry(google_client):
+@mark.parametrize(
+    "test_variation_id,user_email,user_hd,expect_username,expect_allowed,expect_admin",
+    [
+        ("01", "user1@ok-hd.orG", "ok-hd.org", "user1", True, True),
+        ("02", "user2@ok-hd.orG", "ok-hd.org", "user2", True, None),
+        ("03", "blocked@ok-hd.org", "ok-hd.org", None, False, None),
+        ("04", "user2@ok-hd.org", "", None, False, None),
+        ("05", "user1@not-ok.org", "", None, False, None),
+        # Test variation 06 below isn't believed to be possible, but since we
+        # aren't sure this test clarifies what we expect to happen.
+        ("06", "user1@other.org", "ok-hd.org", "user1@other.org", True, None),
+    ],
+)
+async def test_hosted_domain_single_entry(
+    google_client,
+    test_variation_id,
+    user_email,
+    user_hd,
+    expect_username,
+    expect_allowed,
+    expect_admin,
+):
     """
     Tests that sign in is restricted to the listed domain and that the username
     represents the part before the `@domain.com` as expected when hosted_domain
     contains a single entry.
     """
     c = Config()
-    c.GoogleOAuthenticator.hosted_domain = ["In-Hosted-Domain.com"]
+    c.GoogleOAuthenticator.hosted_domain = ["ok-hd.org"]
     c.GoogleOAuthenticator.admin_users = {"user1"}
-    c.GoogleOAuthenticator.allowed_users = {"user2"}
+    c.GoogleOAuthenticator.allowed_users = {"user2", "blocked", "user1@other.org"}
+    c.GoogleOAuthenticator.blocked_users = {"blocked"}
     authenticator = GoogleOAuthenticator(config=c)
 
-    handled_user_model = user_model("user1@iN-hosteD-domaiN.com")
+    handled_user_model = user_model(user_email, hd=user_hd)
     handler = google_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model
-    assert auth_model["name"] == "user1"
-    assert auth_model["admin"] == True
-
-    handled_user_model = user_model("user2@iN-hosteD-domaiN.com")
-    handler = google_client.handler_for_user(handled_user_model)
-    auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model
-    assert auth_model["name"] == "user2"
-    assert auth_model["admin"] == None
-
-    handled_user_model = user_model("user1@not-in-hosted-domain.com")
-    handler = google_client.handler_for_user(handled_user_model)
-    with raises(HTTPError) as exc:
-        await authenticator.get_authenticated_user(handler, None)
-    assert exc.value.status_code == 403
+    if expect_allowed:
+        assert auth_model
+        assert auth_model["name"] == expect_username
+        assert auth_model["admin"] == expect_admin
+    else:
+        assert auth_model == None
 
 
 @mark.parametrize(
@@ -235,7 +248,27 @@ async def test_check_allowed_no_auth_state(google_client, name, allowed):
     assert await authenticator.check_allowed(name, None)
 
 
-async def test_hosted_domain_multiple_entries(google_client):
+@mark.parametrize(
+    "test_variation_id,user_email,user_hd,expect_username,expect_allowed",
+    [
+        ("01", "user1@ok-hd1.orG", "ok-hd1.org", "user1@ok-hd1.org", True),
+        ("02", "user2@ok-hd2.orG", "ok-hd2.org", "user2@ok-hd2.org", True),
+        ("03", "blocked@ok-hd1.org", "ok-hd1.org", None, False),
+        ("04", "user3@ok-hd1.org", "", None, False),
+        ("05", "user1@not-ok.org", "", None, False),
+        # Test variation 06 below isn't believed to be possible, but since we
+        # aren't sure this test clarifies what we expect to happen.
+        ("06", "user1@other.org", "ok-hd1.org", "user1@other.org", True),
+    ],
+)
+async def test_hosted_domain_multiple_entries(
+    google_client,
+    test_variation_id,
+    user_email,
+    user_hd,
+    expect_username,
+    expect_allowed,
+):
     """
     Tests that sign in is restricted to the listed domains and that the username
     represents the full email as expected when hosted_domain contains multiple
@@ -243,29 +276,21 @@ async def test_hosted_domain_multiple_entries(google_client):
     """
     c = Config()
     c.GoogleOAuthenticator.hosted_domain = [
-        "In-Hosted-Domain1.com",
-        "In-Hosted-Domain2.com",
+        "ok-hd1.org",
+        "ok-hd2.ORG",
     ]
+    c.GoogleOAuthenticator.blocked_users = ["blocked@ok-hd1.org"]
     c.GoogleOAuthenticator.allow_all = True
     authenticator = GoogleOAuthenticator(config=c)
 
-    handled_user_model = user_model("user1@iN-hosteD-domaiN1.com")
+    handled_user_model = user_model(user_email, hd=user_hd)
     handler = google_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model
-    assert auth_model["name"] == "user1@in-hosted-domain1.com"
-
-    handled_user_model = user_model("user2@iN-hosteD-domaiN2.com")
-    handler = google_client.handler_for_user(handled_user_model)
-    auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model
-    assert auth_model["name"] == "user2@in-hosted-domain2.com"
-
-    handled_user_model = user_model("user1@not-in-hosted-domain.com")
-    handler = google_client.handler_for_user(handled_user_model)
-    with raises(HTTPError) as exc:
-        await authenticator.get_authenticated_user(handler, None)
-    assert exc.value.status_code == 403
+    if expect_allowed:
+        assert auth_model
+        assert auth_model["name"] == expect_username
+    else:
+        assert auth_model == None
 
 
 @mark.parametrize(

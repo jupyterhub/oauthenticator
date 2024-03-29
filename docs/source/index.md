@@ -47,6 +47,7 @@ Topic guides go more in-depth on a particular topic.
 :maxdepth: 2
 :caption: Topic guides
 
+topic/allowing
 topic/extending
 ```
 

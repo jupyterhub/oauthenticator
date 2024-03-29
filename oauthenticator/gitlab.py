@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with GitLab as an identity provider.
 """
+
 import os
 import warnings
 from urllib.parse import quote

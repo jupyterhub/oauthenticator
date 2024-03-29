@@ -56,8 +56,8 @@ jobs:
 
       - name: Downgrade to oldest dependencies
         if: matrix.oldest_dependencies != ''
-        # take any dependencies in requirements.txt such as jupyterhub>=1.2 and
-        # transform them to jupyterhub==1.2 so we can run tests with the
+        # take any dependencies in requirements.txt such as jupyterhub>=2.2 and
+        # transform them to jupyterhub==2.2 so we can run tests with the
         # earliest-supported versions
         run: |
           cat requirements.txt | grep '>=' | sed -e 's@>=@==@g' > oldest-requirements.txt
@@ -69,4 +69,4 @@ jobs:
           pytest
 
       # GitHub action reference: https://github.com/codecov/codecov-action
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4

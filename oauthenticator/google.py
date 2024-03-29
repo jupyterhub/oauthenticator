@@ -1,6 +1,7 @@
 """
 A JupyterHub authenticator class for use with Google as an identity provider.
 """
+
 import os
 
 from jupyterhub.auth import LocalAuthenticator
@@ -110,19 +111,26 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         This config has two functions.
 
-        1. Restrict sign-in to a list of email domain names, such as
-           `["mycollege.edu"]` or `["college1.edu", "college2.edu"]`.
-        2. If a single domain is specified, the username will be stripped to exclude the `@domain` part.
+        1. Restrict sign-in to users part of Google organizations/workspaces
+           managing domains, such as `["mycollege.edu"]` or `["college1.edu",
+           "college2.edu"]`.
+        2. If a single domain is specified, usernames with that domain will be
+           stripped to exclude the `@domain` part.
 
-        Note that users with email domains in this list must still be allowed
-        via another config, such as `allow_all`, `allowed_users`, or
-        `allowed_google_groups`.
+        Users not restricted by this configuration must still be explicitly
+        allowed by a configuration intended to allow users, like `allow_all`,
+        `allowed_users`, or `allowed_google_groups`.
 
-        ```{warning} Disruptive config changes
-        Changing this config either to or from having a single entry is a
-        disruptive change as the same Google user will get a new username,
-        either without or with a domain name included.
-        ```
+        .. warning::
+
+           Changing this config either to or from having a single entry is a
+           disruptive change as the same Google user will get a new username,
+           either without or with a domain name included.
+
+        .. versionchanged:: 16.1
+
+           Now restricts sign-in based on the hd claim, not the domain in the
+           user's email.
         """,
     )
 
@@ -173,8 +181,19 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_email = user_info["email"]
         user_domain = user_info["domain"] = user_email.split("@")[1].lower()
 
-        if len(self.hosted_domain) == 1 and self.hosted_domain[0] == user_domain:
-            # unambiguous domain, use only base name
+        # NOTE: This is not an authorization check, it just about username
+        #       derivation. Decoupling hosted_domain from this is considered in
+        #       https://github.com/jupyterhub/oauthenticator/issues/733.
+        #
+        # NOTE: This code is written with without knowing for sure if the user
+        #       email's domain could be different from the domain in hd, so we
+        #       assume it could be even though it seems like it can't be. If a
+        #       Google organization/workspace manages users in a "primary
+        #       domain" and a "secondary domain", users with respective email
+        #       domain have their hd field set respectively.
+        #
+        if len(self.hosted_domain) == 1 and user_domain == self.hosted_domain[0]:
+            # strip the domain in this situation
             username = username.split("@")[0]
 
         return username
@@ -213,6 +232,28 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return auth_model
 
+    def check_blocked_users(self, username, auth_model):
+        """
+        Overrides `Authenticator.check_blocked_users` to not only block users in
+        `Authenticator.blocked_users`, but to also enforce
+        `GoogleOAuthenticator.hosted_domain` if its configured.
+
+        When hosted_domain is configured, users are required to be part of
+        listed Google organizations/workspaces.
+
+        Returns False if the user is blocked, otherwise True.
+        """
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+
+        # hd ref: https://developers.google.com/identity/openid-connect/openid-connect#id_token-hd
+        hd = user_info.get("hd", "")
+
+        if self.hosted_domain and hd not in self.hosted_domain:
+            self.log.warning(f"Blocked {username} with 'hd={hd}' not in hosted_domain")
+            return False
+
+        return super().check_blocked_users(username, auth_model)
+
     async def check_allowed(self, username, auth_model):
         """
         Overrides the OAuthenticator.check_allowed to also allow users part of
@@ -234,19 +275,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             message = f"Login with unverified email {user_email} is not allowed"
             self.log.warning(message)
             raise HTTPError(403, message)
-
-        # NOTE: If hosted_domain is configured as ["a.com", "b.com"], and
-        #       allowed_google_groups is declared as {"a.com": {"a-group"}}, a
-        #       "b.com" user won't be authorized unless allowed in another way.
-        #
-        #       This means that its not possible to allow all users of a given
-        #       domain if one wants to restrict another.
-        #
-        if self.hosted_domain:
-            if user_domain not in self.hosted_domain:
-                message = f"Login with domain @{user_domain} is not allowed"
-                self.log.warning(message)
-                raise HTTPError(403, message)
 
         if await super().check_allowed(username, auth_model):
             return True

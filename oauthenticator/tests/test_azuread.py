@@ -1,4 +1,5 @@
 """test azure ad"""
+
 import json
 import os
 import re
@@ -21,7 +22,6 @@ def azure_client(client):
         client,
         host=['login.microsoftonline.com'],
         access_token_path=re.compile('^/[^/]+/oauth2/token$'),
-        token_request_style='jwt',
     )
     return client
 
