@@ -612,7 +612,9 @@ class OAuthenticator(Authenticator):
 
     @default("http_client")
     def _default_http_client(self):
-        return AsyncHTTPClient()
+        return AsyncHTTPClient(
+            force_instance=True, defaults=dict(validate_cert=self.validate_server_cert)
+        )
 
     async def fetch(self, req, label="fetching", parse_json=True, **kwargs):
         """Wrapper for http requests
@@ -878,7 +880,6 @@ class OAuthenticator(Authenticator):
             method="POST",
             headers=self.build_token_info_request_headers(),
             body=urlencode(params).encode("utf-8"),
-            validate_cert=self.validate_server_cert,
         )
 
         if "error_description" in token_info:
@@ -950,7 +951,6 @@ class OAuthenticator(Authenticator):
             "Fetching user info...",
             method="GET",
             headers=self.build_userdata_request_headers(access_token, token_type),
-            validate_cert=self.validate_server_cert,
         )
 
     def build_auth_state_dict(self, token_info, user_info):

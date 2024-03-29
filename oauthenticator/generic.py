@@ -61,12 +61,6 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    @default("http_client")
-    def _default_http_client(self):
-        return AsyncHTTPClient(
-            force_instance=True, defaults=dict(validate_cert=self.validate_server_cert)
-        )
-
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {
         "username_key": ("username_claim", "16.0.0"),
