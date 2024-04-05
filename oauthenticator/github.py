@@ -143,7 +143,7 @@ class GitHubOAuthenticator(OAuthenticator):
         Requires `read:org` to be set in `scope`.
 
         Requires `manage_groups` to be set to True.
-        """
+        """,
     )
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
@@ -236,7 +236,6 @@ class GitHubOAuthenticator(OAuthenticator):
                     user_info["email"] = val["email"]
                     break
 
-
         # https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#list-teams-for-the-authenticated-user
         teams_url = f"{self.github_api}/user/teams?per_page=100"
         if self.populate_teams_in_auth_state:
@@ -247,7 +246,9 @@ class GitHubOAuthenticator(OAuthenticator):
                     "read:org scope is required for populate_teams_in_auth_state functionality to work"
                 )
             else:
-                user_teams = await self._paginated_fetch(teams_url, access_token, token_type)
+                user_teams = await self._paginated_fetch(
+                    teams_url, access_token, token_type
+                )
                 auth_model["auth_state"]["teams"] = user_teams
 
         if self.manage_groups and self.populate_groups_from_teams:
@@ -257,11 +258,12 @@ class GitHubOAuthenticator(OAuthenticator):
                     "read:org scope is required for populate_groups_from_teams functionality to work"
                 )
             else:
-                user_teams = await self._paginated_fetch(teams_url, access_token, token_type)
+                user_teams = await self._paginated_fetch(
+                    teams_url, access_token, token_type
+                )
                 auth_model["groups"] = user_teams
 
         return auth_model
-
 
     async def _paginated_fetch(self, api_url, access_token, token_type):
         """
