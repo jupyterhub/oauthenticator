@@ -126,12 +126,24 @@ class GitHubOAuthenticator(OAuthenticator):
         https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
 
         Requires `read:org` to be set in `scope`.
-        
+
         Note that authentication state is only be available to a
         `post_auth_hook` before being discarded unless configured to be
         persisted via `enable_auth_state`. For more information, see
         https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
         """,
+    )
+
+    populate_groups_from_teams = Bool(
+        False,
+        config=True,
+        help="""
+        Populates JupyterHub groups from list of GitHub teams the user is a part of.
+
+        Requires `read:org` to be set in `scope`.
+
+        Requires `manage_groups` to be set to True.
+        """
     )
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
@@ -224,6 +236,9 @@ class GitHubOAuthenticator(OAuthenticator):
                     user_info["email"] = val["email"]
                     break
 
+
+        # https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#list-teams-for-the-authenticated-user
+        teams_url = f"{self.github_api}/user/teams?per_page=100"
         if self.populate_teams_in_auth_state:
             if "read:org" not in self.scope:
                 # This means the "read:org" scope was not set, and we can't
@@ -232,12 +247,21 @@ class GitHubOAuthenticator(OAuthenticator):
                     "read:org scope is required for populate_teams_in_auth_state functionality to work"
                 )
             else:
-                # https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#list-teams-for-the-authenticated-user
-                url = f"{self.github_api}/user/teams?per_page=100"
-                user_teams = await self._paginated_fetch(url, access_token, token_type)
+                user_teams = await self._paginated_fetch(teams_url, access_token, token_type)
                 auth_model["auth_state"]["teams"] = user_teams
 
+        if self.manage_groups and self.populate_groups_from_teams:
+            if "read:org" not in self.scope:
+                # This means the "read:org" scope was not set, and we can't fetch teams
+                self.log.error(
+                    "read:org scope is required for populate_groups_from_teams functionality to work"
+                )
+            else:
+                user_teams = await self._paginated_fetch(teams_url, access_token, token_type)
+                auth_model["groups"] = user_teams
+
         return auth_model
+
 
     async def _paginated_fetch(self, api_url, access_token, token_type):
         """
