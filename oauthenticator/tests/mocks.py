@@ -98,6 +98,19 @@ class MockAsyncHTTPClient(SimpleAsyncHTTPClient):
         response_callback(response)
 
 
+def extract_token(request):
+    auth_header = request.headers.get('Authorization')
+    if auth_header:
+        token = auth_header.split(None, 1)[1]
+    else:
+        query = parse_qs(urlparse(request.url).query)
+        if 'access_token' in query:
+            token = query['access_token'][0]
+        else:
+            token = None
+    return token
+
+
 def setup_oauth_mock(
     client,
     host,
@@ -167,19 +180,13 @@ def setup_oauth_mock(
 
     def get_user(request):
         assert request.method == 'GET', request.method
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            token = auth_header.split(None, 1)[1]
-        else:
-            query = parse_qs(urlparse(request.url).query)
-            if 'access_token' in query:
-                token = query['access_token'][0]
-            else:
-                return HTTPResponse(
-                    request=request,
-                    code=403,
-                    reason='Missing Authorization header',
-                )
+        token = extract_token(request)
+        if token is None:
+            return HTTPResponse(
+                request=request,
+                code=403,
+                reason='Missing Authorization header',
+            )
         if token not in access_tokens:
             return HTTPResponse(
                 request=request,

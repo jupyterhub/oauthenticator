@@ -11,7 +11,7 @@ from tornado.httputil import HTTPHeaders
 from traitlets.config import Config
 
 from ..github import GitHubOAuthenticator
-from .mocks import setup_oauth_mock
+from .mocks import extract_token, setup_oauth_mock
 
 
 def user_model(username):
@@ -118,6 +118,7 @@ async def test_allowed_org_membership(github_client):
             "team1": ["user1"],
         },
     }
+    allowed_repo_members = {"org1": {"repo1": ["user2"]}}
 
     member_regex = re.compile(r'/orgs/(.*)/members')
 
@@ -193,17 +194,43 @@ async def test_allowed_org_membership(github_client):
             return HTTPResponse(request, 404)
         return HTTPResponse(request, 204)
 
+    repo_membership_regex = re.compile(r'/repos/(.*)/(.*)')
+
+    def repo_membership(request):
+        token = extract_token(request)
+        user = github_client.access_tokens.get(token)
+        urlinfo = urlparse(request.url)
+        urlmatch = repo_membership_regex.match(urlinfo.path)
+        owner = urlmatch.group(1)
+        repo = urlmatch.group(2)
+        username = user.get('login')
+        print(f"Request owner = {owner}, repo = {repo} username = {username}")
+        if owner not in allowed_repo_members:
+            print(f"Owner not found: owner = {owner}")
+            return HTTPResponse(request, 404)
+        if repo not in allowed_repo_members[owner]:
+            print(f"Repo not found in owner: repo = {repo}, owner = {owner}")
+            return HTTPResponse(request, 404)
+        if username not in allowed_repo_members[owner][repo]:
+            print(
+                f"Member not found: owner = {owner}, repo = {repo}, username = {username}"
+            )
+            return HTTPResponse(request, 404)
+        return HTTPResponse(request, 200)
+
     ## Perform tests
 
     client_hosts = github_client.hosts['api.github.com']
     client_hosts.append((team_membership_regex, team_membership))
     client_hosts.append((org_membership_regex, org_membership))
+    client_hosts.append((repo_membership_regex, repo_membership))
 
     # Run tests twice, once with paginate and once without
     for paginate in (False, True):
         client_hosts.append((member_regex, functools.partial(org_members, paginate)))
 
         # test org membership
+        authenticator.allowed_repositories = []
         authenticator.allowed_organizations = ["org1"]
 
         handled_user_model = user_model("user1")
@@ -225,6 +252,39 @@ async def test_allowed_org_membership(github_client):
         assert auth_model
 
         handled_user_model = user_model("user-not-in-org-team")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
+
+        # test repo membership
+        authenticator.allowed_organizations = []
+        authenticator.allowed_repositories = ["org1/repo1"]
+
+        handled_user_model = user_model("user2")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model
+
+        handled_user_model = user_model("user-not-in-repo")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is None
+
+        # test repo membership
+        authenticator.allowed_organizations = ["org1:team1"]
+        authenticator.allowed_repositories = ["org1/repo1"]
+
+        handled_user_model = user_model("user1")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model
+
+        handled_user_model = user_model("user2")
+        handler = github_client.handler_for_user(handled_user_model)
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model
+
+        handled_user_model = user_model("user-not-in-repo")
         handler = github_client.handler_for_user(handled_user_model)
         auth_model = await authenticator.get_authenticated_user(handler, None)
         assert auth_model is None
