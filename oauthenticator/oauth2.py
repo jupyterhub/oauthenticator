@@ -1076,16 +1076,16 @@ class OAuthenticator(Authenticator):
 
     def get_user_groups(self, auth_model: dict):
         """
-        Returns a set of groups the user belongs to based on claim_groups_key
+        Returns a set of groups the user belongs to based on auth_model_groups_key
         and provided auth_model.
 
-        - If claim_groups_key is a callable, it is meant to return the groups
+        - If auth_model_groups_key is a callable, it is meant to return the groups
           directly.
-        - If claim_groups_key is a nested dictionary key like
+        - If auth_model_groups_key is a nested dictionary key like
           "permissions.groups", this function returns
           auth_model["permissions"]["groups"].
         """
-        if callable(self.claim_groups_key):
+        if callable(self.auth_model_groups_key):
             return set(self.auth_model_groups_key(auth_model))
         try:
             return set(
