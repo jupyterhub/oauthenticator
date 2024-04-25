@@ -7,8 +7,8 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 import base64
 import json
 import os
-from functools import reduce
 import uuid
+from functools import reduce
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
@@ -21,7 +21,18 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default, Set, validate
+from traitlets import (
+    Any,
+    Bool,
+    Callable,
+    Dict,
+    List,
+    Set,
+    Unicode,
+    Union,
+    default,
+    validate,
+)
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -1077,7 +1088,9 @@ class OAuthenticator(Authenticator):
         if callable(self.claim_groups_key):
             return set(self.auth_model_groups_key(auth_model))
         try:
-            return set(reduce(dict.get, self.auth_model_groups_key.split("."), auth_model))
+            return set(
+                reduce(dict.get, self.auth_model_groups_key.split("."), auth_model)
+            )
         except TypeError:
             self.log.error(
                 f"The auth_model_groups_key {self.auth_model_groups_key} does not exist in the auth_model. Available keys are: {auth_model.keys()}"

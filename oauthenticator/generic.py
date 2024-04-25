@@ -3,12 +3,11 @@ A JupyterHub authenticator class for use with any OAuth2 based identity provider
 """
 
 import os
-from functools import reduce
 
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.traitlets import Callable
 from tornado.httpclient import AsyncHTTPClient
-from traitlets import Bool, Dict, Set, Unicode, Union, default, observe
+from traitlets import Bool, Dict, Unicode, Union, default, observe
 
 from .oauth2 import OAuthenticator
 
@@ -37,9 +36,13 @@ class GenericOAuthenticator(OAuthenticator):
     def _claim_groups_key_changed(self, change):
         if callable(change.new):
             # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
-            self.auth_model_groups_key = lambda auth_model: self.claim_groups_key(auth_model["auth_state"][self.user_auth_state_key])
+            self.auth_model_groups_key = lambda auth_model: self.claim_groups_key(
+                auth_model["auth_state"][self.user_auth_state_key]
+            )
         else:
-            self.auth_model_groups_key = f"auth_state.{self.user_auth_state_key}.{self.claim_groups_key}"
+            self.auth_model_groups_key = (
+                f"auth_state.{self.user_auth_state_key}.{self.claim_groups_key}"
+            )
 
     @default("http_client")
     def _default_http_client(self):
