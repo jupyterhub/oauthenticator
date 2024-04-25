@@ -20,7 +20,18 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default, Set, validate
+from traitlets import (
+    Any,
+    Bool,
+    Callable,
+    Dict,
+    List,
+    Set,
+    Unicode,
+    Union,
+    default,
+    validate,
+)
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -335,7 +346,6 @@ class OAuthenticator(Authenticator):
         `admin_users`, a user signing in will have their admin status revoked.
         """,
     )
-
 
     authorize_url = Unicode(
         config=True,
