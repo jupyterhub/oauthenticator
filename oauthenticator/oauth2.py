@@ -1113,7 +1113,6 @@ class OAuthenticator(Authenticator):
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
         if self.manage_groups or self.admin_groups:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
             user_groups = self.get_user_groups(auth_model)
 
         if self.manage_groups:
