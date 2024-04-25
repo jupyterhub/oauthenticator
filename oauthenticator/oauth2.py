@@ -20,7 +20,7 @@ from tornado.auth import OAuth2Mixin
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import url_concat
 from tornado.log import app_log
-from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default, validate
+from traitlets import Any, Bool, Callable, Dict, List, Unicode, Union, default, Set, validate
 
 
 def guess_callback_uri(protocol, host, hub_server_url):
@@ -315,6 +315,27 @@ class OAuthenticator(Authenticator):
            user.
         """,
     )
+
+    allowed_groups = Set(
+        Unicode(),
+        config=True,
+        help="""
+        Allow members of selected groups to log in.
+        """,
+    )
+
+    admin_groups = Set(
+        Unicode(),
+        config=True,
+        help="""
+        Allow members of selected groups to sign in and consider them as
+        JupyterHub admins.
+
+        If this is set and a user isn't part of one of these groups or listed in
+        `admin_users`, a user signing in will have their admin status revoked.
+        """,
+    )
+
 
     authorize_url = Unicode(
         config=True,
@@ -1010,6 +1031,18 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
+        if self.manage_groups or self.admin_groups:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = self.get_user_groups(user_info)
+
+        if self.manage_groups:
+            auth_model["groups"] = sorted(user_groups)
+
+        if self.admin_groups:
+            if not auth_model["admin"]:
+                # auth_model["admin"] being True means the user was in admin_users
+                # so their group membership should not affect their admin status
+                auth_model["admin"] = bool(user_groups & self.admin_groups)
         return auth_model
 
     async def authenticate(self, handler, data=None, **kwargs):
@@ -1086,6 +1119,13 @@ class OAuthenticator(Authenticator):
         # automatically with existing users if it was configured truthy
         if username in self.allowed_users:
             return True
+
+        # allow users who are members of allowed_groups
+        if self.allowed_groups:
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            user_groups = self.get_user_groups(user_info)
+            if any(user_groups & self.allowed_groups):
+                return True
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False

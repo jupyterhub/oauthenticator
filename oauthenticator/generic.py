@@ -33,34 +33,6 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
-    allowed_groups = Set(
-        Unicode(),
-        config=True,
-        help="""
-        Allow members of selected groups to sign in.
-
-        When configuring this you may need to configure `claim_groups_key` as
-        well as it determines the key in the `userdata_url` response that is
-        assumed to list the groups a user is a member of.
-        """,
-    )
-
-    admin_groups = Set(
-        Unicode(),
-        config=True,
-        help="""
-        Allow members of selected groups to sign in and consider them as
-        JupyterHub admins.
-
-        If this is set and a user isn't part of one of these groups or listed in
-        `admin_users`, a user signing in will have their admin status revoked.
-
-        When configuring this you may need to configure `claim_groups_key` as
-        well as it determines the key in the `userdata_url` response that is
-        assumed to list the groups a user is a member of.
-        """,
-    )
-
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient(
@@ -123,49 +95,6 @@ class GenericOAuthenticator(OAuthenticator):
                 f"The claim_groups_key {self.claim_groups_key} does not exist in the user token"
             )
             return set()
-
-    async def update_auth_model(self, auth_model):
-        """
-        Sets admin status to True or False if `admin_groups` is configured and
-        the user isn't part of `admin_users` or `admin_groups`. Note that
-        leaving it at None makes users able to retain an admin status while
-        setting it to False makes it be revoked.
-
-        Also populates groups if `manage_groups` is set.
-        """
-        if self.manage_groups or self.admin_groups:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = self.get_user_groups(user_info)
-
-        if self.manage_groups:
-            auth_model["groups"] = sorted(user_groups)
-
-        if auth_model["admin"]:
-            # auth_model["admin"] being True means the user was in admin_users
-            return auth_model
-
-        if self.admin_groups:
-            # admin status should in this case be True or False, not None
-            auth_model["admin"] = bool(user_groups & self.admin_groups)
-
-        return auth_model
-
-    async def check_allowed(self, username, auth_model):
-        """
-        Overrides the OAuthenticator.check_allowed to also allow users part of
-        `allowed_groups`.
-        """
-        if await super().check_allowed(username, auth_model):
-            return True
-
-        if self.allowed_groups:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = self.get_user_groups(user_info)
-            if any(user_groups & self.allowed_groups):
-                return True
-
-        # users should be explicitly allowed via config, otherwise they aren't
-        return False
 
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
