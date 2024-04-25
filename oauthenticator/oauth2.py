@@ -7,6 +7,7 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 import base64
 import json
 import os
+from functools import reduce
 import uuid
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
@@ -336,6 +337,22 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    auth_model_groups_key = Union(
+        [Unicode(), Callable()],
+        config=True,
+        help="""
+        Determine groups this user belongs based on contents of the auth model.
+
+        Can be a string key name (use periods for nested keys), or a callable
+        that accepts the auth model (as a dict) and returns the groups list.
+
+        TODO: Document what auth_model actually looks like.
+
+        This configures how group membership in the upstream provider is determined
+        for use by `allowed_groups`, `admin_groups`, etc. If `manage_groups` is True,
+        this will also determine users' _JupyterHub_ group membership.
+        """,
+    )
 
     authorize_url = Unicode(
         config=True,
@@ -1046,6 +1063,27 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
+    def get_user_groups(self, auth_model: dict):
+        """
+        Returns a set of groups the user belongs to based on claim_groups_key
+        and provided auth_model.
+
+        - If claim_groups_key is a callable, it is meant to return the groups
+          directly.
+        - If claim_groups_key is a nested dictionary key like
+          "permissions.groups", this function returns
+          auth_model["permissions"]["groups"].
+        """
+        if callable(self.claim_groups_key):
+            return set(self.auth_model_groups_key(auth_model))
+        try:
+            return set(reduce(dict.get, self.auth_model_groups_key.split("."), auth_model))
+        except TypeError:
+            self.log.error(
+                f"The auth_model_groups_key {self.auth_model_groups_key} does not exist in the auth_model. Available keys are: {auth_model.keys()}"
+            )
+            return set()
+
     async def update_auth_model(self, auth_model):
         """
         Updates and returns the `auth_model` dict.
@@ -1063,7 +1101,7 @@ class OAuthenticator(Authenticator):
         """
         if self.manage_groups or self.admin_groups:
             user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = self.get_user_groups(user_info)
+            user_groups = self.get_user_groups(auth_model)
 
         if self.manage_groups:
             auth_model["groups"] = sorted(user_groups)

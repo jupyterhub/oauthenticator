@@ -8,7 +8,7 @@ from functools import reduce
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.traitlets import Callable
 from tornado.httpclient import AsyncHTTPClient
-from traitlets import Bool, Dict, Set, Unicode, Union, default
+from traitlets import Bool, Dict, Set, Unicode, Union, default, observe
 
 from .oauth2 import OAuthenticator
 
@@ -32,6 +32,14 @@ class GenericOAuthenticator(OAuthenticator):
         this will also determine users' _JupyterHub_ group membership.
         """,
     )
+
+    @observe("claim_groups_key")
+    def _claim_groups_key_changed(self, change):
+        if callable(change.new):
+            # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
+            self.auth_model_groups_key = lambda auth_model: self.claim_groups_key(auth_model["auth_state"][self.user_auth_state_key])
+        else:
+            self.auth_model_groups_key = f"auth_state.{self.user_auth_state_key}.{self.claim_groups_key}"
 
     @default("http_client")
     def _default_http_client(self):
@@ -71,30 +79,6 @@ class GenericOAuthenticator(OAuthenticator):
            Use :attr:`validate_server_cert`.
         """,
     )
-
-    def get_user_groups(self, user_info):
-        """
-        Returns a set of groups the user belongs to based on claim_groups_key
-        and provided user_info.
-
-        - If claim_groups_key is a callable, it is meant to return the groups
-          directly.
-        - If claim_groups_key is a nested dictionary key like
-          "permissions.groups", this function returns
-          user_info["permissions"]["groups"].
-
-        Note that this method is introduced by GenericOAuthenticator and not
-        present in the base class.
-        """
-        if callable(self.claim_groups_key):
-            return set(self.claim_groups_key(user_info))
-        try:
-            return set(reduce(dict.get, self.claim_groups_key.split("."), user_info))
-        except TypeError:
-            self.log.error(
-                f"The claim_groups_key {self.claim_groups_key} does not exist in the user token"
-            )
-            return set()
 
 
 class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
