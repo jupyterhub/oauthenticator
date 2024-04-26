@@ -483,6 +483,36 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    allowed_scopes = List(
+        Unicode(),
+        config=True,
+        help="""
+        Allow users who have been granted *all* these scopes to log in.
+
+        We request all the scopes listed in the 'scope' config, but only a
+        subset of these may be granted by the authorization server. This may
+        happen if the user does not have permissions to access a requested
+        scope, or has chosen to not give consent for a particular scope. If the
+        scopes listed in this config are not granted, the user will not be
+        allowed to log in.
+
+        The granted scopes will be part of the access token (fetched from self.token_url).
+        See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3 for more
+        information.
+
+        See the OAuth documentation of your OAuth provider for various options.
+        """,
+    )
+
+    @validate('allowed_scopes')
+    def _allowed_scopes_validation(self, proposal):
+        # allowed scopes must be a subset of requested scopes
+        if set(proposal.value) - set(self.scope):
+            raise ValueError(
+                f"Allowed scopes must be a subset of requested scopes. {self.scope} is requested but {proposal.value} is allowed"
+            )
+        return proposal.value
+
     extra_authorize_params = Dict(
         config=True,
         help="""
@@ -1060,6 +1090,8 @@ class OAuthenticator(Authenticator):
         """
         Returns True for users allowed to be authorized
 
+        If a user must be *disallowed*, raises a 403 exception.
+
         Overrides Authenticator.check_allowed that is called from
         `Authenticator.get_authenticated_user` after
         `OAuthenticator.authenticate` has been called, and therefore also after
@@ -1073,6 +1105,15 @@ class OAuthenticator(Authenticator):
         # https://github.com/jupyterhub/oauthenticator/issues/621
         if auth_model is None:
             return True
+
+        # Allow users who have been granted specific scopes that grant them entry
+        if self.allowed_scopes:
+            granted_scopes = auth_model.get('auth_state', {}).get('scope', [])
+            missing_scopes = set(self.allowed_scopes) - set(granted_scopes)
+            if not missing_scopes:
+                message = f"Granting access to user {username}, as they had {self.allowed_scopes}"
+                self.log.info(message)
+                return True
 
         if self.allow_all:
             return True

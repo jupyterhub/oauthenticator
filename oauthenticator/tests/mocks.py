@@ -104,6 +104,8 @@ def setup_oauth_mock(
     access_token_path,
     user_path=None,
     token_type='Bearer',
+    token_request_style='post',
+    scope="",
 ):
     """setup the mock client for OAuth
 
@@ -125,6 +127,7 @@ def setup_oauth_mock(
         access_token_path (str): The path for the access token request (e.g. /access_token)
         user_path (str): The path for requesting  (e.g. /user)
         token_type (str): the token_type field for the provider
+        scope (str): The scope field returned by the provider
     """
 
     client.oauth_codes = oauth_codes = {}
@@ -161,6 +164,8 @@ def setup_oauth_mock(
             'access_token': token,
             'token_type': token_type,
         }
+        if scope:
+            model['scope'] = scope
         if 'id_token' in user:
             model['id_token'] = user['id_token']
         return model
@@ -172,6 +177,7 @@ def setup_oauth_mock(
             token = auth_header.split(None, 1)[1]
         else:
             query = parse_qs(urlparse(request.url).query)
+
             if 'access_token' in query:
                 token = query['access_token'][0]
             else:

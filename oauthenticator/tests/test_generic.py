@@ -1,8 +1,9 @@
 import json
+import re
 from functools import partial
 
 import jwt
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
@@ -35,6 +36,7 @@ def generic_client(client):
         host='generic.horse',
         access_token_path='/oauth/access_token',
         user_path='/oauth/userinfo',
+        scope='basic',
     )
     return client
 
@@ -291,6 +293,37 @@ async def test_generic_data(get_authenticator, generic_client):
     auth_model = await authenticator.authenticate(handler, data)
 
     assert auth_model
+
+
+@mark.parametrize(
+    ["allowed_scopes", "allowed"], [(["advanced"], False), (["basic"], True)]
+)
+async def test_allowed_scopes(
+    get_authenticator, generic_client, allowed_scopes, allowed
+):
+    c = Config()
+    c.GenericOAuthenticator.allowed_scopes = allowed_scopes
+    c.GenericOAuthenticator.scope = list(allowed_scopes)
+    authenticator = get_authenticator(config=c)
+
+    handled_user_model = user_model("user1")
+    handler = generic_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.authenticate(handler)
+    assert allowed == await authenticator.check_allowed(auth_model["name"], auth_model)
+
+
+async def test_allowed_scopes_validation_scope_subset(get_authenticator):
+    c = Config()
+    # Test that if we require more scopes than we request, validation fails
+    c.GenericOAuthenticator.allowed_scopes = ["a", "b"]
+    c.GenericOAuthenticator.scope = ["a"]
+    with raises(
+        ValueError,
+        match=re.escape(
+            "Allowed scopes must be a subset of requested scopes. ['a'] is requested but ['a', 'b'] is allowed"
+        ),
+    ):
+        get_authenticator(config=c)
 
 
 async def test_generic_callable_username_key(get_authenticator, generic_client):
