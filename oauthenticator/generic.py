@@ -43,7 +43,6 @@ class GenericOAuthenticator(OAuthenticator):
         else:
             return f"auth_state.{self.user_auth_state_key}.{self.claim_groups_key}"
 
-
     # propagate any changes to claim_groups_key to auth_model_groups_key
     @observe("claim_groups_key")
     def _claim_groups_key_changed(self, change):
