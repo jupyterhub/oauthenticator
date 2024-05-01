@@ -32,6 +32,19 @@ class GenericOAuthenticator(OAuthenticator):
         """,
     )
 
+    # Initialize value of auth_model_groups_key based on what is in claim_groups_key
+    @default('auth_model_groups_key')
+    def _auth_model_groups_key_default(self):
+        if callable(self.claim_groups_key):
+            # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
+            return lambda auth_model: self.claim_groups_key(
+                auth_model["auth_state"][self.user_auth_state_key]
+            )
+        else:
+            return f"auth_state.{self.user_auth_state_key}.{self.claim_groups_key}"
+
+
+    # propagate any changes to claim_groups_key to auth_model_groups_key
     @observe("claim_groups_key")
     def _claim_groups_key_changed(self, change):
         if callable(change.new):
