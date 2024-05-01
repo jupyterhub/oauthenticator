@@ -1210,8 +1210,7 @@ class OAuthenticator(Authenticator):
 
         # allow users who are members of allowed_groups
         if self.allowed_groups:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = self.get_user_groups(user_info)
+            user_groups = self.get_user_groups(auth_model)
             if any(user_groups & self.allowed_groups):
                 return True
 
