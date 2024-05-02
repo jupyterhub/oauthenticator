@@ -368,9 +368,13 @@ async def test_generic_claim_groups_key_nested_strings(
     assert auth_model["admin"]
 
 
-async def test_generic_auth_state_groups_key_callable(get_authenticator, generic_client):
+async def test_generic_auth_state_groups_key_callable(
+    get_authenticator, generic_client
+):
     c = Config()
-    c.GenericOAuthenticator.auth_state_groups_key = lambda auth_state: auth_state["oauth_user"]["policies"]["roles"]
+    c.GenericOAuthenticator.auth_state_groups_key = lambda auth_state: auth_state[
+        "oauth_user"
+    ]["policies"]["roles"]
     c.GenericOAuthenticator.allowed_groups = ["super_user"]
     authenticator = get_authenticator(config=c)
 
