@@ -21,14 +21,9 @@ class GenericOAuthenticator(OAuthenticator):
         [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],
         config=True,
         help="""
-        Userdata groups claim key from returned json for USERDATA_URL.
+        .. deprecated:: 16.4
 
-        Can be a string key name (use periods for nested keys), or a callable
-        that accepts the returned json (as a dict) and returns the groups list.
-
-        This configures how group membership in the upstream provider is determined
-        for use by `allowed_groups`, `admin_groups`, etc. If `manage_groups` is True,
-        this will also determine users' _JupyterHub_ group membership.
+        Use :attr:`auth_state_groups_key` instead.
         """,
     )
 
@@ -46,6 +41,12 @@ class GenericOAuthenticator(OAuthenticator):
     # propagate any changes to claim_groups_key to auth_state_groups_key
     @observe("claim_groups_key")
     def _claim_groups_key_changed(self, change):
+        # Emit a deprecation warning directly, without using _deprecated_oauth_aliases,
+        # as it is not a direct replacement for this functionality
+        self.log.warning(
+            "{cls}.claim_groups_key is deprecated since OAuthenticatort 16.4, use {cls}.auth_state_groups_key instead",
+            cls=self.__class__.__name__
+        )
         if callable(change.new):
             # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
             self.auth_state_groups_key = lambda auth_state: self.claim_groups_key(
