@@ -45,7 +45,7 @@ class GenericOAuthenticator(OAuthenticator):
         # as it is not a direct replacement for this functionality
         self.log.warning(
             "{cls}.claim_groups_key is deprecated since OAuthenticatort 16.4, use {cls}.auth_state_groups_key instead",
-            cls=self.__class__.__name__
+            cls=self.__class__.__name__,
         )
         if callable(change.new):
             # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
