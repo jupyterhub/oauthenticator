@@ -44,7 +44,7 @@ class GenericOAuthenticator(OAuthenticator):
         # Emit a deprecation warning directly, without using _deprecated_oauth_aliases,
         # as it is not a direct replacement for this functionality
         self.log.warning(
-            "{cls}.claim_groups_key is deprecated since OAuthenticatort 16.4, use {cls}.auth_state_groups_key instead".format(
+            "{cls}.claim_groups_key is deprecated since OAuthenticator 16.4, use {cls}.auth_state_groups_key instead".format(
                 cls=self.__class__.__name__,
             )
         )
