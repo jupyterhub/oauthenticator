@@ -1077,8 +1077,7 @@ class OAuthenticator(Authenticator):
         Returns a set of groups the user belongs to based on auth_state_groups_key
         and provided auth_state.
 
-        - If auth_state_groups_key is a callable, it is meant to return the groups
-          directly.
+        - If auth_state_groups_key is a callable, it returns the list of groups directly.
         - If auth_state_groups_key is a nested dictionary key like
           "permissions.groups", this function returns
           auth_state["permissions"]["groups"].
