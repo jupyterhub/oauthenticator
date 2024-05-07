@@ -31,7 +31,7 @@ class GenericOAuthenticator(OAuthenticator):
     @default('auth_state_groups_key')
     def _auth_state_groups_key_default(self):
         if callable(self.claim_groups_key):
-            # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
+            # Automatically wrap the claim_groups_key call so it gets what it thinks it should get
             return lambda auth_state: self.claim_groups_key(
                 auth_state[self.user_auth_state_key]
             )
