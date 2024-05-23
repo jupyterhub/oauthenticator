@@ -31,6 +31,7 @@ from traitlets import (
     Unicode,
     Union,
     default,
+    observe,
     validate,
 )
 
@@ -365,7 +366,7 @@ class OAuthenticator(Authenticator):
         """,
     )
 
-    # @observe calls are set in __init__
+    @observe("allowed_groups", "admin_groups", "auth_state_groups_key")
     def _requires_manage_groups(self, change):
         """
         Validate that group management keys are only set when manage_groups is also True
@@ -1278,10 +1279,6 @@ class OAuthenticator(Authenticator):
                 self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
             )
 
-        self.observe(
-            self._requires_manage_groups,
-            names=("auth_state_groups_key", "admin_groups", "allowed_groups"),
-        )
         super().__init__(**kwargs)
 
 
