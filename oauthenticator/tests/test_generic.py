@@ -104,16 +104,27 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
         ("03", {"allowed_users": {"not-test-user"}}, False, None),
         ("04", {"admin_users": {"user1"}}, True, True),
         ("05", {"admin_users": {"not-test-user"}}, False, None),
-        ("06", {"allowed_groups": {"group1"}}, True, None),
-        ("07", {"allowed_groups": {"test-user-not-in-group"}}, False, None),
-        ("08", {"admin_groups": {"group1"}}, True, True),
-        ("09", {"admin_groups": {"test-user-not-in-group"}}, False, False),
+        ("06", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "07",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("08", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "09",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
+        ),
         # allow config, some combinations of two tested
         (
             "10",
             {
                 "allow_all": False,
                 "allowed_users": {"not-test-user"},
+                "manage_groups": True,
             },
             False,
             None,
@@ -123,6 +134,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "allowed_users": {"not-test-user"},
                 "admin_users": {"user1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -132,6 +144,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "allowed_groups": {"group1"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -141,6 +154,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "allowed_groups": {"group1"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             True,
             False,
@@ -150,6 +164,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "allowed_groups": {"test-user-not-in-group"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -159,6 +174,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "allowed_groups": {"test-user-not-in-group"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             False,
             False,
@@ -168,6 +184,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "admin_users": {"user1"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -177,6 +194,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "admin_users": {"user1"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -186,6 +204,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "admin_users": {"not-test-user"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -195,6 +214,7 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             {
                 "admin_users": {"not-test-user"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             False,
             False,
@@ -343,6 +363,7 @@ async def test_generic_claim_groups_key_callable(get_authenticator, generic_clie
     c = Config()
     c.GenericOAuthenticator.claim_groups_key = lambda r: r["policies"]["roles"]
     c.GenericOAuthenticator.allowed_groups = ["super_user"]
+    c.GenericOAuthenticator.manage_groups = True
     authenticator = get_authenticator(config=c)
 
     handled_user_model = user_model("user1", policies={"roles": ["super_user"]})
@@ -358,6 +379,7 @@ async def test_generic_claim_groups_key_nested_strings(
     c = Config()
     c.GenericOAuthenticator.claim_groups_key = "permissions.groups"
     c.GenericOAuthenticator.admin_groups = ["super_user"]
+    c.GenericOAuthenticator.manage_groups = True
     authenticator = get_authenticator(config=c)
 
     handled_user_model = user_model("user1", permissions={"groups": ["super_user"]})
@@ -376,6 +398,7 @@ async def test_generic_auth_state_groups_key_callable(
         "oauth_user"
     ]["policies"]["roles"]
     c.GenericOAuthenticator.allowed_groups = ["super_user"]
+    c.GenericOAuthenticator.manage_groups = True
     authenticator = get_authenticator(config=c)
 
     handled_user_model = user_model("user1", policies={"roles": ["super_user"]})
@@ -391,6 +414,7 @@ async def test_generic_auth_state_groups_key_nested_strings(
     c = Config()
     c.GenericOAuthenticator.auth_state_groups_key = "oauth_user.permissions.groups"
     c.GenericOAuthenticator.admin_groups = ["super_user"]
+    c.GenericOAuthenticator.manage_groups = True
     authenticator = get_authenticator(config=c)
 
     handled_user_model = user_model("user1", permissions={"groups": ["super_user"]})
@@ -399,6 +423,26 @@ async def test_generic_auth_state_groups_key_nested_strings(
 
     assert auth_model
     assert auth_model["admin"]
+
+
+@mark.parametrize(
+    ("trait_name", "value"),
+    [
+        ("auth_state_groups_key", "oauth_user.permissions.groups"),
+        ("admin_groups", ["super_users"]),
+        ("allowed_groups", ["all_users"]),
+    ],
+)
+async def test_generic_manage_groups_required(get_authenticator, trait_name, value):
+    c = Config()
+    setattr(c.GenericOAuthenticator, trait_name, value)
+    with raises(
+        ValueError,
+        match=re.escape(
+            rf'GenericOAuthenticator.{trait_name} requires GenericOAuthenticator.manage_groups to also be set'
+        ),
+    ):
+        get_authenticator(config=c)
 
 
 @mark.parametrize(

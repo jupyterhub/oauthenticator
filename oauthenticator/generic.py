@@ -24,6 +24,11 @@ class GenericOAuthenticator(OAuthenticator):
         .. deprecated:: 16.4
 
         Use :attr:`auth_state_groups_key` instead.
+
+
+        .. versionchanged:: 16.4
+
+        :attr:`manage_groups` is now required to be `True` to use this functionality
         """,
     )
 
@@ -48,6 +53,13 @@ class GenericOAuthenticator(OAuthenticator):
                 cls=self.__class__.__name__,
             )
         )
+
+        if change.new:
+            if not self.manage_groups:
+                raise ValueError(
+                    f'{change.owner.__class__.__name__}.{change.name} requires {change.owner.__class__.__name__}.manage_groups to also be set'
+                )
+
         if callable(change.new):
             # Automatically wrap the claim_gorups_key call so it gets what it thinks it should get
             self.auth_state_groups_key = lambda auth_state: self.claim_groups_key(

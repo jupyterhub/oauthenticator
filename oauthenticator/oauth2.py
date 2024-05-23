@@ -333,6 +333,8 @@ class OAuthenticator(Authenticator):
         config=True,
         help="""
         Allow members of selected groups to log in.
+
+        Requires `manage_groups` to also be `True`.
         """,
     )
 
@@ -345,6 +347,8 @@ class OAuthenticator(Authenticator):
 
         If this is set and a user isn't part of one of these groups or listed in
         `admin_users`, a user signing in will have their admin status revoked.
+
+        Requires `manage_groups` to also be `True`.
         """,
     )
 
@@ -357,11 +361,20 @@ class OAuthenticator(Authenticator):
         Can be a string key name (use periods for nested keys), or a callable
         that accepts the auth state (as a dict) and returns the groups list.
 
-        This configures how group membership in the upstream provider is determined
-        for use by `allowed_groups`, `admin_groups`, etc. If `manage_groups` is True,
-        this will also determine users' _JupyterHub_ group membership.
+        Requires `manage_groups` to also be `True`.
         """,
     )
+
+    # @observe calls are set in __init__
+    def _requires_manage_groups(self, change):
+        """
+        Validate that group management keys are only set when manage_groups is also True
+        """
+        if change.new:
+            if not self.manage_groups:
+                raise ValueError(
+                    f'{change.owner.__class__.__name__}.{change.name} requires {change.owner.__class__.__name__}.manage_groups to also be set'
+                )
 
     authorize_url = Unicode(
         config=True,
@@ -1109,18 +1122,17 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
-        if self.manage_groups or self.admin_groups:
+        if self.manage_groups:
             auth_state = auth_model["auth_state"]
             user_groups = self.get_user_groups(auth_state)
 
-        if self.manage_groups:
             auth_model["groups"] = sorted(user_groups)
 
-        if self.admin_groups:
-            if not auth_model["admin"]:
-                # auth_model["admin"] being True means the user was in admin_users
-                # so their group membership should not affect their admin status
-                auth_model["admin"] = bool(user_groups & self.admin_groups)
+            if self.admin_groups:
+                if not auth_model["admin"]:
+                    # auth_model["admin"] being True means the user was in admin_users
+                    # so their group membership should not affect their admin status
+                    auth_model["admin"] = bool(user_groups & self.admin_groups)
         return auth_model
 
     async def authenticate(self, handler, data=None, **kwargs):
@@ -1207,7 +1219,7 @@ class OAuthenticator(Authenticator):
             return True
 
         # allow users who are members of allowed_groups
-        if self.allowed_groups:
+        if self.manage_groups and self.allowed_groups:
             auth_state = auth_model["auth_state"]
             user_groups = self.get_user_groups(auth_state)
             if any(user_groups & self.allowed_groups):
@@ -1265,6 +1277,11 @@ class OAuthenticator(Authenticator):
             self.observe(
                 self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
             )
+
+        self.observe(
+            self._requires_manage_groups,
+            names=("auth_state_groups_key", "admin_groups", "allowed_groups"),
+        )
         super().__init__(**kwargs)
 
 
