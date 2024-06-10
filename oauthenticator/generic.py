@@ -21,12 +21,12 @@ class GenericOAuthenticator(OAuthenticator):
         [Unicode(os.environ.get('OAUTH2_GROUPS_KEY', 'groups')), Callable()],
         config=True,
         help="""
-        .. deprecated:: 16.4
+        .. deprecated:: 17.0
 
         Use :attr:`auth_state_groups_key` instead.
 
 
-        .. versionchanged:: 16.4
+        .. versionchanged:: 17.0
 
         :attr:`manage_groups` is now required to be `True` to use this functionality
         """,
@@ -49,7 +49,7 @@ class GenericOAuthenticator(OAuthenticator):
         # Emit a deprecation warning directly, without using _deprecated_oauth_aliases,
         # as it is not a direct replacement for this functionality
         self.log.warning(
-            "{cls}.claim_groups_key is deprecated since OAuthenticator 16.4, use {cls}.auth_state_groups_key instead".format(
+            "{cls}.claim_groups_key is deprecated since OAuthenticator 17.0, use {cls}.auth_state_groups_key instead".format(
                 cls=self.__class__.__name__,
             )
         )
