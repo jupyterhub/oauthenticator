@@ -297,19 +297,6 @@ class GlobusOAuthenticator(OAuthenticator):
         if auth_model is None:
             return True
 
-        # before considering allowing a username by being recognized in a list
-        # of usernames or similar, we must ensure that the authenticated user is
-        # from an allowed identity provider domain.
-        if self.identity_provider:
-            # It's possible for identity provider domains to be namespaced
-            # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_domain = user_info.get(self.username_claim).split('@', 1)[-1]
-            if user_domain != self.identity_provider:
-                message = f"This site is restricted to {self.identity_provider} accounts. Link your account at app.globus.org/account."
-                self.log.warning(message)
-                raise web.HTTPError(403, message)
-
         if await super().check_allowed(username, auth_model):
             return True
 
@@ -321,6 +308,28 @@ class GlobusOAuthenticator(OAuthenticator):
 
         # users should be explicitly allowed via config, otherwise they aren't
         return False
+
+    async def check_blocked_users(self, username, authentication=None):
+        """Check if the user should be blocked
+
+        Called _before_ checking if the user should be allowed
+        """
+        # any restrictions on access go here - allow config only _grants_ access,
+        # restrictions belong in the `block` stage
+        # before considering allowing a username by being recognized in a list
+        # of usernames or similar, we must ensure that the authenticated user is
+        # from an allowed identity provider domain.
+        if self.identity_provider:
+            # It's possible for identity provider domains to be namespaced
+            # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces
+            user_info = authentication["auth_state"][self.user_auth_state_key]
+            user_domain = user_info.get(self.username_claim).split('@', 1)[-1]
+            if user_domain != self.identity_provider:
+                message = f"This site is restricted to {self.identity_provider} accounts. Link your account at app.globus.org/account."
+                self.log.warning(message)
+                raise web.HTTPError(403, message)
+
+        return super().check_blocked_users(username, authentication)
 
     async def update_auth_model(self, auth_model):
         """
