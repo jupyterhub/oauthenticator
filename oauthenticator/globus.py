@@ -309,7 +309,7 @@ class GlobusOAuthenticator(OAuthenticator):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
-    async def check_blocked_users(self, username, authentication=None):
+    async def check_blocked_users(self, username, authentication):
         """Check if the user should be blocked
 
         Called _before_ checking if the user should be allowed
