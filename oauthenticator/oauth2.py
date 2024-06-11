@@ -1051,9 +1051,6 @@ class OAuthenticator(Authenticator):
           (optional), and auth_state (optional)
 
         Subclasses should not override this method.
-
-        ref: https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authenticator-authenticate-method
-        ref: https://github.com/jupyterhub/jupyterhub/blob/4.0.0/jupyterhub/auth.py#L581-L611
         """
         # build the parameters to be used in the request exchanging the oauth code for the access token
         access_token_params = self.build_access_tokens_request_params(handler, data)

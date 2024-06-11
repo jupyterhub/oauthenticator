@@ -6,6 +6,29 @@ command line for details.
 
 ## [Unreleased]
 
+### 16.3.1 - 2024-06-11
+
+```{important}
+This release includes a security patch for `GlobusOAuthenticator`.
+See [GHSA-gprj-3p75-f996](https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-gprj-3p75-f996)
+for details.
+```
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.3.0...16.3.1))
+
+#### New features added
+
+- [All] Add `allowed_scopes` to all authenticators to allow some users based on granted scopes [#719](https://github.com/jupyterhub/oauthenticator/pull/719) ([@yuvipanda](https://github.com/yuvipanda/), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics), [@minrk])
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-03-20&to=2024-06-11&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-03-20..2024-06-11&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-03-20..2024-06-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-03-20..2024-06-11&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-03-20..2024-06-11))
+
 ### 16.3.0 - 2024-03-20
 
 ```{important}
