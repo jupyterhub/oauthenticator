@@ -29,7 +29,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-03-20..2024-06-11&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-03-20..2024-06-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-03-20..2024-06-11&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-03-20..2024-06-11))
 
-
 ### 16.3.0 - 2024-03-20
 
 ```{important}
