@@ -37,10 +37,20 @@ def user_model():
         ("03", {"allowed_users": {"not-test-user"}}, False, None),
         ("04", {"admin_users": {"user1"}}, True, True),
         ("05", {"admin_users": {"not-test-user"}}, False, None),
-        ("06", {"allowed_groups": {"group1"}}, True, None),
-        ("07", {"allowed_groups": {"test-user-not-in-group"}}, False, None),
-        ("08", {"admin_groups": {"group1"}}, True, True),
-        ("09", {"admin_groups": {"test-user-not-in-group"}}, False, False),
+        ("06", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "07",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("08", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "09",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
+        ),
         # allow config, some combinations of two tested
         (
             "10",
@@ -65,6 +75,7 @@ def user_model():
             {
                 "allowed_groups": {"group1"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -74,6 +85,7 @@ def user_model():
             {
                 "allowed_groups": {"group1"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             True,
             False,
@@ -83,6 +95,7 @@ def user_model():
             {
                 "allowed_groups": {"test-user-not-in-group"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -92,6 +105,7 @@ def user_model():
             {
                 "allowed_groups": {"test-user-not-in-group"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             False,
             False,
@@ -101,6 +115,7 @@ def user_model():
             {
                 "admin_users": {"user1"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -110,6 +125,7 @@ def user_model():
             {
                 "admin_users": {"user1"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -119,6 +135,7 @@ def user_model():
             {
                 "admin_users": {"not-test-user"},
                 "admin_groups": {"group1"},
+                "manage_groups": True,
             },
             True,
             True,
@@ -128,6 +145,7 @@ def user_model():
             {
                 "admin_users": {"not-test-user"},
                 "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
             },
             False,
             False,
