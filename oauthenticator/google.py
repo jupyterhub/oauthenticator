@@ -7,7 +7,7 @@ import os
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
-from traitlets import Dict, List, Set, Unicode, default, validate
+from traitlets import Bool, Dict, List, Set, Unicode, default, validate
 
 from .oauth2 import OAuthenticator
 
@@ -105,6 +105,26 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
+    strip_domain = Bool(
+        False,
+        config=True,
+        help="""
+        Strip the username to exclude the `@domain` part.
+
+        .. warning::
+        If multiple `hosted_domains` are specified, there is a chance of clashing usernames.
+        """,
+    )
+
+    @validate('strip_domain')
+    def _check_multiple_hosted_domain(self, strip_domain):
+        if len(self.hosted_domain) > 1 and strip_domain:
+            self.log.warning(
+                "User names are stripped of `@domain`, but multiple domains are specified."
+                " This can lead to clashing usernames"
+            )
+        return strip_domain.value
+
     hosted_domain = List(
         Unicode(),
         config=True,
@@ -179,21 +199,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         username = super().user_info_to_username(user_info)
         user_email = user_info["email"]
-        user_domain = user_info["domain"] = user_email.split("@")[1].lower()
+        user_info["domain"] = user_email.split("@")[1].lower()
 
         # NOTE: This is not an authorization check, it just about username
         #       derivation. Decoupling hosted_domain from this is considered in
         #       https://github.com/jupyterhub/oauthenticator/issues/733.
-        #
-        # NOTE: This code is written with without knowing for sure if the user
-        #       email's domain could be different from the domain in hd, so we
-        #       assume it could be even though it seems like it can't be. If a
-        #       Google organization/workspace manages users in a "primary
-        #       domain" and a "secondary domain", users with respective email
-        #       domain have their hd field set respectively.
-        #
-        if len(self.hosted_domain) == 1 and user_domain == self.hosted_domain[0]:
-            # strip the domain in this situation
+
+        if self.strip_domain and user_info["domain"] in self.hosted_domain:
             username = username.split("@")[0]
 
         return username
