@@ -164,7 +164,6 @@ async def test_google(
     c = Config()
     c.GoogleOAuthenticator = Config(class_config)
     c.GoogleOAuthenticator.username_claim = "custom"
-    c.GoogleOAuthenticator.strip_domain = True
     authenticator = GoogleOAuthenticator(config=c)
 
     handled_user_model = user_model("user1@example.com", "user1")
@@ -202,7 +201,7 @@ async def test_google(
         ("06", "user1@other.org", "ok-hd.org", "user1@other.org", True, None),
     ],
 )
-async def test_hosted_domain_strip_domain(
+async def test_hosted_domain_single_entry(
     google_client,
     test_variation_id,
     user_email,
@@ -218,7 +217,6 @@ async def test_hosted_domain_strip_domain(
     """
     c = Config()
     c.GoogleOAuthenticator.hosted_domain = ["ok-hd.org"]
-    c.GoogleOAuthenticator.strip_domain = True
     c.GoogleOAuthenticator.admin_users = {"user1"}
     c.GoogleOAuthenticator.allowed_users = {"user2", "blocked", "user1@other.org"}
     c.GoogleOAuthenticator.blocked_users = {"blocked"}

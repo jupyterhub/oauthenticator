@@ -118,7 +118,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default('strip_domain')
     def _strip_if_single_domain(self):
-        return len(self.hosted_domain) > 1
+        return len(self.hosted_domain) <= 1
 
     @validate('strip_domain')
     def _check_multiple_hosted_domain(self, strip_domain):
