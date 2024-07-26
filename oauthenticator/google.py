@@ -108,11 +108,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     strip_domain = Bool(
         config=True,
         help="""
-        Strip the username to exclude the `@domain` part.
+        Strip the username to exclude the `@domain` part. 
+        This happens by default when there is only one hosted domain specified
 
         .. warning::
 
-            If multiple `hosted_domains` are specified, there is a chance of clashing usernames.
+            If domains are stripped from usernames and multiple `hosted_domains` are specified, 
+            there is a chance of clashing usernames.
         """,
     )
 
