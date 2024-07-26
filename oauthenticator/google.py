@@ -112,7 +112,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Strip the username to exclude the `@domain` part.
 
         .. warning::
-        If multiple `hosted_domains` are specified, there is a chance of clashing usernames.
+
+            If multiple `hosted_domains` are specified, there is a chance of clashing usernames.
         """,
     )
 
