@@ -9,6 +9,7 @@ import json
 import os
 import uuid
 from functools import reduce
+from inspect import isawaitable
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
@@ -361,6 +362,7 @@ class OAuthenticator(Authenticator):
 
         Can be a string key name (use periods for nested keys), or a callable
         that accepts the auth state (as a dict) and returns the groups list.
+        Callables may be async.
 
         Requires `manage_groups` to also be `True`.
         """,
@@ -1086,18 +1088,22 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
-    def get_user_groups(self, auth_state: dict):
+    async def get_user_groups(self, auth_state: dict):
         """
         Returns a set of groups the user belongs to based on auth_state_groups_key
         and provided auth_state.
 
         - If auth_state_groups_key is a callable, it returns the list of groups directly.
+          Callable may be async.
         - If auth_state_groups_key is a nested dictionary key like
           "permissions.groups", this function returns
           auth_state["permissions"]["groups"].
         """
         if callable(self.auth_state_groups_key):
-            return set(self.auth_state_groups_key(auth_state))
+            groups = self.auth_state_groups_key(auth_state)
+            if isawaitable(groups):
+                groups = await groups
+            return set(groups)
         try:
             return set(
                 reduce(dict.get, self.auth_state_groups_key.split("."), auth_state)
@@ -1126,6 +1132,8 @@ class OAuthenticator(Authenticator):
         if self.manage_groups:
             auth_state = auth_model["auth_state"]
             user_groups = self.get_user_groups(auth_state)
+            if isawaitable(user_groups):
+                user_groups = await user_groups
 
             auth_model["groups"] = sorted(user_groups)
 
@@ -1223,6 +1231,8 @@ class OAuthenticator(Authenticator):
         if self.manage_groups and self.allowed_groups:
             auth_state = auth_model["auth_state"]
             user_groups = self.get_user_groups(auth_state)
+            if isawaitable(user_groups):
+                user_groups = await user_groups
             if any(user_groups & self.allowed_groups):
                 return True
 
