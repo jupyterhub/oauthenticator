@@ -9,6 +9,7 @@ import json
 import os
 import uuid
 from functools import reduce
+from inspect import isawaitable
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
@@ -361,8 +362,37 @@ class OAuthenticator(Authenticator):
 
         Can be a string key name (use periods for nested keys), or a callable
         that accepts the auth state (as a dict) and returns the groups list.
+        Callables may be async.
 
         Requires `manage_groups` to also be `True`.
+
+        .. versionchanged:: 16.4
+
+            Added async support.
+        """,
+    )
+
+    modify_auth_state_hook = Callable(
+        config=True,
+        default_value=None,
+        allow_none=True,
+        help="""
+        Callable to modify `auth_state`.
+
+        Will be called with the Authenticator instance and the existing auth_state dictionary
+        and must return the new auth_state dictionary:
+
+        ```
+        auth_state = [await] modify_auth_state_hook(authenticator, auth_state)
+        ```
+
+        This hook is called _before_ populating group membership,
+        so can be used to make additional requests to populate additional fields
+        which may then be consumed by `auth_state_groups_key` to populate groups.
+
+        This hook may be async.
+
+        .. versionadded: 16.4
         """,
     )
 
@@ -1047,6 +1077,7 @@ class OAuthenticator(Authenticator):
     def build_auth_state_dict(self, token_info, user_info):
         """
         Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
+        May be async (requires oauthenticator >= 16.4).
 
         Args:
             token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
@@ -1062,6 +1093,9 @@ class OAuthenticator(Authenticator):
                 - self.user_auth_state_key: the full user_info response
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+
+        .. versionchanged:: 16.4
+            This method be async.
         """
 
         # We know for sure the `access_token` key exists, oterwise we would have errored out already
@@ -1086,18 +1120,26 @@ class OAuthenticator(Authenticator):
             self.user_auth_state_key: user_info,
         }
 
-    def get_user_groups(self, auth_state: dict):
+    async def get_user_groups(self, auth_state: dict):
         """
         Returns a set of groups the user belongs to based on auth_state_groups_key
         and provided auth_state.
 
         - If auth_state_groups_key is a callable, it returns the list of groups directly.
+          Callable may be async.
         - If auth_state_groups_key is a nested dictionary key like
           "permissions.groups", this function returns
           auth_state["permissions"]["groups"].
+
+        .. versionchanged:: 16.4
+            This method may be async.
+            The base implementation is now async.
         """
         if callable(self.auth_state_groups_key):
-            return set(self.auth_state_groups_key(auth_state))
+            groups = self.auth_state_groups_key(auth_state)
+            if isawaitable(groups):
+                groups = await groups
+            return set(groups)
         try:
             return set(
                 reduce(dict.get, self.auth_state_groups_key.split("."), auth_state)
@@ -1126,6 +1168,8 @@ class OAuthenticator(Authenticator):
         if self.manage_groups:
             auth_state = auth_model["auth_state"]
             user_groups = self.get_user_groups(auth_state)
+            if isawaitable(user_groups):
+                user_groups = await user_groups
 
             auth_model["groups"] = sorted(user_groups)
 
@@ -1135,6 +1179,18 @@ class OAuthenticator(Authenticator):
                     # so their group membership should not affect their admin status
                     auth_model["admin"] = bool(user_groups & self.admin_groups)
         return auth_model
+
+    async def _call_modify_auth_state_hook(self, auth_state):
+        """Call the modify_auth_state_hook"""
+        try:
+            auth_state = self.modify_auth_state_hook(self, auth_state)
+            if isawaitable(auth_state):
+                auth_state = await auth_state
+        except Exception as e:
+            # let hook errors raise, nothing in auth should suppress errors
+            self.log.error(f"Error in modify_auth_state_hook: {e}")
+            raise
+        return auth_state
 
     async def authenticate(self, handler, data=None, **kwargs):
         """
@@ -1166,11 +1222,16 @@ class OAuthenticator(Authenticator):
             if refresh_token:
                 token_info["refresh_token"] = refresh_token
 
+        auth_state = self.build_auth_state_dict(token_info, user_info)
+        if isawaitable(auth_state):
+            auth_state = await auth_state
+        if self.modify_auth_state_hook is not None:
+            auth_state = await self._call_modify_auth_state_hook(auth_state)
         # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
             "admin": True if username in self.admin_users else None,
-            "auth_state": self.build_auth_state_dict(token_info, user_info),
+            "auth_state": auth_state,
         }
 
         # update the auth_model with info to later authorize the user in
@@ -1223,6 +1284,8 @@ class OAuthenticator(Authenticator):
         if self.manage_groups and self.allowed_groups:
             auth_state = auth_model["auth_state"]
             user_groups = self.get_user_groups(auth_state)
+            if isawaitable(user_groups):
+                user_groups = await user_groups
             if any(user_groups & self.allowed_groups):
                 return True
 
