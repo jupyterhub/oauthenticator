@@ -1184,12 +1184,12 @@ class OAuthenticator(Authenticator):
         """Call the modify_auth_state_hook"""
         try:
             auth_state = self.modify_auth_state_hook(self, auth_state)
+            if isawaitable(auth_state):
+                auth_state = await auth_state
         except Exception as e:
             # let hook errors raise, nothing in auth should suppress errors
             self.log.error(f"Error in modify_auth_state_hook: {e}")
             raise
-        if isawaitable(auth_state):
-            auth_state = await auth_state
         return auth_state
 
     async def authenticate(self, handler, data=None, **kwargs):
