@@ -365,6 +365,10 @@ class OAuthenticator(Authenticator):
         Callables may be async.
 
         Requires `manage_groups` to also be `True`.
+
+        .. versionchanged:: 16.4
+
+            Added async support.
         """,
     )
 
@@ -387,6 +391,8 @@ class OAuthenticator(Authenticator):
         which may then be consumed by `auth_state_groups_key` to populate groups.
 
         This hook may be async.
+
+        .. versionadded: 16.4
         """,
     )
 
@@ -1071,6 +1077,7 @@ class OAuthenticator(Authenticator):
     def build_auth_state_dict(self, token_info, user_info):
         """
         Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
+        May be async (requires oauthenticator >= 16.4).
 
         Args:
             token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
@@ -1086,6 +1093,9 @@ class OAuthenticator(Authenticator):
                 - self.user_auth_state_key: the full user_info response
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+
+        .. versionchanged:: 16.4
+            This method be async.
         """
 
         # We know for sure the `access_token` key exists, oterwise we would have errored out already
@@ -1120,6 +1130,10 @@ class OAuthenticator(Authenticator):
         - If auth_state_groups_key is a nested dictionary key like
           "permissions.groups", this function returns
           auth_state["permissions"]["groups"].
+
+        .. versionchanged:: 16.4
+            This method may be async.
+            The base implementation is now async.
         """
         if callable(self.auth_state_groups_key):
             groups = self.auth_state_groups_key(auth_state)
@@ -1209,6 +1223,8 @@ class OAuthenticator(Authenticator):
                 token_info["refresh_token"] = refresh_token
 
         auth_state = self.build_auth_state_dict(token_info, user_info)
+        if isawaitable(auth_state):
+            auth_state = await auth_state
         if self.modify_auth_state_hook is not None:
             auth_state = await self._call_modify_auth_state_hook(auth_state)
         # build the auth model to be read if authentication goes right
