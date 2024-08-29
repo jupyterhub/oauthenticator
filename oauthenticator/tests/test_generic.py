@@ -3,7 +3,7 @@ import re
 from functools import partial
 
 import jwt
-from pytest import fixture, mark, raises
+from pytest import fixture, mark, param, raises
 from traitlets.config import Config
 
 from ..generic import GenericOAuthenticator
@@ -313,6 +313,49 @@ async def test_generic_data(get_authenticator, generic_client):
     auth_model = await authenticator.authenticate(handler, data)
 
     assert auth_model
+
+
+def sync_auth_state_hook(authenticator, auth_state):
+    auth_state["sync"] = True
+    auth_state["hook_groups"] = ["alpha", "beta", auth_state["oauth_user"]["username"]]
+    return auth_state
+
+
+async def async_auth_state_hook(authenticator, auth_state):
+    auth_state["async"] = True
+    auth_state["hook_groups"] = [
+        "alpha",
+        "beta",
+        auth_state[authenticator.user_auth_state_key]["username"],
+    ]
+    return auth_state
+
+
+@mark.parametrize(
+    "auth_state_hook",
+    [param(sync_auth_state_hook, id="sync"), param(async_auth_state_hook, id="async")],
+)
+async def test_modify_auth_state_hook(
+    get_authenticator, generic_client, auth_state_hook
+):
+    c = Config()
+    c.GenericOAuthenticator.allow_all = True
+    c.OAuthenticator.modify_auth_state_hook = auth_state_hook
+    c.OAuthenticator.auth_state_groups_key = "hook_groups"
+    c.OAuthenticator.manage_groups = True
+
+    authenticator = get_authenticator(config=c)
+    assert authenticator.modify_auth_state_hook is auth_state_hook
+
+    handled_user_model = user_model("user1")
+    handler = generic_client.handler_for_user(handled_user_model)
+    data = {"testing": "data"}
+    auth_model = await authenticator.authenticate(handler, data)
+    if auth_state_hook is sync_auth_state_hook:
+        assert auth_model["auth_state"]["sync"]
+    else:
+        assert auth_model["auth_state"]["async"]
+    assert sorted(auth_model["groups"]) == ["alpha", "beta", "user1"]
 
 
 @mark.parametrize(

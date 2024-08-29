@@ -368,6 +368,28 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    modify_auth_state_hook = Callable(
+        config=True,
+        default_value=None,
+        allow_none=True,
+        help="""
+        Callable to modify `auth_state`.
+
+        Will be called with the Authenticator instance and the existing auth_state dictionary
+        and must return the new auth_state dictionary:
+
+        ```
+        auth_state = [await] modify_auth_state_hook(authenticator, auth_state)
+        ```
+
+        This hook is called _before_ populating group membership,
+        so can be used to make additional requests to populate additional fields
+        which may then be consumed by `auth_state_groups_key` to populate groups.
+
+        This hook may be async.
+        """,
+    )
+
     @observe("allowed_groups", "admin_groups", "auth_state_groups_key")
     def _requires_manage_groups(self, change):
         """
@@ -1144,6 +1166,18 @@ class OAuthenticator(Authenticator):
                     auth_model["admin"] = bool(user_groups & self.admin_groups)
         return auth_model
 
+    async def _call_modify_auth_state_hook(self, auth_state):
+        """Call the modify_auth_state_hook"""
+        try:
+            auth_state = self.modify_auth_state_hook(self, auth_state)
+        except Exception as e:
+            # let hook errors raise, nothing in auth should suppress errors
+            self.log.error(f"Error in modify_auth_state_hook: {e}")
+            raise
+        if isawaitable(auth_state):
+            auth_state = await auth_state
+        return auth_state
+
     async def authenticate(self, handler, data=None, **kwargs):
         """
         A JupyterHub Authenticator's authenticate method's job is:
@@ -1174,11 +1208,14 @@ class OAuthenticator(Authenticator):
             if refresh_token:
                 token_info["refresh_token"] = refresh_token
 
+        auth_state = self.build_auth_state_dict(token_info, user_info)
+        if self.modify_auth_state_hook is not None:
+            auth_state = await self._call_modify_auth_state_hook(auth_state)
         # build the auth model to be read if authentication goes right
         auth_model = {
             "name": username,
             "admin": True if username in self.admin_users else None,
-            "auth_state": self.build_auth_state_dict(token_info, user_info),
+            "auth_state": auth_state,
         }
 
         # update the auth_model with info to later authorize the user in
