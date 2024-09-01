@@ -366,7 +366,7 @@ class OAuthenticator(Authenticator):
 
         Requires `manage_groups` to also be `True`.
 
-        .. versionchanged:: 16.4
+        .. versionchanged:: 17.0
 
             Added async support.
         """,
@@ -392,7 +392,7 @@ class OAuthenticator(Authenticator):
 
         This hook may be async.
 
-        .. versionadded: 16.4
+        .. versionadded: 17.0
         """,
     )
 
@@ -1077,7 +1077,7 @@ class OAuthenticator(Authenticator):
     def build_auth_state_dict(self, token_info, user_info):
         """
         Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
-        May be async (requires oauthenticator >= 16.4).
+        May be async (requires oauthenticator >= 17.0).
 
         Args:
             token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
@@ -1094,7 +1094,7 @@ class OAuthenticator(Authenticator):
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
 
-        .. versionchanged:: 16.4
+        .. versionchanged:: 17.0
             This method be async.
         """
 
@@ -1131,7 +1131,7 @@ class OAuthenticator(Authenticator):
           "permissions.groups", this function returns
           auth_state["permissions"]["groups"].
 
-        .. versionchanged:: 16.4
+        .. versionchanged:: 17.0
             This method may be async.
             The base implementation is now async.
         """
