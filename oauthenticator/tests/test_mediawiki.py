@@ -25,6 +25,7 @@ def mediawiki():
                 'iss': 'https://meta.wikimedia.org',
                 'iat': time.time(),
                 'nonce': request_nonce,
+                'groups': ['group1'],
             },
             'client_secret',
         ).encode()
@@ -73,6 +74,21 @@ def mediawiki():
             },
             True,
             True,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("20", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "21",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("22", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "23",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
         ),
     ],
 )

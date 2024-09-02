@@ -49,6 +49,7 @@ def user_model(tenant_id, client_id, name):
                 "96000b2c-7333-4f6e-a2c3-e7608fa2d131",
                 "a992b3d5-1966-4af4-abed-6ef021417be4",
                 "ceb90a42-030f-44f1-a0c7-825b572a3b07",
+                "group1",
             ],
             # different from 'groups' for tests
             "grp": [
@@ -131,6 +132,21 @@ def user_model(tenant_id, client_id, name):
             },
             True,
             None,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("40", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "41",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("42", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "43",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
         ),
     ],
 )

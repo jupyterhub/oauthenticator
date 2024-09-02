@@ -27,6 +27,7 @@ def user_model(username, username_claim, **kwargs):
     return {
         username_claim: username,
         "idp": "https://some-idp.com/login/oauth/authorize",
+        "groups": ["group1"],
         **kwargs,
     }
 
@@ -60,6 +61,21 @@ def user_model(username, username_claim, **kwargs):
             },
             True,
             True,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("20", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "21",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("22", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "23",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
         ),
     ],
 )

@@ -104,20 +104,6 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
         ("03", {"allowed_users": {"not-test-user"}}, False, None),
         ("04", {"admin_users": {"user1"}}, True, True),
         ("05", {"admin_users": {"not-test-user"}}, False, None),
-        ("06", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
-        (
-            "07",
-            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
-            False,
-            None,
-        ),
-        ("08", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
-        (
-            "09",
-            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
-            False,
-            False,
-        ),
         # allow config, some combinations of two tested
         (
             "10",
@@ -227,6 +213,21 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             },
             True,
             None,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("20", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "21",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("22", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "23",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
         ),
     ],
 )

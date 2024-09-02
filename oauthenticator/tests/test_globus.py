@@ -17,6 +17,7 @@ def user_model(username, **kwargs):
     """Return a user model"""
     return {
         "preferred_username": username,
+        "groups": ["group1"],
         **kwargs,
     }
 
@@ -276,6 +277,21 @@ def mock_globus_user(globus_tokens_by_resource_server):
                 "admin_users": {"not-test-user"},
                 "admin_globus_groups": {"test-user-not-in-group"},
             },
+            False,
+            False,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("20", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "21",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("22", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "23",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
             False,
             False,
         ),

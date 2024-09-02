@@ -18,6 +18,7 @@ def user_model(email, username="user1", hd=None):
         'email': email,
         'custom': username,
         'verified_email': True,
+        'groups': ['group1'],
     }
     if hd:
         model['hd'] = hd
@@ -148,6 +149,21 @@ def google_client(client):
                 "admin_users": {"not-test-user"},
                 "admin_google_groups": {"example.com": {"test-user-not-in-group"}},
             },
+            False,
+            False,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("20", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "21",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("22", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "23",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
             False,
             False,
         ),
