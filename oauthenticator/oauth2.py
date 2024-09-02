@@ -703,7 +703,7 @@ class OAuthenticator(Authenticator):
         If the `expires_in` field is  omitted in the OAuth 2.0 token response
         then this value will be the default expiration, in seconds, of the
         access token.
-        """
+        """,
     )
 
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
