@@ -334,9 +334,17 @@ class OAuthenticator(Authenticator):
         Unicode(),
         config=True,
         help="""
-        Allow members of selected groups to log in.
+        Allow members of selected JupyterHub groups to log in.
 
-        Requires `manage_groups` to also be `True`.
+        Requires :attr:`manage_groups` to also be `True`.
+        Typically also requires :attr:`auth_state_groups_key` to be configured to populate the JupyterHub groups.
+        
+        This option is *independent* of other configuration such as :attr:`.GitLabOAuthenticator.allowed_gitlab_groups`,
+        which do not populate the *JupyterHub* groups,
+        and do not require :attr:`manage_groups` to be True.
+        
+        .. versionadded:: 17
+            Previously available only on :class:`.GenericOAuthenticator`
         """,
     )
 
@@ -348,9 +356,12 @@ class OAuthenticator(Authenticator):
         JupyterHub admins.
 
         If this is set and a user isn't part of one of these groups or listed in
-        `admin_users`, a user signing in will have their admin status revoked.
+        :attr:`admin_users`, a user signing in will have their admin status revoked.
 
-        Requires `manage_groups` to also be `True`.
+        Requires :attr:`manage_groups` to also be `True`.
+
+        .. versionadded:: 17
+            Previously available only on :class:`.GenericOAuthenticator`
         """,
     )
 
@@ -364,11 +375,10 @@ class OAuthenticator(Authenticator):
         that accepts the auth state (as a dict) and returns the groups list.
         Callables may be async.
 
-        Requires `manage_groups` to also be `True`.
+        Requires :attr:`manage_groups` to also be `True`.
 
-        .. versionchanged:: 17.0
-
-            Added async support.
+        .. versionadded:: 17.0
+            Previously available as :attr:`.GenericOAuthenticator.claim_groups_key`
         """,
     )
 
@@ -377,18 +387,16 @@ class OAuthenticator(Authenticator):
         default_value=None,
         allow_none=True,
         help="""
-        Callable to modify `auth_state`.
+        Callable to modify `auth_state`
 
         Will be called with the Authenticator instance and the existing auth_state dictionary
-        and must return the new auth_state dictionary:
+        and must return the new auth_state dictionary::
 
-        ```
-        auth_state = [await] modify_auth_state_hook(authenticator, auth_state)
-        ```
+            auth_state = [await] modify_auth_state_hook(authenticator, auth_state)
 
-        This hook is called _before_ populating group membership,
+        This hook is called *before* populating group membership,
         so can be used to make additional requests to populate additional fields
-        which may then be consumed by `auth_state_groups_key` to populate groups.
+        which may then be consumed by :attr:`auth_state_groups_key` to populate groups.
 
         This hook may be async.
 
