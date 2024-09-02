@@ -1018,7 +1018,7 @@ class OAuthenticator(Authenticator):
         # the client_id and client_secret should not be included in the access token request params
         # when basic authentication is used
         # ref: https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1
-        if self.basic_auth:
+        if not self.basic_auth:
             params.update(
                 [("client_id", self.client_id), ("client_secret", self.client_secret)]
             )
