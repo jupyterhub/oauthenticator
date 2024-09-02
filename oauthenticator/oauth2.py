@@ -696,13 +696,15 @@ class OAuthenticator(Authenticator):
                 return client_secret
         return os.getenv("OAUTH_CLIENT_SECRET", "")
 
-    access_token_expiration_env = "OAUTH_ACCESS_TOKEN_EXPIRATION"
     access_token_expiration = Unicode(
-        config=True, help="""Default expiration, in seconds, of the access token."""
+        config=True,
+        default="3600",
+        help="""
+        If the `expires_in` field is  omitted in the OAuth 2.0 token response
+        then this value will be the default expiration, in seconds, of the
+        access token.
+        """
     )
-
-    def _access_token_expiration_default(self):
-        return os.getenv(self.access_token_expiration_env, "3600")
 
     validate_server_cert_env = "OAUTH_TLS_VERIFY"
     validate_server_cert = Bool(
@@ -1004,7 +1006,8 @@ class OAuthenticator(Authenticator):
     def build_refresh_token_request_params(self, refresh_token):
         """
         Builds the parameters that should be passed to the URL request
-        that renew Access Token from Refresh Token.
+        to renew the Access Token based on the Refresh Token
+
         Called by the :meth:`oauthenticator.OAuthenticator.refresh_user`.
         """
         params = {
@@ -1112,41 +1115,9 @@ class OAuthenticator(Authenticator):
             validate_cert=self.validate_server_cert,
         )
 
-    def get_access_token_creation_date(self, token_info):
-        """
-        Returns the access token creation date, in seconds (Unix epoch time).
-
-        Example: 1679994631
-
-        Args:
-            token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
-
-        Returns:
-            creation_date: a number representing the access token creation date, in seconds (Unix epoch time)
-
-        Called by the :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
-        """
-        return token_info.get("created_at", time.time())
-
-    def get_access_token_lifetime(self, token_info):
-        """
-        Returns the access token lifetime, in seconds.
-
-        Example: 7200
-
-        Args:
-            token_info: the dictionary returned by the token request (exchanging the OAuth code for an Access Token)
-
-        Returns:
-            lifetime: a number representing the access token lifetime, in seconds
-
-        Called by the :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
-        """
-        return token_info.get("expires_in", self.access_token_expiration)
-
     def build_auth_state_dict(self, token_info, user_info):
         """
-        Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
+        Builds the `auth_state` dict that will be returned by a successful `authenticate` method call.
         May be async (requires oauthenticator >= 17.0).
 
         Args:
@@ -1172,8 +1143,8 @@ class OAuthenticator(Authenticator):
 
         # We know for sure the `access_token` key exists, otherwise we would have errored out already
         access_token = token_info["access_token"]
-        created_at = self.get_access_token_creation_date(token_info)
-        expires_in = self.get_access_token_lifetime(token_info)
+        created_at = token_info.get("created_at", time.time())
+        expires_in = token_info.get("expires_in", self.access_token_expiration)
 
         refresh_token = token_info.get("refresh_token", None)
         id_token = token_info.get("id_token", None)
@@ -1284,15 +1255,14 @@ class OAuthenticator(Authenticator):
         return await self._oauth_call(handler, access_token_params, **kwargs)
 
     async def refresh_user(self, user, handler=None, **kwargs):
-        '''
+        """
         Renew the Access Token with a valid Refresh Token
-        '''
+        """
 
         auth_state = await user.get_auth_state()
         if not auth_state:
             self.log.info(
-                "No auth_state found for user %s refresh, need full authentication",
-                user,
+                f"No auth_state found for user {user} refresh, need full authentication",
             )
             return False
 
@@ -1301,8 +1271,7 @@ class OAuthenticator(Authenticator):
         is_expired = created_at + expires_in - time.time() < 0
         if not is_expired:
             self.log.info(
-                "access_token still valid for user %s, skip refresh",
-                user,
+                f"The access_token is still valid for user {user}, skipping refresh",
             )
             return True
 
@@ -1311,7 +1280,7 @@ class OAuthenticator(Authenticator):
         )
         return await self._oauth_call(handler, refresh_token_params, **kwargs)
 
-    async def _oauth_call(self, handler, params, data=None, **kwargs):
+    async def _oauth_call(self, handler, params, **kwargs):
         """
         Common logic shared by authenticate() and refresh_user()
         """
