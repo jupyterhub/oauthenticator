@@ -1030,7 +1030,8 @@ class OAuthenticator(Authenticator):
         Makes a "POST" request to `self.token_url`, with the parameters received as argument.
 
         Returns:
-            the JSON response to the `token_url` the request.
+            the JSON response to the `token_url` the request as described in
+            https://www.rfc-editor.org/rfc/rfc6749#section-5.1
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
