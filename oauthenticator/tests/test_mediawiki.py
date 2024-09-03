@@ -25,6 +25,7 @@ def mediawiki():
                 'iss': 'https://meta.wikimedia.org',
                 'iat': time.time(),
                 'nonce': request_nonce,
+                'groups': ['group1'],
             },
             'client_secret',
         ).encode()
@@ -74,6 +75,47 @@ def mediawiki():
             True,
             True,
         ),
+        # common tests with allowed_groups and manage_groups
+        (
+            "20",
+            {
+                "allowed_groups": {"group1"},
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
+                "manage_groups": True,
+            },
+            True,
+            None,
+        ),
+        (
+            "21",
+            {
+                "allowed_groups": {"test-user-not-in-group"},
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
+                "manage_groups": True,
+            },
+            False,
+            None,
+        ),
+        (
+            "22",
+            {
+                "admin_groups": {"group1"},
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
+                "manage_groups": True,
+            },
+            True,
+            True,
+        ),
+        (
+            "23",
+            {
+                "admin_groups": {"test-user-not-in-group"},
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
+                "manage_groups": True,
+            },
+            False,
+            False,
+        ),
     ],
 )
 async def test_mediawiki(
@@ -101,7 +143,10 @@ async def test_mediawiki(
 
     if expect_allowed:
         assert auth_model
-        assert set(auth_model) == {"name", "admin", "auth_state"}
+        if authenticator.manage_groups:
+            assert set(auth_model) == {"name", "admin", "auth_state", "groups"}
+        else:
+            assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
         assert json.dumps(auth_state)
@@ -110,7 +155,7 @@ async def test_mediawiki(
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 async def test_login_redirect(mediawiki):

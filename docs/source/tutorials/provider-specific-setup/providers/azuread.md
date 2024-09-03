@@ -35,8 +35,6 @@ be relevant to read more about in the configuration reference:
 ## Loading user groups
 
 The `AzureAdOAuthenticator` can load the group-membership of users from the access token.
-This is done by setting the `AzureAdOAuthenticator.groups_claim` to the name of the claim that contains the
-group-membership.
 
 ```python
 c.JupyterHub.authenticator_class = "azuread"
@@ -44,7 +42,7 @@ c.JupyterHub.authenticator_class = "azuread"
 # {...} other settings (see above)
 
 c.AzureAdOAuthenticator.manage_groups = True
-c.AzureAdOAuthenticator.user_groups_claim = 'groups'  # this is the default
+c.AzureAdOAuthenticator.auth_state_groups_key = "user.groups"  # this is the default
 ```
 
 This requires Azure AD to be configured to include the group-membership in the access token.

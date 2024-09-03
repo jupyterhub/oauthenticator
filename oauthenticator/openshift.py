@@ -8,13 +8,17 @@ import os
 
 from jupyterhub.auth import LocalAuthenticator
 from tornado.httpclient import HTTPClient, HTTPRequest
-from traitlets import Bool, Set, Unicode, default
+from traitlets import Bool, Unicode, default
 
 from oauthenticator.oauth2 import OAuthenticator
 
 
 class OpenShiftOAuthenticator(OAuthenticator):
     user_auth_state_key = "openshift_user"
+
+    @default("auth_state_groups_key")
+    def _auth_state_groups_key_default(self):
+        return "openshift_user.groups"
 
     @default("scope")
     def _scope_default(self):
@@ -42,24 +46,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
         help="""
         Used to determine the default values for `openshift_auth_api_url` and
         `openshift_rest_api_url`.
-        """,
-    )
-
-    allowed_groups = Set(
-        config=True,
-        help="""
-        Allow members of selected OpenShift groups to sign in.
-        """,
-    )
-
-    admin_groups = Set(
-        config=True,
-        help="""
-        Allow members of selected OpenShift groups to sign in and consider them
-        as JupyterHub admins.
-
-        If this is set and a user isn't part of one of these groups or listed in
-        `admin_users`, a user signing in will have their admin status revoked.
         """,
     )
 
@@ -157,42 +143,6 @@ class OpenShiftOAuthenticator(OAuthenticator):
         username_claim as the username is nested inside another dictionary.
         """
         return user_info['metadata']['name']
-
-    async def update_auth_model(self, auth_model):
-        """
-        Sets admin status to True or False if `admin_groups` is configured and
-        the user isn't part of `admin_users`. Note that leaving it at None makes
-        users able to retain an admin status while setting it to False makes it
-        be revoked.
-        """
-        if auth_model["admin"]:
-            # auth_model["admin"] being True means the user was in admin_users
-            return auth_model
-
-        if self.admin_groups:
-            # admin status should in this case be True or False, not None
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = set(user_info["groups"])
-            auth_model["admin"] = bool(user_groups & self.admin_groups)
-
-        return auth_model
-
-    async def check_allowed(self, username, auth_model):
-        """
-        Overrides OAuthenticator.check_allowed to also allow users part of
-        `allowed_groups`.
-        """
-        if await super().check_allowed(username, auth_model):
-            return True
-
-        if self.allowed_groups:
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            user_groups = set(user_info["groups"])
-            if user_groups & self.allowed_groups:
-                return True
-
-        # users should be explicitly allowed via config, otherwise they aren't
-        return False
 
 
 class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):

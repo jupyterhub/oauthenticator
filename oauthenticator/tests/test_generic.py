@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from functools import partial
 
@@ -104,20 +105,6 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
         ("03", {"allowed_users": {"not-test-user"}}, False, None),
         ("04", {"admin_users": {"user1"}}, True, True),
         ("05", {"admin_users": {"not-test-user"}}, False, None),
-        ("06", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
-        (
-            "07",
-            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
-            False,
-            None,
-        ),
-        ("08", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
-        (
-            "09",
-            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
-            False,
-            False,
-        ),
         # allow config, some combinations of two tested
         (
             "10",
@@ -227,6 +214,21 @@ def get_authenticator_variant(generic_client, userdata_from_id_token):
             },
             True,
             None,
+        ),
+        # common tests with allowed_groups and manage_groups
+        ("20", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "21",
+            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            None,
+        ),
+        ("22", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "23",
+            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            False,
+            False,
         ),
     ],
 )
@@ -501,3 +503,47 @@ async def test_check_allowed_no_auth_state(get_authenticator, name, allowed):
     # these are previously-allowed users who should pass until subsequent
     # this check is removed in JupyterHub 5
     assert await authenticator.check_allowed(name, None)
+
+
+@mark.parametrize(
+    "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
+    [
+        (
+            "claim_groups_key",
+            {"claim_groups_key": "groups", "manage_groups": True},
+            {"auth_state_groups_key": "oauth_user.groups"},
+            logging.WARNING,
+            "GenericOAuthenticator.claim_groups_key is deprecated since OAuthenticator 17.0, use GenericOAuthenticator.auth_state_groups_key instead",
+        ),
+    ],
+)
+async def test_deprecated_config(
+    caplog,
+    test_variation_id,
+    class_config,
+    expect_config,
+    expect_loglevel,
+    expect_message,
+):
+    """
+    Tests that a warning is emitted when using a deprecated config and that
+    configuring the old config ends up configuring the new config.
+    """
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.GenericOAuthenticator = Config(class_config)
+
+    test_logger = logging.getLogger('testlog')
+    if expect_loglevel == logging.ERROR:
+        with raises(ValueError, match=expect_message):
+            GenericOAuthenticator(config=c, log=test_logger)
+    else:
+        authenticator = GenericOAuthenticator(config=c, log=test_logger)
+        for key, value in expect_config.items():
+            assert getattr(authenticator, key) == value
+
+    captured_log_tuples = caplog.record_tuples
+    print(captured_log_tuples)
+
+    expected_log_tuple = (test_logger.name, expect_loglevel, expect_message)
+    assert expected_log_tuple in captured_log_tuples
