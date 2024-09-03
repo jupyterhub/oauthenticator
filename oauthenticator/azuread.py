@@ -39,7 +39,7 @@ class AzureAdOAuthenticator(OAuthenticator):
             key = f"{self.user_auth_state_key}.{self.user_groups_claim}"
             cls = self.__class__.__name__
             self.log.warning(
-                f"{cls}.user_groups_claim is deprecated in OAuthenticator 17. Use {cls}.auth_state_groups_key={key!r}"
+                f"{cls}.user_groups_claim is deprecated in OAuthenticator 17. Use {cls}.auth_state_groups_key = {key!r}"
             )
         return key
 

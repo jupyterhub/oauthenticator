@@ -1,6 +1,7 @@
 """test azure ad"""
 
 import json
+import logging
 import os
 import re
 import time
@@ -9,7 +10,7 @@ from unittest import mock
 
 import jwt
 import pytest
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 from traitlets.config import Config
 
 from ..azuread import AzureAdOAuthenticator
@@ -236,3 +237,47 @@ async def test_tenant_id_from_env():
     with mock.patch.dict(os.environ, {"AAD_TENANT_ID": tenant_id}):
         aad = AzureAdOAuthenticator()
         assert aad.tenant_id == tenant_id
+
+
+@mark.parametrize(
+    "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
+    [
+        (
+            "user_groups_claim",
+            {"user_groups_claim": "groups", "manage_groups": True},
+            {"auth_state_groups_key": "user.groups"},
+            logging.WARNING,
+            "AzureAdOAuthenticator.user_groups_claim is deprecated in OAuthenticator 17. Use AzureAdOAuthenticator.auth_state_groups_key = 'user.groups'",
+        ),
+    ],
+)
+async def test_deprecated_config(
+    caplog,
+    test_variation_id,
+    class_config,
+    expect_config,
+    expect_loglevel,
+    expect_message,
+):
+    """
+    Tests that a warning is emitted when using a deprecated config and that
+    configuring the old config ends up configuring the new config.
+    """
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.AzureAdOAuthenticator = Config(class_config)
+
+    test_logger = logging.getLogger('testlog')
+    if expect_loglevel == logging.ERROR:
+        with raises(ValueError, match=expect_message):
+            AzureAdOAuthenticator(config=c, log=test_logger)
+    else:
+        authenticator = AzureAdOAuthenticator(config=c, log=test_logger)
+        for key, value in expect_config.items():
+            assert getattr(authenticator, key) == value
+
+    captured_log_tuples = caplog.record_tuples
+    print(captured_log_tuples)
+
+    expected_log_tuple = (test_logger.name, expect_loglevel, expect_message)
+    assert expected_log_tuple in captured_log_tuples
