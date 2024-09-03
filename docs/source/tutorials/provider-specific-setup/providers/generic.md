@@ -35,7 +35,7 @@ c.GenericOAuthenticator.userdata_url = "https://accounts.example.com/auth/realms
 #
 c.GenericOAuthenticator.scope = ["openid", "email", "groups"]
 c.GenericOAuthenticator.username_claim = "email"
-c.GenericOAuthenticator.auth_state_groups_key = "groups"
+c.GenericOAuthenticator.auth_state_groups_key = "oauth_user.groups"
 
 # Authorization
 # -------------
