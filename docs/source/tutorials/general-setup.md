@@ -60,7 +60,9 @@ projects' authenticator classes.
    - {attr}`.OAuthenticator.allow_all`
    - {attr}`.OAuthenticator.allow_existing_users`
    - {attr}`.OAuthenticator.allowed_users`
+   - {attr}`.OAuthenticator.allowed_groups`
    - {attr}`.OAuthenticator.admin_users`
+   - {attr}`.OAuthenticator.admin_groups`
 
    Your authenticator class may have unique config, so in the end it can look
    something like this:
