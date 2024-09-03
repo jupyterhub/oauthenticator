@@ -141,7 +141,6 @@ def user_model():
             "20",
             {
                 "allowed_groups": {"group1"},
-                "auth_state_groups_key": "openshift_user.groups",
                 "manage_groups": True,
             },
             True,
@@ -151,7 +150,6 @@ def user_model():
             "21",
             {
                 "allowed_groups": {"test-user-not-in-group"},
-                "auth_state_groups_key": "openshift_user.groups",
                 "manage_groups": True,
             },
             False,
@@ -161,7 +159,6 @@ def user_model():
             "22",
             {
                 "admin_groups": {"group1"},
-                "auth_state_groups_key": "openshift_user.groups",
                 "manage_groups": True,
             },
             True,
@@ -171,7 +168,6 @@ def user_model():
             "23",
             {
                 "admin_groups": {"test-user-not-in-group"},
-                "auth_state_groups_key": "openshift_user.groups",
                 "manage_groups": True,
             },
             False,
