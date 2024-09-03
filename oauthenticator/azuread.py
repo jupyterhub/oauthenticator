@@ -34,7 +34,7 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default('auth_state_groups_key')
     def _auth_state_groups_key_default(self):
-        key = ""
+        key = "user.groups"
         if self.user_groups_claim:
             key = f"{self.user_auth_state_key}.{self.user_groups_claim}"
             cls = self.__class__.__name__

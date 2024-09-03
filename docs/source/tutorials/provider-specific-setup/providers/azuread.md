@@ -42,7 +42,7 @@ c.JupyterHub.authenticator_class = "azuread"
 # {...} other settings (see above)
 
 c.AzureAdOAuthenticator.manage_groups = True
-c.AzureAdOAuthenticator.auth_state_groups_key = 'user.groups'
+c.AzureAdOAuthenticator.auth_state_groups_key = "user.groups"  # this is the default
 ```
 
 This requires Azure AD to be configured to include the group-membership in the access token.

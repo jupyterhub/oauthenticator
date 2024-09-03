@@ -117,12 +117,12 @@ def user_model(tenant_id, client_id, name):
             True,
             None,
         ),
-        # test user_groups_claim
+        # test user_groups_claim (deprecated)
         (
             "30",
             {
                 "allow_all": True,
-                "auth_state_groups_key": "user.groups",
+                "user_groups_claim": "groups",
                 "manage_groups": True,
             },
             True,
@@ -133,7 +133,7 @@ def user_model(tenant_id, client_id, name):
             {
                 "allow_all": True,
                 "manage_groups": True,
-                "auth_state_groups_key": "user.grp",
+                "user_groups_claim": "grp",
             },
             True,
             None,
@@ -143,7 +143,6 @@ def user_model(tenant_id, client_id, name):
             "40",
             {
                 "allowed_groups": {"group1"},
-                "auth_state_groups_key": "user.groups",
                 "manage_groups": True,
             },
             True,
@@ -153,7 +152,6 @@ def user_model(tenant_id, client_id, name):
             "41",
             {
                 "allowed_groups": {"test-user-not-in-group"},
-                "auth_state_groups_key": "user.groups",
                 "manage_groups": True,
             },
             False,
@@ -163,7 +161,6 @@ def user_model(tenant_id, client_id, name):
             "42",
             {
                 "admin_groups": {"group1"},
-                "auth_state_groups_key": "user.groups",
                 "manage_groups": True,
             },
             True,
@@ -173,7 +170,6 @@ def user_model(tenant_id, client_id, name):
             "43",
             {
                 "admin_groups": {"test-user-not-in-group"},
-                "auth_state_groups_key": "user.groups",
                 "manage_groups": True,
             },
             False,
