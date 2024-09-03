@@ -134,17 +134,43 @@ def user_model(tenant_id, client_id, name):
             None,
         ),
         # common tests with allowed_groups and manage_groups
-        ("40", {"allowed_groups": {"group1"}, "manage_groups": True}, True, None),
+        (
+            "40",
+            {
+                "allowed_groups": {"group1"},
+                "auth_state_groups_key": "user.groups",
+                "manage_groups": True,
+            },
+            True,
+            None,
+        ),
         (
             "41",
-            {"allowed_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            {
+                "allowed_groups": {"test-user-not-in-group"},
+                "auth_state_groups_key": "user.groups",
+                "manage_groups": True,
+            },
             False,
             None,
         ),
-        ("42", {"admin_groups": {"group1"}, "manage_groups": True}, True, True),
+        (
+            "42",
+            {
+                "admin_groups": {"group1"},
+                "auth_state_groups_key": "user.groups",
+                "manage_groups": True,
+            },
+            True,
+            True,
+        ),
         (
             "43",
-            {"admin_groups": {"test-user-not-in-group"}, "manage_groups": True},
+            {
+                "admin_groups": {"test-user-not-in-group"},
+                "auth_state_groups_key": "user.groups",
+                "manage_groups": True,
+            },
             False,
             False,
         ),
