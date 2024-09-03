@@ -119,7 +119,11 @@ def user_model(tenant_id, client_id, name):
         # test user_groups_claim
         (
             "30",
-            {"allow_all": True, "manage_groups": True},
+            {
+                "allow_all": True,
+                "auth_state_groups_key": "user.groups",
+                "manage_groups": True,
+            },
             True,
             None,
         ),
@@ -128,7 +132,7 @@ def user_model(tenant_id, client_id, name):
             {
                 "allow_all": True,
                 "manage_groups": True,
-                "user_groups_claim": "grp",
+                "auth_state_groups_key": "user.grp",
             },
             True,
             None,
@@ -220,9 +224,11 @@ async def test_azuread(
         assert auth_model["name"] == user_info[authenticator.username_claim]
         if manage_groups:
             groups = auth_model['groups']
-            assert groups == user_info[authenticator.user_groups_claim]
+            assert (
+                groups == user_info[authenticator.auth_state_groups_key.rsplit(".")[-1]]
+            )
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 async def test_tenant_id_from_env():

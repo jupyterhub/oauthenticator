@@ -1103,7 +1103,7 @@ class OAuthenticator(Authenticator):
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
 
         .. versionchanged:: 17.0
-            This method be async.
+            This method may be async.
         """
 
         # We know for sure the `access_token` key exists, oterwise we would have errored out already
@@ -1132,6 +1132,8 @@ class OAuthenticator(Authenticator):
         """
         Returns a set of groups the user belongs to based on auth_state_groups_key
         and provided auth_state.
+
+        Only called when :attr:`manage_groups` is True.
 
         - If auth_state_groups_key is a callable, it returns the list of groups directly.
           Callable may be async.
@@ -1168,10 +1170,22 @@ class OAuthenticator(Authenticator):
             - `name`: the normalized username
             - `admin`: the admin status (True/False/None), where None means it
                 should be unchanged.
-            - `auth_state`: the dictionary of of auth state
-                returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
+            - `auth_state`: the auth state dictionary,
+              returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        # NOTE: this base implementation should _not_ be updated to do anything
+        # subclasses should have full control without calling super()
+        return auth_model
+
+    async def _apply_managed_groups(self, auth_model):
+        """Applies managed_groups logic
+
+        Called after `update_auth_model` to populate the `groups` field.
+        Only called if `manage_groups` is True.
+
+        The public method for subclasses to override is `.get_user_groups`.
         """
         if self.manage_groups:
             auth_state = auth_model["auth_state"]
@@ -1244,7 +1258,10 @@ class OAuthenticator(Authenticator):
 
         # update the auth_model with info to later authorize the user in
         # check_allowed, such as admin status and group memberships
-        return await self.update_auth_model(auth_model)
+        auth_model = await self.update_auth_model(auth_model)
+        if self.manage_groups:
+            auth_model = await self._apply_managed_groups(auth_model)
+        return auth_model
 
     async def check_allowed(self, username, auth_model):
         """
@@ -1289,12 +1306,8 @@ class OAuthenticator(Authenticator):
             return True
 
         # allow users who are members of allowed_groups
-        if self.manage_groups and self.allowed_groups:
-            auth_state = auth_model["auth_state"]
-            user_groups = self.get_user_groups(auth_state)
-            if isawaitable(user_groups):
-                user_groups = await user_groups
-            if any(user_groups & self.allowed_groups):
+        if self.manage_groups and self.allowed_groups and auth_model.get("groups"):
+            if set(auth_model["groups"]) & self.allowed_groups:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

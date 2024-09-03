@@ -342,7 +342,7 @@ class GlobusOAuthenticator(OAuthenticator):
         to False makes it be revoked.
         """
         user_groups = set()
-        if self.allowed_globus_groups or self.admin_globus_groups:
+        if self.allowed_globus_groups or self.admin_globus_groups or self.manage_groups:
             tokens = self.get_globus_tokens(auth_model["auth_state"]["token_response"])
             user_groups = await self._fetch_users_groups(tokens)
         # sets are not JSONable, cast to list for auth_state

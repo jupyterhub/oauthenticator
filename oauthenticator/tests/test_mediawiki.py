@@ -80,7 +80,7 @@ def mediawiki():
             "20",
             {
                 "allowed_groups": {"group1"},
-                "auth_state_groups_key": "mediawiki_user.groups",
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
                 "manage_groups": True,
             },
             True,
@@ -90,7 +90,7 @@ def mediawiki():
             "21",
             {
                 "allowed_groups": {"test-user-not-in-group"},
-                "auth_state_groups_key": "mediawiki_user.groups",
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
                 "manage_groups": True,
             },
             False,
@@ -100,7 +100,7 @@ def mediawiki():
             "22",
             {
                 "admin_groups": {"group1"},
-                "auth_state_groups_key": "mediawiki_user.groups",
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
                 "manage_groups": True,
             },
             True,
@@ -110,7 +110,7 @@ def mediawiki():
             "23",
             {
                 "admin_groups": {"test-user-not-in-group"},
-                "auth_state_groups_key": "mediawiki_user.groups",
+                "auth_state_groups_key": "MEDIAWIKI_USER_IDENTITY.groups",
                 "manage_groups": True,
             },
             False,
@@ -155,7 +155,7 @@ async def test_mediawiki(
         user_info = auth_state[authenticator.user_auth_state_key]
         assert auth_model["name"] == user_info[authenticator.username_claim]
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 async def test_login_redirect(mediawiki):
