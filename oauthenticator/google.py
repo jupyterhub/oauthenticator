@@ -393,17 +393,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         user_groups = {
             g['email'].split('@')[0] for g in resp.get('groups', [{'email': None}])
         }
-        print(user_groups)
 
         # Add the current user's groups to the checked groups
         checked_groups.update(user_groups)
 
         # Recursively check for nested groups if allowed
-        print(self.allow_nested_groups)
         if self.allow_nested_groups:
             for group in user_groups:
                 if group not in checked_groups:
-                    nested_groups = self._fetch_user_groups(group, user_email_domain, http, checked_groups)
+                    nested_groups = self._fetch_user_groups(group + user_email_domain, user_email_domain, http, checked_groups)
                     checked_groups.update(nested_groups)
 
         self.log.debug(f"user_email {user_email} is a member of {checked_groups}")
