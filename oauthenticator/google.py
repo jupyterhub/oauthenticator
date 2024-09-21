@@ -106,7 +106,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     )
 
     allow_nested_groups = Bool(
-        Set(Unicode()),
         config=True,
         help="""
         Allow members of nested Google groups to sign in.
@@ -387,10 +386,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if checked_groups is None:
             checked_groups = set()
 
-        
-        service = self._setup_service(user_email_domain, http)
+        if not hasattr(self, 'service'):
+            self.service = self._setup_service(user_email_domain, http)
 
-        resp = service.groups().list(userKey=user_email).execute()
+        resp = self.service.groups().list(userKey=user_email).execute()
         user_groups = {
             g['email'].split('@')[0] for g in resp.get('groups', [{'email': None}])
         }
