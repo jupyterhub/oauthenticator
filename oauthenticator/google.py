@@ -363,6 +363,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             cache_discovery=False,
             http=http,
         )
+
     def _setup_service(self, user_email_domain, http=None):
         """
         Set up the service client for Google API.
@@ -379,7 +380,14 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         )
         return service
 
-    def _fetch_user_groups(self, user_email, user_email_domain, http=None, checked_groups=None, processed_groups=None):
+    def _fetch_user_groups(
+        self,
+        user_email,
+        user_email_domain,
+        http=None,
+        checked_groups=None,
+        processed_groups=None,
+    ):
         """
         Return a set with the google groups a given user is a member of, including nested groups if allowed.
         """
@@ -398,22 +406,24 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         self.log.debug(f"Fetched groups for {user_email}: {user_groups}")
 
-        # Add the current user's groups to the checked groups
         checked_groups.update(user_groups)
-
         self.log.debug(f"Checked groups after update: {checked_groups}")
 
-        # Recursively check for nested groups if allowed
         if self.allow_nested_groups:
             for group in user_groups:
                 if group not in processed_groups:
-                    nested_groups = self._fetch_user_groups(group + "@" + user_email_domain, user_email_domain, http, checked_groups, processed_groups)
+                    nested_groups = self._fetch_user_groups(
+                        f"{group}@{user_email_domain}",
+                        user_email_domain,
+                        http,
+                        checked_groups,
+                        processed_groups,
+                    )
                     checked_groups.update(nested_groups)
                     processed_groups.add(group)
 
         self.log.debug(f"user_email {user_email} is a member of {checked_groups}")
         return checked_groups
-
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
