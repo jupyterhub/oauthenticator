@@ -395,7 +395,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         }
 
         # Add the current user's groups to the checked groups
-        checked_groups.update(user_groups)
+        # checked_groups.update(user_groups)
 
         # Recursively check for nested groups if allowed
         if self.allow_nested_groups:
