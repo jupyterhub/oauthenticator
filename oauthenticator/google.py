@@ -391,7 +391,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         resp = self.service.groups().list(userKey=user_email).execute()
         user_groups = {
-            g['email'].split('@')[0] for g in resp.get('groups', [{'email': None}])
+            g['email'].split('@')[0] for g in resp.get('groups', []) if g.get('email')
         }
 
         # Recursively check for nested groups if allowed
