@@ -105,6 +105,17 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
+    allow_nested_groups = Bool(
+        Set(Unicode()),
+        config=True,
+        help="""
+        Allow members of nested Google groups to sign in.
+
+        Use of this requires configuration of `gsuite_administrator` and
+        `google_service_account_keys`.
+        """,
+    )
+
     strip_domain = Bool(
         config=True,
         help="""
@@ -353,16 +364,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             cache_discovery=False,
             http=http,
         )
-
-    def _fetch_user_groups(self, user_email, user_email_domain, http=None):
+    def _setup_service(self, user_email_domain, http=None):
         """
-        Return a set with the google groups a given user is a member of
+        Set up the service client for Google API.
         """
-        # FIXME: When this function is used and waiting for web request
-        #        responses, JupyterHub gets blocked from doing other things.
-        #        Ideally the web requests should be made using an async client
-        #        that can be awaited while JupyterHub handles other things.
-        #
         credentials = self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
             user_email_domain=user_email_domain,
@@ -373,13 +378,36 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             credentials=credentials,
             http=http,
         )
+        return service
+
+    def _fetch_user_groups(self, user_email, user_email_domain, http=None, checked_groups=None):
+        """
+        Return a set with the google groups a given user is a member of, including nested groups if allowed.
+        """
+        if checked_groups is None:
+            checked_groups = set()
+
+        
+        service = self._setup_service(user_email_domain, http)
 
         resp = service.groups().list(userKey=user_email).execute()
         user_groups = {
             g['email'].split('@')[0] for g in resp.get('groups', [{'email': None}])
         }
-        self.log.debug(f"user_email {user_email} is a member of {user_groups}")
-        return user_groups
+
+        # Add the current user's groups to the checked groups
+        checked_groups.update(user_groups)
+
+        # Recursively check for nested groups if allowed
+        if self.allow_nested_groups:
+            for group in user_groups:
+                if group not in checked_groups:
+                    nested_groups = self._fetch_user_groups(group, user_email_domain, http, checked_groups)
+                    checked_groups.update(nested_groups)
+
+        self.log.debug(f"user_email {user_email} is a member of {checked_groups}")
+        return checked_groups
+
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
