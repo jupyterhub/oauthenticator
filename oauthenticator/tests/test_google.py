@@ -211,7 +211,7 @@ async def test_google(
     handled_user_model = user_model("user1@example.com", "user1")
     handler = google_client.handler_for_user(handled_user_model)
     with mock.patch.object(
-        authenticator, "_fetch_user_groups", lambda *args: {"group1"}
+        authenticator, "_fetch_member_groups", lambda *args: {"group1"}
     ):
         auth_model = await authenticator.get_authenticated_user(handler, None)
 

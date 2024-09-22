@@ -108,10 +108,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     allow_nested_groups = Bool(
         config=True,
         help="""
-        Allow members of nested Google groups to sign in.
+        Allow members of nested Google groups to sign in and/or administer
+        TLJH. If `True` the authenticator will recursively check a user's 
+        group memberships and allow sign in and/or grant admin rights to
+        a user that is a member of a group that has nested membership in
+        any group in `allowed_google_groups` or `admin_google_groups`.
 
-        Use of this requires configuration of `gsuite_administrator` and
-        `google_service_account_keys`.
+        Use of this requires configuration of `gsuite_administrator`, and
+        `google_service_account_keys`, plus at least `allowed_google_groups` 
+        or `admin_google_groups`.
         """,
     )
 
@@ -245,7 +250,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
-            user_groups = self._fetch_user_groups(user_email, user_domain)
+            user_groups = self._fetch_member_groups(user_email, user_domain)
         # sets are not JSONable, cast to list for auth_state
         user_info["google_groups"] = list(user_groups)
 
@@ -380,39 +385,42 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         )
         return service
 
-    def _fetch_user_groups(
+    def _fetch_member_groups(
         self,
-        user_email,
+        member_email,
         user_email_domain,
         http=None,
-        checked_groups=None,
-        processed_groups=None,
+        checked_groups=set(),
+        processed_groups=set(),
     ):
         """
-        Return a set with the google groups a given user is a member of, including nested groups if allowed.
+        Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
         """
-        if checked_groups is None:
-            checked_groups = set()
-        if processed_groups is None:
-            processed_groups = set()
-
+        # FIXME: When this function is used and waiting for web request
+        #        responses, JupyterHub gets blocked from doing other things.
+        #        Ideally the web requests should be made using an async client
+        #        that can be awaited while JupyterHub handles other things.
+        #
         if not hasattr(self, 'service'):
             self.service = self._setup_service(user_email_domain, http)
 
-        resp = self.service.groups().list(userKey=user_email).execute()
-        user_groups = {
+        resp = self.service.groups().list(userKey=member_email).execute()
+        member_groups = {
             g['email'].split('@')[0] for g in resp.get('groups', []) if g.get('email')
         }
 
-        self.log.debug(f"Fetched groups for {user_email}: {user_groups}")
+        self.log.debug(f"Fetched groups for {member_email}: {member_groups}")
 
-        checked_groups.update(user_groups)
+        checked_groups.update(member_groups)
+        self.log.debug(f"Checked groups after update: {checked_groups}")
+
         self.log.debug(f"Checked groups after update: {checked_groups}")
 
         if self.allow_nested_groups:
-            for group in user_groups:
+            for group in member_groups:
                 if group not in processed_groups:
-                    nested_groups = self._fetch_user_groups(
+                    processed_groups.add(group)
+                    nested_groups = self._fetch_member_groups(
                         f"{group}@{user_email_domain}",
                         user_email_domain,
                         http,
@@ -420,9 +428,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                         processed_groups,
                     )
                     checked_groups.update(nested_groups)
-                    processed_groups.add(group)
 
-        self.log.debug(f"user_email {user_email} is a member of {checked_groups}")
+        self.log.debug(f"member_email {member_email} is a member of {checked_groups}")
         return checked_groups
 
 
