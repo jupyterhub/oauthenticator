@@ -408,12 +408,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         member_groups = {
             g['email'].split('@')[0] for g in resp.get('groups', []) if g.get('email')
         }
-
         self.log.debug(f"Fetched groups for {member_email}: {member_groups}")
 
         checked_groups.update(member_groups)
-        self.log.debug(f"Checked groups after update: {checked_groups}")
-
         self.log.debug(f"Checked groups after update: {checked_groups}")
 
         if self.allow_nested_groups:
