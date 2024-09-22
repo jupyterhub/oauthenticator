@@ -108,15 +108,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     allow_nested_groups = Bool(
         config=True,
         help="""
-        Allow members of nested Google groups to sign in and/or administer
-        TLJH. If `True` the authenticator will recursively check a user's 
-        group memberships and allow sign in and/or grant admin rights to
-        a user that is a member of a group that has nested membership in
-        any group in `allowed_google_groups` or `admin_google_groups`.
-
-        Use of this requires configuration of `gsuite_administrator`, and
-        `google_service_account_keys`, plus at least `allowed_google_groups` 
-        or `admin_google_groups`.
+        Include members of nested Google groups in `allowed_google_groups` and
+        `admin_google_groups` to sign in and/or administer JupyterHub.
         """,
     )
 
