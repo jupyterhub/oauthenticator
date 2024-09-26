@@ -1,3 +1,4 @@
+aiohttp
 # jsonschema is used for validating authenticator configurations
 jsonschema
 jupyterhub>=2.2
