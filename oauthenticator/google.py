@@ -4,6 +4,7 @@ A JupyterHub authenticator class for use with Google as an identity provider.
 
 import os
 
+import aiohttp
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
@@ -243,7 +244,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
-            user_groups = self._fetch_member_groups(user_email, user_domain)
+            user_groups = await self._fetch_member_groups(user_email, user_domain)
         # sets are not JSONable, cast to list for auth_state
         user_info["google_groups"] = list(user_groups)
 
@@ -314,7 +315,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
-    def _service_client_credentials(self, scopes, user_email_domain):
+    async def _service_client_credentials(self, scopes, user_email_domain):
         """
         Return a configured service client credentials for the API.
         """
@@ -338,47 +339,28 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return credentials
 
-    def _service_client(self, service_name, service_version, credentials, http=None):
-        """
-        Return a configured service client for the API.
-        """
-        try:
-            from googleapiclient.discovery import build
-        except:
-            raise ImportError(
-                "Could not import googleapiclient.discovery's build,"
-                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
-            )
-
-        self.log.debug(
-            f"service_name is {service_name}, service_version is {service_version}"
-        )
-
-        return build(
-            serviceName=service_name,
-            version=service_version,
-            credentials=credentials,
-            cache_discovery=False,
-            http=http,
-        )
-
-    def _setup_service(self, user_email_domain, http=None):
+    async def _setup_credentials(self, user_email_domain):
         """
         Set up the service client for Google API.
         """
-        credentials = self._service_client_credentials(
+        credentials = await self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
             user_email_domain=user_email_domain,
         )
-        service = self._service_client(
-            service_name='admin',
-            service_version='directory_v1',
-            credentials=credentials,
-            http=http,
-        )
-        return service
 
-    def _fetch_member_groups(
+        try:
+            from google.auth.transport import requests
+        except:
+            raise ImportError(
+                "Could not import google.auth.transport's requests,"
+                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
+            )
+
+        request = requests.Request()
+        credentials.refresh(request)
+        return credentials
+
+    async def _fetch_member_groups(
         self,
         member_email,
         user_email_domain,
@@ -389,17 +371,22 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
         """
-        # FIXME: When this function is used and waiting for web request
-        #        responses, JupyterHub gets blocked from doing other things.
-        #        Ideally the web requests should be made using an async client
-        #        that can be awaited while JupyterHub handles other things.
-        #
-        if not hasattr(self, 'service'):
-            self.service = self._setup_service(user_email_domain, http)
+        if not hasattr(self, 'credentials'):
+            self.credentials = await self._setup_credentials(user_email_domain)
 
-        resp = self.service.groups().list(userKey=member_email).execute()
+        headers = {'Authorization': f'Bearer {self.credentials.token}'}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}',
+                headers=headers,
+            ) as resp:
+                group_data = await resp.json()
+
         member_groups = {
-            g['email'].split('@')[0] for g in resp.get('groups', []) if g.get('email')
+            g['email'].split('@')[0]
+            for g in group_data.get('groups', [])
+            if g.get('email')
         }
         self.log.debug(f"Fetched groups for {member_email}: {member_groups}")
 
@@ -410,7 +397,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             for group in member_groups:
                 if group not in processed_groups:
                     processed_groups.add(group)
-                    nested_groups = self._fetch_member_groups(
+                    nested_groups = await self._fetch_member_groups(
                         f"{group}@{user_email_domain}",
                         user_email_domain,
                         http,
