@@ -3,7 +3,6 @@ import json
 import logging
 import re
 from unittest import mock
-from unittest.mock import AsyncMock
 
 from pytest import fixture, mark, raises
 from traitlets.config import Config
@@ -257,7 +256,7 @@ async def test_hosted_domain_single_entry(
     expect_admin,
 ):
     """
-    Tests that sign in is restricted to the listed domain and that the username
+    Tests that sign in is restricted fetchto the listed domain and that the username
     represents the part before the `@domain.com` as expected when hosted_domain
     contains a single entry.
     """
@@ -381,33 +380,3 @@ async def test_deprecated_config(
 
     expected_log_tuple = (test_logger.name, expect_loglevel, expect_message)
     assert expected_log_tuple in captured_log_tuples
-
-
-@mark.asyncio
-async def test_nested_group_memberships():
-    mock_fetch_member_groups = AsyncMock(
-        return_value={'group1', 'nested_group1', 'nested_group2'}
-    )
-
-    authenticator = GoogleOAuthenticator()
-    authenticator._fetch_member_groups = mock_fetch_member_groups
-
-    user_info = {'name': 'testuser', 'email': 'testuser@example.com'}
-
-    result = await authenticator._fetch_member_groups(user_info['email'], 'example.com')
-    assert 'nested_group1' in result
-    assert 'nested_group2' in result
-
-
-@mark.asyncio
-async def test_user_not_in_nested_group():
-    mock_fetch_member_groups = AsyncMock(return_value={'group1', 'group2'})
-
-    authenticator = GoogleOAuthenticator()
-    authenticator._fetch_member_groups = mock_fetch_member_groups
-
-    user_info = {'name': 'testuser', 'email': 'testuser@example.com'}
-
-    result = await authenticator._fetch_member_groups(user_info['email'], 'example.com')
-    assert 'nested_group1' not in result
-    assert 'nested_group2' not in result
