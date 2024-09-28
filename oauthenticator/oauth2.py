@@ -5,11 +5,14 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 """
 
 import base64
+import hashlib
 import json
 import os
+import secrets
 import uuid
 from functools import reduce
 from inspect import isawaitable
+from typing import cast
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
@@ -115,7 +118,22 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
         state_id = self._generate_state_id()
         next_url = self._get_next_url()
 
-        cookie_state = _serialize_state({"state_id": state_id, "next_url": next_url})
+        state = {"state_id": state_id, "next_url": next_url}
+
+        if self.authenticator.pkce:
+            # https://datatracker.ietf.org/doc/html/rfc7636#section-4
+            code_verifier = secrets.token_urlsafe(43)
+            code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+            code_challenge_base64 = (
+                base64.urlsafe_b64encode(code_challenge).decode("utf-8").rstrip("=")
+            )
+
+            token_params["code_challenge"] = code_challenge_base64
+            token_params["code_challenge_method"] = "S256"
+
+            state["code_verifier"] = code_verifier
+
+        cookie_state = _serialize_state(state)
         self.set_state_cookie(cookie_state)
 
         authorize_state = _serialize_state({"state_id": state_id})
@@ -663,6 +681,19 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    pkce = Bool(
+        os.environ.get("OAUTH2_PKCE", "False").lower() in {"true", "1"},
+        config=True,
+        help="""
+        Whether to use PKCE (Proof Key for Code Exchange) for the OAuth2 flow.
+
+        When using PKCE, the client secret is not required to be sent to the
+        token endpoint.
+        Only the S256 method is supported.
+        `RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636>`.
+        """,
+    )
+
     client_id_env = ""
     client_id = Unicode(
         config=True,
@@ -979,6 +1010,20 @@ class OAuthenticator(Authenticator):
             "redirect_uri": self.get_callback_url(handler),
             "data": data,
         }
+
+        if self.pkce:
+            # https://datatracker.ietf.org/doc/html/rfc7636#section-4.5
+            callback_handler = cast(OAuthCallbackHandler, handler)
+
+            cookie_state = callback_handler.get_state_cookie()
+            if not cookie_state:
+                raise web.HTTPError(400, "OAuth state missing from cookies")
+
+            code_verifier = _deserialize_state(cookie_state).get("code_verifier")
+            if not code_verifier:
+                raise web.HTTPError(400, "Missing code_verifier")
+
+            params.update([("code_verifier", code_verifier)])
 
         # the client_id and client_secret should not be included in the access token request params
         # when basic authentication is used

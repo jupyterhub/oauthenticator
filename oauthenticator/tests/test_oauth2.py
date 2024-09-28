@@ -31,6 +31,7 @@ async def test_serialize_state():
 
 TEST_STATE_ID = '123'
 TEST_NEXT_URL = '/ABC'
+TEST_CODE_VERIFIER = 'code_verifier123'
 
 
 async def test_login_states():
@@ -206,3 +207,57 @@ async def test_add_user_override(
         assert added_user.name in authenticator.allowed_users
     else:
         assert added_user.name not in authenticator.allowed_users
+
+
+async def test_login_handler_pkce():
+    authenticator = OAuthenticator(pkce=True)
+    login_handler = mock_handler(OAuthLoginHandler, authenticator=authenticator)
+
+    login_handler._generate_state_id = Mock(return_value=TEST_STATE_ID)
+    login_handler.set_state_cookie = Mock()
+    login_handler.authorize_redirect = Mock()
+
+    login_handler.get()  # no await, since authorize_redirect is mocked
+
+    # Check that PKCE parameters are included
+    assert (
+        "code_challenge"
+        in login_handler.authorize_redirect.call_args.kwargs["extra_params"]
+    )
+    assert (
+        login_handler.authorize_redirect.call_args.kwargs["extra_params"][
+            "code_challenge_method"
+        ]
+        == "S256"
+    )
+
+
+async def test_callback_handler_pkce():
+    url_state = _serialize_state({'state_id': TEST_STATE_ID})
+    callback_request_uri = f"http://myhost/callback?code=123&state={url_state}"
+
+    cookie_state = _serialize_state(
+        {
+            'state_id': TEST_STATE_ID,
+            'next_url': TEST_NEXT_URL,
+            'code_verifier': TEST_CODE_VERIFIER,
+        }
+    )
+
+    authenticator = OAuthenticator(pkce=True)
+    callback_handler = mock_handler(
+        OAuthCallbackHandler,
+        uri=callback_request_uri,
+        authenticator=authenticator,
+    )
+
+    callback_handler.get_secure_cookie = Mock(return_value=cookie_state.encode('utf8'))
+    callback_handler.login_user = Mock(return_value=mock_login_user_coro())
+    callback_handler.redirect = Mock()
+
+    await callback_handler.get()
+
+    callback_handler.redirect.assert_called_once_with('/ABC')
+    params = authenticator.build_access_tokens_request_params(callback_handler)
+
+    assert params['code_verifier'] == TEST_CODE_VERIFIER
