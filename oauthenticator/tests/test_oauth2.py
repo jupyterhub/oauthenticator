@@ -261,3 +261,44 @@ async def test_callback_handler_pkce():
     params = authenticator.build_access_tokens_request_params(callback_handler)
 
     assert params['code_verifier'] == TEST_CODE_VERIFIER
+
+
+async def test_pkce_not_supported(monkeypatch):
+    url_state = _serialize_state({'state_id': TEST_STATE_ID})
+    callback_request_uri = f"http://myhost/callback?code=123&state={url_state}"
+
+    cookie_state = _serialize_state(
+        {
+            'state_id': TEST_STATE_ID,
+            'next_url': TEST_NEXT_URL,
+            'code_verifier': TEST_CODE_VERIFIER,
+        }
+    )
+
+    authenticator = OAuthenticator(pkce=True)
+    callback_handler = mock_handler(
+        OAuthCallbackHandler,
+        uri=callback_request_uri,
+        authenticator=authenticator,
+    )
+
+    # Mock the statsd setting
+    monkeypatch.setitem(callback_handler.settings, 'statsd', Mock())
+    callback_handler.get_secure_cookie = Mock(return_value=cookie_state.encode('utf8'))
+
+    # Mock the token request to return an error indicating PKCE is not supported
+    error_response = {
+        "error": "invalid_request",
+        "error_description": "PKCE not supported",
+    }
+
+    async def mock_httpfetch(*args, **kwargs):
+        return error_response
+
+    authenticator.httpfetch = mock_httpfetch
+
+    with raises(HTTPError) as exc_info:
+        await callback_handler.get()
+
+    assert exc_info.value.status_code == 403
+    assert "An access token was not returned: PKCE not supported" in str(exc_info.value)

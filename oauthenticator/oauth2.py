@@ -12,7 +12,6 @@ import secrets
 import uuid
 from functools import reduce
 from inspect import isawaitable
-from typing import cast
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
@@ -682,13 +681,11 @@ class OAuthenticator(Authenticator):
     )
 
     pkce = Bool(
-        os.environ.get("OAUTH2_PKCE", "False").lower() in {"true", "1"},
+        False,
         config=True,
         help="""
         Whether to use PKCE (Proof Key for Code Exchange) for the OAuth2 flow.
 
-        When using PKCE, the client secret is not required to be sent to the
-        token endpoint.
         Only the S256 method is supported.
         `RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636>`.
         """,
@@ -1013,9 +1010,7 @@ class OAuthenticator(Authenticator):
 
         if self.pkce:
             # https://datatracker.ietf.org/doc/html/rfc7636#section-4.5
-            callback_handler = cast(OAuthCallbackHandler, handler)
-
-            cookie_state = callback_handler.get_state_cookie()
+            cookie_state = handler.get_state_cookie()
             if not cookie_state:
                 raise web.HTTPError(400, "OAuth state missing from cookies")
 
