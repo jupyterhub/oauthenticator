@@ -119,7 +119,7 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
 
         state = {"state_id": state_id, "next_url": next_url}
 
-        if self.authenticator.pkce:
+        if self.authenticator.require_pkce:
             # https://datatracker.ietf.org/doc/html/rfc7636#section-4
             code_verifier = secrets.token_urlsafe(43)
             code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
@@ -680,13 +680,13 @@ class OAuthenticator(Authenticator):
         """,
     )
 
-    pkce = Bool(
+    require_pkce = Bool(
         False,
         config=True,
         help="""
-        Whether to use PKCE (Proof Key for Code Exchange) for the OAuth2 flow.
-
-        Only the S256 method is supported.
+        Require Proof Key for Code Exchange (PKCE) for OAuth2 authorization code flow
+        
+        Only the S256 code challenge method is supported.
         `RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636>`.
         """,
     )
@@ -1008,7 +1008,7 @@ class OAuthenticator(Authenticator):
             "data": data,
         }
 
-        if self.pkce:
+        if self.require_pkce:
             # https://datatracker.ietf.org/doc/html/rfc7636#section-4.5
             cookie_state = handler.get_state_cookie()
             if not cookie_state:
