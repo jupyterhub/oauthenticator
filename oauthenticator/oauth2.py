@@ -684,10 +684,10 @@ class OAuthenticator(Authenticator):
         False,
         config=True,
         help="""
-        Require Proof Key for Code Exchange (PKCE) for OAuth2 authorization code flow
+        Require Proof Key for Code Exchange (PKCE) for OAuth2 authorization code flow.
         
         Only the S256 code challenge method is supported.
-        `RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636>`.
+        `RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636>`_.
         """,
     )
 
