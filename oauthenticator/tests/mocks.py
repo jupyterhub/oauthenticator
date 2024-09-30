@@ -15,6 +15,8 @@ from tornado.httputil import HTTPServerRequest
 from tornado.log import app_log
 from tornado.simple_httpclient import SimpleAsyncHTTPClient
 
+from ..oauth2 import _serialize_state
+
 RegExpType = type(re.compile('.'))
 
 
@@ -222,6 +224,11 @@ def setup_oauth_mock(
             method="GET", uri=f"https://hub.example.com?code={code}"
         )
         handler.hub = Mock(server=Mock(base_url='/hub/'), base_url='/hub/')
+        handler.get_state_cookie = Mock(
+            return_value=_serialize_state(
+                {"state_id": "123", "next_url": "/ABC", "code_verifier": "123"}
+            )
+        )
         return handler
 
     client.handler_for_user = handler_for_user
