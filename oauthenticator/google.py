@@ -408,16 +408,17 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if self.allow_nested_groups:
             for group in member_groups:
-                if group not in processed_groups:
-                    processed_groups.add(group)
-                    nested_groups = self._fetch_member_groups(
-                        f"{group}@{user_email_domain}",
-                        user_email_domain,
-                        http,
-                        checked_groups,
-                        processed_groups,
-                    )
-                    checked_groups.update(nested_groups)
+                if group in processed_groups:
+                    continue
+                processed_groups.add(group)
+                nested_groups = self._fetch_member_groups(
+                    f"{group}@{user_email_domain}",
+                    user_email_domain,
+                    http,
+                    checked_groups,
+                    processed_groups,
+                )
+                checked_groups.update(nested_groups)
 
         self.log.debug(f"member_email {member_email} is a member of {checked_groups}")
         return checked_groups

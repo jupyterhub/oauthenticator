@@ -256,7 +256,7 @@ async def test_hosted_domain_single_entry(
     expect_admin,
 ):
     """
-    Tests that sign in is restricted fetchto the listed domain and that the username
+    Tests that sign in is restricted to the listed domain and that the username
     represents the part before the `@domain.com` as expected when hosted_domain
     contains a single entry.
     """
