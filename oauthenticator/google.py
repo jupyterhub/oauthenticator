@@ -105,7 +105,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
-    allow_nested_groups = Bool(
+    include_nested_groups = Bool(
         config=True,
         help="""
         Include members of nested Google groups in `allowed_google_groups` and
@@ -383,8 +383,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         member_email,
         user_email_domain,
         http=None,
-        checked_groups=set(),
-        processed_groups=set(),
+        checked_groups=None,
+        processed_groups=None,
     ):
         """
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
@@ -397,6 +397,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if not hasattr(self, 'service'):
             self.service = self._setup_service(user_email_domain, http)
 
+        checked_groups = checked_groups or set()
+        processed_groups = processed_groups or set()
+
         resp = self.service.groups().list(userKey=member_email).execute()
         member_groups = {
             g['email'].split('@')[0] for g in resp.get('groups', []) if g.get('email')
@@ -406,7 +409,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         checked_groups.update(member_groups)
         self.log.debug(f"Checked groups after update: {checked_groups}")
 
-        if self.allow_nested_groups:
+        if self.include_nested_groups:
             for group in member_groups:
                 if group in processed_groups:
                     continue
