@@ -106,7 +106,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """,
     )
 
-    allow_nested_groups = Bool(
+    include_nested_groups = Bool(
         config=True,
         help="""
         Include members of nested Google groups in `allowed_google_groups` and
@@ -365,8 +365,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         member_email,
         user_email_domain,
         http=None,
-        checked_groups=set(),
-        processed_groups=set(),
+        checked_groups=None,
+        processed_groups=None,
     ):
         """
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
@@ -383,6 +383,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             ) as resp:
                 group_data = await resp.json()
 
+        checked_groups = checked_groups or set()
+        processed_groups = processed_groups or set()
+
+        resp = self.service.groups().list(userKey=member_email).execute()
         member_groups = {
             g['email'].split('@')[0]
             for g in group_data.get('groups', [])
@@ -393,18 +397,20 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         checked_groups.update(member_groups)
         self.log.debug(f"Checked groups after update: {checked_groups}")
 
-        if self.allow_nested_groups:
+        if self.include_nested_groups:
             for group in member_groups:
-                if group not in processed_groups:
-                    processed_groups.add(group)
-                    nested_groups = await self._fetch_member_groups(
-                        f"{group}@{user_email_domain}",
-                        user_email_domain,
-                        http,
-                        checked_groups,
-                        processed_groups,
-                    )
-                    checked_groups.update(nested_groups)
+
+                if group in processed_groups:
+                    continue
+                processed_groups.add(group)
+                nested_groups = await self._fetch_member_groups(
+                    f"{group}@{user_email_domain}",
+                    user_email_domain,
+                    http,
+                    checked_groups,
+                    processed_groups,
+                )
+                checked_groups.update(nested_groups)
 
         self.log.debug(f"member_email {member_email} is a member of {checked_groups}")
         return checked_groups
