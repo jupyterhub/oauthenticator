@@ -4,7 +4,6 @@ A JupyterHub authenticator class for use with Google as an identity provider.
 
 import os
 
-import aiohttp
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
@@ -374,19 +373,15 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         if not hasattr(self, 'credentials'):
             self.credentials = await self._setup_credentials(user_email_domain)
 
-        headers = {'Authorization': f'Bearer {self.credentials.token}'}
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}',
-                headers=headers,
-            ) as resp:
-                group_data = await resp.json()
-
         checked_groups = checked_groups or set()
         processed_groups = processed_groups or set()
 
-        resp = self.service.groups().list(userKey=member_email).execute()
+        headers = {'Authorization': f'Bearer {self.credentials.token}'}
+        url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}'
+        group_data = await self.httpfetch(
+            url, headers=headers, label="fetching google groups"
+        )
+
         member_groups = {
             g['email'].split('@')[0]
             for g in group_data.get('groups', [])
@@ -399,7 +394,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if self.include_nested_groups:
             for group in member_groups:
-
                 if group in processed_groups:
                     continue
                 processed_groups.add(group)
