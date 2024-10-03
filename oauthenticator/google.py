@@ -340,7 +340,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     async def _setup_credentials(self, user_email_domain):
         """
-        Set up the service client for Google API.
+        Set up the oauth credentials for Google API.
         """
         credentials = await self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
