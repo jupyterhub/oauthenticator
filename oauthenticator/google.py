@@ -366,17 +366,17 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         http=None,
         checked_groups=None,
         processed_groups=None,
+        credentials=None,
     ):
         """
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
         """
-        if not hasattr(self, 'credentials'):
-            self.credentials = await self._setup_credentials(user_email_domain)
 
+        credentials = credentials or await self._setup_credentials(user_email_domain)
         checked_groups = checked_groups or set()
         processed_groups = processed_groups or set()
 
-        headers = {'Authorization': f'Bearer {self.credentials.token}'}
+        headers = {'Authorization': f'Bearer {credentials.token}'}
         url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}'
         group_data = await self.httpfetch(
             url, headers=headers, label="fetching google groups"
