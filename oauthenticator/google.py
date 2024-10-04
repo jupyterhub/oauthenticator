@@ -14,7 +14,7 @@ from .oauth2 import OAuthenticator
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     user_auth_state_key = "google_user"
-    _service_credentials = None
+    _service_credentials = {}
 
     @default("login_service")
     def _login_service_default(self):
@@ -322,22 +322,25 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Checks if the credentials are valid before returning them. Refreshes
         if necessary and stores the refreshed credentials.
         """
-        if not self._service_credentials or not self._is_token_valid():
-            self._service_credentials = self._setup_service_credentials(
-                user_email_domain
+        if (
+            user_email_domain not in self._service_credentials
+            or not self._is_token_valid(user_email_domain)
+        ):
+            self._service_credentials[user_email_domain] = (
+                self._setup_service_credentials(user_email_domain)
             )
 
         return self._service_credentials
 
-    def _is_token_valid(self):
+    def _is_token_valid(self, user_email_domain):
         """
         Checks if the stored token is valid.
         """
-        if not self._service_credentials:
+        if not self._service_credentials[user_email_domain]:
             return False
-        if not self._service_credentials.token:
+        if not self._service_credentials[user_email_domain].token:
             return False
-        if self._service_credentials.expired:
+        if self._service_credentials[user_email_domain].expired:
             return False
 
         return True
@@ -385,7 +388,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         request = requests.Request()
         credentials.refresh(request)
-        self.log.debug("Credentials refreshed")
+        self.log.debug(f"Credentials refreshed for {user_email_domain}")
         return credentials
 
     async def _fetch_member_groups(
@@ -402,10 +405,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
 
         credentials = credentials or self._get_service_credentials(user_email_domain)
+        token = credentials[user_email_domain].token
         checked_groups = checked_groups or set()
         processed_groups = processed_groups or set()
 
-        headers = {'Authorization': f'Bearer {credentials.token}'}
+        headers = {'Authorization': f'Bearer {token}'}
         url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}'
         group_data = await self.httpfetch(
             url, headers=headers, label="fetching google groups"
