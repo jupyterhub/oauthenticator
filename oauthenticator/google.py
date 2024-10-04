@@ -314,7 +314,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
-    async def _service_client_credentials(self, scopes, user_email_domain):
+    def _service_client_credentials(self, scopes, user_email_domain):
         """
         Return a configured service client credentials for the API.
         """
@@ -338,11 +338,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return credentials
 
-    async def _setup_credentials(self, user_email_domain):
+    def _setup_credentials(self, user_email_domain):
         """
         Set up the oauth credentials for Google API.
         """
-        credentials = await self._service_client_credentials(
+        credentials = self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
             user_email_domain=user_email_domain,
         )
@@ -372,7 +372,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
         """
 
-        credentials = credentials or await self._setup_credentials(user_email_domain)
+        credentials = credentials or self._setup_credentials(user_email_domain)
         checked_groups = checked_groups or set()
         processed_groups = processed_groups or set()
 
