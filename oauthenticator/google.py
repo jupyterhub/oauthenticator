@@ -14,6 +14,7 @@ from .oauth2 import OAuthenticator
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     user_auth_state_key = "google_user"
+    _credentials = None
 
     @default("login_service")
     def _login_service_default(self):
@@ -314,6 +315,31 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
+    def _get_credentials(self, user_email_domain):
+        """
+        Returns the stored credentials or fetches and stores new ones.
+
+        Checks if the credentials are valid before returning them. Refreshes
+        if necessary and stores the refreshed credentials.
+        """
+        if not self._credentials or not self._is_token_valid():
+            self._credentials = self._setup_credentials(user_email_domain)
+
+        return self._credentials
+
+    def _is_token_valid(self):
+        """
+        Checks if the stored token is valid.
+        """
+        if not self._credentials:
+            return False
+        if not self._credentials.token:
+            return False
+        if self._credentials.expired:
+            return False
+
+        return True
+
     def _service_client_credentials(self, scopes, user_email_domain):
         """
         Return a configured service client credentials for the API.
@@ -357,6 +383,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         request = requests.Request()
         credentials.refresh(request)
+        self.log.debug("Credentials refreshed")
         return credentials
 
     async def _fetch_member_groups(
@@ -372,7 +399,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
         """
 
-        credentials = credentials or self._setup_credentials(user_email_domain)
+        credentials = credentials or self._get_credentials(user_email_domain)
         checked_groups = checked_groups or set()
         processed_groups = processed_groups or set()
 
