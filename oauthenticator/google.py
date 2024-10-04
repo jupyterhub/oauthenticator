@@ -63,6 +63,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation
 
+        This is a mapping of { domain : service-key }.
+
         Required if and only if `allowed_google_groups` or `admin_google_groups`
         is configured.
         """,
@@ -73,6 +75,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True,
         help="""
         Username of a G Suite Administrator for the service account to act as.
+
+        This is a mapping of { domain : GSuite-administrator }.
 
         Required if and only if `allowed_google_groups` or `admin_google_groups`
         is configured.
@@ -85,6 +89,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         Allow members of selected Google groups to sign in.
 
+        This is a mapping of { domain : [set of groups] }.
+
         Use of this requires configuration of `gsuite_administrator` and
         `google_service_account_keys`.
         """,
@@ -96,6 +102,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         Allow members of selected Google groups to sign in and consider them as
         JupyterHub admins.
+
+        This is a mapping of { domain : [set of groups] }.
 
         If this is set and a user isn't part of one of these groups or listed in
         `admin_users`, a user signing in will have their admin status revoked.
