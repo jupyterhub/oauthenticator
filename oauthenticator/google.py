@@ -403,8 +403,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
         """
-# WARNING: There's a race condition here if multiple users login at the same time.
-# This is currently ignored.
+        # WARNING: There's a race condition here if multiple users login at the same time.
+        # This is currently ignored.
         credentials = credentials or self._get_service_credentials(user_email_domain)
         token = credentials[user_email_domain].token
         checked_groups = checked_groups or set()
