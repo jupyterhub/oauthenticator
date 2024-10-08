@@ -3,6 +3,7 @@ import json
 import logging
 import re
 from unittest import mock
+from unittest.mock import AsyncMock
 
 from pytest import fixture, mark, raises
 from traitlets.config import Config
@@ -211,7 +212,7 @@ async def test_google(
     handled_user_model = user_model("user1@example.com", "user1")
     handler = google_client.handler_for_user(handled_user_model)
     with mock.patch.object(
-        authenticator, "_fetch_member_groups", lambda *args: {"group1"}
+        authenticator, "_fetch_member_groups", AsyncMock(return_value={"group1"})
     ):
         auth_model = await authenticator.get_authenticated_user(handler, None)
 

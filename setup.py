@@ -91,7 +91,6 @@ setup_args['extras_require'] = {
     # googlegroups is required for use of GoogleOAuthenticator configured with
     # either admin_google_groups and/or allowed_google_groups.
     'googlegroups': [
-        'google-api-python-client',
         'google-auth-oauthlib',
     ],
     # mediawiki is required for use of MWOAuthenticator
@@ -105,7 +104,6 @@ setup_args['extras_require'] = {
         'pytest-cov',
         'requests-mock',
         # dependencies from googlegroups:
-        'google-api-python-client',
         'google-auth-oauthlib',
         # dependencies from mediawiki:
         'mwoauth>=0.3.8',
