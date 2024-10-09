@@ -403,7 +403,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         self,
         member_email,
         user_email_domain,
-        http=None,
         checked_groups=None,
         processed_groups=None,
         credentials=None,
@@ -420,19 +419,26 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         headers = {'Authorization': f'Bearer {token}'}
         url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}'
-        group_data = await self.httpfetch(
-            url, headers=headers, label="fetching google groups"
-        )
 
-        member_groups = {
-            g['email'].split('@')[0]
-            for g in group_data.get('groups', [])
-            if g.get('email')
-        }
-        self.log.debug(f"Fetched groups for {member_email}: {member_groups}")
+        member_groups = set()
+        while url:
+            response_data = await self.httpfetch(
+                url, headers=headers, label="fetching google groups"
+            )
+
+            groups = response_data.get('groups', [])
+            group_names = {g['email'].split('@')[0] for g in groups if g.get('email')}
+            member_groups.update(group_names)
+            self.log.debug(f"Fetched groups for {member_email}: {member_groups}")
+
+            next_page_token = response_data.get('nextPageToken')
+            if next_page_token:
+                url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}&pageToken={next_page_token}'
+            else:
+                url = None
 
         checked_groups.update(member_groups)
-        self.log.debug(f"Checked groups after update: {checked_groups}")
+        self.log.debug(f"{member_email} is a direct member of groups: {member_groups}")
 
         if self.include_nested_groups:
             for group in member_groups:
@@ -442,7 +448,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 nested_groups = await self._fetch_member_groups(
                     f"{group}@{user_email_domain}",
                     user_email_domain,
-                    http,
                     checked_groups,
                     processed_groups,
                 )
