@@ -6,6 +6,33 @@ command line for details.
 
 ## [Unreleased]
 
+## 17.1
+
+### [17.1.0] - 2024-10-11
+
+#### New features added
+
+- [All] Add `enable_pkce` config, True by default [#765](https://github.com/jupyterhub/oauthenticator/pull/765) ([@renan-r-santos](https://github.com/renan-r-santos), [@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+- [Google] Add `include_nested_groups` config [#763](https://github.com/jupyterhub/oauthenticator/pull/763) ([@jrdnbradford](https://github.com/jrdnbradford), [@consideRatio](https://github.com/consideRatio))
+
+#### Maintenance and upkeep improvements
+
+- [Google] Handle pagination in group API calls [#768](https://github.com/jupyterhub/oauthenticator/pull/768) ([@jrdnbradford](https://github.com/jrdnbradford), [@minrk](https://github.com/minrk))
+- [Google] Make looking up google groups far less blocking [#764](https://github.com/jupyterhub/oauthenticator/pull/764) ([@jrdnbradford](https://github.com/jrdnbradford), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+
+#### Documentation improvements
+
+- [Google] google groups config docs: properties are dictionaries [#766](https://github.com/jupyterhub/oauthenticator/pull/766) ([@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-09-04&to=2024-10-11&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-09-04..2024-10-11&type=Issues)) | @jrdnbradford ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajrdnbradford+updated%3A2024-09-04..2024-10-11&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-09-04..2024-10-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-09-04..2024-10-11&type=Issues)) | @renan-r-santos ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Arenan-r-santos+updated%3A2024-09-04..2024-10-11&type=Issues))
+
 ## 17.0
 
 ### [17.0.0] - 2024-09-04
@@ -957,7 +984,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.0.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.1.0...HEAD
+[17.1.0]: https://github.com/jupyterhub/oauthenticator/compare/17.0.0...17.1.0
 [17.0.0]: https://github.com/jupyterhub/oauthenticator/compare/16.3.1...17.0.0
 [16.3.1]: https://github.com/jupyterhub/oauthenticator/compare/16.3.0...16.3.1
 [16.3.0]: https://github.com/jupyterhub/oauthenticator/compare/16.2.1...16.3.0
