@@ -14,6 +14,7 @@ from .oauth2 import OAuthenticator
 
 class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     user_auth_state_key = "google_user"
+    _service_credentials = {}
 
     @default("login_service")
     def _login_service_default(self):
@@ -63,6 +64,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation
 
+        This is a mapping of { domain : service-key }.
+
         Required if and only if `allowed_google_groups` or `admin_google_groups`
         is configured.
         """,
@@ -74,6 +77,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         Username of a G Suite Administrator for the service account to act as.
 
+        This is a mapping of { domain : GSuite-administrator }.
+
         Required if and only if `allowed_google_groups` or `admin_google_groups`
         is configured.
         """,
@@ -84,6 +89,8 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         config=True,
         help="""
         Allow members of selected Google groups to sign in.
+
+        This is a mapping of { domain : [set of groups] }.
 
         Use of this requires configuration of `gsuite_administrator` and
         `google_service_account_keys`.
@@ -97,11 +104,21 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Allow members of selected Google groups to sign in and consider them as
         JupyterHub admins.
 
+        This is a mapping of { domain : [set of groups] }.
+
         If this is set and a user isn't part of one of these groups or listed in
         `admin_users`, a user signing in will have their admin status revoked.
 
         Use of this requires configuration of `gsuite_administrator` and
         `google_service_account_keys`.
+        """,
+    )
+
+    include_nested_groups = Bool(
+        config=True,
+        help="""
+        Include members of nested Google groups in `allowed_google_groups` and
+        `admin_google_groups` to sign in and/or administer JupyterHub.
         """,
     )
 
@@ -235,7 +252,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user_groups = set()
         if self.allowed_google_groups or self.admin_google_groups:
-            user_groups = self._fetch_user_groups(user_email, user_domain)
+            user_groups = await self._fetch_member_groups(user_email, user_domain)
         # sets are not JSONable, cast to list for auth_state
         user_info["google_groups"] = list(user_groups)
 
@@ -306,6 +323,36 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # users should be explicitly allowed via config, otherwise they aren't
         return False
 
+    def _get_service_credentials(self, user_email_domain):
+        """
+        Returns the stored credentials or fetches and stores new ones.
+
+        Checks if the credentials are valid before returning them. Refreshes
+        if necessary and stores the refreshed credentials.
+        """
+        if (
+            user_email_domain not in self._service_credentials
+            or not self._is_token_valid(user_email_domain)
+        ):
+            self._service_credentials[user_email_domain] = (
+                self._setup_service_credentials(user_email_domain)
+            )
+
+        return self._service_credentials
+
+    def _is_token_valid(self, user_email_domain):
+        """
+        Checks if the stored token is valid.
+        """
+        if not self._service_credentials[user_email_domain]:
+            return False
+        if not self._service_credentials[user_email_domain].token:
+            return False
+        if self._service_credentials[user_email_domain].expired:
+            return False
+
+        return True
+
     def _service_client_credentials(self, scopes, user_email_domain):
         """
         Return a configured service client credentials for the API.
@@ -330,56 +377,84 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         return credentials
 
-    def _service_client(self, service_name, service_version, credentials, http=None):
+    def _setup_service_credentials(self, user_email_domain):
         """
-        Return a configured service client for the API.
+        Set up the oauth credentials for Google API.
         """
-        try:
-            from googleapiclient.discovery import build
-        except:
-            raise ImportError(
-                "Could not import googleapiclient.discovery's build,"
-                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
-            )
-
-        self.log.debug(
-            f"service_name is {service_name}, service_version is {service_version}"
-        )
-
-        return build(
-            serviceName=service_name,
-            version=service_version,
-            credentials=credentials,
-            cache_discovery=False,
-            http=http,
-        )
-
-    def _fetch_user_groups(self, user_email, user_email_domain, http=None):
-        """
-        Return a set with the google groups a given user is a member of
-        """
-        # FIXME: When this function is used and waiting for web request
-        #        responses, JupyterHub gets blocked from doing other things.
-        #        Ideally the web requests should be made using an async client
-        #        that can be awaited while JupyterHub handles other things.
-        #
         credentials = self._service_client_credentials(
             scopes=[f"{self.google_api_url}/auth/admin.directory.group.readonly"],
             user_email_domain=user_email_domain,
         )
-        service = self._service_client(
-            service_name='admin',
-            service_version='directory_v1',
-            credentials=credentials,
-            http=http,
-        )
 
-        resp = service.groups().list(userKey=user_email).execute()
-        user_groups = {
-            g['email'].split('@')[0] for g in resp.get('groups', [{'email': None}])
-        }
-        self.log.debug(f"user_email {user_email} is a member of {user_groups}")
-        return user_groups
+        try:
+            from google.auth.transport import requests
+        except:
+            raise ImportError(
+                "Could not import google.auth.transport's requests,"
+                "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
+            )
+
+        request = requests.Request()
+        credentials.refresh(request)
+        self.log.debug(f"Credentials refreshed for {user_email_domain}")
+        return credentials
+
+    async def _fetch_member_groups(
+        self,
+        member_email,
+        user_email_domain,
+        checked_groups=None,
+        processed_groups=None,
+        credentials=None,
+    ):
+        """
+        Return a set with the google groups a given user/group is a member of, including nested groups if allowed.
+        """
+        # WARNING: There's a race condition here if multiple users login at the same time.
+        # This is currently ignored.
+        credentials = credentials or self._get_service_credentials(user_email_domain)
+        token = credentials[user_email_domain].token
+        checked_groups = checked_groups or set()
+        processed_groups = processed_groups or set()
+
+        headers = {'Authorization': f'Bearer {token}'}
+        url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}'
+
+        member_groups = set()
+        while url:
+            response_data = await self.httpfetch(
+                url, headers=headers, label="fetching google groups"
+            )
+
+            groups = response_data.get('groups', [])
+            group_names = {g['email'].split('@')[0] for g in groups if g.get('email')}
+            member_groups.update(group_names)
+            self.log.debug(f"Fetched groups for {member_email}: {member_groups}")
+
+            next_page_token = response_data.get('nextPageToken')
+            if next_page_token:
+                url = f'https://www.googleapis.com/admin/directory/v1/groups?userKey={member_email}&pageToken={next_page_token}'
+            else:
+                url = None
+
+        checked_groups.update(member_groups)
+        self.log.debug(f"{member_email} is a direct member of groups: {member_groups}")
+
+        if self.include_nested_groups:
+            for group in member_groups:
+                if group in processed_groups:
+                    continue
+                processed_groups.add(group)
+                nested_groups = await self._fetch_member_groups(
+                    f"{group}@{user_email_domain}",
+                    user_email_domain,
+                    checked_groups,
+                    processed_groups,
+                )
+                checked_groups.update(nested_groups)
+
+        self.log.debug(f"member_email {member_email} is a member of {checked_groups}")
+        return checked_groups
 
 
 class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):

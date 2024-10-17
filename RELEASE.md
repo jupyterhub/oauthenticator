@@ -10,11 +10,9 @@ These are the instructions on how to make a release.
 
 ## Steps to make a release
 
-1. Create a PR updating `CHANGELOG.md` with [github-activity] and continue when
-   its merged.
-
-   Advice on this procedure can be found in [this team compass
-   issue](https://github.com/jupyterhub/team-compass/issues/563).
+1. Create a PR updating `docs/source/reference/changelog.md` with
+   [github-activity] and continue when its merged. For details about this, see
+   the [team-compass documentation] about it.
 
 2. Checkout main and make sure it is up to date.
 
@@ -54,6 +52,7 @@ These are the instructions on how to make a release.
    part of making this release to PyPI.
 
 [github-activity]: https://github.com/executablebooks/github-activity
+[team-compass documentation]: https://jupyterhub-team-compass.readthedocs.io/en/latest/practices/releases.html
 [pypi]: https://pypi.org/project/oauthenticator/
 [ci system]: https://github.com/jupyterhub/oauthenticator/actions/workflows/release.yaml
 [conda-forge]: https://anaconda.org/conda-forge/oauthenticator

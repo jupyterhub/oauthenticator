@@ -23,14 +23,25 @@ class AzureAdOAuthenticator(OAuthenticator):
         return "name"
 
     user_groups_claim = Unicode(
-        "groups",
+        "",
         config=True,
         help="""
-        Name of claim containing user group memberships.
+        .. deprecated:: 17.0
 
-        Will populate JupyterHub groups if Authenticator.manage_groups is True.
+            Use :attr:`auth_state_groups_key` instead.
         """,
     )
+
+    @default('auth_state_groups_key')
+    def _auth_state_groups_key_default(self):
+        key = "user.groups"
+        if self.user_groups_claim:
+            key = f"{self.user_auth_state_key}.{self.user_groups_claim}"
+            cls = self.__class__.__name__
+            self.log.warning(
+                f"{cls}.user_groups_claim is deprecated in OAuthenticator 17. Use {cls}.auth_state_groups_key = {key!r}"
+            )
+        return key
 
     tenant_id = Unicode(
         config=True,
@@ -54,15 +65,6 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url_default(self):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
-
-    async def update_auth_model(self, auth_model, **kwargs):
-        auth_model = await super().update_auth_model(auth_model, **kwargs)
-
-        if getattr(self, "manage_groups", False):
-            user_info = auth_model["auth_state"][self.user_auth_state_key]
-            auth_model["groups"] = user_info[self.user_groups_claim]
-
-        return auth_model
 
     async def token_to_user(self, token_info):
         id_token = token_info['id_token']

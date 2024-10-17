@@ -3,6 +3,7 @@ import json
 import logging
 import re
 from unittest import mock
+from unittest.mock import AsyncMock
 
 from pytest import fixture, mark, raises
 from traitlets.config import Config
@@ -18,6 +19,7 @@ def user_model(email, username="user1", hd=None):
         'email': email,
         'custom': username,
         'verified_email': True,
+        'groups': ['group1'],
     }
     if hd:
         model['hd'] = hd
@@ -151,6 +153,47 @@ def google_client(client):
             False,
             False,
         ),
+        # common tests with allowed_groups and manage_groups
+        (
+            "20",
+            {
+                "allowed_groups": {"group1"},
+                "auth_state_groups_key": "google_user.groups",
+                "manage_groups": True,
+            },
+            True,
+            None,
+        ),
+        (
+            "21",
+            {
+                "allowed_groups": {"test-user-not-in-group"},
+                "auth_state_groups_key": "google_user.groups",
+                "manage_groups": True,
+            },
+            False,
+            None,
+        ),
+        (
+            "22",
+            {
+                "admin_groups": {"group1"},
+                "auth_state_groups_key": "google_user.groups",
+                "manage_groups": True,
+            },
+            True,
+            True,
+        ),
+        (
+            "23",
+            {
+                "admin_groups": {"test-user-not-in-group"},
+                "auth_state_groups_key": "google_user.groups",
+                "manage_groups": True,
+            },
+            False,
+            False,
+        ),
     ],
 )
 async def test_google(
@@ -169,13 +212,16 @@ async def test_google(
     handled_user_model = user_model("user1@example.com", "user1")
     handler = google_client.handler_for_user(handled_user_model)
     with mock.patch.object(
-        authenticator, "_fetch_user_groups", lambda *args: {"group1"}
+        authenticator, "_fetch_member_groups", AsyncMock(return_value={"group1"})
     ):
         auth_model = await authenticator.get_authenticated_user(handler, None)
 
     if expect_allowed:
         assert auth_model
-        assert set(auth_model) == {"name", "admin", "auth_state"}
+        if authenticator.manage_groups:
+            assert set(auth_model) == {"name", "admin", "auth_state", "groups"}
+        else:
+            assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
         assert json.dumps(auth_state)

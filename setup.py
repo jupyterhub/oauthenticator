@@ -27,7 +27,7 @@ class bdist_egg_disabled(bdist_egg):
 setup_args = dict(
     name='oauthenticator',
     packages=find_packages(),
-    version="16.3.2.dev",
+    version="17.1.1.dev",
     description="OAuthenticator: Authenticate JupyterHub users with common OAuth providers",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -91,7 +91,6 @@ setup_args['extras_require'] = {
     # googlegroups is required for use of GoogleOAuthenticator configured with
     # either admin_google_groups and/or allowed_google_groups.
     'googlegroups': [
-        'google-api-python-client',
         'google-auth-oauthlib',
     ],
     # mediawiki is required for use of MWOAuthenticator
@@ -105,7 +104,6 @@ setup_args['extras_require'] = {
         'pytest-cov',
         'requests-mock',
         # dependencies from googlegroups:
-        'google-api-python-client',
         'google-auth-oauthlib',
         # dependencies from mediawiki:
         'mwoauth>=0.3.8',

@@ -1,6 +1,7 @@
 """test azure ad"""
 
 import json
+import logging
 import os
 import re
 import time
@@ -9,7 +10,7 @@ from unittest import mock
 
 import jwt
 import pytest
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 from traitlets.config import Config
 
 from ..azuread import AzureAdOAuthenticator
@@ -49,6 +50,7 @@ def user_model(tenant_id, client_id, name):
                 "96000b2c-7333-4f6e-a2c3-e7608fa2d131",
                 "a992b3d5-1966-4af4-abed-6ef021417be4",
                 "ceb90a42-030f-44f1-a0c7-825b572a3b07",
+                "group1",
             ],
             # different from 'groups' for tests
             "grp": [
@@ -115,10 +117,14 @@ def user_model(tenant_id, client_id, name):
             True,
             None,
         ),
-        # test user_groups_claim
+        # test user_groups_claim (deprecated)
         (
             "30",
-            {"allow_all": True, "manage_groups": True},
+            {
+                "allow_all": True,
+                "user_groups_claim": "groups",
+                "manage_groups": True,
+            },
             True,
             None,
         ),
@@ -131,6 +137,43 @@ def user_model(tenant_id, client_id, name):
             },
             True,
             None,
+        ),
+        # common tests with allowed_groups and manage_groups
+        (
+            "40",
+            {
+                "allowed_groups": {"group1"},
+                "manage_groups": True,
+            },
+            True,
+            None,
+        ),
+        (
+            "41",
+            {
+                "allowed_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
+            },
+            False,
+            None,
+        ),
+        (
+            "42",
+            {
+                "admin_groups": {"group1"},
+                "manage_groups": True,
+            },
+            True,
+            True,
+        ),
+        (
+            "43",
+            {
+                "admin_groups": {"test-user-not-in-group"},
+                "manage_groups": True,
+            },
+            False,
+            False,
         ),
     ],
 )
@@ -178,9 +221,11 @@ async def test_azuread(
         assert auth_model["name"] == user_info[authenticator.username_claim]
         if manage_groups:
             groups = auth_model['groups']
-            assert groups == user_info[authenticator.user_groups_claim]
+            assert (
+                groups == user_info[authenticator.auth_state_groups_key.rsplit(".")[-1]]
+            )
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 async def test_tenant_id_from_env():
@@ -188,3 +233,47 @@ async def test_tenant_id_from_env():
     with mock.patch.dict(os.environ, {"AAD_TENANT_ID": tenant_id}):
         aad = AzureAdOAuthenticator()
         assert aad.tenant_id == tenant_id
+
+
+@mark.parametrize(
+    "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
+    [
+        (
+            "user_groups_claim",
+            {"user_groups_claim": "groups", "manage_groups": True},
+            {"auth_state_groups_key": "user.groups"},
+            logging.WARNING,
+            "AzureAdOAuthenticator.user_groups_claim is deprecated in OAuthenticator 17. Use AzureAdOAuthenticator.auth_state_groups_key = 'user.groups'",
+        ),
+    ],
+)
+async def test_deprecated_config(
+    caplog,
+    test_variation_id,
+    class_config,
+    expect_config,
+    expect_loglevel,
+    expect_message,
+):
+    """
+    Tests that a warning is emitted when using a deprecated config and that
+    configuring the old config ends up configuring the new config.
+    """
+    print(f"Running test variation id {test_variation_id}")
+    c = Config()
+    c.AzureAdOAuthenticator = Config(class_config)
+
+    test_logger = logging.getLogger('testlog')
+    if expect_loglevel == logging.ERROR:
+        with raises(ValueError, match=expect_message):
+            AzureAdOAuthenticator(config=c, log=test_logger)
+    else:
+        authenticator = AzureAdOAuthenticator(config=c, log=test_logger)
+        for key, value in expect_config.items():
+            assert getattr(authenticator, key) == value
+
+    captured_log_tuples = caplog.record_tuples
+    print(captured_log_tuples)
+
+    expected_log_tuple = (test_logger.name, expect_loglevel, expect_message)
+    assert expected_log_tuple in captured_log_tuples

@@ -5,8 +5,10 @@ Founded based on work by Kyle Kelley (@rgbkrk)
 """
 
 import base64
+import hashlib
 import json
 import os
+import secrets
 import time
 import uuid
 from functools import reduce
@@ -92,6 +94,18 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
             STATE_COOKIE_NAME, state_cookie_value, expires_days=1, httponly=True
         )
 
+    def _generate_pkce_params(self):
+        # https://datatracker.ietf.org/doc/html/rfc7636#section-4
+        # It is recommended that the output of the random number generator creates
+        # a 32-octet sequence which is base64url-encoded to produce a 43-octet URL
+        # safe string to use as the code verifier.
+        code_verifier = secrets.token_urlsafe(32)
+        code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+        code_challenge_base64 = (
+            base64.urlsafe_b64encode(code_challenge).decode("utf-8").rstrip("=")
+        )
+        return code_verifier, code_challenge_base64
+
     def _generate_state_id(self):
         return uuid.uuid4().hex
 
@@ -116,7 +130,15 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
         state_id = self._generate_state_id()
         next_url = self._get_next_url()
 
-        cookie_state = _serialize_state({"state_id": state_id, "next_url": next_url})
+        state = {"state_id": state_id, "next_url": next_url}
+
+        if self.authenticator.enable_pkce:
+            code_verifier, code_challenge = self._generate_pkce_params()
+            state["code_verifier"] = code_verifier
+            token_params["code_challenge"] = code_challenge
+            token_params["code_challenge_method"] = "S256"
+
+        cookie_state = _serialize_state(state)
         self.set_state_cookie(cookie_state)
 
         authorize_state = _serialize_state({"state_id": state_id})
@@ -664,6 +686,34 @@ class OAuthenticator(Authenticator):
         """,
     )
 
+    enable_pkce = Bool(
+        True,
+        config=True,
+        help="""
+            Enable Proof Key for Code Exchange (PKCE) for the OAuth2 authorization code flow.
+            For more information, see `RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636>`_.
+
+            PKCE can be used even if the authorization server does not support it. According to
+            `section 3.1 of RFC 6749 <https://www.rfc-editor.org/rfc/rfc6749#section-3.1>`_:
+
+                The authorization server MUST ignore unrecognized request parameters.
+
+            Additionally, `section 5 of RFC 7636 <https://datatracker.ietf.org/doc/html/rfc7636#section-5>`_ states:
+
+                As the OAuth 2.0 [RFC6749] server responses are unchanged by this
+                specification, client implementations of this specification do not
+                need to know if the server has implemented this specification or not
+                and SHOULD send the additional parameters as defined in Section 4 to
+                all servers.
+
+            Note that S256 is the only code challenge method supported. As per `section 4.2 of RFC 6749 
+            <https://www.rfc-editor.org/rfc/rfc6749#section-3.1>`_:
+
+                If the client is capable of using "S256", it MUST use "S256", as
+                "S256" is Mandatory To Implement (MTI) on the server.
+            """,
+    )
+
     client_id_env = ""
     client_id = Unicode(
         config=True,
@@ -991,6 +1041,18 @@ class OAuthenticator(Authenticator):
             "data": data,
         }
 
+        if self.enable_pkce:
+            # https://datatracker.ietf.org/doc/html/rfc7636#section-4.5
+            cookie_state = handler.get_state_cookie()
+            if not cookie_state:
+                raise web.HTTPError(400, "OAuth state missing from cookies")
+
+            code_verifier = _deserialize_state(cookie_state).get("code_verifier")
+            if not code_verifier:
+                raise web.HTTPError(400, "Missing code_verifier")
+
+            params.update([("code_verifier", code_verifier)])
+
         # the client_id and client_secret should not be included in the access token request params
         # when basic authentication is used
         # ref: https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1
@@ -1139,7 +1201,7 @@ class OAuthenticator(Authenticator):
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
 
         .. versionchanged:: 17.0
-            This method be async.
+            This method may be async.
         """
 
         # We know for sure the `access_token` key exists, otherwise we would have errored out already
@@ -1172,6 +1234,8 @@ class OAuthenticator(Authenticator):
         """
         Returns a set of groups the user belongs to based on auth_state_groups_key
         and provided auth_state.
+
+        Only called when :attr:`manage_groups` is True.
 
         - If auth_state_groups_key is a callable, it returns the list of groups directly.
           Callable may be async.
@@ -1208,10 +1272,22 @@ class OAuthenticator(Authenticator):
             - `name`: the normalized username
             - `admin`: the admin status (True/False/None), where None means it
                 should be unchanged.
-            - `auth_state`: the dictionary of of auth state
-                returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
+            - `auth_state`: the auth state dictionary,
+              returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        """
+        # NOTE: this base implementation should _not_ be updated to do anything
+        # subclasses should have full control without calling super()
+        return auth_model
+
+    async def _apply_managed_groups(self, auth_model):
+        """Applies managed_groups logic
+
+        Called after `update_auth_model` to populate the `groups` field.
+        Only called if `manage_groups` is True.
+
+        The public method for subclasses to override is `.get_user_groups`.
         """
         if self.manage_groups:
             auth_state = auth_model["auth_state"]
@@ -1318,7 +1394,10 @@ class OAuthenticator(Authenticator):
 
         # update the auth_model with info to later authorize the user in
         # check_allowed, such as admin status and group memberships
-        return await self.update_auth_model(auth_model)
+        auth_model = await self.update_auth_model(auth_model)
+        if self.manage_groups:
+            auth_model = await self._apply_managed_groups(auth_model)
+        return auth_model
 
     async def check_allowed(self, username, auth_model):
         """
@@ -1363,12 +1442,8 @@ class OAuthenticator(Authenticator):
             return True
 
         # allow users who are members of allowed_groups
-        if self.manage_groups and self.allowed_groups:
-            auth_state = auth_model["auth_state"]
-            user_groups = self.get_user_groups(auth_state)
-            if isawaitable(user_groups):
-                user_groups = await user_groups
-            if any(user_groups & self.allowed_groups):
+        if self.manage_groups and self.allowed_groups and auth_model.get("groups"):
+            if set(auth_model["groups"]) & self.allowed_groups:
                 return True
 
         # users should be explicitly allowed via config, otherwise they aren't

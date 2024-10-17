@@ -6,6 +6,84 @@ command line for details.
 
 ## [Unreleased]
 
+## 17.1
+
+### [17.1.0] - 2024-10-11
+
+#### New features added
+
+- [All] Add `enable_pkce` config, True by default [#765](https://github.com/jupyterhub/oauthenticator/pull/765) ([@renan-r-santos](https://github.com/renan-r-santos), [@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+- [Google] Add `include_nested_groups` config [#763](https://github.com/jupyterhub/oauthenticator/pull/763) ([@jrdnbradford](https://github.com/jrdnbradford), [@consideRatio](https://github.com/consideRatio))
+
+#### Maintenance and upkeep improvements
+
+- [Google] Handle pagination in group API calls [#768](https://github.com/jupyterhub/oauthenticator/pull/768) ([@jrdnbradford](https://github.com/jrdnbradford), [@minrk](https://github.com/minrk))
+- [Google] Make looking up google groups far less blocking [#764](https://github.com/jupyterhub/oauthenticator/pull/764) ([@jrdnbradford](https://github.com/jrdnbradford), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+
+#### Documentation improvements
+
+- [Google] google groups config docs: properties are dictionaries [#766](https://github.com/jupyterhub/oauthenticator/pull/766) ([@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-09-04&to=2024-10-11&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-09-04..2024-10-11&type=Issues)) | @jrdnbradford ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajrdnbradford+updated%3A2024-09-04..2024-10-11&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-09-04..2024-10-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-09-04..2024-10-11&type=Issues)) | @renan-r-santos ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Arenan-r-santos+updated%3A2024-09-04..2024-10-11&type=Issues))
+
+## 17.0
+
+### [17.0.0] - 2024-09-04
+
+This release includes minor _breaking changes_, _deprecations_, and the
+following new config options available in all authenticator classes:
+
+- {attr}`.OAuthenticator.allowed_groups`
+- {attr}`.OAuthenticator.admin_groups`
+- {attr}`.OAuthenticator.modify_auth_state_hook`
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/16.3.1...17.0.0))
+
+#### Breaking Changes
+
+- [Generic, OpenShift] {attr}`.OAuthenticator.allowed_groups` and
+  {attr}`.OAuthenticator.admin_groups` now require
+  {attr}`.OAuthenticator.manage_groups` to be set to True, and will otherwise
+  raise an error.
+
+#### Deprecations
+
+- [AzureAd] {attr}`.AzureAdOAuthenticator.user_groups_claim` is deprecated in favor of {attr}`.OAuthenticator.auth_state_groups_key`
+- [Generic] {attr}`.GenericOAuthenticator.claim_groups_key` is deprecated in favor of {attr}`.OAuthenticator.auth_state_groups_key`
+
+#### New features added
+
+- [All] Move group management from generic to base oauthenticator (`allowed_groups`, `admin_groups`, `auth_state_groups_key`) [#735](https://github.com/jupyterhub/oauthenticator/pull/735) ([@yuvipanda](https://github.com/yuvipanda), [@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk), [@benjimin](https://github.com/benjimin))
+- [All] add OAuthenticator.modify_auth_state_hook, allow get_user_groups / auth_state_groups_key to be async [#751](https://github.com/jupyterhub/oauthenticator/pull/751) ([@minrk](https://github.com/minrk), [@yuvipanda](https://github.com/yuvipanda))
+- [Google] Add switch to strip domain from username [#748](https://github.com/jupyterhub/oauthenticator/pull/748) ([@0mar](https://github.com/0mar), [@GeorgianaElena](https://github.com/GeorgianaElena), [@manics](https://github.com/manics))
+
+#### Maintenance and upkeep improvements
+
+- Various fixes for allowed_groups and admin_groups [#758](https://github.com/jupyterhub/oauthenticator/pull/758) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Update references from unreleased v16.4 to upcoming v17.0 [#755](https://github.com/jupyterhub/oauthenticator/pull/755) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- update docstrings on relationship between `allowed_groups` and `allow_[provider_group_equivalents]` [#757](https://github.com/jupyterhub/oauthenticator/pull/757) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+- Make headings etc in changelog consistent [#754](https://github.com/jupyterhub/oauthenticator/pull/754) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Add changelog for v16.3.1 [#744](https://github.com/jupyterhub/oauthenticator/pull/744) ([@yuvipanda](https://github.com/yuvipanda), [@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-06-11&to=2024-09-04&type=c))
+
+@0mar ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3A0mar+updated%3A2024-06-11..2024-09-04&type=Issues)) | @benjimin ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abenjimin+updated%3A2024-06-11..2024-09-04&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-06-11..2024-09-04&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2024-06-11..2024-09-04&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-06-11..2024-09-04&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-06-11..2024-09-04&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-06-11..2024-09-04&type=Issues))
+
 ## 16.3
 
 ### [16.3.1] - 2024-06-11
@@ -906,7 +984,9 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/16.3.1...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.1.0...HEAD
+[17.1.0]: https://github.com/jupyterhub/oauthenticator/compare/17.0.0...17.1.0
+[17.0.0]: https://github.com/jupyterhub/oauthenticator/compare/16.3.1...17.0.0
 [16.3.1]: https://github.com/jupyterhub/oauthenticator/compare/16.3.0...16.3.1
 [16.3.0]: https://github.com/jupyterhub/oauthenticator/compare/16.2.1...16.3.0
 [16.2.1]: https://github.com/jupyterhub/oauthenticator/compare/16.2.0...16.2.1
