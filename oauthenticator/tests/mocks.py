@@ -107,6 +107,7 @@ def setup_oauth_mock(
     user_path=None,
     token_type='Bearer',
     token_request_style='post',
+    enable_refresh_tokens=False,
     scope="",
 ):
     """setup the mock client for OAuth
@@ -134,6 +135,8 @@ def setup_oauth_mock(
 
     client.oauth_codes = oauth_codes = {}
     client.access_tokens = access_tokens = {}
+    client.refresh_tokens = refresh_tokens = {}
+    client.enable_refresh_tokens = enable_refresh_tokens
 
     def access_token(request):
         """Handler for access token endpoint
@@ -146,26 +149,53 @@ def setup_oauth_mock(
         if not query:
             query = request.body.decode('utf8')
         query = parse_qs(query)
-        if 'code' not in query:
+        grant_type = query.get("grant_type", [""])[0]
+        if grant_type == 'authorization_code':
+            if 'code' not in query:
+                return HTTPResponse(
+                    request=request,
+                    code=400,
+                    reason=f"No code in access token request: url={request.url}, body={request.body}",
+                )
+            code = query['code'][0]
+            if code not in oauth_codes:
+                return HTTPResponse(
+                    request=request, code=403, reason=f"No such code: {code}"
+                )
+            user = oauth_codes.pop(code)
+        elif grant_type == 'refresh_token':
+            if 'refresh_token' not in query:
+                return HTTPResponse(
+                    request=request,
+                    code=400,
+                    reason=f"No refresh_token in access token request: url={request.url}, body={request.body}",
+                )
+            refresh_token = query['refresh_token'][0]
+            if refresh_token not in refresh_token:
+                return HTTPResponse(
+                    request=request,
+                    code=403,
+                    reason=f"No such refresh_toekn: {refresh_token}",
+                )
+            user = refresh_tokens[refresh_token]
+        else:
             return HTTPResponse(
                 request=request,
                 code=400,
-                reason=f"No code in access token request: url={request.url}, body={request.body}",
-            )
-        code = query['code'][0]
-        if code not in oauth_codes:
-            return HTTPResponse(
-                request=request, code=403, reason=f"No such code: {code}"
+                reason=f"Invalid grant_type={grant_type}: url={request.url}, body={request.body}",
             )
 
         # consume code, allocate token
-        token = uuid.uuid4().hex
-        user = oauth_codes.pop(code)
-        access_tokens[token] = user
+        access_token = uuid.uuid4().hex
+        access_tokens[access_token] = user
         model = {
-            'access_token': token,
+            'access_token': access_token,
             'token_type': token_type,
         }
+        if client.enable_refresh_tokens:
+            refresh_token = uuid.uuid4().hex
+            refresh_tokens[refresh_token] = user
+            model['refresh_token'] = refresh_token
         if scope:
             model['scope'] = scope
         if 'id_token' in user:

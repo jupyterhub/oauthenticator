@@ -1042,12 +1042,34 @@ class OAuthenticator(Authenticator):
 
         return params
 
+    def build_refresh_token_request_params(self, refresh_token):
+        """
+        Builds the parameters that should be passed to the URL request
+        to renew the Access Token based on the Refresh Token
+
+        Called by the :meth:`oauthenticator.OAuthenticator.refresh_user`.
+        """
+        params = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        }
+
+        # the client_id and client_secret should not be included in the access token request params
+        # when basic authentication is used
+        # ref: https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1
+        if not self.basic_auth:
+            params["client_id"] = self.client_id
+            params["client_secret"] = self.client_secret
+
+        return params
+
     async def get_token_info(self, handler, params):
         """
         Makes a "POST" request to `self.token_url`, with the parameters received as argument.
 
         Returns:
-            the JSON response to the `token_url` the request.
+            the JSON response to the `token_url` the request as described in
+            https://www.rfc-editor.org/rfc/rfc6749#section-5.1
 
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
@@ -1134,7 +1156,7 @@ class OAuthenticator(Authenticator):
 
     def build_auth_state_dict(self, token_info, user_info):
         """
-        Builds the `auth_state` dict that will be returned by a succesfull `authenticate` method call.
+        Builds the `auth_state` dict that will be returned by a successful `authenticate` method call.
         May be async (requires oauthenticator >= 17.0).
 
         Args:
@@ -1156,7 +1178,7 @@ class OAuthenticator(Authenticator):
             This method may be async.
         """
 
-        # We know for sure the `access_token` key exists, oterwise we would have errored out already
+        # We know for sure the `access_token` key exists, otherwise we would have errored out already
         access_token = token_info["access_token"]
 
         refresh_token = token_info.get("refresh_token", None)
@@ -1276,23 +1298,75 @@ class OAuthenticator(Authenticator):
         """
         # build the parameters to be used in the request exchanging the oauth code for the access token
         access_token_params = self.build_access_tokens_request_params(handler, data)
-        # exchange the oauth code for an access token and get the JSON with info about it
         token_info = await self.get_token_info(handler, access_token_params)
+        # call the oauth endpoints
+        return await self._token_to_auth_model(token_info)
+
+    async def refresh_user(self, user, handler=None, **kwargs):
+        """
+        Renew the Access Token with a valid Refresh Token
+        """
+        if not self.enable_auth_state:
+            # auth state not enabled, can't refresh
+            return True
+        auth_state = await user.get_auth_state()
+        if not auth_state:
+            self.log.info(
+                f"No auth_state found for user {user.name} refresh, need full authentication",
+            )
+            return False
+
+        token_info = auth_state.get("token_response")
+        auth_model = None
+        try:
+            auth_model = await self._token_to_auth_model(token_info)
+        except Exception as e:
+            # usually this means the access token has expired
+            # handle more specific errors?
+            self.log.info(
+                f"Error refreshing auth with current access_token for {user.name}: {e}. Will try to refresh, if possible."
+            )
+        refresh_token = auth_state.get("refresh_token", None)
+        if refresh_token and not auth_model:
+            self.log.info(f"Refreshing oauth access token for {user.name}")
+            # access_token expired, try refreshing with refresh_token
+            refresh_token_params = self.build_refresh_token_request_params(
+                refresh_token
+            )
+            try:
+                token_info = await self.get_token_info(handler, refresh_token_params)
+            except Exception as e:
+                self.log.info(
+                    f"Error using refresh_token for {user.name}: {e}. Requiring fresh login."
+                )
+                return False
+            # refresh_token may not be returned when refreshing a token
+            # in which case, keep the current one
+            if not token_info.get("refresh_token"):
+                token_info["refresh_token"] = refresh_token
+            try:
+                auth_model = await self._token_to_auth_model(token_info)
+            except Exception as e:
+                # this means we were issued a fresh access token,
+                # but it didn't work! Fail harder?
+                self.log.error(
+                    f"Error refreshing auth with fresh access_token for {user.name}: {e}. Requiring fresh login."
+                )
+                return False
+
+        # return False if auth_model is None for "needs new login"
+        return auth_model or False
+
+    async def _token_to_auth_model(self, token_info):
+        """
+        Common logic shared by authenticate() and refresh_user()
+        """
+
         # use the access_token to get userdata info
         user_info = await self.token_to_user(token_info)
         # extract the username out of the user_info dict and normalize it
         username = self.user_info_to_username(user_info)
         username = self.normalize_username(username)
-
-        # check if there any refresh_token in the token_info dict
-        refresh_token = token_info.get("refresh_token", None)
-        if self.enable_auth_state and not refresh_token:
-            self.log.debug(
-                "Refresh token was empty, will try to pull refresh_token from previous auth_state"
-            )
-            refresh_token = await self.get_prev_refresh_token(handler, username)
-            if refresh_token:
-                token_info["refresh_token"] = refresh_token
 
         auth_state = self.build_auth_state_dict(token_info, user_info)
         if isawaitable(auth_state):
