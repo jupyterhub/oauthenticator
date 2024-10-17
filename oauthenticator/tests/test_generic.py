@@ -505,6 +505,74 @@ async def test_check_allowed_no_auth_state(get_authenticator, name, allowed):
     assert await authenticator.check_allowed(name, None)
 
 
+class MockUser:
+    """Mock subset of JupyterHub User API from the `auth_model` dict"""
+
+    name: str
+
+    def __init__(self, auth_model):
+        self._auth_model = auth_model
+        self.name = auth_model["name"]
+
+    async def get_auth_state(self):
+        return self._auth_model["auth_state"]
+
+
+@mark.parametrize("enable_refresh_tokens", [True, False])
+async def test_refresh_user(get_authenticator, generic_client, enable_refresh_tokens):
+    generic_client.enable_refresh_tokens = enable_refresh_tokens
+    authenticator = get_authenticator(allowed_users={"user1"})
+    handled_user_model = user_model("user1", permissions={"groups": ["super_user"]})
+    handler = generic_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    auth_state = auth_model["auth_state"]
+    if enable_refresh_tokens:
+        assert "refresh_token" in auth_state
+        assert "refresh_token" in auth_state["token_response"]
+        assert (
+            auth_state["refresh_token"] == auth_state["token_response"]["refresh_token"]
+        )
+    else:
+        assert "refresh_token" not in auth_state["token_response"]
+        assert auth_state.get("refresh_token") is None
+    user = MockUser(auth_model)
+    # case: auth_state not enabled, nothing to refresh
+    refreshed = await authenticator.refresh_user(user, handler)
+    assert refreshed is True
+
+    # from here on, enable auth state required for refresh to do anything
+    authenticator.enable_auth_state = True
+
+    # case: no auth state, but auth state enabled needs refresh
+    auth_without_state = auth_model.copy()
+    auth_without_state["auth_state"] = None
+    user_without_state = MockUser(auth_without_state)
+    refreshed = await authenticator.refresh_user(user_without_state, handler)
+    assert refreshed is False
+
+    # case: actually refresh
+    refreshed = await authenticator.refresh_user(user, handler)
+    assert isinstance(refreshed, dict)
+    assert refreshed["name"] == auth_model["name"]
+    refreshed_state = refreshed["auth_state"]
+    assert "access_token" in refreshed_state
+    if enable_refresh_tokens:
+        # refresh_token refreshed the access token
+        assert refreshed_state["access_token"] != auth_state["access_token"]
+        assert refreshed_state["refresh_token"]
+    else:
+        # refresh with access token succeeds, keeps access token unchanged
+        assert refreshed_state["access_token"] == auth_state["access_token"]
+
+    # case: token used for refresh is no longer valid
+    user = MockUser(refreshed)
+    generic_client.access_tokens.pop(refreshed_state["access_token"])
+    if enable_refresh_tokens:
+        generic_client.refresh_tokens.pop(refreshed_state["refresh_token"])
+    refreshed = await authenticator.refresh_user(user, handler)
+    assert refreshed is False
+
+
 @mark.parametrize(
     "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
     [
