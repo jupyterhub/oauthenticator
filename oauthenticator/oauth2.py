@@ -1327,8 +1327,21 @@ class OAuthenticator(Authenticator):
                 f"No auth_state found for user {user.name} refresh, need full authentication",
             )
             return False
+
+        token_info = auth_state.get("token_response")
+        auth_model = None
+        try:
+            auth_model = await self._token_to_auth_model(token_info)
+        except Exception as e:
+            # usually this means the access token has expired
+            # handle more specific errors?
+            self.log.info(
+                f"Error refreshing auth with current access_token for {user.name}: {e}. Will try to refresh, if possible."
+            )
         refresh_token = auth_state.get("refresh_token", None)
-        if refresh_token:
+        if refresh_token and not auth_model:
+            self.log.info(f"Refreshing oauth access token for {user.name}")
+            # access_token expired, try refreshing with refresh_token
             refresh_token_params = self.build_refresh_token_request_params(
                 refresh_token
             )
@@ -1336,30 +1349,25 @@ class OAuthenticator(Authenticator):
                 token_info = await self.get_token_info(handler, refresh_token_params)
             except Exception as e:
                 self.log.info(
-                    f"Error using refresh_token for {user.name}: {e}. Treating auth info as expired."
+                    f"Error using refresh_token for {user.name}: {e}. Requiring fresh login."
                 )
                 return False
             # refresh_token may not be returned when refreshing a token
+            # in which case, keep the current one
             if not token_info.get("refresh_token"):
                 token_info["refresh_token"] = refresh_token
-        else:
-            # no refresh token, check access token validity
-            self.log.debug(
-                f"No refresh token for user {user.name}, checking access_token validity"
-            )
-            token_info = auth_state.get("token_response")
-        try:
-            auth_model = await self._token_to_auth_model(token_info)
-        except Exception as e:
-            # handle more specific errors?
-            # e.g. expired token!
-            self.log.info(
-                f"Error refreshing auth with access_token for {user.name}: {e}. Treating auth info as expired."
-            )
-            return False
-        else:
-            # return False if auth_model is None for no-longer-authorized
-            return auth_model or False
+            try:
+                auth_model = await self._token_to_auth_model(token_info)
+            except Exception as e:
+                # this means we were issued a fresh access token,
+                # but it didn't work! Fail harder?
+                self.log.error(
+                    f"Error refreshing auth with fresh access_token for {user.name}: {e}. Requiring fresh login."
+                )
+                return False
+
+        # return False if auth_model is None for "needs new login"
+        return auth_model or False
 
     async def _token_to_auth_model(self, token_info):
         """

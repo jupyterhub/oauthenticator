@@ -15,14 +15,15 @@ client_id = "jupyterhub-oauth-client"
 
 def user_model(username, **kwargs):
     """Return a user model"""
-    return {
+    model = {
         "username": username,
         "aud": client_id,
         "sub": "oauth2|cilogon|http://cilogon.org/servera/users/43431",
         "scope": "basic",
         "groups": ["group1"],
-        **kwargs,
     }
+    model.update(kwargs)
+    return model
 
 
 @fixture(params=["id_token", "userdata_url"])
@@ -522,10 +523,13 @@ class MockUser:
 async def test_refresh_user(get_authenticator, generic_client, enable_refresh_tokens):
     generic_client.enable_refresh_tokens = enable_refresh_tokens
     authenticator = get_authenticator(allowed_users={"user1"})
-    handled_user_model = user_model("user1", permissions={"groups": ["super_user"]})
-    handler = generic_client.handler_for_user(handled_user_model)
+    authenticator.manage_groups = True
+    authenticator.auth_state_groups_key = "oauth_user.groups"
+    oauth_userinfo = user_model("user1", groups=["round1"])
+    handler = generic_client.handler_for_user(oauth_userinfo)
     auth_model = await authenticator.get_authenticated_user(handler, None)
     auth_state = auth_model["auth_state"]
+    assert auth_model["groups"] == ["round1"]
     if enable_refresh_tokens:
         assert "refresh_token" in auth_state
         assert "refresh_token" in auth_state["token_response"]
@@ -551,26 +555,39 @@ async def test_refresh_user(get_authenticator, generic_client, enable_refresh_to
     assert refreshed is False
 
     # case: actually refresh
+    oauth_userinfo["groups"] = ["refreshed"]
     refreshed = await authenticator.refresh_user(user, handler)
-    assert isinstance(refreshed, dict)
+    assert refreshed
     assert refreshed["name"] == auth_model["name"]
+    assert refreshed["groups"] == ["refreshed"]
     refreshed_state = refreshed["auth_state"]
     assert "access_token" in refreshed_state
-    if enable_refresh_tokens:
-        # refresh_token refreshed the access token
-        assert refreshed_state["access_token"] != auth_state["access_token"]
-        assert refreshed_state["refresh_token"]
-    else:
-        # refresh with access token succeeds, keeps access token unchanged
-        assert refreshed_state["access_token"] == auth_state["access_token"]
+    # refresh with access token succeeds, keeps tokens unchanged
+    assert refreshed_state.get("refresh_token") == auth_state.get("refresh_token")
+    assert refreshed_state["access_token"] == auth_state["access_token"]
 
-    # case: token used for refresh is no longer valid
-    user = MockUser(refreshed)
+    # case: access token is no longer valid, triggers refresh
+    oauth_userinfo["groups"] = ["token_refreshed"]
     generic_client.access_tokens.pop(refreshed_state["access_token"])
-    if enable_refresh_tokens:
-        generic_client.refresh_tokens.pop(refreshed_state["refresh_token"])
     refreshed = await authenticator.refresh_user(user, handler)
-    assert refreshed is False
+    if enable_refresh_tokens:
+        # access_token refreshed
+        assert refreshed
+        refreshed_state = refreshed["auth_state"]
+        assert (
+            refreshed_state["access_token"] != auth_model["auth_state"]["access_token"]
+        )
+        assert refreshed["groups"] == ["token_refreshed"]
+    else:
+        assert refreshed is False
+
+    if enable_refresh_tokens:
+        # case: token used for refresh is no longer valid
+        user = MockUser(refreshed)
+        generic_client.access_tokens.pop(refreshed_state["access_token"])
+        generic_client.refresh_tokens.pop(refreshed_state["refresh_token"])
+        refreshed = await authenticator.refresh_user(user, handler)
+        assert refreshed is False
 
 
 @mark.parametrize(
