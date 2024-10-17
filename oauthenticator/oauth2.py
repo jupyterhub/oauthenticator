@@ -16,7 +16,6 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
 from jupyterhub.auth import Authenticator
-from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from jupyterhub.handlers import BaseHandler, LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
@@ -705,7 +704,7 @@ class OAuthenticator(Authenticator):
                 and SHOULD send the additional parameters as defined in Section 4 to
                 all servers.
 
-            Note that S256 is the only code challenge method supported. As per `section 4.2 of RFC 6749 
+            Note that S256 is the only code challenge method supported. As per `section 4.2 of RFC 6749
             <https://www.rfc-editor.org/rfc/rfc6749#section-3.1>`_:
 
                 If the client is capable of using "S256", it MUST use "S256", as
@@ -995,23 +994,12 @@ class OAuthenticator(Authenticator):
         Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
         """
         user = handler.find_user(username)
-        if not user or not user.encrypted_auth_state:
-            return
-
-        self.log.debug(
-            "Encrypted_auth_state was found, will try to decrypt and pull refresh_token from it..."
-        )
-
-        try:
-            encrypted = user.encrypted_auth_state
-            auth_state = await decrypt(encrypted)
-
-            return auth_state.get("refresh_token")
-        except (ValueError, InvalidToken, EncryptionUnavailable) as e:
-            self.log.warning(
-                f"Failed to retrieve encrypted auth_state for {username}. Error was {e}.",
-            )
-            return
+        if not user:
+            return None
+        auth_state = await user.get_auth_state()
+        if not auth_state:
+            return None
+        return auth_state.get("refresh_token", None)
 
     def build_access_tokens_request_params(self, handler, data=None):
         """
