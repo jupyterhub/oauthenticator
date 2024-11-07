@@ -1320,6 +1320,7 @@ class OAuthenticator(Authenticator):
         """
         if not self.enable_auth_state:
             # auth state not enabled, can't refresh
+            self.log.debug("auth_state disabled, no auth state to refresh")
             return True
         auth_state = await user.get_auth_state()
         if not auth_state:
@@ -1332,12 +1333,15 @@ class OAuthenticator(Authenticator):
         auth_model = None
         try:
             auth_model = await self._token_to_auth_model(token_info)
-        except Exception as e:
-            # usually this means the access token has expired
-            # handle more specific errors?
-            self.log.info(
-                f"Error refreshing auth with current access_token for {user.name}: {e}. Will try to refresh, if possible."
-            )
+        except HTTPClientError as e:
+            # assume any client error means an expired token
+            # most likely 401 or 403 for well-behaved providers
+            if 400 <= e.code < 500:
+                self.log.info(
+                    f"Error refreshing auth with current access_token for {user.name}: {e}. Will try to refresh, if possible."
+                )
+            else:
+                raise
         refresh_token = auth_state.get("refresh_token", None)
         if refresh_token and not auth_model:
             self.log.info(f"Refreshing oauth access token for {user.name}")
@@ -1352,6 +1356,10 @@ class OAuthenticator(Authenticator):
                     f"Error using refresh_token for {user.name}: {e}. Requiring fresh login."
                 )
                 return False
+            else:
+                self.log.debug(
+                    f"Received fresh access_token for {user.name} via refresh_token"
+                )
             # refresh_token may not be returned when refreshing a token
             # in which case, keep the current one
             if not token_info.get("refresh_token"):
