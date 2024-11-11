@@ -704,7 +704,7 @@ class OAuthenticator(Authenticator):
                 and SHOULD send the additional parameters as defined in Section 4 to
                 all servers.
 
-            Note that S256 is the only code challenge method supported. As per `section 4.2 of RFC 6749 
+            Note that S256 is the only code challenge method supported. As per `section 4.2 of RFC 6749
             <https://www.rfc-editor.org/rfc/rfc6749#section-3.1>`_:
 
                 If the client is capable of using "S256", it MUST use "S256", as
