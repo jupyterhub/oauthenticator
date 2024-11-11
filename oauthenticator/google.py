@@ -344,14 +344,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         Checks if the stored token is valid.
         """
-        if not self._service_credentials[user_email_domain]:
-            return False
-        if not self._service_credentials[user_email_domain].token:
-            return False
-        if self._service_credentials[user_email_domain].expired:
-            return False
-
-        return True
+        return self._service_credentials[user_email_domain].valid
 
     def _service_client_credentials(self, scopes, user_email_domain):
         """
