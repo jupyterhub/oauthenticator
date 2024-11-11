@@ -1290,11 +1290,37 @@ class OAuthenticator(Authenticator):
 
     async def refresh_user(self, user, handler=None, **kwargs):
         """
-        Renew the Access Token with a valid Refresh Token
+        Refresh user authentication
+
+        If auth_state is enabled, constructs a fresh user model
+        (the same as `authenticate`)
+        using the access_token in auth_state.
+        If requests with the access token fail
+        (e.g. because the token has expired)
+        and a refresh token is found, attempts to exchange
+        the refresh token for a new access token to store in auth_state.
+        If the access token still fails after refresh,
+        return False to require the user to login via oauth again.
+
+        Set `Authenticator.auth_refresh_age = 0` to disable.
+
+        Returns
+        -------
+
+        True:
+          If auth info is up-to-date and needs no changes
+          (always if `enable_auth_state` is False)
+        False:
+          If the user needs to login again
+          (e.g. tokens in `auth_state` unavailable or expired)
+        auth_model: dict
+          The same dict as `authenticate`, updating any fields that should change.
+          Can include things like group membership,
+          but in OAuthenticator this mainly refreshes
+          the token fields in `auth_state`.
         """
         if not self.enable_auth_state:
             # auth state not enabled, can't refresh
-            self.log.debug("auth_state disabled, no auth state to refresh")
             return True
         auth_state = await user.get_auth_state()
         if not auth_state:
