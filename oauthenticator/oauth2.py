@@ -16,7 +16,6 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import jwt
 from jupyterhub.auth import Authenticator
-from jupyterhub.crypto import EncryptionUnavailable, InvalidToken, decrypt
 from jupyterhub.handlers import BaseHandler, LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
@@ -987,31 +986,6 @@ class OAuthenticator(Authenticator):
             raise ValueError(message)
 
         return username
-
-    # Originally a GoogleOAuthenticator only feature
-    async def get_prev_refresh_token(self, handler, username):
-        """
-        Retrieves the `refresh_token` from previous encrypted auth state.
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
-        """
-        user = handler.find_user(username)
-        if not user or not user.encrypted_auth_state:
-            return
-
-        self.log.debug(
-            "Encrypted_auth_state was found, will try to decrypt and pull refresh_token from it..."
-        )
-
-        try:
-            encrypted = user.encrypted_auth_state
-            auth_state = await decrypt(encrypted)
-
-            return auth_state.get("refresh_token")
-        except (ValueError, InvalidToken, EncryptionUnavailable) as e:
-            self.log.warning(
-                f"Failed to retrieve encrypted auth_state for {username}. Error was {e}.",
-            )
-            return
 
     def build_access_tokens_request_params(self, handler, data=None):
         """
