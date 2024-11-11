@@ -270,7 +270,7 @@ class OAuthenticator(Authenticator):
     - Override the constant `user_auth_state_key`
     - Override various config's default values, such as
       `authorize_url`, `token_url`, `userdata_url`, and `login_service`.
-    - Override various methods called by the `authenticate` method, which
+    - Override various methods called by :meth:`authenticate`, which
       subclasses should not override.
     - Override handler classes such as `login_handler`, `callback_handler`, and
       `logout_handler`.
@@ -919,7 +919,8 @@ class OAuthenticator(Authenticator):
     def build_userdata_request_headers(self, access_token, token_type):
         """
         Builds and returns the headers to be used in the userdata request.
-        Called by the :meth:`oauthenticator.OAuthenticator.token_to_user`
+
+        Called by :meth:`.token_to_user`.
         """
 
         # token_type is case-insensitive, but the headers are case-sensitive
@@ -937,7 +938,8 @@ class OAuthenticator(Authenticator):
     def build_token_info_request_headers(self):
         """
         Builds and returns the headers to be used in the access token request.
-        Called by the :meth:`oauthenticator.OAuthenticator.get_token_info`.
+
+        Called by :meth:`.get_token_info`.
 
         The Content-Type header is specified by the OAuth 2.0 RFC in
         https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3. utf-8 is also
@@ -971,7 +973,7 @@ class OAuthenticator(Authenticator):
         Returns:
             user_info["self.username_claim"] or raises an error if such value isn't found.
 
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        Called by :meth:`.authenticate` and :meth:`.refresh_user`.
         """
 
         if callable(self.username_claim):
@@ -991,7 +993,8 @@ class OAuthenticator(Authenticator):
         """
         Builds the parameters that should be passed to the URL request
         that exchanges the OAuth code for the Access Token.
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`.
+
+        Called by :meth:`.authenticate`.
         """
         code = handler.get_argument("code")
         if not code:
@@ -1033,7 +1036,7 @@ class OAuthenticator(Authenticator):
         Builds the parameters that should be passed to the URL request
         to renew the Access Token based on the Refresh Token
 
-        Called by the :meth:`oauthenticator.OAuthenticator.refresh_user`.
+        Called by :meth:`.refresh_user`.
         """
         params = {
             "grant_type": "refresh_token",
@@ -1057,7 +1060,7 @@ class OAuthenticator(Authenticator):
             the JSON response to the `token_url` the request as described in
             https://www.rfc-editor.org/rfc/rfc6749#section-5.1
 
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        Called by :meth:`.authenticate` and :meth:`.refresh_user`.
         """
 
         token_info = await self.httpfetch(
@@ -1081,9 +1084,9 @@ class OAuthenticator(Authenticator):
     async def token_to_user(self, token_info):
         """
         Determines who the logged-in user by sending a "GET" request to
-        :data:`oauthenticator.OAuthenticator.userdata_url` using the `access_token`.
+        :attr:`.userdata_url` using the `access_token`.
 
-        If :data:`oauthenticator.OAuthenticator.userdata_from_id_token` is set then
+        If :attr:`.userdata_from_id_token` is set then
         extracts the corresponding info from an `id_token` instead.
 
         Args:
@@ -1092,7 +1095,7 @@ class OAuthenticator(Authenticator):
         Returns:
             the JSON response to the `userdata_url` request.
 
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        Called by :meth:`.authenticate` and :meth:`.refresh_user`.
         """
         if self.userdata_from_id_token:
             # Use id token instead of exchanging access token with userinfo endpoint.
@@ -1158,7 +1161,7 @@ class OAuthenticator(Authenticator):
                 - "token_response": the full token_info response
                 - self.user_auth_state_key: the full user_info response
 
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        Called by :meth:`.authenticate` and :meth:`.refresh_user`.
 
         .. versionchanged:: 17.0
             This method may be async.
@@ -1229,9 +1232,9 @@ class OAuthenticator(Authenticator):
             - `admin`: the admin status (True/False/None), where None means it
                 should be unchanged.
             - `auth_state`: the auth state dictionary,
-              returned by :meth:`oauthenticator.OAuthenticator.build_auth_state_dict`
+              returned by :meth:`.build_auth_state_dict`
 
-        Called by the :meth:`oauthenticator.OAuthenticator.authenticate`
+        Called by :meth:`.authenticate` and :meth:`.refresh_user`.
         """
         # NOTE: this base implementation should _not_ be updated to do anything
         # subclasses should have full control without calling super()
@@ -1379,7 +1382,9 @@ class OAuthenticator(Authenticator):
 
     async def _token_to_auth_model(self, token_info):
         """
-        Common logic shared by authenticate() and refresh_user()
+        Turn a token into the user's `auth_model` to be returned by :meth:`.authenticate`.
+
+        Common logic shared by :meth:`.authenticate` and :meth:`.refresh_user`.
         """
 
         # use the access_token to get userdata info
