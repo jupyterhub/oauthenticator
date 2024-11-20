@@ -32,7 +32,7 @@ projects' authenticator classes.
 3. Configure JupyterHub to use one compatible authenticator class
 
    The authenticator class can be the general purpose `GenericOAuthenticator`
-   class, or a specialized authenticator class like `GitHubOAuthentator`.
+   class, or a specialized authenticator class like `GitHubOAuthenticator`.
 
    ```python
    # code for a jupyterhub_config.py file...
