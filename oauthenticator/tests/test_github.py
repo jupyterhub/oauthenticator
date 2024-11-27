@@ -141,7 +141,7 @@ async def test_github(
         assert user_info == handled_user_model
         assert auth_model["name"] == user_info[authenticator.username_claim]
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 def make_link_header(urlinfo, page):
