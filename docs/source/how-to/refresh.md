@@ -1,6 +1,6 @@
 # Refreshing user authentication
 
-JupyterHub has a mechanism called [`refresh_user`](inv:jupyterhub:py:method#jupyterhub.auth.Authenticator.refresh_user) that is meant to 'refresh' information from the Authentication provider periodically.
+JupyterHub has a mechanism called [`refresh_user`](inv:jupyterhub:py:method#jupyterhub.auth.Authenticator.refresh_user) that is meant to _refresh_ information from the Authentication provider periodically.
 This allows you to make sure things like group membership or other authorization info is up-to-date.
 In OAuth, this can also mean making sure the access token has not expired.
 This is particularly useful in deployments where an access token from the oauth provider is passed to the Server environment,
@@ -87,7 +87,7 @@ At this point:
 This means that you can access `/hub/api/user` with `$JUPYTERHUB_API_TOKEN` and it will **always return a valid access token**,
 even if the currently stored token has expired when the request is made.
 
-To retrieve the access token, make a request to `${JUPYTERHUB_API_URL}/hub/user` with `${JUPYTERHUB_API_TOKEN}, e.g. from Python:
+To retrieve the access token, make a request to `${JUPYTERHUB_API_URL}/hub/user` with `${JUPYTERHUB_API_TOKEN}`, e.g. from Python:
 
 ```python
 import os
