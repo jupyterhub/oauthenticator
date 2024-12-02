@@ -40,6 +40,14 @@ because it ensures the token is valid when the server starts.
 
 ## Refreshing tokens from user sessions
 
+```{warning}
+This example requires granting users read access to their own `auth_state`.
+If you plan to provide users with access tokens,
+`auth_state` does not typically include information your users won't have access to with the token itself,
+but it is worth making sure that your Authenticator configuration places anything in `auth_state`
+that you do not want users to be able to see.
+```
+
 If your user sessions use access tokens from your oauth provider and those tokens may expire during user sessions,
 you can rely on this mechanism to get fresh access tokens from JupyterHub.
 
