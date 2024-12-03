@@ -36,6 +36,7 @@ Things like how to write your own `oauthenticator` or how to migrate to a newer 
 
 how-to/custom-403
 how-to/writing-an-oauthenticator
+how-to/refresh
 how-to/migrations/upgrade-to-15
 ```
 
