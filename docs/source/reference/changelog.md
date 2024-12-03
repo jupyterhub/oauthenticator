@@ -6,6 +6,38 @@ command line for details.
 
 ## [Unreleased]
 
+## 17.2
+
+### [17.2.0] - 2024-12-03
+
+17.2.0 introduces support for refreshing user authentication info, including refresh tokens.
+See more about how refreshing auth works, including how to disable it, [in the docs](refresh).
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/17.1.0...17.2.0))
+
+#### New features added
+
+- Implement `OAuthenticator.refresh_user` [#579](https://github.com/jupyterhub/oauthenticator/pull/579) ([@Wykiki](https://github.com/Wykiki), [@minrk](https://github.com/minrk), [@GeorgianaElena](https://github.com/GeorgianaElena), [@johnpmayer](https://github.com/johnpmayer), [@manics](https://github.com/manics), [@yuvipanda](https://github.com/yuvipanda), [@epstein6](https://github.com/epstein6), [@YStrauchP4](https://github.com/YStrauchP4))
+
+#### Maintenance and upkeep improvements
+
+- [Google] Remove redundant service credential checks [#774](https://github.com/jupyterhub/oauthenticator/pull/774) ([@jrdnbradford](https://github.com/jrdnbradford), [@minrk](https://github.com/minrk))
+- Simplify retrieval of encrypted auth state [#772](https://github.com/jupyterhub/oauthenticator/pull/772) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
+
+#### Documentation improvements
+
+- Add how-to doc on refresh tokens [#778](https://github.com/jupyterhub/oauthenticator/pull/778) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
+- Fix typo in general-setup.md [#776](https://github.com/jupyterhub/oauthenticator/pull/776) ([@peter1357908](https://github.com/peter1357908), [@manics](https://github.com/manics))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-10-11&to=2024-12-03&type=c))
+
+@epstein6 ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aepstein6+updated%3A2024-10-11..2024-12-03&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2024-10-11..2024-12-03&type=Issues)) | @johnpmayer ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajohnpmayer+updated%3A2024-10-11..2024-12-03&type=Issues)) | @jrdnbradford ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajrdnbradford+updated%3A2024-10-11..2024-12-03&type=Issues)) | @kkaraivanov1 ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Akkaraivanov1+updated%3A2024-10-11..2024-12-03&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-10-11..2024-12-03&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-10-11..2024-12-03&type=Issues)) | @peter1357908 ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Apeter1357908+updated%3A2024-10-11..2024-12-03&type=Issues)) | @Wykiki ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AWykiki+updated%3A2024-10-11..2024-12-03&type=Issues)) | @YStrauchP4 ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AYStrauchP4+updated%3A2024-10-11..2024-12-03&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-10-11..2024-12-03&type=Issues))
+
 ## 17.1
 
 ### [17.1.0] - 2024-10-11
@@ -984,7 +1016,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.1.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.2.0...HEAD
+[17.2.0]: https://github.com/jupyterhub/oauthenticator/compare/17.1.0...17.2.0
 [17.1.0]: https://github.com/jupyterhub/oauthenticator/compare/17.0.0...17.1.0
 [17.0.0]: https://github.com/jupyterhub/oauthenticator/compare/16.3.1...17.0.0
 [16.3.1]: https://github.com/jupyterhub/oauthenticator/compare/16.3.0...16.3.1
