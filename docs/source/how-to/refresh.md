@@ -1,3 +1,5 @@
+(refresh)=
+
 # Refreshing user authentication
 
 JupyterHub has a mechanism called [`refresh_user`](inv:jupyterhub:py:method#jupyterhub.auth.Authenticator.refresh_user) that is meant to _refresh_ information from the Authentication provider periodically.
