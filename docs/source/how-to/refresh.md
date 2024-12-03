@@ -44,7 +44,7 @@ because it ensures the token is valid when the server starts.
 This example requires granting users read access to their own `auth_state`.
 If you plan to provide users with access tokens,
 `auth_state` does not typically include information your users won't have access to with the token itself,
-but it is worth making sure that your Authenticator configuration places anything in `auth_state`
+but it is worth making sure that your Authenticator configuration doesn't put anything in `auth_state`
 that you do not want users to be able to see.
 ```
 
