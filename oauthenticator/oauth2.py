@@ -545,6 +545,32 @@ class OAuthenticator(Authenticator):
 
         return False
 
+    refresh_user_hook = Callable(
+        config=True,
+        default_value=None,
+        allow_none=True,
+        help="""
+        Hook for refreshing user auth info.
+
+        If given, allows overriding the `refresh_user` behavior.
+        Will be called as::
+
+            refreshed = await refresh_user_hook(authenticator, user, auth_state)
+
+        `refresh_user_hook` _may_ be async.
+
+        where `refreshed` can be:
+
+        - True (no change)
+        - False (require new login)
+        - auth_model (dict - the new auth model, if anything should be changeed)
+        - None (proceed with default refresh_user behavior -
+          allows overriding refresh_user behavior for _some_ users)
+
+        .. versionadded:: 17.3
+        """,
+    )
+
     logout_redirect_url = Unicode(
         config=True,
         help="""
@@ -1291,6 +1317,18 @@ class OAuthenticator(Authenticator):
         # call the oauth endpoints
         return await self._token_to_auth_model(token_info)
 
+    async def _call_refresh_user_hook(self, user, auth_state):
+        """Call the refresh_user hook"""
+        try:
+            refreshed = self.refresh_user_hook(self, user, auth_state)
+            if isawaitable(refreshed):
+                refreshed = await refreshed
+        except Exception as e:
+            # let hook errors raise, nothing in auth should suppress errors
+            self.log.error(f"Error in refresh_user_hook: {e}")
+            raise
+        return refreshed
+
     async def refresh_user(self, user, handler=None, **kwargs):
         """
         Refresh user authentication
@@ -1325,7 +1363,14 @@ class OAuthenticator(Authenticator):
         if not self.enable_auth_state:
             # auth state not enabled, can't refresh
             return True
+
         auth_state = await user.get_auth_state()
+
+        if self.refresh_user_hook is not None:
+            refreshed = await self._call_refresh_user_hook(user, auth_state)
+            if refreshed is not None:
+                return refreshed
+
         if not auth_state:
             self.log.info(
                 f"No auth_state found for user {user.name} refresh, need full authentication",
