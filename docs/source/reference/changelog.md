@@ -6,6 +6,27 @@ command line for details.
 
 ## [Unreleased]
 
+## 17.3
+
+### [17.3.0] - 2024-12-11
+
+17.3.0 is a tiny release, adding a [`refresh_user_hook`](#OAuthenticator.refresh_user_hook) for easier customization such as _partial_ opt-out of the refresh_user behavior introduced in 17.2.
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/17.2.0...17.3.0))
+
+#### New features added
+
+- add refresh_user_hook [#780](https://github.com/jupyterhub/oauthenticator/pull/780) ([@minrk](https://github.com/minrk), [@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-12-03&to=2024-12-11&type=c))
+
+@GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2024-12-03..2024-12-11&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-12-03..2024-12-11&type=Issues))
+
 ## 17.2
 
 ### [17.2.0] - 2024-12-03
@@ -1016,7 +1037,8 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 - First release
 
-[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.2.0...HEAD
+[unreleased]: https://github.com/jupyterhub/oauthenticator/compare/17.3.0...HEAD
+[17.3.0]: https://github.com/jupyterhub/oauthenticator/compare/17.2.0...17.3.0
 [17.2.0]: https://github.com/jupyterhub/oauthenticator/compare/17.1.0...17.2.0
 [17.1.0]: https://github.com/jupyterhub/oauthenticator/compare/17.0.0...17.1.0
 [17.0.0]: https://github.com/jupyterhub/oauthenticator/compare/16.3.1...17.0.0
