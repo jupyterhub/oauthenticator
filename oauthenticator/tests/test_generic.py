@@ -547,6 +547,22 @@ async def test_refresh_user(get_authenticator, generic_client, enable_refresh_to
     # from here on, enable auth state required for refresh to do anything
     authenticator.enable_auth_state = True
 
+    # case: custom refresh hook
+    async def async_hook(authenticator, user, auth_state):
+        return True
+
+    authenticator.refresh_user_hook = async_hook
+    refreshed = await authenticator.refresh_user(user, handler)
+    assert refreshed is True
+
+    def sync_hook(authenticator, user, auth_state):
+        return False
+
+    authenticator.refresh_user_hook = sync_hook
+    refreshed = await authenticator.refresh_user(user, handler)
+    assert refreshed is False
+    authenticator.refresh_user_hook = None
+
     # case: no auth state, but auth state enabled needs refresh
     auth_without_state = auth_model.copy()
     auth_without_state["auth_state"] = None

@@ -132,3 +132,38 @@ c.Authenticator.auth_refresh_age = 0
 in which case the new `refresh_user` method will not be called.
 This is equivalent to the behavior of OAuthenticator 17.1 and earlier,
 where the default `refresh_user` was called, but did nothing.
+
+## Customizing refresh behavior
+
+There is also a `OAuthenticator.refresh_user_hook` configuration option,
+which allows you to override the refresh_user behavior.
+
+The hook is called as:
+
+```python
+refreshed = await refresh_user_hook(authentiator, user, auth_state)
+```
+
+where `refreshed` can be:
+
+- `True` if the user auth is up-to-date and nothing should change
+- `False` if the user should be forced to login again before they can do anything
+- `auth_data` - a dictionary containing the user model with that should be updated (see [`refresh_user`](inv:jupyterhub:py:method#jupyterhub.auth.Authenticator.refresh_user) docs)
+- `None` if the default `refresh_user` behavior should proceed
+
+For example, to use `refresh_user` for most users but have 'fake' users that don't exist in the oauth provider, you can return `True` for those users and None for others:
+
+```python
+infrastructure_users = {"health-check-user"}
+
+def refresh_user_hook(authenticator, user, auth_state):
+    if user.name in infrastructure_users:
+        # if this is an infrastructure user,
+        # refresh_user doesn't make sense
+        # consider it always fresh
+        return True
+    # for all other users, refresh as usual
+    return None
+
+c.OAuthenticator.refresh_user_hook = refresh_user_hook
+```
