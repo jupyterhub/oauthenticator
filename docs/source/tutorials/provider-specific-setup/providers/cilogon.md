@@ -21,4 +21,4 @@ c.OAuthenticator.client_secret = "[your oauth2 application secret]"
 CILogonOAuthenticator expands OAuthenticator with the following required config,
 read more about it in the configuration reference:
 
-- {attr}`.CILogonOAuthenticator.allowed_idps`
+- {attr}`.CILogonOAuthenticator.idps`
