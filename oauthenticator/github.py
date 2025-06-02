@@ -126,10 +126,8 @@ class GitHubOAuthenticator(OAuthenticator):
         https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user.
 
         Requires `read:org` to be set in `scope`.
-        
-        Note that authentication state is only be available to a
-        `post_auth_hook` before being discarded unless configured to be
-        persisted via `enable_auth_state`. For more information, see
+
+        For more information on how to use `auth_state`, see
         https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html#authentication-state.
         """,
     )
