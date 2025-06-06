@@ -4,7 +4,6 @@ A JupyterHub authenticator class for use with Azure AD as an identity provider.
 
 import os
 
-import jwt
 from jupyterhub.auth import LocalAuthenticator
 from traitlets import Unicode, default
 
@@ -66,15 +65,9 @@ class AzureAdOAuthenticator(OAuthenticator):
     def _token_url_default(self):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
 
-    async def token_to_user(self, token_info):
-        id_token = token_info['id_token']
-        decoded = jwt.decode(
-            id_token,
-            options={"verify_signature": False},
-            audience=self.client_id,
-        )
-
-        return decoded
+    @default("userdata_from_id_token")
+    def _userdata_from_id_token_default(self):
+        return True
 
 
 class LocalAzureAdOAuthenticator(LocalAuthenticator, AzureAdOAuthenticator):
