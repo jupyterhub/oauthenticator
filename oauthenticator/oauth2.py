@@ -1237,9 +1237,12 @@ class OAuthenticator(Authenticator):
             if isawaitable(groups):
                 groups = await groups
             return set(groups)
+        groups = None
         try:
             groups = reduce(dict.get, self.auth_state_groups_key.split("."), auth_state)
         except TypeError:
+            pass
+        if groups is None:
             self.log.error(
                 f"The auth_state_groups_key {self.auth_state_groups_key} does not exist in the auth_model. Available keys are: {auth_state.keys()}"
             )
