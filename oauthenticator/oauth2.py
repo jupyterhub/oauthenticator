@@ -1238,12 +1238,17 @@ class OAuthenticator(Authenticator):
                 groups = await groups
             return set(groups)
         try:
-            return set(
-                reduce(dict.get, self.auth_state_groups_key.split("."), auth_state)
-            )
+            groups = reduce(dict.get, self.auth_state_groups_key.split("."), auth_state)
         except TypeError:
             self.log.error(
                 f"The auth_state_groups_key {self.auth_state_groups_key} does not exist in the auth_model. Available keys are: {auth_state.keys()}"
+            )
+            return set()
+        try:
+            return set(groups)
+        except TypeError:
+            self.log.error(
+                f"The value of the auth_state_groups_key {self.auth_state_groups_key} is invalid: {groups}"
             )
             return set()
 
