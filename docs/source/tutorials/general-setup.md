@@ -56,7 +56,6 @@ projects' authenticator classes.
    configure what users should be granted access. The OAuthenticator base class
    provides the following config you can read more about in the configuration
    reference.
-
    - {attr}`.OAuthenticator.allow_all`
    - {attr}`.OAuthenticator.allow_existing_users`
    - {attr}`.OAuthenticator.allowed_users`
