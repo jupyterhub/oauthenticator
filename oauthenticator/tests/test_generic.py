@@ -472,6 +472,39 @@ async def test_generic_auth_state_groups_key_nested_strings(
 
 
 @mark.parametrize(
+    ["auth_state_groups_key", "expected_error"],
+    [
+        (
+            "oauth_user.permissions.invalid_values_type",
+            "The value of the auth_state_groups_key oauth_user.permissions.invalid_values_type is invalid:",
+        ),
+        (
+            "oauth_user.nonexistent.groups",
+            "The auth_state_groups_key oauth_user.nonexistent.groups does not exist in the auth_model.",
+        ),
+    ],
+)
+async def test_generic_auth_state_groups_key_invalid(
+    get_authenticator, generic_client, auth_state_groups_key, expected_error, caplog
+):
+    caplog.set_level(logging.ERROR)
+    c = Config()
+    c.GenericOAuthenticator.auth_state_groups_key = auth_state_groups_key
+    c.GenericOAuthenticator.admin_groups = ["super_user"]
+    c.GenericOAuthenticator.manage_groups = True
+    authenticator = get_authenticator(config=c)
+
+    handled_user_model = user_model(
+        "user1", permissions={"invalid_values_type": [{"not": {"a": "string"}}]}
+    )
+    handler = generic_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+
+    assert not auth_model
+    assert expected_error in caplog.text
+
+
+@mark.parametrize(
     ("trait_name", "value"),
     [
         ("auth_state_groups_key", "oauth_user.permissions.groups"),
