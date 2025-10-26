@@ -563,7 +563,7 @@ class OAuthenticator(Authenticator):
 
         - True (no change)
         - False (require new login)
-        - auth_model (dict - the new auth model, if anything should be changeed)
+        - auth_model (dict - the new auth model, if anything should be changed)
         - None (proceed with default refresh_user behavior -
           allows overriding refresh_user behavior for _some_ users)
 
@@ -1141,12 +1141,21 @@ class OAuthenticator(Authenticator):
                     id_token,
                     audience=self.client_id,
                     options=dict(
-                        verify_signature=False, verify_aud=True, verify_exp=True
+                        # setting verify_signature to False makes all other
+                        # verification default to False, making us need to
+                        # opt-in to what we want to check
+                        verify_signature=False,
+                        verify_aud=True,
+                        verify_exp=True,
                     ),
                 )
+            except jwt.InvalidAudienceError:
+                raise
+            except jwt.ExpiredSignatureError:
+                raise
             except Exception as err:
                 raise web.HTTPError(
-                    500, f"Unable to decode id token: {id_token}\n{err}"
+                    500, f"Unknown error decoding id token: {id_token}\n{err}"
                 )
 
         access_token = token_info["access_token"]
@@ -1389,6 +1398,10 @@ class OAuthenticator(Authenticator):
         auth_model = None
         try:
             auth_model = await self._token_to_auth_model(token_info)
+        except jwt.ExpiredSignatureError:
+            self.log.info(
+                f"id_token expired for {user.name}. Will try to refresh, if possible."
+            )
         except HTTPClientError as e:
             # assume any client error means an expired token
             # most likely 401 or 403 for well-behaved providers
@@ -1398,6 +1411,7 @@ class OAuthenticator(Authenticator):
                 )
             else:
                 raise
+
         refresh_token = auth_state.get("refresh_token", None)
         if refresh_token and not auth_model:
             self.log.info(f"Refreshing oauth access token for {user.name}")
