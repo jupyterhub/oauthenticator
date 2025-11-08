@@ -58,8 +58,8 @@ class AzureAdOAuthenticator(OAuthenticator):
         config=True,
         help="""
         An Azure graph url for which an OAuth application. This correlates
-        to which cloud such as Azure Global (default) Azure GOV, Azure China 
-        etc are being used.
+        to which cloud such as Azure portal (global service) [default] 
+        Azure GOV, Azure China, etc. are being used.
 
         This is used to set the default values of `authorize_url` and
         `token_url`.
