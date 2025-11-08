@@ -54,17 +54,33 @@ class AzureAdOAuthenticator(OAuthenticator):
         """,
     )
 
+    graph_url = Unicode(
+        config=True,
+        help="""
+        An Azure graph url for which an OAuth application. This correlates
+        to which cloud such as Azure Global (default) Azure GOV, Azure China 
+        etc are being used.
+
+        This is used to set the default values of `authorize_url` and
+        `token_url`.
+        """,
+    )
+
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
+    
+    @default('graph_url')
+    def _graph_url_default(self):
+        return os.environ.get('GRAPH_URL', 'https://login.microsoftonline.com')
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/authorize"
+        return f"{self.graph_url}/{self.tenant_id}/oauth2/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
+        return f"{self.graph_url}/{self.tenant_id}/oauth2/token"
 
     async def token_to_user(self, token_info):
         id_token = token_info['id_token']
