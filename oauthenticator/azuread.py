@@ -72,7 +72,7 @@ class AzureAdOAuthenticator(OAuthenticator):
     
     @default('graph_url')
     def _graph_url_default(self):
-        return os.environ.get('GRAPH_URL', 'https://login.microsoftonline.com')
+        return os.environ.get('AAD_GRAPH_URL', 'https://login.microsoftonline.com')
 
     @default("authorize_url")
     def _authorize_url_default(self):
