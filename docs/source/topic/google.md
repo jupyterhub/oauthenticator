@@ -1,31 +1,30 @@
 (topic:google:extra-config)=
 
-# Google Group Configs
+# Google specific configs
+
+This guide covers optional, advanced configurations for Google OAuthenticator.
+
+## Access via Google Groups
+
+You can use Google Groups to manage user access and admin authorization for JupyterHub. To do this you must use a Service Account with domain-wide delegation to read group and user information.
 
 The instructions below are to be performed after [finishing setting up Google](tutorials:provider-specific-setup:providers:google).
 
-If you'd like to rely on Google Groups for managing access to JupyterHub you must use a Service Account with domain-wide delegation to read group and user information.
-
-To enable this, you must:
-
-1. Install the `googlegroups` `extra_requires` in your hub environment:
-
-   ```shell
-   pip install oauthenticator[googlegroups]
-   ```
-
-1. Create a Google Cloud Service Account to impersonate a Google Workspace admin user that has read-only access to groups and users.
-
-1. Enable the Google Cloud Admin SDK API.
-
-## Instructions
-
+```{note}
 The Google Cloud and Workspace UIs change frequently. For the most up-to-date instructions:
-
 - [Creating a Service Account](https://cloud.google.com/iam/docs/service-accounts-create)
 - [Delegating domain-wide authority](https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority)
 - [Enabling a Google Cloud API](https://support.google.com/googleapi/answer/6158841?hl=en)
 - [Creating a custom admin role](https://support.google.com/a/answer/2406043?hl=en)
+```
+
+### Install the `googlegroups` `extra_requires`
+
+Install the following in your hub environment:
+
+```shell
+pip install oauthenticator[googlegroups]
+```
 
 ### Creating a Service Account and Credentials
 
@@ -94,10 +93,18 @@ The Service Account you created will retrieve Google Group membership by imperso
 Add the relevant lines below to your `jupyterhub_config.py`.
 
 ```python
-c.GoogleOAuthenticator.gsuite_administrator = {'example.com': 'someuser'}
-c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/path/to/service_account.json'}
-c.GoogleOAuthenticator.admin_google_groups = {'example.com': ['someadmingroup']}
-c.GoogleOAuthenticator.allowed_google_groups = {'example.com': ['somegroupwithaccess', 'othergroupwithaccess'] }
+# Email of the Google Workspace admin user that the Service Account will impersonate.
+# This user must have read-only access to users and groups
+c.GoogleOAuthenticator.gsuite_administrator = {'example.com': 'admin-for-jupyter@example.com'}
+
+# Path to the JSON key file for your Service Account
+c.GoogleOAuthenticator.google_service_account_keys = {'example.com': '/etc/jupyterhub/service_account.json'}
+
+# List of Google Groups whose members should get admin rights on JupyterHub
+c.GoogleOAuthenticator.admin_google_groups = {'example.com': ['jupyterhub-admins']}
+
+# List of Google Groups whose members are allowed to log in to JupyterHub
+c.GoogleOAuthenticator.allowed_google_groups = {'example.com': ['jupyterhub-users']}
 ```
 
 ## Retrieving `access_token` and `refresh_token`
