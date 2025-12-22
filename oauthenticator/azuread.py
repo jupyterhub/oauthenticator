@@ -76,11 +76,19 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return f"{self.graph_url}/{self.tenant_id}/oauth2/authorize" if self.tenant_id else f"{self.graph_url}/oauth2/authorize" 
+        return (
+            f"{self.graph_url}/{self.tenant_id}/oauth2/authorize"
+            if self.tenant_id
+            else f"{self.graph_url}/oauth2/authorize"
+        )
 
     @default("token_url")
     def _token_url_default(self):
-        return f"{self.graph_url}/{self.tenant_id}/oauth2/token" if self.tenant_id else f"{self.graph_url}/oauth2/token"
+        return (
+            f"{self.graph_url}/{self.tenant_id}/oauth2/token"
+            if self.tenant_id
+            else f"{self.graph_url}/oauth2/token"
+        )
 
     async def token_to_user(self, token_info):
         id_token = token_info['id_token']
