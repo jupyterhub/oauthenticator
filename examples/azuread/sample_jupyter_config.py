@@ -21,4 +21,4 @@ c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 # the graph url. By default it will use the https://login.microsoftonline.com
 
 
-# c.AzureAdOAuthenticator.graph_url = os.environ.get('AAD_GRAPH_URL')
+# c.AzureAdOAuthenticator.graph_url = 'https://login.partner.microsoftonline.cn/'

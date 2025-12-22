@@ -235,13 +235,14 @@ async def test_tenant_id_from_env():
         assert aad.tenant_id == tenant_id
 
 
-async def test_graph_url_from_env():
+async def test_graph_url():
     graph_url = "https://some_random_url.com"
-    with mock.patch.dict(os.environ, {"AAD_GRAPH_URL": graph_url}):
-        aad = AzureAdOAuthenticator()
-        assert aad.graph_url == graph_url
-
-
+    aad = AzureAdOAuthenticator()
+    assert aad.graph_url =='https://login.microsoftonline.com'
+    aad.graph_url = graph_url
+    assert aad.graph_url == graph_url
+    assert aad.authorize_url == f"{graph_url}/oauth2/authorize"
+    assert add.token_url == f"{graph_url}/oauth2/token"
 @mark.parametrize(
     "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
     [
