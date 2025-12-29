@@ -242,7 +242,7 @@ async def test_graph_url():
     aad.graph_url = graph_url
     assert aad.graph_url == graph_url
     assert aad.authorize_url == f"{graph_url}/oauth2/authorize"
-    assert add.token_url == f"{graph_url}/oauth2/token"
+    assert aad.token_url == f"{graph_url}/oauth2/token"
 
 
 @mark.parametrize(
