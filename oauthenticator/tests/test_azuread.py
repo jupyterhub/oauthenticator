@@ -235,6 +235,16 @@ async def test_tenant_id_from_env():
         assert aad.tenant_id == tenant_id
 
 
+async def test_graph_url():
+    graph_url = "https://some_random_url.com"
+    aad = AzureAdOAuthenticator()
+    assert aad.graph_url == 'https://login.microsoftonline.com'
+    aad.graph_url = graph_url
+    assert aad.graph_url == graph_url
+    assert aad.authorize_url == f"{graph_url}/oauth2/authorize"
+    assert aad.token_url == f"{graph_url}/oauth2/token"
+
+
 @mark.parametrize(
     "test_variation_id,class_config,expect_config,expect_loglevel,expect_message",
     [

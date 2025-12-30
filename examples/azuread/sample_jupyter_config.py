@@ -16,3 +16,9 @@ c.AzureAdOAuthenticator.client_secret = '{AAD-APP-CLIENT-SECRET}'
 # uncomment the line below to use 'unique_name' rather than the default 'name'. Consult the Azure
 # documentation for other field names.
 # c.AzureAdOAuthenticator.username_claim = 'unique_name'
+
+# if you are using a different cloud then Azure portal (global service) you will need to provide
+# the graph url. By default it will use the https://login.microsoftonline.com
+
+
+# c.AzureAdOAuthenticator.graph_url = 'https://login.partner.microsoftonline.cn/'
