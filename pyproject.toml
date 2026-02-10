@@ -71,6 +71,8 @@ local-google = "oauthenticator.google:LocalGoogleOAuthenticator"
 mediawiki = "oauthenticator.mediawiki:MWOAuthenticator"
 openshift = "oauthenticator.openshift:OpenShiftOAuthenticator"
 local-openshift = "oauthenticator.openshift:LocalOpenShiftOAuthenticator"
+oidc = "oauthenticator.oidc:OIDCOAuthenticator"
+local-oidc = "oauthenticator.oidc:LocalOIDCOAuthenticator"
 
 [project.urls]
 Homepage = "https://jupyter.org"
