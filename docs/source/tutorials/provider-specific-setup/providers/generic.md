@@ -130,7 +130,7 @@ First visit AWS official documentation on [Getting started with user pools] for
 info on how to register and configure a cognito user pool and an associated
 OAuth2 application.
 
-[Getting started with user pools]: https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-with-cognito-user-pools.html
+[Getting started with user pools]: https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-user-pools.html
 
 Set the above settings in your `jupyterhub_config.py`:
 

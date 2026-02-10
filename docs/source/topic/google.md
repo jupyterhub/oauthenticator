@@ -12,10 +12,10 @@ The instructions below are to be performed after [finishing setting up Google](t
 
 ```{note}
 The Google Cloud and Workspace UIs change frequently. For the most up-to-date instructions:
-- [Creating a Service Account](https://cloud.google.com/iam/docs/service-accounts-create)
+- [Creating a Service Account](https://docs.cloud.google.com/iam/docs/service-accounts-create)
 - [Delegating domain-wide authority](https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority)
 - [Enabling a Google Cloud API](https://support.google.com/googleapi/answer/6158841?hl=en)
-- [Creating a custom admin role](https://support.google.com/a/answer/2406043?hl=en)
+- [Creating a custom admin role](https://knowledge.workspace.google.com/admin/users/create-edit-and-delete-custom-admin-roles)
 ```
 
 ### Install the `googlegroups` `extra_requires`
@@ -32,7 +32,7 @@ pip install oauthenticator[googlegroups]
 
 1. Click add (`+`) **Create Service Account** and enter a name and description for the Service Account. The **Permissions (optional)** and **Principals with access (optional)** sections that follow are not required. When done select **Done**.
 
-1. Once created, select your Service Account and go to **Keys**. Select **Add key** and **Create new key**. Select the **JSON** format for your key and select **Create**. See [Best practices for managing Service Account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys) for storing and using this key securely.
+1. Once created, select your Service Account and go to **Keys**. Select **Add key** and **Create new key**. Select the **JSON** format for your key and select **Create**. See [Best practices for managing Service Account keys](https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys) for storing and using this key securely.
 
 1. Return to your Service Account and copy the **OAuth 2 Client ID** (sometimes called **Unique ID** or just **Client ID**). You will need this for configuring domain-wide delegation.
 

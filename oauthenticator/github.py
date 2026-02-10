@@ -200,7 +200,7 @@ class GitHubOAuthenticator(OAuthenticator):
         # If a public email is not available, an extra API call has to be made
         # to a /user/emails using the access token to retrieve emails. The
         # scopes relevant for this are checked based on this documentation:
-        # - about scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
+        # - about scopes: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
         # - about /user/emails: https://docs.github.com/en/rest/reference/users#list-email-addresses-for-the-authenticated-user
         #
         # Note that the read:user scope does not imply the user:emails scope!

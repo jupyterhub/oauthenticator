@@ -36,7 +36,7 @@ EOF
 
 ## Service Accounts as OAuth Clients
 
-As a project member, you can use the [Service Accounts as OAuth Clients](https://docs.openshift.com/container-platform/latest/authentication/using-service-accounts-as-oauth-client.html)
+As a project member, you can use the [Service Accounts as OAuth Clients](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/authentication_and_authorization/using-service-accounts-as-oauth-client)
 scenario. This gives you the possibility of defining clients associated
 with service accounts. You just need to create the service account with
 the proper annotations:

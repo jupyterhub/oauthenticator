@@ -3,7 +3,7 @@
 You need to have an GitLab OAuth application registered ahead of time, see
 GitLab's official documentation about [registering an app].
 
-[registering an app]: https://docs.gitlab.com/ee/integration/oauth_provider.html
+[registering an app]: https://docs.gitlab.com/integration/oauth_provider/
 
 ## JupyterHub configuration
 
