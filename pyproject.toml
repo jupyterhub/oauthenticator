@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "oauthenticator"
-version = "17.3.1.dev"
+version = "17.4.0.dev"
 description = "OAuthenticator: Authenticate JupyterHub users with common OAuth providers"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -145,7 +145,7 @@ omit = [
 github_url = "https://github.com/jupyterhub/oauthenticator"
 
 [tool.tbump.version]
-current = "17.3.1.dev"
+current = "17.4.0.dev"
 regex = '''
     (?P<major>\d+)
     \.
