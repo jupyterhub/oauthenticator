@@ -1571,9 +1571,7 @@ class OAuthenticator(Authenticator):
 # patch allowed_users help string to match our definition
 # base Authenticator class help string gives the wrong impression
 # when combined with other allow options
-OAuthenticator.class_traits()[
-    "allowed_users"
-].help = """
+OAuthenticator.class_traits()["allowed_users"].help = """
 Set of usernames that should be allowed to login.
 
 If unspecified, grants no access. You must set at least one other `allow` configuration
