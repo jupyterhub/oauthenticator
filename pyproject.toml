@@ -42,7 +42,7 @@ mediawiki = [
 test = [
     "pytest>=6",
     # FIXME: unpin pytest-asyncio
-    "pytest-asyncio>=0.17,<0.23",
+    "pytest-asyncio>=1.2",
     "pytest-cov",
     "requests-mock",
     # dependencies from googlegroups:
@@ -121,6 +121,7 @@ target_version = [
 [tool.pytest.ini_options]
 addopts = "--verbose --color=yes --durations=10 --cov=oauthenticator"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = [
     "oauthenticator/tests"
 ]

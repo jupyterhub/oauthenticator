@@ -7,7 +7,7 @@ from .mocks import MockAsyncHTTPClient
 
 
 @fixture
-def client(request):
+async def client(request):
     """Return mocked AsyncHTTPClient"""
     before = AsyncHTTPClient.configured_class()
     AsyncHTTPClient.configure(MockAsyncHTTPClient)
