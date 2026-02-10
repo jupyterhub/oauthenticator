@@ -62,7 +62,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Unicode(),
         config=True,
         help="""
-        Service account keys to use with each domain, see https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+        Service account keys to use with each domain, see https://developers.google.com/workspace/guides/create-credentials
 
         This is a mapping of { domain : service-key }.
 

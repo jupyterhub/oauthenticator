@@ -80,7 +80,7 @@ class GitLabOAuthenticator(OAuthenticator):
         help="""
         Used to determine the default values for `gitlab_api`.
 
-        For details, see https://docs.gitlab.com/ee/api/rest/.
+        For details, see https://docs.gitlab.com/api/rest/.
         """,
     )
 

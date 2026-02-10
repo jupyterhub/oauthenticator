@@ -971,7 +971,7 @@ class OAuthenticator(Authenticator):
         https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3. utf-8 is also
         required according to https://www.rfc-editor.org/rfc/rfc6749#appendix-B,
         and that can be specified with a Content-Type directive according to
-        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type#directives.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type#directives.
         """
         headers = {
             "Accept": "application/json",

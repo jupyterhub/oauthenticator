@@ -3,7 +3,7 @@
 You need to have an Azure OAuth application registered ahead of time, see
 Azure's official documentation about [registering an app].
 
-[registering an app]: https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-protocols#app-registration
+[registering an app]: https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols#app-registration
 
 1. Install oauthenticator with the optional dependency `azuread`, as required
    for use with AzureAdOAuthenticator.

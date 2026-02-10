@@ -2,7 +2,7 @@
 
 # GitHub-specific scopes
 
-The following [GitHub scopes](https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps)
+The following [GitHub scopes](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps)
 may be suitable for certain use cases:
 
 `read:org` grants access to the users' organizations. This is handy if
