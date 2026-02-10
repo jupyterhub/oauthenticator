@@ -13,7 +13,7 @@ jupyterhub_cookie_secret
 
 .vscode/
 .idea/
-
+.DS_Store
 
 # Python .gitignore from https://github.com/github/gitignore/blob/HEAD/Python.gitignore
 # -------------------------------------------------------------------------------------
