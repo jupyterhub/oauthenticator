@@ -1,3 +1,82 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "oauthenticator"
+version = "17.4.0.dev"
+description = "OAuthenticator: Authenticate JupyterHub users with common OAuth providers"
+readme = "README.md"
+license = "BSD-3-Clause"
+requires-python = ">=3.10"
+authors = [
+    {name = "Jupyter Development Team", email = "jupyter@googlegroups.com"},
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["dependencies"]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[project.optional-dependencies]
+# googlegroups is required for use of GoogleOAuthenticator configured with
+# either admin_google_groups and/or allowed_google_groups.
+googlegroups = [
+    "google-auth-oauthlib",
+]
+# mediawiki is required for use of MWOAuthenticator
+mediawiki = [
+    "mwoauth>=0.3.8",
+]
+# test is required to run tests, and includes all authenticator specific
+# dependencies above.
+test = [
+    "pytest>=6",
+    "pytest-asyncio>=1.2",
+    "pytest-cov",
+    "requests-mock",
+    # dependencies from googlegroups:
+    "google-auth-oauthlib",
+    # dependencies from mediawiki:
+    "mwoauth>=0.3.8",
+]
+
+[project.entry-points."jupyterhub.authenticators"]
+auth0 = "oauthenticator.auth0:Auth0OAuthenticator"
+local-auth0 = "oauthenticator.auth0:LocalAuth0OAuthenticator"
+azuread = "oauthenticator.azuread:AzureAdOAuthenticator"
+local-azuread = "oauthenticator.azuread:LocalAzureAdOAuthenticator"
+bitbucket = "oauthenticator.bitbucket:BitbucketOAuthenticator"
+local-bitbucket = "oauthenticator.bitbucket:LocalBitbucketOAuthenticator"
+cilogon = "oauthenticator.cilogon:CILogonOAuthenticator"
+local-cilogon = "oauthenticator.cilogon:LocalCILogonOAuthenticator"
+generic-oauth = "oauthenticator.generic:GenericOAuthenticator"
+local-generic-oauth = "oauthenticator.generic:LocalGenericOAuthenticator"
+github = "oauthenticator.github:GitHubOAuthenticator"
+local-github = "oauthenticator.github:LocalGitHubOAuthenticator"
+gitlab = "oauthenticator.gitlab:GitLabOAuthenticator"
+local-gitlab = "oauthenticator.gitlab:LocalGitLabOAuthenticator"
+globus = "oauthenticator.globus:GlobusOAuthenticator"
+local-globus = "oauthenticator.globus:LocalGlobusOAuthenticator"
+google = "oauthenticator.google:GoogleOAuthenticator"
+local-google = "oauthenticator.google:LocalGoogleOAuthenticator"
+mediawiki = "oauthenticator.mediawiki:MWOAuthenticator"
+openshift = "oauthenticator.openshift:OpenShiftOAuthenticator"
+local-openshift = "oauthenticator.openshift:LocalOpenShiftOAuthenticator"
+
+[project.urls]
+Homepage = "https://jupyter.org"
+Source = "https://github.com/jupyterhub/oauthenticator"
+
+
 # autoflake is used for autoformatting Python code
 #
 # ref: https://github.com/PyCQA/autoflake#readme
@@ -23,14 +102,6 @@ profile = "black"
 #
 [tool.black]
 skip-string-normalization = true
-# target-version should be all supported versions, see
-# https://github.com/psf/black/issues/751#issuecomment-473066811
-target_version = [
-    "py38",
-    "py39",
-    "py310",
-    "py311",
-]
 
 
 # pytest is used for running Python based tests
@@ -40,6 +111,7 @@ target_version = [
 [tool.pytest.ini_options]
 addopts = "--verbose --color=yes --durations=10 --cov=oauthenticator"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = [
     "oauthenticator/tests"
 ]
@@ -64,7 +136,7 @@ omit = [
 github_url = "https://github.com/jupyterhub/oauthenticator"
 
 [tool.tbump.version]
-current = "17.3.1.dev"
+current = "17.4.0.dev"
 regex = '''
     (?P<major>\d+)
     \.
@@ -81,7 +153,7 @@ message_template = "Bump to {new_version}"
 tag_template = "{new_version}"
 
 [[tool.tbump.file]]
-src = "setup.py"
+src = "pyproject.toml"
 
 [[tool.tbump.file]]
 src = "oauthenticator/_version.py"
