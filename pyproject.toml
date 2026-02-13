@@ -13,7 +13,6 @@ requires-python = ">=3.10"
 authors = [
     {name = "Jupyter Development Team", email = "jupyter@googlegroups.com"},
 ]
-keywords = ["Interactive", "Interpreter", "Shell", "Web"]
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -41,7 +40,6 @@ mediawiki = [
 # dependencies above.
 test = [
     "pytest>=6",
-    # FIXME: unpin pytest-asyncio
     "pytest-asyncio>=1.2",
     "pytest-cov",
     "requests-mock",
