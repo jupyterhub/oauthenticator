@@ -17,7 +17,7 @@ repos:
 
   # Autoformat: Python code
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
+    rev: v2.3.3
     hooks:
       - id: autoflake
         # args ref: https://github.com/PyCQA/autoflake#advanced-usage
@@ -26,7 +26,7 @@ repos:
 
   # Autoformat: python imports
   - repo: https://github.com/pycqa/isort
-    rev: 7.0.0
+    rev: 8.0.1
     hooks:
       - id: isort
 
