@@ -5,7 +5,8 @@ A JupyterHub authenticator class for use with Auth0 as an identity provider.
 import os
 
 from jupyterhub.auth import LocalAuthenticator
-from traitlets import Unicode, default
+from tornado.web import HTTPError
+from traitlets import Bool, Unicode, default
 
 from .oauth2 import OAuthenticator
 
@@ -56,6 +57,15 @@ class Auth0OAuthenticator(OAuthenticator):
         # This is allowed to be empty unless auth0_domain is not supplied either
         return os.getenv("AUTH0_SUBDOMAIN", "")
 
+    allow_unverified_email = Bool(
+        False,
+        config=True,
+        help="""
+        Allow login with unverified email.
+        Not advisable, except for testing purposes.
+        """,
+    )
+
     @default("logout_redirect_url")
     def _logout_redirect_url_default(self):
         return f"https://{self.auth0_domain}/v2/logout"
@@ -71,6 +81,31 @@ class Auth0OAuthenticator(OAuthenticator):
     @default("userdata_url")
     def _userdata_url_default(self):
         return f"https://{self.auth0_domain}/userinfo"
+
+    async def check_allowed(self, username, auth_model):
+        # A workaround for JupyterHub < 5.0 described in
+        # https://github.com/jupyterhub/oauthenticator/issues/621
+        if auth_model is None:
+            return True
+
+        # before considering allowing a username by being recognized in a list
+        # of usernames or similar, we must ensure that the authenticated user
+        # has a verified email and is part of hosted_domain if configured.
+        user_info = auth_model["auth_state"][self.user_auth_state_key]
+        user_email = user_info["email"]
+
+        if not user_info.get("email_verified"):
+            if self.allow_unverified_email:
+                message = (
+                    f"Allowing login for {username} with unverified email {user_email}"
+                )
+                self.log.warning(message)
+            else:
+                message = f"Login with unverified email {user_email} is not allowed"
+                self.log.warning(message)
+                raise HTTPError(403, message)
+
+        return await super().check_allowed(username, auth_model)
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {

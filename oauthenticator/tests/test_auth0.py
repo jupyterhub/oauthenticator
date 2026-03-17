@@ -24,13 +24,17 @@ def auth0_client(client):
     return client
 
 
-def user_model():
+def user_model(extra=None):
     """Return a user model"""
-    return {
+    model = {
         "email": "user1@example.com",
         "name": "user1",
         "groups": ["group1"],
+        "email_verified": True,
     }
+    if extra:
+        model.update(extra)
+    return model
 
 
 @mark.parametrize(
@@ -113,7 +117,6 @@ async def test_auth0(
     expect_allowed,
     expect_admin,
 ):
-    print(f"Running test variation id {test_variation_id}")
     c = Config()
     c.Auth0OAuthenticator = Config(class_config)
     c.Auth0OAuthenticator.auth0_domain = AUTH0_DOMAIN
@@ -138,7 +141,42 @@ async def test_auth0(
         assert user_info == handled_user_model
         assert auth_model["name"] == user_info[authenticator.username_claim]
     else:
-        assert auth_model == None
+        assert auth_model is None
+
+
+@mark.parametrize(
+    "email_verified, allow_unverified, expect_allowed",
+    [
+        (True, False, True),
+        (False, False, False),
+        (False, True, True),
+    ],
+)
+async def test_email_verified(
+    auth0_client, email_verified, allow_unverified, expect_allowed
+):
+    c = Config()
+    c.Auth0OAuthenticator = Config()
+    c.Auth0OAuthenticator.auth0_domain = AUTH0_DOMAIN
+    c.Auth0OAuthenticator.username_claim = "email"
+    c.Auth0OAuthenticator.allow_all = True
+    if allow_unverified:
+        c.Auth0OAuthenticator.allow_unverified_email = allow_unverified
+    authenticator = Auth0OAuthenticator(config=c)
+    assert authenticator.allow_unverified_email == allow_unverified
+
+    handled_user_model = user_model({"email_verified": email_verified})
+    handler = auth0_client.handler_for_user(handled_user_model)
+
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    assert auth_model is not None
+    if expect_allowed:
+        allowed = await authenticator.check_allowed(auth_model["name"], auth_model)
+        assert allowed
+    else:
+        with raises(web.HTTPError) as exc_info:
+            await authenticator.check_allowed(auth_model["name"], auth_model)
+        assert exc_info.value.status_code == 403
 
 
 async def test_custom_logout(monkeypatch):
