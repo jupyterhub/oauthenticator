@@ -6,6 +6,41 @@ command line for details.
 
 ## [Unreleased]
 
+## 17.4
+
+### 17.4.0 2026-03-26
+
+17.4.0 is a small release, but it bumps the required Python to 3.10.
+To use Python 3.9 or 3.8, use oauthenticator 17.3.
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/17.3.0...17.4.0))
+
+#### API and Breaking Changes
+
+- migrate to pyproject.toml, hatchling, require python 3.10 [#810](https://github.com/jupyterhub/oauthenticator/pull/810) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+- CILogon: Rename allowed_idps to idps (deprecation, not removal) [#685](https://github.com/jupyterhub/oauthenticator/pull/685) ([@consideRatio](https://github.com/consideRatio), [@GeorgianaElena](https://github.com/GeorgianaElena), [@minrk](https://github.com/minrk))
+
+#### Bugs fixed
+
+- AzureAD: Updated to use variable graph_url for different national clouds [#805](https://github.com/jupyterhub/oauthenticator/pull/805) ([@yauchinlam](https://github.com/yauchinlam), [@GeorgianaElena](https://github.com/GeorgianaElena))
+- auth_state_groups_key: errors may be in value as well as key name [#798](https://github.com/jupyterhub/oauthenticator/pull/798) ([@manics](https://github.com/manics), [@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- docs: fix linkcheck [#811](https://github.com/jupyterhub/oauthenticator/pull/811) ([@minrk](https://github.com/minrk))
+- Google Group doc updates [#806](https://github.com/jupyterhub/oauthenticator/pull/806) ([@jrdnbradford](https://github.com/jrdnbradford), [@consideRatio](https://github.com/consideRatio))
+- Remove confusing piece about post_auth_hook [#792](https://github.com/jupyterhub/oauthenticator/pull/792) ([@yuvipanda](https://github.com/yuvipanda), [@consideRatio](https://github.com/consideRatio))
+- Fix contributor link [#785](https://github.com/jupyterhub/oauthenticator/pull/785) ([@jrdnbradford](https://github.com/jrdnbradford), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-12-11&to=2026-03-25&type=c))
+
+@belfhi ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abelfhi+updated%3A2024-12-11..2026-03-25&type=Issues)) | @cobotrifork ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Acobotrifork+updated%3A2024-12-11..2026-03-25&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-12-11..2026-03-25&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2024-12-11..2026-03-25&type=Issues)) | @jabbera ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajabbera+updated%3A2024-12-11..2026-03-25&type=Issues)) | @jrdnbradford ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajrdnbradford+updated%3A2024-12-11..2026-03-25&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-12-11..2026-03-25&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-12-11..2026-03-25&type=Issues)) | @weisdd ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aweisdd+updated%3A2024-12-11..2026-03-25&type=Issues)) | @yauchinlam ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayauchinlam+updated%3A2024-12-11..2026-03-25&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-12-11..2026-03-25&type=Issues))
+
 ## 17.3
 
 ### [17.3.0] - 2024-12-11
