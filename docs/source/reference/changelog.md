@@ -10,6 +10,14 @@ command line for details.
 
 ### 17.4.0 2026-03-26
 
+```{important}
+This release includes a security patch for `Auth0OAuthenticator`, fixing [CVE-2026-33175]
+```
+
+The advisory will be published 7 days after release (2026-04-02).
+
+[CVE-2026-33175]: https://github.com/jupyterhub/oauthenticator/security/advisories/GHSA-rrvg-cxh4-qhrv
+
 17.4.0 is a small release, but it bumps the required Python to 3.10.
 To use Python 3.9 or 3.8, use oauthenticator 17.3.
 
@@ -39,7 +47,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2024-12-11&to=2026-03-25&type=c))
 
-@belfhi ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abelfhi+updated%3A2024-12-11..2026-03-25&type=Issues)) | @cobotrifork ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Acobotrifork+updated%3A2024-12-11..2026-03-25&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-12-11..2026-03-25&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2024-12-11..2026-03-25&type=Issues)) | @jabbera ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajabbera+updated%3A2024-12-11..2026-03-25&type=Issues)) | @jrdnbradford ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajrdnbradford+updated%3A2024-12-11..2026-03-25&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-12-11..2026-03-25&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-12-11..2026-03-25&type=Issues)) | @weisdd ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aweisdd+updated%3A2024-12-11..2026-03-25&type=Issues)) | @yauchinlam ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayauchinlam+updated%3A2024-12-11..2026-03-25&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-12-11..2026-03-25&type=Issues))
+@belfhi ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abelfhi+updated%3A2024-12-11..2026-03-25&type=Issues)) | @cobotrifork ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Acobotrifork+updated%3A2024-12-11..2026-03-25&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2024-12-11..2026-03-25&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AGeorgianaElena+updated%3A2024-12-11..2026-03-25&type=Issues)) | @jabbera ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajabbera+updated%3A2024-12-11..2026-03-25&type=Issues)) | @Jaynornj ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AJaynornj+updated%3A2024-12-11..2026-03-25&type=Issues)) | @jrdnbradford ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ajrdnbradford+updated%3A2024-12-11..2026-03-25&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2024-12-11..2026-03-25&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2024-12-11..2026-03-25&type=Issues)) | @weisdd ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aweisdd+updated%3A2024-12-11..2026-03-25&type=Issues)) | @yauchinlam ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayauchinlam+updated%3A2024-12-11..2026-03-25&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2024-12-11..2026-03-25&type=Issues))
 
 ## 17.3
 
