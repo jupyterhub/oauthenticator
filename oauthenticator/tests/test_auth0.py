@@ -168,13 +168,15 @@ async def test_email_verified(
     handled_user_model = user_model({"email_verified": email_verified})
     handler = auth0_client.handler_for_user(handled_user_model)
 
-    auth_model = await authenticator.get_authenticated_user(handler, None)
-    assert auth_model is not None
     if expect_allowed:
+        auth_model = await authenticator.get_authenticated_user(handler, None)
+        assert auth_model is not None
         allowed = await authenticator.check_allowed(auth_model["name"], auth_model)
         assert allowed
     else:
         with raises(web.HTTPError) as exc_info:
+            auth_model = await authenticator.get_authenticated_user(handler, None)
+            assert auth_model is not None
             await authenticator.check_allowed(auth_model["name"], auth_model)
         assert exc_info.value.status_code == 403
 
