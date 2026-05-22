@@ -4,43 +4,44 @@
 name: Release
 
 # Always tests wheel building, but only publish to PyPI on pushed tags.
+
 on:
   pull_request:
     paths-ignore:
       - "docs/**"
-      - ".github/workflows/*.yaml"
+      - "**.md"
+      - ".github/workflows/*"
       - "!.github/workflows/release.yaml"
   push:
     paths-ignore:
       - "docs/**"
-      - ".github/workflows/*.yaml"
+      - "**.md"
+      - "**.rst"
+      - ".github/workflows/*"
       - "!.github/workflows/release.yaml"
     branches-ignore:
       - "dependabot/**"
       - "pre-commit-ci-update-config"
-    tags: ["**"]
+    tags:
+      - "**"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-release:
-    runs-on: ubuntu-22.04
-    permissions:
-      # id-token=write is required for pypa/gh-action-pypi-publish, and the PyPI
-      # project needs to be configured to trust this workflow.
-      #
-      # ref: https://github.com/jupyterhub/team-compass/issues/648
-      #
-      id-token: write
-
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          python-version: "3.11"
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: "3.13"
 
-      - name: install build package
+      - name: install build requirements
         run: |
-          pip install --upgrade pip
           pip install build
           pip freeze
 
@@ -49,6 +50,28 @@ jobs:
           python -m build --sdist --wheel .
           ls -l dist
 
-      - name: publish to pypi
-        uses: pypa/gh-action-pypi-publish@release/v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: upload dists
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ github.event.repository.name }}-dist
+          path: dist/
+
+  pypi-publish:
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/')
+    environment:
+      name: release
+    needs:
+      - build-release
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Get release artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ github.event.repository.name }}-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
