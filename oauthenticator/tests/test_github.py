@@ -33,6 +33,7 @@ def github_client(client):
         access_token_path='/login/oauth/access_token',
         user_path='/user',
         token_type='token',
+        scope="user:email,read:org",
     )
     return client
 
@@ -135,6 +136,7 @@ async def test_github(
             assert set(auth_model) == {"name", "admin", "auth_state"}
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
+        assert auth_state["scope"] == ["user:email", "read:org"]
         assert json.dumps(auth_state)
         assert "access_token" in auth_state
         user_info = auth_state[authenticator.user_auth_state_key]

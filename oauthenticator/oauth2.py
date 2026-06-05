@@ -1200,8 +1200,16 @@ class OAuthenticator(Authenticator):
         id_token = token_info.get("id_token", None)
         scope = token_info.get("scope", "")
 
+        # scope is a nonstandard field
+        # sometimes list, sometimes space-delimited str like the request,
+        # sometimes comma-delimited str (github)
         if isinstance(scope, str):
-            scope = scope.split(" ")
+            if " " in scope:
+                scope = scope.split(" ")
+            elif "," in scope:
+                scope = scope.split(",")
+            else:
+                scope = [scope]
 
         return {
             "access_token": access_token,
