@@ -191,6 +191,10 @@ linkcheck_ignore = [
     "https://admin.google.com/",  # sign-in redirect noise
     "https://console.cloud.google.com",  # sign-in redirect noise
     "https://console.developers.google.com",  # sign-in redirect noise
+    # these sites block bots and can't be checked
+    "https://docs.redhat.com/.*",
+    "https://docs.aws.amazon.com/.*",
+    "https://cilogon.org/.*",
 ]
 linkcheck_anchors_ignore = [
     "/#!",
