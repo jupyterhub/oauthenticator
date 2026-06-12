@@ -122,7 +122,6 @@ async def test_oidc(
     c = Config()
     c.OIDCOAuthenticator = Config(class_config)
     c.OIDCOAuthenticator.openid_provider_url = openid_provider_url
-    c.OIDCOAuthenticator.username_claim = "sub"
     handled_user_model = user_model()
     handler = oidc_client.handler_for_user(handled_user_model)
 

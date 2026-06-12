@@ -55,6 +55,11 @@ class OIDCOAuthenticator(OAuthenticator):
     def _openid_provider_url_default(self):
         return os.environ.get("OPENID_PROVIDER_URL", "")
 
+    @default("username_claim")
+    def _default_username_claim(self):
+        # change default username claim to oidc-standard 'sub'
+        return os.environ.get('OAUTH2_USERNAME_KEY', 'sub')
+
     # loaded from Discovery, not configurable
     openid_configuration = None
     _last_openid_configuration_fetch_time = None
