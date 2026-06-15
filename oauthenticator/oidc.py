@@ -43,9 +43,9 @@ class OIDCOAuthenticator(OAuthenticator):
         ${PROVIDER_URL}/.well-known/openid-configuration MUST exist.
 
         Examples:
-        - https://some-keycloak.domain/realms/realmname
-        - https://accounts.google.com
-        - https://samples.auth0.com
+        - `https://some-keycloak.domain/realms/realmname`
+        - `https://accounts.google.com`
+        - `https://samples.auth0.com`
 
         Required.
     """,
