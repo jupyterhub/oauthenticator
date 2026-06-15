@@ -223,7 +223,10 @@ def setup_oauth_mock(
             )
             jwt_user.update(user)
             model['id_token'] = jwt.encode(
-                jwt_user, key=client.private_jwk, headers={"kid": jwk["kid"]}
+                jwt_user,
+                key=client.private_jwk.private_bytes(),
+                headers={"kid": jwk["kid"]},
+                algorithm="RS256",
             )
 
         return model
