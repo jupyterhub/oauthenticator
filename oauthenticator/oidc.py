@@ -23,14 +23,16 @@ class OIDCOAuthenticator(OAuthenticator):
     """
     Subclass of OAuthenticator that loads configuration from OpenIDConnect
 
-    Must provide OIDC Discovery 1.0
+    Provider must provide OIDC Discovery 1.0.
 
-    Typically only requires
+    Typically only requires `OIDCOAuthenticator.openid_provider_url` to be set.
 
     ref: https://openid.net/specs/openid-connect-discovery-1_0.html
 
-    - loads URLs from .well-known/openid-configuration
-    - handles JWKs
+    - loads URLs from `${openid_provider_url}/.well-known/openid-configuration`
+    - handles JWKs for token signing
+
+    .. versionadded:: 17.5
     """
 
     login_handler = OIDCLoginHandler
