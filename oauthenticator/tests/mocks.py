@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, urlparse
 
 import jwt
 import pytest
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.algorithms import RSAAlgorithm
 from tornado import web
@@ -149,6 +150,12 @@ def setup_oauth_mock(
     jwk["use"] = "sig"
     jwk["alg"] = "RS256"
     jwk["kid"] = str(uuid.uuid4())
+    client.private_key_bytes = client.private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
     client.private_jwk = jwt.PyJWK(
         RSAAlgorithm.to_jwk(client.private_key, as_dict=True)
     )
@@ -224,7 +231,7 @@ def setup_oauth_mock(
             jwt_user.update(user)
             model['id_token'] = jwt.encode(
                 jwt_user,
-                key=client.private_jwk.private_bytes(),
+                key=client.private_key_bytes,
                 headers={"kid": jwk["kid"]},
                 algorithm="RS256",
             )

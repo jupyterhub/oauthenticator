@@ -2,8 +2,8 @@ import json
 
 import jwt
 import pytest
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from jwt.algorithms import RSAAlgorithm
 from pytest import fixture, mark, param
 from tornado import web
 from traitlets.config import Config
@@ -187,7 +187,7 @@ async def test_oidc_id_token(
         "iss": openid_provider_url,
     }
     id_token_content.update(handled_user_model)
-    private_jwk = oidc_client.private_jwk
+    private_key_bytes = oidc_client.private_key_bytes
     kid = oidc_client.jwks["keys"][0]["kid"]
     if id_token_fields:
         id_token_content.update(id_token_fields)
@@ -197,10 +197,14 @@ async def test_oidc_id_token(
                 public_exponent=65537,
                 key_size=2048,
             )
-            private_jwk = jwt.PyJWK(RSAAlgorithm.to_jwk(private_key, as_dict=True))
+            private_key_bytes = private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
 
     handled_user_model["id_token"] = jwt.encode(
-        id_token_content, key=private_jwk, algorithm="RS256", headers={"kid": kid}
+        id_token_content, key=private_key_bytes, algorithm="RS256", headers={"kid": kid}
     )
     handler = oidc_client.handler_for_user(handled_user_model)
 
