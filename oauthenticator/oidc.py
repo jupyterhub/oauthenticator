@@ -101,7 +101,9 @@ class OIDCOAuthenticator(OAuthenticator):
         if not self.logout_redirect_url:
             self.logout_redirect_url = cfg.get("end_session_endpoint", "")
 
+    # empty docstring to avoid showing up in api docs
     async def authenticate(self, *args, **kwargs):
+        """"""
         if not self.openid_configuration:
             await self._load_openid_configuration()
         return await super().authenticate(*args, **kwargs)
