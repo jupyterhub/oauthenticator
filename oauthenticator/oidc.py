@@ -1,7 +1,6 @@
 import inspect
 import os
 import time
-from functools import wraps
 
 from jupyterhub.auth import LocalAuthenticator
 from traitlets import Unicode, default
@@ -102,14 +101,12 @@ class OIDCOAuthenticator(OAuthenticator):
         if not self.logout_redirect_url:
             self.logout_redirect_url = cfg.get("end_session_endpoint", "")
 
-    @wraps(OAuthenticator.authenticate)
     async def authenticate(self, *args, **kwargs):
         if not self.openid_configuration:
             await self._load_openid_configuration()
         return await super().authenticate(*args, **kwargs)
 
     def _token_to_auth_model(self, token_info):
-
         return super()._token_to_auth_model(token_info)
 
 
