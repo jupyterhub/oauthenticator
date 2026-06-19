@@ -216,6 +216,13 @@ class CILogonOAuthenticator(OAuthenticator):
         .. versionchanged:: 15.0
 
            Changed format from a list to a dictionary.
+
+        .. versionchanged:: 17.5
+
+           `username_claim` can be a callable,
+           and top-level `CILogonOAuthenticator.username_claim` can be a callable,
+           restoring feature parity with base OAuthenticator.
+           The top-level `username_claim` callable will only be used when `username_derivation.username_claim` is not defined for a given identity provider.
         """,
     )
 
@@ -272,7 +279,6 @@ class CILogonOAuthenticator(OAuthenticator):
         "strip_idp_domain": ("idps", "15.0.0", False),
         "shown_idps": ("idps", "16.0.0", False),
         "additional_username_claims": ("idps", "16.0.0", False),
-        "username_claim": ("idps", "16.0.0", False),
         "allowed_idps": ("idps", "17.4.0", True),
         **OAuthenticator._deprecated_oauth_aliases,
     }
@@ -309,14 +315,6 @@ class CILogonOAuthenticator(OAuthenticator):
         """,
     )
     additional_username_claims = List(
-        config=True,
-        help="""
-        .. versionremoved:: 16.0
-
-           Use :attr:`idps`.
-        """,
-    )
-    username_claim = Unicode(
         config=True,
         help="""
         .. versionremoved:: 16.0
@@ -369,12 +367,26 @@ class CILogonOAuthenticator(OAuthenticator):
         """
         user_idp = user_info["idp"]
         username_derivation = self.idps[user_idp]["username_derivation"]
-        username_claim = username_derivation["username_claim"]
 
-        username = user_info.get(username_claim)
+        if "username_claim" in username_derivation:
+            username_claim = username_derivation["username_claim"]
+        else:
+            # only allow callable top-level username_claim
+            # can be shared across IdPs
+            if callable(self.username_claim):
+                username_claim = self.username_claim
+                return self.username_claim(user_info)
+            else:
+                msg = f"username_claim not configured for {user_idp}"
+                self.log.error(msg)
+                raise web.HTTPError(500, f"Configuration error in idp: {user_idp}")
+
+        if callable(username_claim):
+            username = username_claim(user_info)
+        else:
+            username = user_info.get(username_claim, None)
         if not username:
             message = f"Configured username_claim {username_claim} for {user_idp} was not found in the response {user_info.keys()}"
-            self.log.error(message)
             raise web.HTTPError(500, message)
 
         return username
