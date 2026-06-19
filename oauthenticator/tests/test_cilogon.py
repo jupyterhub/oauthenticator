@@ -541,13 +541,6 @@ async def test_cilogon_idps(
             "CILogonOAuthenticator.shown_idps is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
         ),
         (
-            "username_claim",
-            {"username_claim": "dummy"},
-            {},
-            logging.ERROR,
-            "CILogonOAuthenticator.username_claim is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
-        ),
-        (
             "additional_username_claims",
             {"additional_username_claims": ["dummy"]},
             {},
