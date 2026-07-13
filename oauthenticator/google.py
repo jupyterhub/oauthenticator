@@ -245,7 +245,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
                 "as allow_all already grants access to everyone."
             )
         return proposal.value
-  
+
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {
         "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
