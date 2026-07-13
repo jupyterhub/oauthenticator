@@ -240,11 +240,16 @@ async def test_google(
         ("01", "user1@ok-hd.orG", "ok-hd.org", "user1", True, True),
         ("02", "user2@ok-hd.orG", "ok-hd.org", "user2", True, None),
         ("03", "blocked@ok-hd.org", "ok-hd.org", None, False, None),
-        ("04", "user2@ok-hd.org", "", None, False, None),
+        # user2 is explicitly in allowed_users, so they're exempted from the
+        # hosted_domain restriction even without a matching (or any) hd
+        ("04", "user2@ok-hd.org", "", "user2", True, None),
         ("05", "user1@not-ok.org", "", None, False, None),
         # Test variation 06 below isn't believed to be possible, but since we
         # aren't sure this test clarifies what we expect to happen.
         ("06", "user1@other.org", "ok-hd.org", "user1@other.org", True, None),
+        # user1 is explicitly in admin_users, so they're exempted from the
+        # hosted_domain restriction even without a matching (or any) hd
+        ("07", "user1@ok-hd.org", "", "user1", True, True),
     ],
 )
 async def test_hosted_domain_single_entry(

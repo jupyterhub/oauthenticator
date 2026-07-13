@@ -269,23 +269,25 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     def check_blocked_users(self, username, auth_model):
         """
-        Overrides `Authenticator.check_blocked_users` to not only block users in
-        `Authenticator.blocked_users`, but to also enforce
-        `GoogleOAuthenticator.hosted_domain` if its configured.
+        Overrides `Authenticator.check_blocked_users` to also enforce
+        `GoogleOAuthenticator.hosted_domain` if configured, except for users
+        individually named in `allowed_users` or `admin_users`.
 
-        When hosted_domain is configured, users are required to be part of
-        listed Google organizations/workspaces.
+        This has to live here rather than in `check_allowed` because the GoogleOAuthenticator
+        `allow_all` attribute bypasses `check_allowed` entirely, so
+        `check_blocked_users` is the only place that can
+        restrict `hosted_domain` membership when `allow_all` is True.
 
-        Returns False if the user is blocked, otherwise True.
+        Returns False if the user is blocked or the hd is not in the hosted_domain list or the username is 
+        not in `allowed_users` or `admin_users`, otherwise returns True
         """
-        user_info = auth_model["auth_state"][self.user_auth_state_key]
-
-        # hd ref: https://developers.google.com/identity/openid-connect/openid-connect#id_token-hd
-        hd = user_info.get("hd", "")
-
-        if self.hosted_domain and hd not in self.hosted_domain:
-            self.log.warning(f"Blocked {username} with 'hd={hd}' not in hosted_domain")
-            return False
+        if self.hosted_domain and not (username in self.allowed_users or username in self.admin_users):
+            user_info = auth_model["auth_state"][self.user_auth_state_key]
+            # hd ref: https://developers.google.com/identity/openid-connect/openid-connect#id_token-hd
+            hd = user_info.get("hd", "")
+            if hd not in self.hosted_domain:
+                self.log.warning(f"Blocked {username} with 'hd={hd}' not in hosted_domain")
+                return False
 
         return super().check_blocked_users(username, auth_model)
 
