@@ -7,7 +7,7 @@ import os
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
-from traitlets import Bool, Dict, List, Set, TraitError, Unicode, default, validate
+from traitlets import Bool, Dict, List, Set, Unicode, default, validate
 
 from .oauth2 import OAuthenticator
 
@@ -210,29 +210,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         own. It's purely an additional way to grant access, checked
         alongside `allowed_users`, `admin_users`, and `allowed_google_groups`.
 
-        Cannot be combined with `allow_all`, since `allow_all` already grants
-        access to everyone, making this configuration meaningless.
+        .. versionadded:: 17.5
         """,
     )
 
     @validate('allowed_hosted_domains')
-    def _check_allowed_hosted_domains(self, proposal):
-        if proposal.value and self.allow_all:
-            raise TraitError(
-                "GoogleOAuthenticator.allowed_hosted_domains can't be used together with "
-                "GoogleOAuthenticator.allow_all, as allow_all already grants access to everyone."
-            )
+    def _cast_allowed_hosted_domains(self, proposal):
         return [hd.lower() for hd in proposal.value]
-
-    @validate('allow_all')
-    def _check_allow_all(self, proposal):
-        if proposal.value and self.allowed_hosted_domains:
-            raise TraitError(
-                "GoogleOAuthenticator.allow_all can't be used together with "
-                "GoogleOAuthenticator.allowed_hosted_domains, "
-                "as allow_all already grants access to everyone."
-            )
-        return proposal.value
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {

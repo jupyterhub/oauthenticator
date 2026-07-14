@@ -6,7 +6,6 @@ from unittest import mock
 from unittest.mock import AsyncMock
 
 from pytest import fixture, mark, raises
-from traitlets import TraitError
 from traitlets.config import Config
 
 from ..google import GoogleOAuthenticator
@@ -377,20 +376,6 @@ async def test_allowed_hosted_domains(
         assert auth_model
     else:
         assert auth_model is None
-
-
-def test_allowed_hosted_domains_conflicts_with_allow_all():
-    """
-    `allowed_hosted_domains` can't be combined with `allow_all`, regardless
-    of which one is set second.
-    """
-    authenticator = GoogleOAuthenticator(allow_all=True)
-    with raises(TraitError):
-        authenticator.allowed_hosted_domains = ["ok.org"]
-
-    authenticator = GoogleOAuthenticator(allowed_hosted_domains=["ok.org"])
-    with raises(TraitError):
-        authenticator.allow_all = True
 
 
 @mark.parametrize(
