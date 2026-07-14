@@ -379,17 +379,16 @@ async def test_allowed_hosted_domains(
         assert auth_model is None
 
 
-@mark.parametrize("trait_name", ["hosted_domain", "allowed_hosted_domains"])
-def test_hosted_domain_traits_conflict_with_allow_all(trait_name):
+def test_allowed_hosted_domains_conflicts_with_allow_all():
     """
-    `hosted_domain` and `allowed_hosted_domains` can't be combined with
-    `allow_all`, regardless of which one is set second.
+    `allowed_hosted_domains` can't be combined with `allow_all`, regardless
+    of which one is set second.
     """
     authenticator = GoogleOAuthenticator(allow_all=True)
     with raises(TraitError):
-        setattr(authenticator, trait_name, ["ok.org"])
+        authenticator.allowed_hosted_domains = ["ok.org"]
 
-    authenticator = GoogleOAuthenticator(**{trait_name: ["ok.org"]})
+    authenticator = GoogleOAuthenticator(allowed_hosted_domains=["ok.org"])
     with raises(TraitError):
         authenticator.allow_all = True
 

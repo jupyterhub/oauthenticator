@@ -164,9 +164,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         allowed by a configuration intended to allow users, like
         `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`.
 
-        Cannot be combined with `allow_all`, since `allow_all` already grants
-        access to everyone, making this restriction unenforceable.
-
         .. warning::
 
            Changing this config either to or from having a single entry is a
@@ -198,18 +195,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             # set it to a single item list
             # (or if it's empty, an empty list)
             if proposal.value == '':
-                domains = []
-            else:
-                domains = [proposal.value.lower()]
-        else:
-            domains = [hd.lower() for hd in proposal.value]
-
-        if domains and self.allow_all:
-            raise TraitError(
-                "GoogleOAuthenticator.hosted_domain can't be used together with "
-                "GoogleOAuthenticator.allow_all, as allow_all already grants access to everyone."
-            )
-        return domains
+                return []
+            return [proposal.value.lower()]
+        return [hd.lower() for hd in proposal.value]
 
     allowed_hosted_domains = List(
         Unicode(),
@@ -238,10 +226,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @validate('allow_all')
     def _check_allow_all(self, proposal):
-        if proposal.value and (self.allowed_hosted_domains or self.hosted_domain):
+        if proposal.value and self.allowed_hosted_domains:
             raise TraitError(
                 "GoogleOAuthenticator.allow_all can't be used together with "
-                "GoogleOAuthenticator.allowed_hosted_domains or GoogleOAuthenticator.hosted_domain, "
+                "GoogleOAuthenticator.allowed_hosted_domains, "
                 "as allow_all already grants access to everyone."
             )
         return proposal.value
