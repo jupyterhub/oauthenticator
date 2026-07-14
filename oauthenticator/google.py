@@ -161,7 +161,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
            stripped to exclude the `@domain` part.
 
         Users not restricted by this configuration must still be explicitly
-        allowed by a configuration intended to allow users, like `allow_all`
+        allowed by a configuration intended to allow users, like `allow_all`,
         `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`.
 
         .. warning::
