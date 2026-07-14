@@ -332,6 +332,7 @@ async def test_hosted_domain_multiple_entries(
     ]
 
     c.GoogleOAuthenticator.blocked_users = ["blocked@ok-hd1.org"]
+    c.GoogleOAuthenticator.allow_all = True
     authenticator = GoogleOAuthenticator(config=c)
 
     handled_user_model = user_model(user_email, hd=user_hd)
