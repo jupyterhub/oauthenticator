@@ -162,7 +162,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         Users not restricted by this configuration must still be explicitly
         allowed by a configuration intended to allow users, like `allow_all`,
-        `allowed_users`, or `allowed_google_groups`.
+        `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`.
 
         .. warning::
 
@@ -197,6 +197,25 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             if proposal.value == '':
                 return []
             return [proposal.value.lower()]
+        return [hd.lower() for hd in proposal.value]
+
+    allowed_hosted_domains = List(
+        Unicode(),
+        config=True,
+        help="""
+        Grant access to any user whose Google `hd` claim matches the one of the
+        domains listed.
+
+        Unlike `hosted_domain`, this does not restrict or block anyone on its
+        own. It's purely an additional way to grant access, checked
+        alongside `allowed_users`, `admin_users`, and `allowed_google_groups`.
+
+        .. versionadded:: 17.5
+        """,
+    )
+
+    @validate('allowed_hosted_domains')
+    def _cast_allowed_hosted_domains(self, proposal):
         return [hd.lower() for hd in proposal.value]
 
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
@@ -276,7 +295,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         When hosted_domain is configured, users are required to be part of
         listed Google organizations/workspaces.
 
-        Returns False if the user is blocked, otherwise True.
+        Returns False if the user is blocked or the hd is not in the hosted_domain list, otherwise returns True
         """
         user_info = auth_model["auth_state"][self.user_auth_state_key]
 
@@ -292,7 +311,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     async def check_allowed(self, username, auth_model):
         """
         Overrides the OAuthenticator.check_allowed to also allow users part of
-        `allowed_google_groups`.
+        `allowed_hosted_domains` or `allowed_google_groups`.
         """
         # A workaround for JupyterHub < 5.0 described in
         # https://github.com/jupyterhub/oauthenticator/issues/621
@@ -313,6 +332,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         if await super().check_allowed(username, auth_model):
             return True
+
+        # allow users whose hd is in allowed_hosted_domains
+        # hd ref: https://developers.google.com/identity/openid-connect/openid-connect#id_token-hd
+        if self.allowed_hosted_domains:
+            hd = user_info.get("hd", "")
+            if hd in self.allowed_hosted_domains:
+                return True
 
         if self.allowed_google_groups:
             user_groups = set(user_info["google_groups"])

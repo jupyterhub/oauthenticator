@@ -325,6 +325,12 @@ async def test_hosted_domain_multiple_entries(
         "ok-hd1.org",
         "ok-hd2.ORG",
     ]
+
+    c.GoogleOAuthenticator.allowed_hosted_domains = [
+        "ok-hd1.org",
+        "ok-hd2.ORG",
+    ]
+
     c.GoogleOAuthenticator.blocked_users = ["blocked@ok-hd1.org"]
     c.GoogleOAuthenticator.allow_all = True
     authenticator = GoogleOAuthenticator(config=c)
@@ -337,6 +343,40 @@ async def test_hosted_domain_multiple_entries(
         assert auth_model["name"] == expect_username
     else:
         assert auth_model == None
+
+
+@mark.parametrize(
+    "test_variation_id,user_hd,class_config,expect_allowed",
+    [
+        ("01", "ok.org", {}, True),
+        ("02", "not-ok.org", {}, False),
+        ("03", None, {}, False),
+        # admin_users/allowed_users still grant access on their own, even
+        # when allowed_hosted_domains is configured and the hd doesn't match
+        ("04", "not-ok.org", {"admin_users": {"user1@example.com"}}, True),
+        ("05", "not-ok.org", {"allowed_users": {"user1@example.com"}}, True),
+    ],
+)
+async def test_allowed_hosted_domains(
+    google_client, test_variation_id, user_hd, class_config, expect_allowed
+):
+    """
+    Tests that `allowed_hosted_domains` grants access based on a matching
+    `hd`, without restricting/blocking anyone by itself: admin_users and
+    allowed_users still work normally even when the hd doesn't match.
+    """
+    c = Config()
+    c.GoogleOAuthenticator = Config(class_config)
+    c.GoogleOAuthenticator.allowed_hosted_domains = ["ok.org"]
+    authenticator = GoogleOAuthenticator(config=c)
+
+    handled_user_model = user_model("user1@example.com", "user1", hd=user_hd)
+    handler = google_client.handler_for_user(handled_user_model)
+    auth_model = await authenticator.get_authenticated_user(handler, None)
+    if expect_allowed:
+        assert auth_model
+    else:
+        assert auth_model is None
 
 
 @mark.parametrize(
