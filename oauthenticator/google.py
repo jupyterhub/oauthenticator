@@ -288,8 +288,12 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     def check_blocked_users(self, username, auth_model):
         """
-        Overrides `Authenticator.check_blocked_users` to also enforce
-        `GoogleOAuthenticator.hosted_domain` if configured
+        Overrides `Authenticator.check_blocked_users` to not only block users in
+        `Authenticator.blocked_users`, but to also enforce
+        `GoogleOAuthenticator.hosted_domain` if its configured.
+
+        When hosted_domain is configured, users are required to be part of
+        listed Google organizations/workspaces.
 
         Returns False if the user is blocked or the hd is not in the hosted_domain list, otherwise returns True
         """
