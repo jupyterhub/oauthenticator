@@ -434,6 +434,35 @@ async def test_cilogon(
             False,
             None,
         ),
+        (
+            "callable username_claim",
+            {
+                "username_derivation": {
+                    "action": "prefix",
+                    "prefix": "some-prefix",
+                },
+            },
+            {
+                "allowed_users": ["some-prefix:xyz-user1@domain.org"],
+                "username_claim": lambda user_info: "xyz-" + user_info["email"],
+            },
+            "user1@domain.org",
+            True,
+            None,
+        ),
+        (
+            "callable username_claim, no derivation",
+            {
+                "username_derivation": {},
+            },
+            {
+                "allowed_users": ["xyz-user1@domain.org"],
+                "username_claim": lambda user_info: "xyz-" + user_info["email"],
+            },
+            "user1@domain.org",
+            True,
+            None,
+        ),
     ],
 )
 async def test_cilogon_idps(
@@ -454,7 +483,11 @@ async def test_cilogon_idps(
     }
     authenticator = CILogonOAuthenticator(config=c)
 
-    username_claim = idp_config["username_derivation"]["username_claim"]
+    if "username_claim" in idp_config["username_derivation"]:
+        username_claim = idp_config["username_derivation"]["username_claim"]
+    else:
+        assert "username_claim" in class_config
+        username_claim = "email"
     handled_user_model = user_model(test_user_name, username_claim, idp=test_idp)
     handler = cilogon_client.handler_for_user(handled_user_model)
     auth_model = await authenticator.get_authenticated_user(handler, None)
@@ -506,13 +539,6 @@ async def test_cilogon_idps(
             {},
             logging.ERROR,
             "CILogonOAuthenticator.shown_idps is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
-        ),
-        (
-            "username_claim",
-            {"username_claim": "dummy"},
-            {},
-            logging.ERROR,
-            "CILogonOAuthenticator.username_claim is deprecated in CILogonOAuthenticator 16.0.0, use CILogonOAuthenticator.idps instead",
         ),
         (
             "additional_username_claims",

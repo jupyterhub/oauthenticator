@@ -20,8 +20,6 @@ properties:
   username_derivation:
     type: object
     additionalProperties: false
-    required:
-      - username_claim
     properties:
       username_claim:
         type: string
