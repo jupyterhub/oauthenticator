@@ -137,7 +137,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
     @default('strip_domain')
     def _strip_if_single_domain(self):
-        return len(self.hosted_domain) <= 1
+        return len(self.hosted_domain) == 1
 
     @validate('strip_domain')
     def _check_multiple_hosted_domain(self, strip_domain):
@@ -158,22 +158,35 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
            managing domains, such as `["mycollege.edu"]` or `["college1.edu",
            "college2.edu"]`.
         2. If a single domain is specified, usernames with that domain will be
-           stripped to exclude the `@domain` part.
+           stripped to exclude the `@domain` part (by default).
+           You can opt-out of this behavior by setting `GoogleOAuthenticator.strip_domain = False`.
 
-        Users not restricted by this configuration must still be explicitly
-        allowed by a configuration intended to allow users, like `allow_all`,
-        `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`.
+        This config only **restricts** access, it does not **grant** any users access.
+        Users in these domains must still be explicitly
+        allowed by additional configuration intended to allow users,
+        such as
+        `allow_all`,`allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
+
+        Users not in these hosted domains **cannot be granted access** via `allowed_users`, etc..
+        **Only users in these domains** are considered for authentication with JupyterHub.
 
         .. warning::
 
            Changing this config either to or from having a single entry is a
            disruptive change as the same Google user will get a new username,
-           either without or with a domain name included.
+           either without or with a domain name included,
+           unless you have set `strip_domain = False`.
 
         .. versionchanged:: 16.1
 
            Now restricts sign-in based on the hd claim, not the domain in the
            user's email.
+
+        .. seealso::
+
+            - :attr:`~.GoogleOAuthenticator.strip_domain`
+            - :attr:`~.GoogleOAuthenticator.allow_hosted_domains` for granting access
+              to members of a domain without *excluding* accounts from other sources.
         """,
     )
 
