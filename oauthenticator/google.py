@@ -7,7 +7,7 @@ import os
 from jupyterhub.auth import LocalAuthenticator
 from tornado.auth import GoogleOAuth2Mixin
 from tornado.web import HTTPError
-from traitlets import Bool, Dict, List, Set, Unicode, default, validate
+from traitlets import Bool, Dict, List, Set, Unicode, default, observe, validate
 
 from .oauth2 import OAuthenticator
 
@@ -125,55 +125,95 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     strip_domain = Bool(
         config=True,
         help="""
-        Strip the username to exclude the `@domain` part. 
-        This happens by default when there is only one hosted domain specified
+        Strip the username to exclude the `@domain` part.
+
+        Should usually combined with `restrict_hosted_domains` containing a single domain.
+
+        .. deprecated:: 17.5
+            strip_domain is enabled by default when the deprecated `hosted_domain` is
+            set to a single domain.
+            If the new `restrict_hosted_domains` is used instead,
+            `strip_domain` is strictly opt-in, not implicitly enabled.
+
+        .. versionchanged:: 17.5
+            strip_domain is always applied if True, not just for accounts in `hosted_domain`.
 
         .. warning::
-
-            If domains are stripped from usernames and multiple `hosted_domains` are specified, 
-            there is a chance of clashing usernames.
+            If domains are stripped from usernames and multiple domains are allowed,
+            multiple Google accounts may access the same JupyterHub account.
         """,
     )
 
     @default('strip_domain')
     def _strip_if_single_domain(self):
-        return len(self.hosted_domain) <= 1
-
-    @validate('strip_domain')
-    def _check_multiple_hosted_domain(self, strip_domain):
-        if len(self.hosted_domain) > 1 and strip_domain:
+        if (
+            len(self.hosted_domain) == 1
+            and self.hosted_domain == self.restrict_hosted_domains
+        ):
+            # deprecate this implicit default
             self.log.warning(
-                "User names are stripped of `@domain`, but multiple domains are specified."
-                " This can lead to clashing usernames"
+                f"Implicitly setting strip_domain=True due to a single-value in deprecated `hosted_domain={self.hosted_domain}`."
+                " This implicit configuration is deprecated in OAuthenticator 17.5,"
+                " and not inherited by the new `restrict_hosted_domains` config."
+                " Set `GoogleOAuthenticator.strip_domain = True|False` explicitly to avoid this warning."
             )
-        return strip_domain.value
+            return True
+        else:
+            return False
+
+    @observe('strip_domain')
+    def _check_multiple_hosted_domain(self, change):
+        if len(self.restrict_hosted_domains) != 1 and change.value:
+            self.log.warning(
+                "User names are stripped of `@domain`, but more than one domain may be allowed."
+                " This can lead to multiple Google accounts accessing the same JupyterHub user."
+            )
 
     hosted_domain = List(
         Unicode(),
         config=True,
         help="""
-        This config has two functions.
+        .. deprecated:: 17.5
+            The ambiguous `hosted_domain` is deprecated in favor of clearer and simpler :attr:`~.GoogleOAuthenticator.restrict_hosted_domains`.
+        
+        This config does one or two things.
 
         1. Restrict sign-in to users part of Google organizations/workspaces
            managing domains, such as `["mycollege.edu"]` or `["college1.edu",
            "college2.edu"]`.
-        2. If a single domain is specified, usernames with that domain will be
-           stripped to exclude the `@domain` part.
+        2. If a single domain is specified, usernames will be stripped to exclude the `@domain` part by default.
+           You can opt-out of this behavior by setting `GoogleOAuthenticator.strip_domain = False`,
+           which preserves the email address as the account name (default behavior in most configurations).
 
-        Users not restricted by this configuration must still be explicitly
-        allowed by a configuration intended to allow users, like `allow_all`,
-        `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`.
+        This config only **restricts** access, it does not **grant** any users access.
+        Users in these domains must still be explicitly
+        allowed by additional configuration intended to allow users,
+        such as
+        `allow_all`, `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
+
+        Users not in these hosted domains **cannot be granted access** via `allowed_users`, etc..
+        **Only users in these domains** are considered for authentication with JupyterHub.
 
         .. warning::
 
-           Changing this config either to or from having a single entry is a
-           disruptive change as the same Google user will get a new username,
-           either without or with a domain name included.
+           Changing this config either to or from having a single entry
+           will change the default value of `strip_domain`,
+           (True when `hosted_domain` has exactly one domain, False, otherwise).
+           changing the resulting usernames.
+           You can set `strip_domain` explicitly to avoid any implicit changes.
+           Suggestion: use `restrict_hosted_domains`, which does not imply any setting
+           for `strip_domain`.
 
         .. versionchanged:: 16.1
 
            Now restricts sign-in based on the hd claim, not the domain in the
            user's email.
+
+        .. seealso::
+
+            - :attr:`~.GoogleOAuthenticator.strip_domain`
+            - :attr:`~.GoogleOAuthenticator.allowed_hosted_domains` for granting access
+              to members of a domain without *excluding* accounts from other sources.
         """,
     )
 
@@ -199,6 +239,36 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             return [proposal.value.lower()]
         return [hd.lower() for hd in proposal.value]
 
+    restrict_hosted_domains = List(
+        Unicode(),
+        config=True,
+        help="""
+        Restrict sign-in to users part of Google organizations/workspaces
+           managing domains, such as `["mycollege.edu"]` or `["college1.edu",
+           "college2.edu"]`.
+
+        This config only **restricts** access, it does not **grant** any users access.
+        Users in these domains must still be explicitly
+        allowed by additional configuration intended to allow users,
+        such as `allow_all`, `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
+
+        Users not in these hosted domains **cannot be granted access** via `allowed_users`, etc..
+        **Only users in these domains** are considered for authentication with JupyterHub.
+
+        .. versionadded:: 17.5
+
+        .. seealso::
+
+            - :attr:`~.GoogleOAuthenticator.strip_domain`
+            - :attr:`~.GoogleOAuthenticator.allowed_hosted_domains` for granting access
+              to members of a domain without *excluding* accounts from other sources.
+        """,
+    )
+
+    @validate('restrict_hosted_domains')
+    def _cast_restric_hosted_domains(self, proposal):
+        return [hd.lower() for hd in proposal.value]
+
     allowed_hosted_domains = List(
         Unicode(),
         config=True,
@@ -221,6 +291,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     # _deprecated_oauth_aliases is used by deprecation logic in OAuthenticator
     _deprecated_oauth_aliases = {
         "google_group_whitelist": ("allowed_google_groups", "0.12.0"),
+        "hosted_domain": ("restrict_hosted_domains", "17.5.0"),
         **OAuthenticator._deprecated_oauth_aliases,
     }
     google_group_whitelist = Dict(
@@ -247,7 +318,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         #       derivation. Decoupling hosted_domain from this is considered in
         #       https://github.com/jupyterhub/oauthenticator/issues/733.
 
-        if self.strip_domain and user_info["domain"] in self.hosted_domain:
+        if self.strip_domain:
             username = username.split("@")[0]
 
         return username
@@ -302,8 +373,10 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         # hd ref: https://developers.google.com/identity/openid-connect/openid-connect#id_token-hd
         hd = user_info.get("hd", "")
 
-        if self.hosted_domain and hd not in self.hosted_domain:
-            self.log.warning(f"Blocked {username} with 'hd={hd}' not in hosted_domain")
+        if self.restrict_hosted_domains and hd not in self.restrict_hosted_domains:
+            self.log.warning(
+                f"Blocked {username} with 'hd={hd}' not in restrict_hosted_domains={self.restrict_hosted_domains}"
+            )
             return False
 
         return super().check_blocked_users(username, auth_model)
