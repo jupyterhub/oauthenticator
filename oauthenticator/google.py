@@ -378,7 +378,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         """
         try:
             from google.oauth2 import service_account
-        except:
+        except Exception:
             raise ImportError(
                 "Could not import google.oauth2's service_account,"
                 "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
@@ -407,7 +407,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         try:
             from google.auth.transport import requests
-        except:
+        except Exception:
             raise ImportError(
                 "Could not import google.auth.transport's requests,"
                 "you may need to run 'pip install oauthenticator[googlegroups]' or not declare google groups"
