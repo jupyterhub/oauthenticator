@@ -125,10 +125,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     strip_domain = Bool(
         config=True,
         help="""
-        Strip the username to exclude the `@domain` part. 
-        This happens by default when there is only one hosted domain specified.
+        Strip the username to exclude the `@domain` part.
 
-        Should usually combined with `restrict_hosted_domains` set to a single domain.
+        Should usually combined with `restrict_hosted_domains` containing a single domain.
 
         .. deprecated:: 17.5
             strip_domain is enabled by default when the deprecated `hosted_domain` is
@@ -140,7 +139,6 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             strip_domain is always applied if True, not just for accounts in `hosted_domain`.
 
         .. warning::
-
             If domains are stripped from usernames and multiple domains are allowed,
             multiple Google accounts may access the same JupyterHub account.
         """,
@@ -175,14 +173,17 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Unicode(),
         config=True,
         help="""
-        This config has two functions.
+        .. deprecated:: 17.5
+            The ambiguous `hosted_domain` is deprecated in favor of clearer and simpler :attr:`~.GoogleOAuthenticator.restrict_hosted_domains`.
+        
+        This config does one or two things.
 
         1. Restrict sign-in to users part of Google organizations/workspaces
            managing domains, such as `["mycollege.edu"]` or `["college1.edu",
            "college2.edu"]`.
-        2. If a single domain is specified, usernames with that domain will be
-           stripped to exclude the `@domain` part (by default).
-           You can opt-out of this behavior by setting `GoogleOAuthenticator.strip_domain = False`.
+        2. If a single domain is specified, usernames will be stripped to exclude the `@domain` part by default.
+           You can opt-out of this behavior by setting `GoogleOAuthenticator.strip_domain = False`,
+           which preserves the email address as the account name (default behavior in most configurations).
 
         This config only **restricts** access, it does not **grant** any users access.
         Users in these domains must still be explicitly
@@ -195,10 +196,13 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         .. warning::
 
-           Changing this config either to or from having a single entry is a
-           disruptive change as the same Google user will get a new username,
-           either without or with a domain name included,
-           unless you have set `strip_domain = False`.
+           Changing this config either to or from having a single entry
+           will change the default value of `strip_domain`,
+           (True when `hosted_domain` has exactly one domain, False, otherwise).
+           changing the resulting usernames.
+           You can set `strip_domain` explicitly to avoid any implicit changes.
+           Suggestion: use `restrict_hosted_domains`, which does not imply any setting
+           for `strip_domain`.
 
         .. versionchanged:: 16.1
 
@@ -239,30 +243,17 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Unicode(),
         config=True,
         help="""
-        This config has two functions.
-
-        1. Restrict sign-in to users part of Google organizations/workspaces
+        Restrict sign-in to users part of Google organizations/workspaces
            managing domains, such as `["mycollege.edu"]` or `["college1.edu",
            "college2.edu"]`.
-        2. If a single domain is specified, usernames with that domain will be
-           stripped to exclude the `@domain` part (by default).
-           You can opt-out of this behavior by setting `GoogleOAuthenticator.strip_domain = False`.
 
         This config only **restricts** access, it does not **grant** any users access.
         Users in these domains must still be explicitly
         allowed by additional configuration intended to allow users,
-        such as
-        `allow_all`, `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
+        such as `allow_all`, `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
 
         Users not in these hosted domains **cannot be granted access** via `allowed_users`, etc..
         **Only users in these domains** are considered for authentication with JupyterHub.
-
-        .. warning::
-
-           Changing this config either to or from having a single entry is a
-           disruptive change as the same Google user will get a new username,
-           either without or with a domain name included,
-           unless you have set `strip_domain = False`.
 
         .. versionadded:: 17.5
 
