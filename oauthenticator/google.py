@@ -165,7 +165,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         Users in these domains must still be explicitly
         allowed by additional configuration intended to allow users,
         such as
-        `allow_all`,`allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
+        `allow_all`, `allowed_users`, `allowed_hosted_domains`, or `allowed_google_groups`, etc.
 
         Users not in these hosted domains **cannot be granted access** via `allowed_users`, etc..
         **Only users in these domains** are considered for authentication with JupyterHub.
