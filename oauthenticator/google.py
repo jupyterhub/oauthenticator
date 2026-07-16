@@ -130,7 +130,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         Should usually combined with `restrict_hosted_domains` set to a single domain.
 
-        .. versiondeprecated:: 17.5
+        .. deprecated:: 17.5
             strip_domain is enabled by default when the deprecated `hosted_domain` is
             set to a single domain.
             If the new `restrict_hosted_domains` is used instead,
