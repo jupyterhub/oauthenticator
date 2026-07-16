@@ -28,6 +28,7 @@ from traitlets import (
     Bool,
     Callable,
     Dict,
+    Instance,
     List,
     Set,
     Unicode,
@@ -490,6 +491,21 @@ class OAuthenticator(Authenticator):
         Code Flow
         <https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth>`_
         in the OIDC Core standard document.
+        """,
+    )
+
+    jwt_issuer = Unicode(
+        None,
+        allow_none=True,
+        config=True,
+        help="""
+        Set the issuer for validating JWT id_token issuers.
+
+        If set, issuer will be validated.
+
+        OIDC sets this from openid-configuration, no need to configure.
+
+        .. versionadded:: 17.4
         """,
     )
 
@@ -1107,6 +1123,59 @@ class OAuthenticator(Authenticator):
 
         return token_info
 
+    jwks_uri = Unicode(
+        config=True,
+        help="""
+        URI for JSON Web Keys (JWKs)
+
+        e.g. for OpenID Connect clients.
+
+        Used for verifying signatures of JWTs.
+
+        Default: unset, signatures will not be verified
+        (which is secure, per OIDC spec (core v1.0 § 3.1.3.7.6)).
+
+        OIDCOAuthenticator sets this from openid-configuration, no need to configure.
+
+        .. versionadded:: 17.4
+        """,
+    )
+
+    jwks_client = Instance(jwt.PyJWKClient, allow_none=True, default_value=None)
+
+    @default("jwks_client")
+    def _default_jwks_client(self):
+        if not self.jwks_uri:
+            return None
+        self.log.debug(f"Loading jwks client from {self.jwks_uri}")
+        return jwt.PyJWKClient(self.jwks_uri)
+
+    async def decode_jwt(self, token):
+        """Validate and decode a JSON Web Token (JWT)"""
+
+        # if a jwks client is configured, verify signature
+        if self.jwks_client:
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+        else:
+            signing_key = None
+        # Here we parse the id token. Note that per OIDC spec (core v1.0 sect. 3.1.3.7.6) we can skip
+        # signature validation as the hub has obtained the tokens from the id provider directly (using https).
+        # Google suggests all token validation may be skipped assuming the provider is trusted.
+        # https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
+        # https://developers.google.com/identity/openid-connect/openid-connect#obtainuserinfo
+        return jwt.decode(
+            token,
+            key=signing_key,
+            audience=self.client_id,
+            issuer=self.jwt_issuer,
+            options=dict(
+                verify_signature=signing_key is not None,
+                verify_aud=True,
+                verify_exp=True,
+                verify_iss=self.jwt_issuer is not None,
+            ),
+        )
+
     async def token_to_user(self, token_info):
         """
         Determines who the logged-in user by sending a "GET" request to
@@ -1132,18 +1201,7 @@ class OAuthenticator(Authenticator):
                     f"An id token was not returned: {token_info}\nPlease configure authenticator.userdata_url",
                 )
             try:
-                # Here we parse the id token. Note that per OIDC spec (core v1.0 sect. 3.1.3.7.6) we can skip
-                # signature validation as the hub has obtained the tokens from the id provider directly (using
-                # https). Google suggests all token validation may be skipped assuming the provider is trusted.
-                # https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
-                # https://developers.google.com/identity/openid-connect/openid-connect#obtainuserinfo
-                return jwt.decode(
-                    id_token,
-                    audience=self.client_id,
-                    options=dict(
-                        verify_signature=False, verify_aud=True, verify_exp=True
-                    ),
-                )
+                return await self.decode_jwt(id_token)
             except Exception as err:
                 raise web.HTTPError(
                     500, f"Unable to decode id token: {id_token}\n{err}"

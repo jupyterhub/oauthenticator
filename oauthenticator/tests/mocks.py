@@ -8,7 +8,10 @@ from io import BytesIO
 from unittest.mock import Mock
 from urllib.parse import parse_qs, urlparse
 
+import jwt
 import pytest
+from cryptography.hazmat.primitives.asymmetric import rsa
+from jwt.algorithms import RSAAlgorithm
 from tornado import web
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPServerRequest
@@ -109,6 +112,7 @@ def setup_oauth_mock(
     token_request_style='post',
     enable_refresh_tokens=False,
     scope="",
+    client_id="oauthenticator-tests",
 ):
     """setup the mock client for OAuth
 
@@ -137,6 +141,18 @@ def setup_oauth_mock(
     client.access_tokens = access_tokens = {}
     client.refresh_tokens = refresh_tokens = {}
     client.enable_refresh_tokens = enable_refresh_tokens
+    client.private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    jwk = RSAAlgorithm.to_jwk(client.private_key.public_key(), as_dict=True)
+    jwk["use"] = "sig"
+    jwk["alg"] = "RS256"
+    jwk["kid"] = str(uuid.uuid4())
+    client.private_jwk = jwt.PyJWK(
+        RSAAlgorithm.to_jwk(client.private_key, as_dict=True)
+    )
+    jwks = client.jwks = {"keys": [jwk]}
 
     def access_token(request):
         """Handler for access token endpoint
@@ -200,6 +216,16 @@ def setup_oauth_mock(
             model['scope'] = scope
         if 'id_token' in user:
             model['id_token'] = user['id_token']
+        else:
+            jwt_user = dict(
+                aud=client_id,
+                iss=f"https://{host}",
+            )
+            jwt_user.update(user)
+            model['id_token'] = jwt.encode(
+                jwt_user, key=client.private_jwk, headers={"kid": jwk["kid"]}
+            )
+
         return model
 
     def get_user(request):
@@ -226,6 +252,21 @@ def setup_oauth_mock(
             )
         return access_tokens.get(token)
 
+    def openid_configuration(request):
+        origin = f"https://{host}"
+        well_known = f"{origin}/.well-known"
+        return {
+            "issuer": origin,
+            "authorization_url": f"{well_known}/openid-configuration",
+            "authorization_endpoint": f"{origin}/authorize",
+            "token_endpoint": f"{origin}{access_token_path}",
+            "userinfo_endpoint": f"{origin}{user_path}",
+            "jwks_uri": f"{well_known}/jwks",
+        }
+
+    def openid_jwks():
+        return jwks
+
     if isinstance(host, str):
         hosts = [host]
     else:
@@ -236,6 +277,8 @@ def setup_oauth_mock(
             [
                 (access_token_path, access_token),
                 (user_path, get_user),
+                ("/.well-known/openid-configuration", openid_configuration),
+                ("/.well-known/jwks", openid_jwks),
             ],
         )
 

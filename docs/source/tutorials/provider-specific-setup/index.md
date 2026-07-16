@@ -24,5 +24,6 @@ providers/globus.md
 providers/google.md
 providers/mediawiki.md
 providers/openshift.md
+providers/oidc.md
 providers/generic.md
 ```
