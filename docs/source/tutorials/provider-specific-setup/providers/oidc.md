@@ -17,7 +17,7 @@ c.JupyterHub.authenticator_class = "oidc"
 c.OAuthenticator.oauth_callback_url = "https://[your-domain]/hub/oauth_callback"
 c.OAuthenticator.client_id = "[your oauth2 application id]"
 c.OAuthenticator.client_secret = "[your oauth2 application secret]"
-c.JupyterHub.openid_provider_url = "https://yourprovider.example.org"
+c.OIDCOAuthenticator.openid_provider_url = "https://yourprovider.example.org"
 ```
 
 `openid_provider_url` should be the base URL of your provider.
