@@ -2,47 +2,12 @@
 
 # Generic OAuthenticator setups for various identity providers
 
-(tutorials:provider-specific:generic:oidc)=
-
 ## Setup for an OpenID Connect (OIDC) based identity provider
 
-The GenericOAuthenticator can be configured to be used against an OpenID Connect
-(OIDC) based identity provider, and this is an example demonstrating that.
-
-```python
-c.JupyterHub.authenticator_class = "generic-oauth"
-
-# OAuth2 application info
-# -----------------------
-c.GenericOAuthenticator.client_id = "some-client-id"
-c.GenericOAuthenticator.client_secret = "some-often-long-client-secret"
-
-# Identity provider info
-# ----------------------
-c.GenericOAuthenticator.authorize_url =
-c.GenericOAuthenticator.token_url = "https://accounts.example.com/auth/realms/example/protocol/openid-connect/token"
-c.GenericOAuthenticator.userdata_url = "https://accounts.example.com/auth/realms/example/protocol/openid-connect/userinfo"
-
-# What we request about the user
-# ------------------------------
-# scope represents requested information about the user, and since we configure
-# this against an OIDC based identity provider, we should request "openid" at
-# least.
-#
-# In this example we include "email" and "groups" as well, and then declare that
-# we should set the username based on the "email" key in the response, and read
-# group membership from the "groups" key in the response.
-#
-c.GenericOAuthenticator.scope = ["openid", "email", "groups"]
-c.GenericOAuthenticator.username_claim = "email"
-c.GenericOAuthenticator.auth_state_groups_key = "oauth_user.groups"
-
-# Authorization
-# -------------
-c.GenericOAuthenticator.allowed_users = {"user1@example.com"}
-c.GenericOAuthenticator.allowed_groups = {"staff"}
-c.GenericOAuthenticator.admin_users = {"user2@example.com"}
-c.GenericOAuthenticator.admin_groups = {"administrator"}
+```{note}
+OIDC Configuration has been simplified by adding [OIDCOAuthenticator](./oidc),
+which is equivalent to GenericOAuthenticator but requires less configuration options
+by following the OIDC Discovery standard.
 ```
 
 (tutorials:provider-specific:generic:moodle)=
@@ -121,68 +86,3 @@ c.GenericOAuthenticator.authorize_url = "https://oauth.yandex.ru/authorize"
 c.GenericOAuthenticator.token_url = "https://oauth.yandex.ru/token"
 c.GenericOAuthenticator.userdata_url = "https://login.yandex.ru/info"
 ```
-
-(tutorials:provider-specific:generic:awscognito)=
-
-## Setup for AWS Cognito
-
-First visit AWS official documentation on [Getting started with user pools] for
-info on how to register and configure a cognito user pool and an associated
-OAuth2 application.
-
-[Getting started with user pools]: https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-user-pools.html
-
-Set the above settings in your `jupyterhub_config.py`:
-
-```python
-c.JupyterHub.authenticator_class = "generic-oauth"
-c.OAuthenticator.oauth_callback_url = "https://[your-host]/hub/oauth_callback"
-c.OAuthenticator.client_id = "[your oauth2 application id]"
-c.OAuthenticator.client_secret = "[your oauth2 application secret]"
-
-c.GenericOAuthenticator.login_service = "AWS Cognito"
-c.GenericOAuthenticator.username_claim = "login"
-
-c.GenericOAuthenticator.authorize_url = "https://your-AWSCognito-domain/oauth2/authorize"
-c.GenericOAuthenticator.token_url = "https://your-AWSCognito-domain/oauth2/token"
-c.GenericOAuthenticator.userdata_url = "https://your-AWSCognito-domain/oauth2/userInfo"
-```
-
-## Setup for ORCID iD
-
-```{note}
-The `GenericOAuthenticator` will by default lowercase your username. For example, an ORCID iD of `0000-0002-9079-593X` will produce a JupyterHub username of `0000-0002-9079-593x`.
-```
-
-Follow the ORCID [API Tutorial](https://info.orcid.org/documentation/api-tutorials/api-tutorial-get-and-authenticated-orcid-id/) to create an application via the Developer Tools submenu after clicking on your name in the top right of the page.
-
-Edit your `jupyterhub_config.py` with the following:
-
-```python
-c.JupyterHub.authenticator_class = "generic-oauth"
-
-# Fill these in with your values
-c.GenericOAuthenticator.oauth_callback_url = "YOUR CALLBACK URL"
-c.GenericOAuthenticator.client_id = "YOUR CLIENT ID"
-c.GenericOAuthenticator.client_secret = "YOUR CLIENT SECRET"
-
-c.GenericOAuthenticator.login_service = "ORCID iD" # Text of login button
-c.GenericOAuthenticator.authorize_url = "https://orcid.org/oauth/authorize"
-c.GenericOAuthenticator.token_url = "https://orcid.org/oauth/token"
-c.GenericOAuthenticator.scope = ["/authenticate", "openid"]
-c.GenericOAuthenticator.userdata_url = "https://orcid.org/oauth/userinfo"
-c.GenericOAuthenticator.username_claim = "sub"
-```
-
-The above `username_claim` value selects the ORCID iD from the JSON response as the individual's JupyterHub username. An example response is below:
-
-```json
-{
-  "sub": "0000-0002-2601-8132",
-  "name": "Credit Name",
-  "family_name": "Jones",
-  "given_name": "Tom"
-}
-```
-
-Please refer to the [Authorization Code Flow](https://github.com/ORCID/ORCID-Source/blob/main/orcid-web/ORCID_AUTH_WITH_OPENID_CONNECT.md#authorization-code-flow) section of the ORCID documentation for more information.
