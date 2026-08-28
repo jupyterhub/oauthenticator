@@ -31,7 +31,8 @@ be relevant to read more about in the configuration reference:
 
 - {attr}`.GoogleOAuthenticator.allowed_google_groups`
 - {attr}`.GoogleOAuthenticator.admin_google_groups`
-- {attr}`.GoogleOAuthenticator.hosted_domain`
+- {attr}`.GoogleOAuthenticator.allowed_hosted_domains`
+- {attr}`.GoogleOAuthenticator.restrict_hosted_domains`
 
 If you configure `allowed_google_groups` or `admin_google_groups`, you are
 required to also configure:

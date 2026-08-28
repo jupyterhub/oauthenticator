@@ -231,7 +231,7 @@ async def test_google(
         if authenticator.allowed_google_groups or authenticator.admin_google_groups:
             assert user_info["google_groups"] == ["group1"]
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 @mark.parametrize(
@@ -244,7 +244,7 @@ async def test_google(
         ("05", "user1@not-ok.org", "", None, False, None),
         # Test variation 06 below isn't believed to be possible, but since we
         # aren't sure this test clarifies what we expect to happen.
-        ("06", "user1@other.org", "ok-hd.org", "user1@other.org", True, None),
+        ("06", "user2@other.org", "ok-hd.org", "user2", True, None),
     ],
 )
 async def test_hosted_domain_single_entry(
@@ -267,6 +267,7 @@ async def test_hosted_domain_single_entry(
     c.GoogleOAuthenticator.allowed_users = {"user2", "blocked", "user1@other.org"}
     c.GoogleOAuthenticator.blocked_users = {"blocked"}
     authenticator = GoogleOAuthenticator(config=c)
+    assert authenticator.restrict_hosted_domains == c.GoogleOAuthenticator.hosted_domain
 
     handled_user_model = user_model(user_email, hd=user_hd)
     handler = google_client.handler_for_user(handled_user_model)
@@ -276,7 +277,7 @@ async def test_hosted_domain_single_entry(
         assert auth_model["name"] == expect_username
         assert auth_model["admin"] == expect_admin
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 @mark.parametrize(
@@ -321,12 +322,7 @@ async def test_hosted_domain_multiple_entries(
     entries.
     """
     c = Config()
-    c.GoogleOAuthenticator.hosted_domain = [
-        "ok-hd1.org",
-        "ok-hd2.ORG",
-    ]
-
-    c.GoogleOAuthenticator.allowed_hosted_domains = [
+    c.GoogleOAuthenticator.restrict_hosted_domains = [
         "ok-hd1.org",
         "ok-hd2.ORG",
     ]
@@ -342,7 +338,7 @@ async def test_hosted_domain_multiple_entries(
         assert auth_model
         assert auth_model["name"] == expect_username
     else:
-        assert auth_model == None
+        assert auth_model is None
 
 
 @mark.parametrize(
