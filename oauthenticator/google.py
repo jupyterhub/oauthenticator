@@ -127,7 +127,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         help="""
         Strip the username to exclude the `@domain` part.
 
-        Should usually combined with `restrict_hosted_domains` containing a single domain.
+        Should be combined with `restrict_hosted_domains` containing a single domain.
 
         .. deprecated:: 17.5
             strip_domain is enabled by default when the deprecated `hosted_domain` is
@@ -198,7 +198,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
            Changing this config either to or from having a single entry
            will change the default value of `strip_domain`,
-           (True when `hosted_domain` has exactly one domain, False, otherwise).
+           (True when `hosted_domain` has exactly one domain, False otherwise).
            changing the resulting usernames.
            You can set `strip_domain` explicitly to avoid any implicit changes.
            Suggestion: use `restrict_hosted_domains`, which does not imply any setting
@@ -266,7 +266,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     )
 
     @validate('restrict_hosted_domains')
-    def _cast_restric_hosted_domains(self, proposal):
+    def _cast_restrict_hosted_domains(self, proposal):
         return [hd.lower() for hd in proposal.value]
 
     allowed_hosted_domains = List(
