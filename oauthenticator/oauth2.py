@@ -1314,6 +1314,8 @@ class OAuthenticator(Authenticator):
             )
             return set()
         try:
+            if isinstance(groups, str):
+                groups = [groups]
             return set(groups)
         except TypeError:
             self.log.error(
