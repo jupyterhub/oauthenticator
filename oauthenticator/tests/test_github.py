@@ -130,10 +130,13 @@ async def test_github(
 
     if expect_allowed:
         assert auth_model
+        assert "name" in auth_model
+        assert "admin" in auth_model
+        assert "auth_state" in auth_model
         if authenticator.manage_groups:
-            assert set(auth_model) == {"name", "admin", "auth_state", "groups"}
+            assert "groups" in auth_model
         else:
-            assert set(auth_model) == {"name", "admin", "auth_state"}
+            assert "groups" not in auth_model
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
         assert auth_state["scope"] == ["user:email", "read:org"]

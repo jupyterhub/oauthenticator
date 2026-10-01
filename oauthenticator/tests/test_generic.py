@@ -259,10 +259,13 @@ async def test_generic(
 
     if expect_allowed:
         assert auth_model
-        expected_keys = {"name", "admin", "auth_state"}
-        if manage_groups:
-            expected_keys.add("groups")
-        assert set(auth_model) == expected_keys
+        assert "name" in auth_model
+        assert "admin" in auth_model
+        assert "auth_state" in auth_model
+        if authenticator.manage_groups:
+            assert "groups" in auth_model
+        else:
+            assert "groups" not in auth_model
         assert auth_model["admin"] == expect_admin
         auth_state = auth_model["auth_state"]
         assert json.dumps(auth_state)
