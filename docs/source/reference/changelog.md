@@ -6,6 +6,54 @@ command line for details.
 
 ## [Unreleased]
 
+## 17.5
+
+### 17.5.0 - 2026-11-06
+
+17.5.0 adds one new OAuthenticator class (probably our last): [](OIDCOAuthenticator).
+Most use of GenericOAuthenticator can be simplified a bit by migrating to OIDCOAuthenticator,
+since most OAuth providers out there are OIDC.
+
+```{seealso}
+[](#tutorials:provider-specific:generic:oidc)
+```
+
+GoogleOAuthenticator's sometimes confusing [](#GoogleOAuthenticator.hosted_domain) configuration has been deprecated in favor of more explicit and hopefully clearer [](#GoogleOAuthenticator.restrict_hosted_domains) and [](#GoogleOAuthenticator.allowed_hosted_domains).
+Google's [](#GoogleOAuthenticator.strip_domain) option is now always respected, rather than only applying to domains in `hosted_domain`. `strip_domain` remains only safe to use when exactly one domain is allowed.
+
+([full changelog](https://github.com/jupyterhub/oauthenticator/compare/17.4.0...17.5.0))
+
+#### API and Breaking Changes
+
+- deprecate hosted_domain in favor of restrict_hosted_domains, always apply strip_domain if True, clarify docstrings [#830](https://github.com/jupyterhub/oauthenticator/pull/830) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics), [@yuvipanda](https://github.com/yuvipanda))
+
+#### New features added
+
+- Added allowed_hosted_domains to GoogleOAuthenticator [#828](https://github.com/jupyterhub/oauthenticator/pull/828) ([@sean-morris](https://github.com/sean-morris), [@minrk](https://github.com/minrk))
+- [CILogon] support callable username_claim [#823](https://github.com/jupyterhub/oauthenticator/pull/823) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+- add OIDCOAuthenticator [#822](https://github.com/jupyterhub/oauthenticator/pull/822) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
+
+#### Bugs fixed
+
+- Fix single group [#839](https://github.com/jupyterhub/oauthenticator/pull/839) ([@valtri](https://github.com/valtri), [@minrk](https://github.com/minrk))
+- [All] fix parsing of scope, often required for github email address [#820](https://github.com/jupyterhub/oauthenticator/pull/820) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+#### Maintenance and upkeep improvements
+
+- don't fail tests when jupyterhub adds new user fields [#841](https://github.com/jupyterhub/oauthenticator/pull/841) ([@minrk](https://github.com/minrk))
+- update release action pin comments to tags [#837](https://github.com/jupyterhub/oauthenticator/pull/837) ([@minrk](https://github.com/minrk))
+- [docs] stop checking more links [#821](https://github.com/jupyterhub/oauthenticator/pull/821) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+- update release workflow for tighter permissions [#818](https://github.com/jupyterhub/oauthenticator/pull/818) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/oauthenticator/graphs/contributors?from=2026-03-26&to=2026-11-06&type=c))
+
+@benjimin ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Abenjimin+updated%3A2026-03-26..2026-11-06&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3AconsideRatio+updated%3A2026-03-26..2026-11-06&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Amanics+updated%3A2026-03-26..2026-11-06&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Aminrk+updated%3A2026-03-26..2026-11-06&type=Issues)) | @sean-morris ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Asean-morris+updated%3A2026-03-26..2026-11-06&type=Issues)) | @valtri ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Avaltri+updated%3A2026-03-26..2026-11-06&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Foauthenticator+involves%3Ayuvipanda+updated%3A2026-03-26..2026-11-06&type=Issues))
+
 ## 17.4
 
 ### 17.4.0 2026-03-26
