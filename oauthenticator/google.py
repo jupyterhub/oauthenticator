@@ -281,6 +281,11 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         alongside `allowed_users`, `admin_users`, and `allowed_google_groups`.
 
         .. versionadded:: 17.5
+
+        .. seealso::
+
+            - :attr:`~.GoogleOAuthenticator.strip_domain`
+            - :attr:`~.GoogleOAuthenticator.restrict_hosted_domains` for restricting access to specific domains.
         """,
     )
 
