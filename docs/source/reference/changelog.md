@@ -25,17 +25,17 @@ Google's [](#GoogleOAuthenticator.strip_domain) option is now always respected, 
 
 #### API and Breaking Changes
 
-- deprecate hosted_domain in favor of restrict_hosted_domains, always apply strip_domain if True, clarify docstrings [#830](https://github.com/jupyterhub/oauthenticator/pull/830) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics), [@yuvipanda](https://github.com/yuvipanda))
+- [Google] deprecate hosted_domain in favor of restrict_hosted_domains, always apply strip_domain if True, clarify docstrings [#830](https://github.com/jupyterhub/oauthenticator/pull/830) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics), [@yuvipanda](https://github.com/yuvipanda))
 
 #### New features added
 
-- Added allowed_hosted_domains to GoogleOAuthenticator [#828](https://github.com/jupyterhub/oauthenticator/pull/828) ([@sean-morris](https://github.com/sean-morris), [@minrk](https://github.com/minrk))
+- [Google] Added allowed_hosted_domains [#828](https://github.com/jupyterhub/oauthenticator/pull/828) ([@sean-morris](https://github.com/sean-morris), [@minrk](https://github.com/minrk))
 - [CILogon] support callable username_claim [#823](https://github.com/jupyterhub/oauthenticator/pull/823) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
 - add OIDCOAuthenticator [#822](https://github.com/jupyterhub/oauthenticator/pull/822) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
 
 #### Bugs fixed
 
-- Fix single group [#839](https://github.com/jupyterhub/oauthenticator/pull/839) ([@valtri](https://github.com/valtri), [@minrk](https://github.com/minrk))
+- [All] fix single group [#839](https://github.com/jupyterhub/oauthenticator/pull/839) ([@valtri](https://github.com/valtri), [@minrk](https://github.com/minrk))
 - [All] fix parsing of scope, often required for github email address [#820](https://github.com/jupyterhub/oauthenticator/pull/820) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
 
 #### Maintenance and upkeep improvements
