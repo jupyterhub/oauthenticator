@@ -56,6 +56,18 @@ class OIDCOAuthenticator(OAuthenticator):
     def _openid_provider_url_default(self):
         return os.environ.get("OPENID_PROVIDER_URL", "")
 
+    @default
+    def login_service(self):
+        # default button to reference OIDC provider
+        # could truncate to lose the protocol?
+        scheme, _, rest = self.openid_provider_url.partition("://")
+        if scheme == "https":
+            # truncate implicit https://
+            return rest
+        else:
+            # ...unless it's not https!
+            return self.openid_provider_url
+
     @default("username_claim")
     def _default_username_claim(self):
         # change default username claim to oidc-standard 'sub'
@@ -108,8 +120,11 @@ class OIDCOAuthenticator(OAuthenticator):
             await self._load_openid_configuration()
         return await super().authenticate(*args, **kwargs)
 
-    def _token_to_auth_model(self, token_info):
-        return super()._token_to_auth_model(token_info)
+    async def refresh_user(self, user, handler=None, **kwargs):
+        """"""
+        if not self.openid_configuration:
+            await self._load_openid_configuration()
+        return await super().refresh_user(user, handler, **kwargs)
 
 
 class LocalOIDCOAuthenticator(LocalAuthenticator, OIDCOAuthenticator):
