@@ -55,7 +55,7 @@ class OIDCOAuthenticator(OAuthenticator):
     @default("openid_provider_url")
     def _openid_provider_url_default(self):
         return os.environ.get("OPENID_PROVIDER_URL", "")
-    
+
     @default
     def login_service(self):
         # default button to reference OIDC provider
@@ -65,7 +65,7 @@ class OIDCOAuthenticator(OAuthenticator):
             # truncate implicit https://
             return rest
         else:
-            #...unless it's not https!
+            # ...unless it's not https!
             return self.openid_provider_url
 
     @default("username_claim")
