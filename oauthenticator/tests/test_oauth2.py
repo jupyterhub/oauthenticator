@@ -1,9 +1,11 @@
 import re
 import uuid
-from unittest.mock import Mock, PropertyMock
+from http.cookies import SimpleCookie
+from unittest.mock import Mock, PropertyMock, call
+from urllib.parse import urlencode
 
-from pytest import mark, raises
-from tornado.web import HTTPError
+from pytest import FixtureRequest, fixture, mark, raises
+from tornado.web import HTTPError, RequestHandler
 from traitlets.config import Config
 
 from ..oauth2 import (
@@ -59,9 +61,7 @@ async def test_login_states(enable_pkce):
     }
     if enable_pkce:
         expected_state['code_verifier'] = code_verifier
-    expected_cookie_value = _serialize_state(expected_state)
-
-    login_handler.set_state_cookie.assert_called_once_with(expected_cookie_value)
+    login_handler.set_state_cookie.assert_called_once_with(expected_state)
 
     expected_state_param_value = {
         'state': _serialize_state({'state_id': TEST_STATE_ID})
@@ -75,6 +75,100 @@ async def test_login_states(enable_pkce):
         login_handler.authorize_redirect.call_args.kwargs['extra_params']
         == expected_state_param_value
     )
+
+
+class Browser:
+    """Carries signed cookies between Hub handlers, as a browser would."""
+
+    def __init__(self, authenticator: OAuthenticator) -> None:
+        self.authenticator = authenticator
+        self.cookies = SimpleCookie()
+        self.cookie_secret = uuid.uuid4().bytes
+
+    def _request(self, handler_class: type[RequestHandler], uri: str):
+        handler = mock_handler(handler_class, uri=uri, authenticator=self.authenticator)
+        handler.settings["cookie_secret"] = self.cookie_secret
+        handler.request.headers["Cookie"] = self.cookies.output(
+            attrs=[], header="", sep=";"
+        )
+        return handler
+
+    def _store_cookies(self, handler: RequestHandler) -> None:
+        for name, morsel in handler._new_cookie.items():
+            if morsel.value:
+                self.cookies[name] = morsel
+            else:
+                self.cookies.pop(name, None)
+
+    def login(self, next_url: str) -> str:
+        """Start a login and return the state sent to the identity provider."""
+        login = self._request(
+            OAuthLoginHandler, f"http://myhost/login?{urlencode({'next': next_url})}"
+        )
+        login.authorize_redirect = Mock()
+        login.get()
+        self._store_cookies(login)
+        return login.authorize_redirect.call_args.kwargs["extra_params"]["state"]
+
+    def callback(self, url_state: str) -> OAuthCallbackHandler:
+        callback = self._request(
+            OAuthCallbackHandler,
+            f"http://myhost/callback?{urlencode({'code': '123', 'state': url_state})}",
+        )
+        callback.check_arguments()
+        self._store_cookies(callback)
+        return callback
+
+    async def logout(self) -> None:
+        logout = self._request(OAuthLogoutHandler, "http://myhost/logout")
+        await logout.handle_logout()
+        self._store_cookies(logout)
+
+
+@fixture(params=[True, False], ids=["pkce", "no-pkce"])
+def browser(request: FixtureRequest) -> Browser:
+    return Browser(OAuthenticator(enable_pkce=request.param))
+
+
+async def test_overlapping_logins_complete_in_order(browser: Browser) -> None:
+    first = browser.login("/hub/user/alice/lab")
+    second = browser.login("/hub/home")
+    assert len(browser.cookies) == 2
+    assert all(
+        morsel["max-age"] == "600" and not morsel["expires"] and morsel["httponly"]
+        for morsel in browser.cookies.values()
+    )
+
+    first_callback = browser.callback(first)
+    second_callback = browser.callback(second)
+
+    assert first_callback.get_next_url() == "/hub/user/alice/lab"
+    assert second_callback.get_next_url() == "/hub/home"
+    assert not browser.cookies
+
+
+async def test_overlapping_logins_complete_in_reverse_order(browser: Browser) -> None:
+    first = browser.login("/hub/user/alice/lab")
+    second = browser.login("/hub/home")
+
+    second_callback = browser.callback(second)
+    first_callback = browser.callback(first)
+
+    assert first_callback.get_next_url() == "/hub/user/alice/lab"
+    assert second_callback.get_next_url() == "/hub/home"
+    assert not browser.cookies
+
+
+async def test_logout_cancels_overlapping_logins(browser: Browser) -> None:
+    first = browser.login("/hub/user/alice/lab")
+    second = browser.login("/hub/home")
+
+    await browser.logout()
+
+    assert not browser.cookies
+    for url_state in (first, second):
+        with raises(HTTPError, match="OAuth state missing from cookies"):
+            browser.callback(url_state)
 
 
 async def test_callback_check_states_match(monkeypatch):
@@ -102,6 +196,12 @@ async def test_callback_check_states_match(monkeypatch):
     await callback_handler.get()
 
     callback_handler.redirect.assert_called_once_with('/ABC')
+    callback_handler.get_secure_cookie.assert_called_once_with(
+        f"{STATE_COOKIE_NAME}-{TEST_STATE_ID}"
+    )
+    assert list(callback_handler._new_cookie) == [
+        f"{STATE_COOKIE_NAME}-{TEST_STATE_ID}"
+    ]
 
 
 async def test_callback_check_states_nomatch():
@@ -128,6 +228,37 @@ async def test_callback_check_states_nomatch():
         await callback_handler.get()
 
 
+@mark.parametrize(
+    "url_state",
+    [
+        None,
+        "",
+        "not-base64",
+        _serialize_state({}),
+        _serialize_state({"state_id": "unknown"}),
+        _serialize_state({"state_id": "invalid;cookie=name"}),
+    ],
+)
+async def test_callback_missing_state_cookie(url_state: str | None) -> None:
+    arguments = {"code": "123"}
+    if url_state is not None:
+        arguments["state"] = url_state
+    callback = mock_handler(
+        OAuthCallbackHandler,
+        uri=f"http://myhost/callback?{urlencode(arguments)}",
+        authenticator=OAuthenticator(),
+    )
+    expected_error = (
+        "Missing argument state"
+        if url_state is None
+        else "OAuth state missing from cookies"
+    )
+    with raises(HTTPError, match=expected_error) as error:
+        await callback.get()
+    assert error.value.status_code == 400
+    assert not getattr(callback, "_new_cookie", {})
+
+
 async def test_custom_logout(monkeypatch):
     login_url = "http://myhost/login"
     authenticator = OAuthenticator()
@@ -137,6 +268,9 @@ async def test_custom_logout(monkeypatch):
     logout_handler.clear_login_cookie = Mock()
     logout_handler.clear_cookie = Mock()
     logout_handler._jupyterhub_user = Mock()
+    logout_handler.request.headers["Cookie"] = (
+        f"{STATE_COOKIE_NAME}-first=one; {STATE_COOKIE_NAME}-second=two; unrelated=keep"
+    )
     monkeypatch.setitem(logout_handler.settings, 'statsd', Mock())
 
     # Sanity check: Ensure the logout handler and url are set on the hub
@@ -146,7 +280,11 @@ async def test_custom_logout(monkeypatch):
 
     await logout_handler.get()
     assert logout_handler.clear_login_cookie.called
-    logout_handler.clear_cookie.assert_called_once_with(STATE_COOKIE_NAME)
+    assert logout_handler.clear_cookie.call_args_list == [
+        call(STATE_COOKIE_NAME),
+        call(f"{STATE_COOKIE_NAME}-first"),
+        call(f"{STATE_COOKIE_NAME}-second"),
+    ]
 
 
 async def test_httpfetch(client):

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import secrets
+import typing
 import uuid
 from functools import reduce
 from inspect import isawaitable
@@ -44,6 +45,12 @@ def guess_callback_uri(protocol, host, hub_server_url):
 
 
 STATE_COOKIE_NAME = "oauthenticator-state"
+# Abandoned attempts leave a cookie on every Hub request, so keep them short-lived.
+STATE_COOKIE_MAX_AGE_SECONDS = 600
+
+
+def _state_cookie_name(state_id: str) -> str:
+    return f"{STATE_COOKIE_NAME}-{state_id}"
 
 
 def _serialize_state(state):
@@ -88,9 +95,14 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
     def _OAUTH_USERINFO_URL(self):
         return self.authenticator.userdata_url
 
-    def set_state_cookie(self, state_cookie_value):
+    def set_state_cookie(self, state: dict[str, typing.Any]) -> None:
+        # One cookie per attempt prevents overlapping logins from overwriting state.
         self._set_cookie(
-            STATE_COOKIE_NAME, state_cookie_value, expires_days=1, httponly=True
+            _state_cookie_name(state["state_id"]),
+            _serialize_state(state),
+            expires_days=None,
+            max_age=STATE_COOKIE_MAX_AGE_SECONDS,
+            httponly=True,
         )
 
     def _generate_pkce_params(self):
@@ -137,8 +149,7 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
             token_params["code_challenge"] = code_challenge
             token_params["code_challenge_method"] = "S256"
 
-        cookie_state = _serialize_state(state)
-        self.set_state_cookie(cookie_state)
+        self.set_state_cookie(state)
 
         authorize_state = _serialize_state({"state_id": state_id})
         token_params["state"] = authorize_state
@@ -157,16 +168,20 @@ class OAuthCallbackHandler(BaseHandler):
 
     _state_cookie = None
 
-    def get_state_cookie(self):
+    def get_state_cookie(self) -> str:
         """Get OAuth state from cookies
 
         To be compared with the value in redirect URL
         """
         if self._state_cookie is None:
-            self._state_cookie = (
-                self.get_secure_cookie(STATE_COOKIE_NAME) or b""
-            ).decode("utf8", "replace")
-            self.clear_cookie(STATE_COOKIE_NAME)
+            # The URL only selects the cookie; check_state still verifies its signed state.
+            state_id = _deserialize_state(self.get_state_url() or "").get("state_id")
+            cookie_name = _state_cookie_name(str(state_id))
+            cookie_state = self.get_secure_cookie(cookie_name)
+            if cookie_state:
+                # URL-derived names may be invalid: only clear a cookie we received.
+                self.clear_cookie(cookie_name)
+            self._state_cookie = (cookie_state or b"").decode("utf8", "replace")
         return self._state_cookie
 
     def get_state_url(self):
@@ -251,8 +266,11 @@ class OAuthCallbackHandler(BaseHandler):
 
 
 class OAuthLogoutHandler(LogoutHandler):
-    async def handle_logout(self):
+    async def handle_logout(self) -> None:
         self.clear_cookie(STATE_COOKIE_NAME)
+        for cookie_name in self.request.cookies:
+            if cookie_name.startswith(_state_cookie_name("")):
+                self.clear_cookie(cookie_name)
 
     async def render_logout_page(self):
         if self.authenticator.logout_redirect_url:
@@ -360,11 +378,11 @@ class OAuthenticator(Authenticator):
 
         Requires :attr:`manage_groups` to also be `True`.
         Typically also requires :attr:`auth_state_groups_key` to be configured to populate the JupyterHub groups.
-        
+
         This option is *independent* of other configuration such as :attr:`.GitLabOAuthenticator.allowed_gitlab_groups`,
         which do not populate the *JupyterHub* groups,
         and do not require :attr:`manage_groups` to be True.
-        
+
         .. versionadded:: 17
             Previously available only on :class:`.GenericOAuthenticator`
         """,
